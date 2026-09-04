@@ -1,0 +1,7 @@
+/* Darz Market — global stylesheet entry.
+   The one import `main.tsx` pulls in. Order matters: tokens define the
+   custom properties every later rule consumes; base resets and defines the
+   document; components skin the primitives. */
+@import './tokens.css';
+@import './base.css';
+@import './components.css';

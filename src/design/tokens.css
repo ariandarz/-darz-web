@@ -1,0 +1,131 @@
+/* =============================================================================
+   Darz Market — design tokens
+   Ported VERBATIM from the shipped collector Market App (DarzStudio@main
+   `app.html`, the `:root` block and the `html.dz-bw` dark overrides).
+   Owner decision 2026-09-04: match app.html exactly — the warm ink+paper
+   palette and the serif body font are the real, approved production values,
+   not the (stale) neutral values in DARZ_DESIGN_GUIDELINE.md.
+
+   Do not "correct" these toward the guideline without an owner sign-off.
+   Source lines: app.html:15-28 (:root) and app.html:33-59 (html.dz-bw).
+   ========================================================================== */
+
+:root {
+  /* ---- palette (app.html:16-19) ------------------------------------------ */
+  --white: #faf8f3;
+  --ink: #1a1714;
+  --ink2: #403a33;
+  --ink3: #968f86;
+
+  --card: #faf8f3;
+  --soft: #f3efe7;
+
+  --paper: #faf8f3;
+  --bg: #ece9e2;
+  --hair: #e2ded4;
+  --hair2: #efebe2;
+
+  --cyan: #00d4cc;
+  --magenta: #e8005c;
+  --accent: #e11d48;
+
+  /* ---- the chroma — the one signature gradient (app.html:22-24) ---------
+     Routed through --cyan / --magenta so a white-label brand restyles it in
+     ONE place (BlueArt overrides the two stops to a clean blue). */
+  --dz-seam: linear-gradient(90deg, var(--cyan), var(--magenta));
+  --dz-seam-v: linear-gradient(180deg, var(--cyan), var(--magenta));
+  --dz-seam-135: linear-gradient(135deg, var(--cyan), var(--magenta));
+
+  /* ---- typography (app.html:25-27) ------------------------------------- */
+  --sans: 'Barlow', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-head: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-body: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-fa: 'Vazirmatn', var(--sans);
+
+  /* type scale — the inline-sized headings app.html drives from :root */
+  --f-hero: 34px;
+  --f-detail: 28px;
+  --f-sec: 22px;
+  --f-artist: 13px;
+  --f-cardtitle: 11.5px;
+  --f-price: 40px;
+  --f-body: 13.5px;
+  --f-nav: 9.5px;
+
+  /* ---- radius (app.html:27) + the fuller scale the components use ------- */
+  --radius: 13px;
+  --radius-control: 9px;
+  --radius-pill: 20px;
+  --radius-round: 999px;
+
+  /* ---- spacing — the 4px rhythm the app.html paddings sit on ------------ */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* ---- motion (guideline §5: 0.12-0.18s on colour/border/shadow/transform) */
+  --dz-t-fast: 0.12s;
+  --dz-t: 0.14s;
+  --dz-t-slow: 0.18s;
+
+  /* ---- semantic status colours (not brand — allowed) -------------------
+     success green + info/pricelist blue from DESIGN_SYSTEM.md; the pricelist
+     status ramp (app.html:1094) that .aucpill and status pills consume. */
+  --ok: #1f9d57;
+  --ok-ink: #1f7a4d;
+  --info: #4a4ad0;
+  --warn-ink: #9a6a00;
+  --bad-ink: #c0392b;
+
+  --pl-done: #178048;
+  --pl-donedot: #1f9d57;
+  --pl-donebg: #eaf5ee;
+  --pl-attn: #b23a5b;
+  --pl-attndot: #e8005c;
+  --pl-attnbg: #fbedf2;
+  --pl-block: #e11d48;
+  --pl-blockbg: #fcebee;
+  --pl-wait: #8a8a8a;
+  --pl-waitbg: #f4f4f4;
+  --pl-now: #0a0a0a;
+
+  /* ---- elevation — the exact shadows app.html cards / sheets / toasts use */
+  --dz-shadow-card: 0 8px 26px rgba(0, 0, 0, 0.1);
+  --dz-shadow-pop: 0 12px 34px rgba(0, 0, 0, 0.34);
+  --dz-shadow-sheet: 0 24px 70px rgba(0, 0, 0, 0.32);
+  --dz-shadow-cta: 0 6px 18px -6px rgba(10, 10, 10, 0.45);
+}
+
+/* =============================================================================
+   Dark / "Black" app mode — html.dz-bw
+   A real dark theme (NOT an invert): dark surfaces, light type, warm calm
+   greys. Ported verbatim from app.html:33-59. Toggled by ThemeController
+   (the in-app moon toggle) and persisted per device.
+   ========================================================================== */
+html.dz-bw {
+  --paper: #16161a;
+  --white: #16161a;
+  --card: #1a1a1f;
+  --ink: #f1efe9;
+  --ink2: #d3d0c8;
+  --ink3: #969189;
+  --hair: #2e2e35;
+  --hair2: #26262c;
+  --soft: #212129;
+
+  --ok-ink: #5fd99a;
+  --warn-ink: #e8b45c;
+  --bad-ink: #e8736e;
+
+  --dz-shadow-card: 0 8px 26px rgba(0, 0, 0, 0.5);
+  --dz-shadow-sheet: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+html.dz-bw body {
+  background: #0a0a0c;
+}
