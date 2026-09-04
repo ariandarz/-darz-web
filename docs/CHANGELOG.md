@@ -5,6 +5,22 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-04 — Phase 6: collector saved / favorites
+
+`src/features/saved/`: `SavedController` (OOP) is the one **server-derived** source of truth for the
+saved set — reads `GET /api/crm/saved/`, wraps `crm.save()`/`crm.unsave()`, refuses a second write
+for an artwork while one is in flight, and holds nothing in `localStorage` (owner call: offline =
+NO), so the state is still right after a refresh. `SaveButton` (icon on `ArtworkCard`, `.actions`
+row on `ArtworkDetailPage`), `/saved` + `SavedItemsPage` reusing the catalogue's card/grid chrome,
+and one `Toast` for every confirmation and failure. New shared `Observable` base — `ListController`
+and `SavedController` extend it rather than duplicating snapshot/listener plumbing. 14 new tests
+(31 total); typecheck/test/lint/format/build green; every screen screenshot-verified, including the
+pending, error and after-refresh states. **No backend, API-contract or `schema.d.ts` change** — the
+four gaps found (`is_saved`, `saved/` query params, created-vs-restored, ordering) are written up in
+`docs/PHASE_6_API_GAPS.md`, and none of them blocked the flow. Flagged: `app.html` was unreachable
+from this session, so the control reuses already-ported chrome instead of a fresh line-by-line diff.
+Branch `claude/phase-6-saved-favorites-gy70nd`.
+
 ## 2026-09-04 — Phase 4b/c: artist pages + login-gate design fidelity
 
 Artist list/detail (`ArtistListPage`/`ArtistDetailPage`) over the backend's `ArtistFilterSet` — no
