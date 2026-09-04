@@ -21,6 +21,7 @@ import {
   Toast,
   Wordmark,
 } from './components';
+import { useApi, useSession } from './api/hooks';
 import { themeController, tokens } from './design';
 
 function useTheme() {
@@ -245,7 +246,82 @@ export default function App() {
         </Button>
       </Sheet>
 
+      <Section title="API / session">
+        <ApiPanel />
+      </Section>
+
       <Toast message="Saved." open={toastOpen} onClose={() => setToastOpen(false)} />
+    </div>
+  );
+}
+
+/** Phase 3 wiring check — exercises the real OOP client against the running
+ * backend: options fetch, collector access-key login, /me, logout. */
+function ApiPanel() {
+  const api = useApi();
+  const { isAuthenticated, principal, me } = useSession();
+  const [accessKey, setAccessKey] = useState('');
+  const [note, setNote] = useState<string>('');
+  const [optionCount, setOptionCount] = useState<number | null>(null);
+
+  const run = (label: string, p: Promise<unknown>) => {
+    setNote(`${label}…`);
+    p.then(
+      () => setNote(`${label} ✓`),
+      (err: unknown) => setNote(`${label} ✗ ${(err as Error).message}`),
+    );
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 12, maxWidth: 420 }}>
+      <div style={{ fontSize: 13, color: 'var(--ink2)' }}>
+        {isAuthenticated ? (
+          <>
+            Signed in as <strong>{me?.display_name ?? me?.email ?? principal}</strong>
+            {me?.tier ? ` · ${me.tier}` : ''}
+          </>
+        ) : (
+          'Not signed in.'
+        )}
+      </div>
+
+      <Row>
+        <Button
+          variant="outline"
+          onClick={() =>
+            run(
+              'options',
+              api.options.all().then((o) => setOptionCount(Object.keys(o).length)),
+            )
+          }
+        >
+          Fetch options{optionCount !== null ? ` (${optionCount})` : ''}
+        </Button>
+        {isAuthenticated ? (
+          <Button variant="outline" onClick={() => run('logout', api.auth.logout())}>
+            Log out
+          </Button>
+        ) : null}
+      </Row>
+
+      {!isAuthenticated && (
+        <Row>
+          <Input
+            name="accessKey"
+            placeholder="Collector access key"
+            value={accessKey}
+            onChange={(e) => setAccessKey(e.target.value)}
+          />
+          <Button
+            variant="primary"
+            onClick={() => run('login', api.auth.loginCollector(accessKey))}
+          >
+            Sign in
+          </Button>
+        </Row>
+      )}
+
+      {note && <div style={{ fontSize: 12, color: 'var(--ink3)' }}>{note}</div>}
     </div>
   );
 }

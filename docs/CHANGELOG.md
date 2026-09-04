@@ -5,6 +5,18 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-04 — Phase 3: typed API client + auth
+
+`src/api/`: OOP client (hard rule) — `HttpError` hierarchy → `HttpClient` (fetch + `{success,data}`
+envelope unwrap) → `ApiClient` (auth header + one 401→refresh→retry). `AuthSession` holds the
+access token in memory + the refresh token in `localStorage['dz-refresh']` (owner call);
+`abstract ResourceService` → `Auth`/`Catalog`/`Crm`/`Recommendation`/`Options` services; `DarzApi`
+facade + `api` singleton; `ApiProvider` + `useApi`/`useSession`. `schema.d.ts` generated from the
+live backend. `VITE_API_BASE_URL` from `.env` only (no hardcoded fallback). `vitest` + 9 client
+tests; verified live against the running backend. Backend half: `darzmarket-api` branch
+`phase-19-auth-session` (token refresh / logout / me + `currency`/`price_type`/multi-tag +
+`core.filters`). Gap analysis + decisions in `docs/API_GAP_ANALYSIS.md`. Branch `phase-3-api-client`.
+
 ## 2026-09-04 — Phase 2: design system
 
 Ported the shipped collector app's tokens + base components to React/TS (owner call: match

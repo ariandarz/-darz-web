@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './design/global.css';
+import { ApiProvider } from './api/ApiProvider';
 import { themeController } from './design';
 import App from './App.tsx';
 
@@ -10,6 +11,8 @@ themeController.start();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ApiProvider>
+      <App />
+    </ApiProvider>
   </StrictMode>,
 );

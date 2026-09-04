@@ -1,8 +1,10 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-04 · **Current focus:** Phase 2 complete (design system — tokens +
-base components ported from `app.html`, on branch `phase-2-design-system`). Next up: **Phase 3 —
-typed API client + auth** (needs a locally-running `darzmarket-api` for schema generation).
+**Last updated:** 2026-09-04 · **Current focus:** Phase 3 complete (typed API client + auth, on
+branch `phase-3-api-client`; the backend half is `darzmarket-api` branch `phase-19-auth-session`).
+Next up: **Phase 4 — Collector: catalogue.** Phase 4 gets `?search=` / `?ordering=` from the
+backend first (backend TASKLIST §19.2, items G1/G2/G3 — still open); `?currency=` / `?price_type=`
+/ repeatable `?tag=` already landed. See `docs/API_GAP_ANALYSIS.md` for the full decision record.
 
 **Client V1 API brief (2026-09-04) — build order & blockers.** The client shared a brief (their
 `V1_FRONTEND_API_MAP.md`, PR #832 — we only have the rendered PDF, `~/Downloads/DarzV1FrontendAPIBrief.pdf`).
@@ -73,16 +75,32 @@ shape.
 - [x] Prettier config (`.prettierrc.json` + `format`/`format:check` scripts; oxlint stays the
       linter), ADR-light conventions (`src/design/README.md`, `docs/adr/0001-styling-and-oop.md`).
 
-## Phase 3 — Typed API client + auth
+## Phase 3 — Typed API client + auth ✅ (branch `phase-3-api-client`)
 
-- [ ] Generate TS types from `darzmarket-api`'s live `/api/schema/` (backend running locally via
-      `docker compose up` + `runserver`) — see `CLAUDE.md` for the exact command
-- [ ] Thin API client wrapper (base URL, auth header injection, envelope unwrapping — matches
-      `apps.core.responses`'s `{success, data, message, timestamp}` shape)
-- [ ] Auth/session handling for both principals: team login (`/api/auth/team/login/`) and collector
-      login (`/api/auth/collector/login/`) — JWT storage, refresh, the `principal` claim distinction
-- [ ] `GET /api/options/` integration — populate every dropdown/select from this, never hardcode a
-      label lookup (this endpoint exists specifically so the frontend doesn't have to)
+Backend gaps found during this phase → `docs/API_GAP_ANALYSIS.md`. Owner decisions (2026-09-04):
+full auth flow + `currency`/`price_type`/multi-tag done backend-side now (`darzmarket-api` branch
+`phase-19-auth-session`); catalogue `search`/`ordering` deferred to Phase 4; the "Refine" smart
+filters, curated set, artist search and own-request filters are logged in the backend TASKLIST.
+
+- [x] `src/api/schema.d.ts` — generated from the live `/api/schema/` (`npx openapi-typescript`).
+      Regenerate whenever the backend API shape changes.
+- [x] **OOP client** (`src/api/`, hard rule: inheritance + component boundaries):
+      `HttpError` hierarchy → `HttpClient` (base: fetch, `{success,data,…}` envelope unwrap,
+      query building) → `ApiClient extends HttpClient` (auth header + one 401→refresh→retry).
+      `AuthSession extends HttpClient` — access token in memory, refresh token in
+      `localStorage['dz-refresh']` (owner call), `login/refresh/logout/loadMe/resume`, observers.
+      `abstract ResourceService` → `AuthService` / `CatalogService` / `CrmService` /
+      `RecommendationService` / `OptionsService`. `DarzApi` facade + `api` singleton.
+- [x] Auth for both principals: `AuthSession.loginTeam` / `loginCollector` (the `access_key`
+      shape), `principal`-discriminated `/me`, silent `resume()` on app start, `refresh()`
+      shared between concurrent 401s.
+- [x] `GET /api/options/` via `OptionsService.all()` (cached) — the dropdown source of truth.
+- [x] React seam: `ApiProvider` + `useApi()` / `useSession()` (same `useSyncExternalStore`
+      pattern as `useTheme`). `App.tsx` has a live wiring panel (options fetch / login / logout).
+- [x] `VITE_API_BASE_URL` from `.env` only — no hardcoded fallback (`resolveBaseUrl()` throws if
+      unset). `.env.example` lists every var the app reads.
+- [x] Tests: `vitest` added; `src/api/client.test.ts` (9) — envelope unwrap, error mapping,
+      login/logout storage, 401→refresh→retry. Verified live against the running backend too.
 
 ## Phase 4 — Collector: catalogue
 
