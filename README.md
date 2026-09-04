@@ -1,32 +1,69 @@
-# React + TypeScript + Vite
+# Darz Market — web frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite frontend for Darz Market. Separate repo from the backend
+(`../darzmarket-api`) and the old app (`../DarzStudio`).
 
-Currently, two official plugins are available:
+## Hard constraint
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This is a **faithful port** of the old DarzStudio app's already-approved design and behaviour,
+**not a redesign**. Every UI/UX decision must trace back to both:
 
-## React Compiler
+1. the approved design spec (`../DarzStudio/DARZ_DESIGN_GUIDELINE.md` + `docs/design/`), and
+2. the real shipped implementation (`../DarzStudio/app.html` on `main`).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Where the two disagree, flag it — don't silently pick. On the token layer the owner has already
+ruled: **`app.html` wins over the guide** (see `docs/adr/0001-styling-and-oop.md`).
 
-## Expanding the Oxlint configuration
+See `CLAUDE.md` for the full cross-repo context and `docs/TASKLIST.md` for the phase plan
+(the source of progress truth).
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Stack
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+- **React + TypeScript + Vite** — component-based views over a class-based domain layer
+  (design system, and later the API client + services). See the ADR.
+- **Styling:** plain CSS + CSS custom properties, one global sheet, `app.html`'s own semantic
+  class names — so the port diffs 1:1 against the original. No CSS Modules / Tailwind.
+- **Lint:** oxlint. **Format:** Prettier.
+- **API (Phase 3+):** a typed client generated from a locally-running `darzmarket-api`'s
+  OpenAPI schema — never a committed snapshot. See `CLAUDE.md`.
+
+## Commands
+
+```bash
+npm install
+npm run dev           # Vite dev server
+npm run build         # tsc -b && vite build
+npm run typecheck     # tsc -b --noEmit
+npm run lint          # oxlint
+npm run format        # prettier --write (src + config; not docs/)
+npm run format:check  # prettier --check
+npm run preview       # serve the production build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Layout
+
+```
+src/
+  design/           Design system (Phase 2)
+    tokens.css        :root + html.dz-bw, ported verbatim from app.html (line-cited)
+    tokens/index.ts   the same values, typed — keep in lockstep with tokens.css
+    base.css          reset + document rules + .chroma / .eyebrow
+    components.css     base-component skins (app.html class names)
+    global.css        the single stylesheet main.tsx imports
+    Theme.ts          immutable value object for one surface theme
+    ThemeController.ts runtime theme: Paper<->Black, dz-theme persist, observers
+    README.md         design-system conventions
+  components/        Base component library — one typed module per component
+    index.ts          the only public entry
+  lib/              small framework-free helpers
+  App.tsx           currently the Phase 2 design-system showcase
+docs/
+  TASKLIST.md       phase plan + status (source of progress truth)
+  CHANGELOG.md      one entry per completed task
+  adr/              architecture decision records
+```
+
+## Workflow
+
+Each `docs/TASKLIST.md` phase is built on its own branch cut from `development`
+(`phase-N-<slug>`). The repo owner pushes and merges.
