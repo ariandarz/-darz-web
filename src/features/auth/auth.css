@@ -1,0 +1,91 @@
+/* =============================================================================
+   Auth — the collector sign-in gate.
+   Exact two-step port of app.html's `#dzGate`:
+     1. the landing (`.land`/`.ttl`/`.cline`/`.tag`/`.lbtns`/`.beta`) — plain
+        wordmark, chroma, tagline, one "Enter the Room" button, beta caption;
+     2. the "Private Access" form, opened by that button — reuses the
+        existing `Sheet` component (see CLAUDE.md "Reusing the design
+        system") instead of a second bespoke card.
+   Source: app.html:1953-1998 (CSS), :2590-2591 (landing markup),
+   :2556-2560 (form markup).
+
+   One deliberate adaptation: the old gate is a fixed #0A0A0A overlay because
+   it renders before the app (and its theme) exists. `/login` is a themed
+   route — ThemeController resolves Paper/Black before first paint — so this
+   uses the design tokens instead of a second hard-coded dark skin.
+   ========================================================================== */
+
+.dz-gate-land {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 22px;
+  text-align: center;
+}
+
+/* app.html:1960 — plain wordmark text, not the two-tone Wordmark component:
+   the old markup wraps it in <b> then resets that bold to 400 (.ttl b). */
+.dz-gate-title {
+  font-family: var(--font-head);
+  font-size: clamp(26px, 8.4vw, 40px);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  color: var(--ink);
+}
+.dz-gate-land .chroma {
+  width: 64px;
+  margin-top: 14px;
+}
+.dz-gate-land .eyebrow {
+  margin-top: 20px;
+}
+.dz-gate-land .btn {
+  margin-top: 26px;
+  width: 236px;
+  max-width: 100%;
+}
+.dz-gate-beta {
+  margin-top: 22px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  opacity: 0.7;
+}
+
+/* ---- the "Private Access" sheet content (app.html:1979-1990) --------- */
+.dz-gate-land .sheet form .dz-field-wrap + .dz-field-wrap {
+  margin-top: 12px;
+}
+/* app.html:1981 — the gate's own field focus ring is the brand accent, not
+   the app-wide ink border. */
+.dz-gate-land .sheet .dz-field:focus {
+  border-color: var(--accent);
+}
+.dz-gate-sub {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink3);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.dz-gate-sub a {
+  color: var(--ink);
+  font-weight: 600;
+}
+.dz-gate-foot {
+  font-size: 11px;
+  color: var(--ink3);
+  text-align: center;
+  margin-top: 14px;
+}
+.dz-gate-foot a {
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
