@@ -13,6 +13,7 @@ import type { AuthSession, Me } from './AuthSession';
 import type { RequestOptions } from './HttpClient';
 import type {
   Artist,
+  ArtistQuery,
   Artwork,
   CatalogueQuery,
   CollectorActivity,
@@ -57,8 +58,8 @@ export class CatalogService extends ResourceService {
   artwork(id: string) {
     return this.retrieve<Artwork>(`/artworks/${id}/`);
   }
-  artists(query: { per_page?: number; page?: number } = {}) {
-    return this.list<Artist>('/artists/', query);
+  artists(query: ArtistQuery = {}) {
+    return this.list<Artist>('/artists/', query as RequestOptions['query']);
   }
   artist(id: string) {
     return this.retrieve<Artist>(`/artists/${id}/`);

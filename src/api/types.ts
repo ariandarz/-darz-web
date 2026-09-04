@@ -8,7 +8,12 @@ import type { components } from './schema';
 
 type Schemas = components['schemas'];
 
-export type Artwork = Schemas['ArtworkCollector'];
+/** `artist` is nullable at the DB level (`on_delete=SET_NULL` — legacy rows
+ * with an unmatched artist name) even though the generated type omits `null`;
+ * every consumer must handle it. */
+export type Artwork = Omit<Schemas['ArtworkCollector'], 'artist'> & {
+  artist: Schemas['ArtistCollector'] | null;
+};
 export type Artist = Schemas['ArtistCollector'];
 export type ArtworkImage = Schemas['ArtworkImage'];
 export type SavedArtwork = Schemas['SavedArtwork'];
@@ -32,7 +37,8 @@ export interface Paginated<T> {
   };
 }
 
-/** Shared list params. `tag` may repeat. */
+/** Collector catalogue list params (`GET /api/catalog/artworks/`). `tag` may
+ * repeat. See `darzmarket-api` `ArtworkFilterSet`. */
 export interface CatalogueQuery {
   artist?: string;
   availability_status?: string;
@@ -42,6 +48,19 @@ export interface CatalogueQuery {
   currency?: string;
   price_type?: string;
   tag?: string | string[];
+  /** icontains over artist name + title + medium + dimensions */
+  search?: string;
+  /** `year` | `-year` | `artist` | `-artist` | `price` | `-price`; absent = newest published */
+  ordering?: string;
+  per_page?: number;
+  page?: number;
+}
+
+/** Artists list params (`GET /api/catalog/artists/`). */
+export interface ArtistQuery {
+  search?: string;
+  /** `name` | `-name` | `works` */
+  ordering?: string;
   per_page?: number;
   page?: number;
 }

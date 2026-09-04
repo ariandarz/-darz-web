@@ -84,9 +84,26 @@ interface FieldShared {
 export interface InputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'ref'>, FieldShared {
   ref?: Ref<HTMLInputElement>;
+  /** extra class(es) on the `<input>` itself — e.g. `"code"` for a masked
+   * access-key / OTP field (see `.dz-field.code` in design/components.css) */
+  inputClassName?: string;
+  /** a trailing adornment inside the field box (e.g. the old app's key
+   * show/hide eye toggle). Sets `.dz-field-control.has-trailing` so the
+   * input gets the extra right padding automatically. */
+  trailing?: ReactNode;
 }
 
-export function Input({ label, error, hint, id, className, ref, ...rest }: InputProps) {
+export function Input({
+  label,
+  error,
+  hint,
+  id,
+  className,
+  inputClassName,
+  trailing,
+  ref,
+  ...rest
+}: InputProps) {
   const fieldId = id ?? rest.name;
   return (
     <div className={cx('dz-field-wrap', className)}>
@@ -95,13 +112,16 @@ export function Input({ label, error, hint, id, className, ref, ...rest }: Input
           {label}
         </label>
       )}
-      <input
-        id={fieldId}
-        ref={ref}
-        className="dz-field"
-        aria-invalid={error ? true : undefined}
-        {...rest}
-      />
+      <div className={cx('dz-field-control', Boolean(trailing) && 'has-trailing')}>
+        <input
+          id={fieldId}
+          ref={ref}
+          className={cx('dz-field', inputClassName)}
+          aria-invalid={error ? true : undefined}
+          {...rest}
+        />
+        {trailing && <span className="dz-field-trailing">{trailing}</span>}
+      </div>
       {error ? (
         <p className="dz-field-err">{error}</p>
       ) : hint ? (

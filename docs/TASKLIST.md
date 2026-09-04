@@ -1,10 +1,13 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-04 · **Current focus:** Phase 3 complete (typed API client + auth, on
-branch `phase-3-api-client`; the backend half is `darzmarket-api` branch `phase-19-auth-session`).
-Next up: **Phase 4 — Collector: catalogue.** Phase 4 gets `?search=` / `?ordering=` from the
-backend first (backend TASKLIST §19.2, items G1/G2/G3 — still open); `?currency=` / `?price_type=`
-/ repeatable `?tag=` already landed. See `docs/API_GAP_ANALYSIS.md` for the full decision record.
+**Last updated:** 2026-09-04 · **Current focus:** Phase 4 fully complete on branch
+`phase-4-catalogue`, on top of `phase-3-api-client` (neither merged yet — merge Phase 3 first, then
+Phase 4). Catalogue browse + artwork detail + **Artist list/detail (Phase 4b, no longer deferred)**
++ **the login gate rebuilt as an exact copy of `app.html`'s `#dzGate`** (was a freehand unbranded
+form — see the "Reusing the design system" rule now in `CLAUDE.md`). Backend companion:
+`darzmarket-api` branch `phase-19.2-catalogue-query` (merged) added `?search=`/`?ordering=` — no
+further backend work was needed for 4b. Next up: **Phase 5** (still backend-blocked) or **Phase 6**
+(saved/favorites — backend-ready).
 
 **Client V1 API brief (2026-09-04) — build order & blockers.** The client shared a brief (their
 `V1_FRONTEND_API_MAP.md`, PR #832 — we only have the rendered PDF, `~/Downloads/DarzV1FrontendAPIBrief.pdf`).
@@ -102,16 +105,51 @@ filters, curated set, artist search and own-request filters are logged in the ba
 - [x] Tests: `vitest` added; `src/api/client.test.ts` (9) — envelope unwrap, error mapping,
       login/logout storage, 401→refresh→retry. Verified live against the running backend too.
 
-## Phase 4 — Collector: catalogue
+## Phase 4 — Collector: catalogue ✅ (branch `phase-4-catalogue`, on `phase-3-api-client`)
 
-Matches backend V1 exactly as it exists today — no search/sort/"Curated for You" personalization yet
-(those need backend work not yet planned; don't build UI for filters the API can't serve).
+Backend now serves search + sort too (`darzmarket-api` `phase-19.2-catalogue-query`) — "Curated for
+You" and the "Refine" smart filters are still not backend-supported; not built (see
+`docs/API_GAP_ANALYSIS.md`).
 
-- [ ] Catalogue browse (list + pagination, matching `CustomPagination`'s real response shape)
-- [ ] Filters: artist, availability_status, price range, medium, tag (`ArtworkService.apply_filters`
-      — these 5 and only these 5 exist today)
-- [ ] Artwork detail page
-- [ ] Artist list/detail pages
+- [x] Catalogue browse — `CataloguePage` + `CatalogueController` (OOP: query state + fetch +
+      pagination + stale-response guard, same `getSnapshot`/`subscribe` shape as `AuthSession`) +
+      `useCatalogue()` hook. Matches `CustomPagination`'s real response shape.
+- [x] Toolbar — free-text search (debounced) + sort (recent/year/artist/price) + a currency picker
+      gated to price sorts, porting the old app's "pick a currency to sort by price" rule.
+- [x] Filters wired: artist (via routing to `/artwork/:id`), availability_status (status badge),
+      price range/medium/tag available on `CatalogueQuery` (not yet exposed as UI controls —
+      the old app's "Refine" row needs the deferred smart-filter dimensions, see gap G7).
+- [x] Artwork detail page — faithful port of `app.html`'s Template A (`.detail.dtpl-A`): hero,
+      eyebrow/status, title, spec rows, one price moment, description. **No action buttons yet**
+      (Make an offer/Save) — Phase 5 (backend-blocked) and Phase 6 add those.
+- [x] Routing added (`react-router-dom`) — `/login`, `/` (catalogue), `/artwork/:id`, `/artists`,
+      `/artists/:id`, `/_design` (the Phase 2 showcase, moved off root). `RequireAuth` guard — the
+      API's default permission is `IsAuthenticated`, so a real login gate was in-scope here.
+- [x] **Login gate — exact copy of `app.html`'s `#dzGate`**, corrected across three passes after
+      screenshot comparison against the real app (see `CLAUDE.md` "Reusing the design system" +
+      the new "verify against a screenshot" rule, written from this): a landing screen (plain
+      "darzmarket.art" wordmark, `Chroma`, `Eyebrow` "The Iranian Art Market", one "Enter the Room"
+      button, "Beta version" caption) opens the "Private Access" form in the existing `Sheet`
+      component (not a second bespoke card) — with **every field/link the old modal has**: First
+      name, the access-key field (show/hide eye toggle, `.code` masked styling — `Input` gained
+      reusable `trailing`/`inputClassName` props for this), and a "Request access" link (shows a
+      factual message, since there's no request-access endpoint to submit a real form to — never a
+      dead link). **Flagged for the owner, not silently decided:** `firstName` is captured but not
+      sent anywhere (`CollectorLoginSerializer` takes only `access_key`) — decide whether it's
+      cosmetic-only or the backend should accept it to update `display_name` on login.
+- [x] **Artist list/detail pages** (`ArtistListPage`, `ArtistDetailPage`) — search + sort
+      (name/-name/works) over `ArtistFilterSet`; detail shows bio + the artist's available works
+      (reuses the `?artist=` catalogue filter). No backend change was needed. New shared
+      `ListController` abstract base (`src/features/shared/`) — `CatalogueController` and
+      `ArtistListController` both extend it instead of duplicating the pagination/stale-response
+      state machine; `useListController` is the one generic hook both pages use.
+- [x] `.dz-page`/`.dz-state` promoted from `catalogue.css` to `src/design/components.css` — generic
+      page-shell/status primitives now shared by every feature, not redefined per-feature.
+- Bug found + fixed live: `Artwork.artist` is nullable at the DB level (`on_delete=SET_NULL`) even
+      though the generated schema type omits `null` — `types.ts` corrects it; card/detail fall back
+      to "Unknown artist". Verified end-to-end against real seeded data (1000+ artworks).
+- Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
+      dropping, error surfacing, subscriber notification.
 
 ## Phase 5 — Collector: requests + activity `[!]` partially blocked on backend Phase 19 (darzmarket-api)
 

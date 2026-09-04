@@ -5,6 +5,35 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-04 — Phase 4b/c: artist pages + login-gate design fidelity
+
+Artist list/detail (`ArtistListPage`/`ArtistDetailPage`) over the backend's `ArtistFilterSet` — no
+backend change needed. New `src/features/shared/ListController` abstract base; `CatalogueController`
+and `ArtistListController` both extend it instead of duplicating the pagination/stale-response state
+machine. `.dz-page`/`.dz-state` promoted to `src/design/components.css` (shared across features).
+
+Login gate rebuilt across three screenshot-compared passes into an exact copy of `app.html`'s
+`#dzGate`: landing (wordmark/chroma/eyebrow/"Enter the Room"/beta caption) then "Private Access"
+form in the existing `Sheet`, with every field the old modal has (First name, access key w/
+show-hide eye + `.code` styling, "Request access"). `Input` gained `trailing`/`inputClassName`
+props. New CLAUDE.md rule: verify every new screen against a real screenshot before calling it
+done — the first two passes missed the logo/chroma, then missed fields/links, because that
+never happened.
+
+## 2026-09-04 — Phase 4: collector catalogue + artwork detail
+
+`src/features/catalogue/`: `CatalogueController` (OOP, same shape as `AuthSession`) + `useCatalogue`
+— query state, fetch, pagination, stale-response guard. `CataloguePage` (hero/toolbar/grid/pager),
+`ArtworkCard`, `CatalogueToolbar` (debounced search + sort + currency-gated price sort),
+`ArtworkDetailPage` (Template A port: hero/status/fields/price/about — no action buttons yet, those
+need Phase 5/6). Added `react-router-dom`: `/login`, `/` (catalogue), `/artwork/:id`, `/_design`
+(Phase 2 showcase moved off root); `RequireAuth` guard + a minimal collector `LoginPage` (the API's
+default permission is `IsAuthenticated`). Found + fixed live: `Artwork.artist` is nullable
+(`on_delete=SET_NULL`) though the generated type omits it. Verified end-to-end against real seeded
+data. 6 new tests. Backend companion: `darzmarket-api` `phase-19.2-catalogue-query` (merged) added
+`?search=`/`?ordering=` + `ArtistFilterSet` + `CollectorRequestFilterSet`. Branch
+`phase-4-catalogue` (based on unmerged `phase-3-api-client`).
+
 ## 2026-09-04 — Phase 3: typed API client + auth
 
 `src/api/`: OOP client (hard rule) — `HttpError` hierarchy → `HttpClient` (fetch + `{success,data}`

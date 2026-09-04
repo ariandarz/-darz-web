@@ -8428,12 +8428,16 @@ export interface operations {
                 currency?: string;
                 /** @description Case-insensitive substring match on medium. */
                 medium?: string;
+                /** @description Sort: year | -year | artist | -artist | price | -price. Absent = newest published first. Sort by price only within one `currency`. */
+                ordering?: string;
                 /** @description Maximum price_amount (inclusive). */
                 price_max?: string;
                 /** @description Minimum price_amount (inclusive). */
                 price_min?: string;
                 /** @description Filter by exact price_type (fixed | estimate | on_request). */
                 price_type?: string;
+                /** @description Case-insensitive substring across artist name, title, medium, dimensions. */
+                search?: string;
                 /** @description Artworks whose tags list contains this value. May repeat — AND-combined. */
                 tag?: string[];
             };
@@ -8797,7 +8801,12 @@ export interface operations {
     };
     catalog_artists_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Sort: name | -name | works (most works first). */
+                ordering?: string;
+                /** @description Case-insensitive substring match on display_name. */
+                search?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8854,12 +8863,16 @@ export interface operations {
                 currency?: string;
                 /** @description Case-insensitive substring match on medium. */
                 medium?: string;
+                /** @description Sort: year | -year | artist | -artist | price | -price. Absent = newest published first. Sort by price only within one `currency`. */
+                ordering?: string;
                 /** @description Maximum price_amount (inclusive). */
                 price_max?: string;
                 /** @description Minimum price_amount (inclusive). */
                 price_min?: string;
                 /** @description Filter by exact price_type (fixed | estimate | on_request). */
                 price_type?: string;
+                /** @description Case-insensitive substring across artist name, title, medium, dimensions. */
+                search?: string;
                 /** @description Artworks whose tags list contains this value. May repeat — AND-combined. */
                 tag?: string[];
             };
@@ -9012,7 +9025,12 @@ export interface operations {
     };
     crm_requests_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by exact kind. */
+                kind?: string;
+                /** @description Filter by exact status. */
+                status?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

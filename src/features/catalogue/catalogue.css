@@ -1,0 +1,630 @@
+/* =============================================================================
+   Collector catalogue — list, card, pager, artwork detail.
+   Ported from the shipped Market App (`DarzStudio/app.html`), same class names
+   so it diffs against the original. Source lines cited per block.
+   ========================================================================== */
+
+/* ---- hero (app.html ~218) ------------------------------------------------ */
+.hero {
+  padding: 24px 20px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--hair);
+}
+.hero .eyebrow {
+  font-size: 9.5px;
+  color: var(--accent);
+}
+.hero h1 {
+  font-size: var(--f-hero);
+  font-family: var(--font-head);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  margin-top: 7px;
+  color: var(--ink);
+}
+.hero h1 .lt {
+  font-weight: 300;
+}
+.hero p {
+  font-size: 12.5px;
+  color: var(--ink2);
+  line-height: 1.5;
+  margin-top: 9px;
+  max-width: 90%;
+}
+.hero .meta {
+  display: flex;
+  gap: 18px;
+  margin-top: 14px;
+}
+.hero .meta div .n {
+  font-size: 18px;
+  font-weight: 600;
+}
+.hero .meta div .k {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+
+/* ---- toolbar (app.html:33-52 area) ------------------------------------- */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 14px 16px 4px;
+}
+.toolbar input,
+.toolbar select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 11px;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 16px; /* >=16px: no iOS focus-zoom */
+  outline: none;
+}
+.toolbar input:focus,
+.toolbar select:focus {
+  border-color: var(--ink);
+}
+.toolbar .tbar-search {
+  position: relative;
+}
+.toolbar .tbar-search input {
+  padding-left: 40px;
+}
+.toolbar .tbar-search svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink3);
+  pointer-events: none;
+}
+.tbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tbar-controls select {
+  flex: 1 1 0;
+}
+
+.count {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 11px 18px 9px;
+  border-top: 1px solid var(--hair);
+}
+
+/* ---- grid + card (app.html:107-140, 237-244) ------------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+  padding: 2px 16px 24px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform 0.14s,
+    box-shadow 0.14s;
+  animation: dz-fade 0.25s ease;
+  text-align: left;
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+}
+.card:active {
+  transform: scale(0.985);
+}
+.card:hover {
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.1);
+}
+.card .img {
+  aspect-ratio: 4 / 5;
+  background: #0a0a0a;
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+.card .img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.card .img .ph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.card .no {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  background: rgba(10, 10, 10, 0.82);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.card .cardstat {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: rgba(10, 10, 10, 0.82);
+  color: #fff;
+}
+.card .cardstat.reserved {
+  background: rgba(201, 138, 0, 0.92);
+}
+.card .cardstat.sold {
+  background: rgba(180, 30, 40, 0.92);
+}
+.card .meta {
+  padding: 12px 13px 14px;
+}
+.card .ar {
+  font-size: var(--f-artist);
+  font-family: var(--font-head);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+.card .ti {
+  font-size: calc(var(--f-cardtitle) - 2px);
+  font-family: var(--font-head);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.card .cd {
+  font-size: 11px;
+  color: var(--ink3);
+  font-weight: 500;
+  margin-top: 5px;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card .pr {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--hair2);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.card .pr .c {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.card .pr .tick {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: #0a0a0a;
+  margin-left: auto;
+  align-self: center;
+  border-radius: 2px;
+}
+
+/* ---- pager (app.html:96-104) -------------------------------------------- */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 18px 16px 34px;
+}
+.pager .pg {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 11px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.14s,
+    color 0.14s,
+    border-color 0.14s;
+  font-variant-numeric: tabular-nums;
+}
+.pager .pg:hover {
+  border-color: var(--ink);
+}
+.pager .pg.on {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+  cursor: default;
+}
+.pager .pg[disabled] {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+.pager .pginfo {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- artwork detail — template A (app.html:270-361) ------------------- */
+.detail {
+  background: var(--card);
+  min-height: 100%;
+  animation: dz-fade 0.25s ease;
+}
+.dtop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--hair);
+}
+.dz-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 15px 8px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.dz-back:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.dhero {
+  aspect-ratio: 1;
+  background: var(--hair2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.dhero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+.dbody {
+  padding: 24px 22px 26px;
+}
+.d-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.d-eyebrow .eyebrow {
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+}
+.d-status {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.d-status.available {
+  background: #e3f6ee;
+  color: #1f9d57;
+}
+.d-status.reserved {
+  background: #fff2da;
+  color: #9a6a00;
+}
+.dbody h1 {
+  font-size: clamp(30px, 8.6vw, 40px);
+  font-family: var(--font-head);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1;
+  margin-top: 12px;
+  color: var(--ink);
+}
+.dbody .sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.16;
+  color: var(--ink2);
+  margin-top: 4px;
+}
+.da-size {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  margin-top: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.fields {
+  margin-top: 22px;
+}
+.frow {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: start;
+  column-gap: 18px;
+  padding: 12px 0;
+  border-top: 1px solid var(--hair2);
+}
+.frow .k {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding-top: 2px;
+}
+.frow .v {
+  min-width: 0;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+.price {
+  margin-top: 10px;
+  border-top: 1.5px solid var(--ink);
+  border-bottom: 1px solid var(--hair);
+  padding: 18px 0 20px;
+}
+.price .lab {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.price .amt {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 9px;
+}
+.price .amt .cur {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.price .amt .num {
+  font-size: var(--f-price);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.price .tick {
+  height: 3px;
+  width: 52px;
+  background: #0a0a0a;
+  border-radius: 2px;
+  margin-top: 12px;
+}
+.price .por {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-top: 7px;
+}
+.about-l {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 22px 0 8px;
+}
+.about {
+  font-size: var(--f-body);
+  line-height: 1.65;
+  color: var(--ink2);
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 0 6px;
+}
+
+/* ---- Artists tab (app.html:8337-8443, "The artists" list + detail) ---
+   The old app scopes `.dza` to its own light-only palette; adapted here to
+   this project's tokens so it stays correct in both Paper and Black mode. */
+.dza-mono {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dza-hh {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: clamp(28px, 7vw, 38px);
+  line-height: 1.02;
+  margin-top: 10px;
+  color: var(--ink);
+}
+.dza-atools {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 14px 0 2px;
+}
+.dza-abar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  border-radius: 11px;
+  padding: 11px 13px;
+}
+.dza-abar svg {
+  color: var(--ink3);
+  flex: 0 0 auto;
+}
+.dza-abar input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  width: 100%;
+}
+.dza-asel {
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 12.5px;
+}
+.dza-agrid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.dza-acard2 {
+  cursor: pointer;
+  border: 1px solid var(--hair);
+  border-radius: 13px;
+  overflow: hidden;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+}
+.dza-aimg2 {
+  aspect-ratio: 1 / 1;
+  background: var(--soft);
+  position: relative;
+  overflow: hidden;
+}
+.dza-amono2 {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 40px;
+  color: var(--ink3);
+}
+.dza-ab2 {
+  padding: 12px 13px 13px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.dza-aname2 {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.08;
+  color: var(--ink);
+}
+.dza-ameta2 {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  margin-top: 6px;
+}
+.dza-aempty {
+  border: 1px dashed var(--hair);
+  border-radius: 12px;
+  padding: 30px 18px;
+  text-align: center;
+  color: var(--ink3);
+  font-size: 13px;
+  margin-top: 14px;
+}
+
+/* `.dz-page` / `.dz-state` moved to src/design/components.css — they are
+   generic page-shell + loading/error primitives, not catalogue-specific,
+   and are now shared with src/features/auth. */
