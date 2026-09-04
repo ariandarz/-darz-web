@@ -7,6 +7,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import App from './App';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { ArtistDetailPage } from './features/catalogue/ArtistDetailPage';
+import { ArtistListPage } from './features/catalogue/ArtistListPage';
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 
@@ -27,6 +29,22 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <ArtworkDetailPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/artists"
+        element={
+          <RequireAuth>
+            <ArtistListPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/artists/:id"
+        element={
+          <RequireAuth>
+            <ArtistDetailPage />
           </RequireAuth>
         }
       />

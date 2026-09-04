@@ -67,8 +67,59 @@ wrapper around that shape once, don't re-parse it per call site.
 `GET /api/options/` returns every choice field (currency, statuses, request kinds, etc.) as
 human-readable `{value, label}` pairs — use it to populate dropdowns, never hardcode a label lookup.
 
-## Stack
+## Stack (locked in — Phases 2-4)
 
-React + TypeScript + Vite, component-based. No other framework/library choices are locked in yet —
-decide those (state management, routing, styling approach) by checking what the old app actually
-needs, not by default preference. See `docs/TASKLIST.md` for the full phase breakdown.
+React + TypeScript + Vite, component-based. Decisions below were made by checking what the old app
+actually needs, not by default preference; see `docs/adr/` for the full reasoning.
+
+- **Styling:** plain CSS + custom properties, one stylesheet per layer (`src/design/*.css` global,
+  `src/features/*/*.css` per feature), **the same class names as `app.html`** — never CSS Modules,
+  never Tailwind. See "Reusing the design system" below.
+- **Routing:** `react-router-dom`. Real URLs (`/`, `/artwork/:id`, `/artists`, `/login`, …), not the
+  old app's in-memory tab switcher — this is a proper web app, deep links matter.
+- **Domain/logic layer — OOP with inheritance, always:** `Theme`/`ThemeController`, `AuthSession`,
+  `ApiClient`/`HttpClient`, `ListController` (base) → `CatalogueController`/`ArtistListController`,
+  `ResourceService` (base) → `AuthService`/`CatalogService`/etc. Shared state-machine behaviour goes
+  in a base class (see `src/features/shared/ListController.ts`) — a second subclass duplicating a
+  first one's logic instead of extending a shared base is a bug, not a shortcut. React **views**
+  stay function components — the framework's own idiom, not the OOP layer.
+- **Env config:** every value the app reads comes from `.env`/`.env.local` — **no hardcoded
+  fallbacks in code.** `src/api/index.ts::resolveBaseUrl()` throws if `VITE_API_BASE_URL` is unset;
+  follow that pattern for every new env-driven value. `.env.example` documents each one.
+- **Testing:** `vitest` (`vitest.config.ts`, kept separate from `vite.config.ts` — importing
+  `vitest/config`'s `defineConfig` into the app's own Vite config clashes with vite 8's types).
+
+## Reusing the design system — do not freehand a new screen
+
+Before writing a new page/screen:
+
+1. **Find the old screen first.** Search `../DarzStudio/app.html` (grep for the feature name, a
+   visible copy string, or a `#id`/`.class` you'd expect) *before* writing any markup. Port its
+   real class names, copy, and structure — see the Hard Constraint above. A screen built from
+   description alone (no source lines cited) is not a faithful port.
+2. **Reuse `src/components/` for every brand element** — `Logo`, `Wordmark`, `Chroma`, `Eyebrow`,
+   `Button`, `Input`, `Card`, `Pill`, `Avatar`, `Toast`, `Sheet`. Never freehand a wordmark, an
+   inline chroma bar, or a raw `<input>` where one of these already exists — that's how a screen
+   ends up unbranded (see git history: the first `LoginPage` had no logo, no chroma, ad-hoc inline
+   styles, because it skipped both steps above). If the component doesn't support what you need
+   (e.g. a trailing icon in a field), **extend it** (add an optional prop) rather than bypassing it.
+3. **Generic layout/status primitives belong in `src/design/`, not a feature folder.** `.dz-page`
+   (page shell) and `.dz-state` (loading/error text) live in `src/design/components.css` because
+   more than one feature uses them — a feature's own `*.css` is only for that feature's specific
+   markup (`.card`, `.dza-*`, `.dz-gate-*`, …).
+4. **Cite the source.** Every ported CSS block/component should say which `app.html` lines it came
+   from, the way `src/design/tokens.css` and `src/features/catalogue/catalogue.css` do — so a
+   reviewer (or a later session) can re-check it against the original without redoing the search.
+5. **Verify against a real screenshot before calling a screen done — always.** Reading `app.html`
+   source is necessary but not sufficient: it describes structure, not the actual rendered result
+   (a live production screenshot once caught a missing logo, missing chroma, a dropped field, and a
+   dropped link that source-reading alone had missed). Screenshot the new screen yourself
+   (`mcp__Claude_Browser__computer` against the local dev server) and compare it side by side
+   against either a screenshot the owner supplies or your own reading of the rendered markup — every
+   field, button, and link the old screen has should be traceable in the new one, or explicitly
+   flagged as a scope decision (never silently dropped). Do this for every new screen, not just when
+   asked.
+6. **A field/link the old screen has but the new backend doesn't support yet is a flag, not a
+   deletion.** Keep it in the UI if the owner wants an exact copy; say plainly what it does and
+   doesn't do right now (in a code comment and, in your reply, to the owner) rather than quietly
+   omitting it because it's inconvenient to wire up.

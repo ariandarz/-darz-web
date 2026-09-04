@@ -1,40 +1,23 @@
 /**
- * Hooks over the catalogue. `useCatalogue` owns a `CatalogueController` for
- * the component's lifetime and subscribes to it; `useResource` is a tiny
- * one-shot fetch for the detail / artist pages.
+ * Hooks over the catalogue. `useCatalogue` / `useArtistList` wrap the shared
+ * `useListController` over their respective controllers; `useResource` is a
+ * tiny one-shot fetch for the artwork / artist detail pages.
  */
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
-import type { CatalogueQuery } from '../../api/types';
-import { CatalogueController, type CatalogueSnapshot } from './CatalogueController';
+import type { ArtistQuery, CatalogueQuery } from '../../api/types';
+import { useListController } from '../shared/useListController';
+import { ArtistListController } from './ArtistListController';
+import { CatalogueController } from './CatalogueController';
 
-export function useCatalogue(initial: CatalogueQuery = {}): {
-  state: CatalogueSnapshot;
-  setQuery: CatalogueController['setQuery'];
-  setPage: CatalogueController['setPage'];
-  reload: CatalogueController['reload'];
-} {
+export function useCatalogue(initial: CatalogueQuery = {}) {
   const { catalog } = useApi();
-  // Lazy initializer — `initial` is only read once, for this page's first
-  // render; the controller then owns the query and outlives re-renders.
-  const [controller] = useState(() => new CatalogueController(catalog, initial));
+  return useListController(() => new CatalogueController(catalog, initial));
+}
 
-  useEffect(() => {
-    void controller.reload();
-  }, [controller]);
-
-  const state = useSyncExternalStore(
-    (cb) => controller.subscribe(cb),
-    () => controller.getSnapshot(),
-    () => controller.getSnapshot(),
-  );
-
-  return {
-    state,
-    setQuery: (patch) => controller.setQuery(patch),
-    setPage: (page) => controller.setPage(page),
-    reload: () => controller.reload(),
-  };
+export function useArtistList(initial: ArtistQuery = {}) {
+  const { catalog } = useApi();
+  return useListController(() => new ArtistListController(catalog, initial));
 }
 
 export type AsyncState<T> =

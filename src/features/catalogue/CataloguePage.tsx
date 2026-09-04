@@ -3,6 +3,7 @@
  * app.html chrome (`.hero`, `.toolbar`, `.grid`, `.pager`) over the OOP
  * `CatalogueController` (via `useCatalogue`).
  */
+import { Link } from 'react-router-dom';
 import './catalogue.css';
 import { ArtworkCard } from './ArtworkCard';
 import { CatalogueToolbar } from './CatalogueToolbar';
@@ -15,7 +16,14 @@ export function CataloguePage() {
   return (
     <div className="dz-page">
       <div className="hero">
-        <p className="eyebrow">Darz Market</p>
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
+        >
+          <p className="eyebrow">Darz Market</p>
+          <Link to="/artists" className="dz-back" style={{ padding: '6px 13px' }}>
+            Artists
+          </Link>
+        </div>
         <h1>
           The <span className="lt">catalogue</span>
         </h1>

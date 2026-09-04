@@ -5,6 +5,21 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-04 — Phase 4b/c: artist pages + login-gate design fidelity
+
+Artist list/detail (`ArtistListPage`/`ArtistDetailPage`) over the backend's `ArtistFilterSet` — no
+backend change needed. New `src/features/shared/ListController` abstract base; `CatalogueController`
+and `ArtistListController` both extend it instead of duplicating the pagination/stale-response state
+machine. `.dz-page`/`.dz-state` promoted to `src/design/components.css` (shared across features).
+
+Login gate rebuilt across three screenshot-compared passes into an exact copy of `app.html`'s
+`#dzGate`: landing (wordmark/chroma/eyebrow/"Enter the Room"/beta caption) then "Private Access"
+form in the existing `Sheet`, with every field the old modal has (First name, access key w/
+show-hide eye + `.code` styling, "Request access"). `Input` gained `trailing`/`inputClassName`
+props. New CLAUDE.md rule: verify every new screen against a real screenshot before calling it
+done — the first two passes missed the logo/chroma, then missed fields/links, because that
+never happened.
+
 ## 2026-09-04 — Phase 4: collector catalogue + artwork detail
 
 `src/features/catalogue/`: `CatalogueController` (OOP, same shape as `AuthSession`) + `useCatalogue`

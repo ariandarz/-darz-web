@@ -166,6 +166,45 @@ textarea.dz-field {
   margin-top: 5px;
 }
 
+/* `.code` modifier — a short entered code (access key, OTP): centered,
+ * letter-spaced, larger. Ported from app.html's `input.code`. */
+.dz-field.code {
+  text-align: center;
+  letter-spacing: 0.45em;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* trailing adornment inside the field box (show/hide toggle, unit suffix) —
+ * ported from app.html's `.keywrap`/`.keyeye`, generalised for any `Input`. */
+.dz-field-control {
+  position: relative;
+}
+.dz-field-control.has-trailing .dz-field {
+  padding-right: 44px;
+}
+.dz-field-trailing {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dz-field-trailing button {
+  background: none;
+  border: none;
+  color: var(--ink3);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  border-radius: 8px;
+}
+.dz-field-trailing button:hover {
+  color: var(--ink);
+}
+
 /* kill the browser's yellow autofill everywhere (app.html:43-46) */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -415,4 +454,28 @@ html.dz-bw .toast {
 }
 .wm__t .s {
   font-weight: 700;
+}
+
+/* ---- Page shell + status text — generic, used across every feature ---
+   Introduced in Phase 4 (catalogue), promoted here in Phase 4c so auth and
+   every later feature share it instead of redefining it per-feature. */
+.dz-page {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--card);
+}
+.dz-state {
+  padding: 40px 22px;
+  text-align: center;
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink3);
+}
+.dz-state.err {
+  color: var(--magenta);
+  font-style: normal;
+  font-family: var(--sans);
+  font-size: 13px;
 }
