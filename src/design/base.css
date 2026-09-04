@@ -1,0 +1,102 @@
+/* =============================================================================
+   Darz Market — base / reset
+   The genuinely global rules from app.html (the reset, the document lock,
+   the shared type primitives). Ported from app.html:60-64, 185, 198-199.
+   Component-scoped rules live with their component, not here.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* reliable taps — kill the 300ms double-tap-zoom delay on interactive things
+   (app.html:185). */
+button,
+a,
+select,
+label,
+input,
+textarea {
+  touch-action: manipulation;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---- shared type primitives (app.html:198-199) ------------------------- */
+
+/* the 2px cyan -> magenta chroma rule */
+.chroma {
+  height: 2px;
+  background: var(--dz-seam);
+}
+
+/* the tracked-caps eyebrow label */
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+/* one-shot fade used on route/panel enters (app.html:1329) */
+@keyframes dz-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
