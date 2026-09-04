@@ -12,14 +12,17 @@ Implemented on `darzmarket-api` branch `phase-19-auth-session` (backend TASKLIST
   plus a deterministic default order on the collector queryset. **Done.** Built on a new
   `apps/core/filters.py` `FilterSet` abstraction (the "inheritance + global config" ask).
 
-Deferred / still open (logged in the backend TASKLIST §19.2 so the backlog is visible):
+**G1 / G2 / G3 / G9 / G11 — done** (`darzmarket-api` branch `phase-19.2-catalogue-query`, merged to
+that repo's `development`): `?search=` + `?ordering=` on `artworks/`; `artists/` gets `?search=` +
+`?ordering=` (`name`/`-name`/`works`); collector's own `GET /api/crm/requests/` gets `?kind=` /
+`?status=`. Consumed by frontend Phase 4 (`CatalogueToolbar`, `CatalogueController`).
 
-- **G1 / G2 / G3** — `?search=` + `?ordering=` on `artworks/`. **Deferred to frontend Phase 4**;
-  the backend adds the params first.
+Still deferred (logged in the backend TASKLIST §19.2 so the backlog is visible):
+
 - **G7** "Refine" smart dimensions — frontend Phase 12+ (needs dimension-keyed tag storage).
 - **G8** "Curated for You" — frontend Phase 12+ (already planned; backend Phase 24).
-- **G9** `artists/` search + sort — with G1/G2 or when the Artists page is built.
-- **G11** collector's own request `?kind=` / `?status=` — with frontend Phase 5.
+- **G9 (partial)** `artists/` `records` / `top-price` sorts — need auction-record joins; add with
+  the Records surface.
 
 Frontend token storage (**A / decision**): access token in memory, refresh token in
 `localStorage['dz-refresh']`. Page size: 20 (the API default).
