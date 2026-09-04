@@ -24,16 +24,30 @@ See `CLAUDE.md` for the full cross-repo context and `docs/TASKLIST.md` for the p
 - **Styling:** plain CSS + CSS custom properties, one global sheet, `app.html`'s own semantic
   class names — so the port diffs 1:1 against the original. No CSS Modules / Tailwind.
 - **Lint:** oxlint. **Format:** Prettier.
-- **API (Phase 3+):** a typed client generated from a locally-running `darzmarket-api`'s
-  OpenAPI schema — never a committed snapshot. See `CLAUDE.md`.
+- **API (Phase 3):** an OOP client in `src/api/` (`HttpClient` → `ApiClient`; `AuthSession`;
+  `ResourceService` subclasses; `DarzApi` facade; `useApi()` / `useSession()`). Types in
+  `src/api/schema.d.ts` are generated from a locally-running `darzmarket-api` — never a committed
+  snapshot. See `docs/API_GAP_ANALYSIS.md` for the backend-gap decisions.
+
+## Setup
+
+```bash
+npm install
+cp .env.example .env.local     # then set VITE_API_BASE_URL (no hardcoded fallback)
+```
+
+Every env var the app reads is listed in `.env.example`. The API client needs a running backend:
+`cd ../darzmarket-api && docker compose -f docker-compose-local.yml up -d && python manage.py runserver`.
+Regenerate types after any backend API change:
+`npx openapi-typescript "http://localhost:8000/api/schema/?format=json" -o src/api/schema.d.ts`.
 
 ## Commands
 
 ```bash
-npm install
 npm run dev           # Vite dev server
 npm run build         # tsc -b && vite build
 npm run typecheck     # tsc -b --noEmit
+npm run test          # vitest run
 npm run lint          # oxlint
 npm run format        # prettier --write (src + config; not docs/)
 npm run format:check  # prettier --check
