@@ -5,6 +5,23 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-05 — Flow 1: collector request/offer → admin inbox
+
+`src/features/requests/`: `RequestController` (OOP, extends the shared `Observable`) files the four
+artwork-detail actions through `POST /api/crm/requests/` — Buy now→`purchase`, 24h hold→`hold`,
+Request viewing→`viewing`, Make an offer→`offer`, plus `price` as the primary on a price-on-request
+work. `ActionButtons` (`.act-primary` + `.act-row`/`.act-box`, ported from app.html:9236-9243 with
+the v458 column rule), `OfferSheet` (the Make an Offer sheet incl. live thousands-grouping and both
+validation messages verbatim), `ConfirmSheet` (`dzActConfirm`). The `dzGuard` double-tap guard is
+ported and proven at the server: three synchronous taps → one POST. `src/features/admin/`:
+`AdminRequestsPage` at `/admin/requests` over `AdminRequestsController extends ListController` —
+kind/status filters and per-row transition, statuses from `GET /api/options/`. Old frontend attached
+read-only as `ariandarz/darzstudio.art` @ main (c46d96d); nothing copied from it — not the inline
+Supabase credentials, not the OTP gate, not the localStorage model. 12 new tests (47 total);
+typecheck/test/lint/format/build green; flow verified end-to-end in a browser. Maps and gaps in
+`docs/FRONTEND_PORT_MAP.md` and `docs/FLOW_1_API_GAPS.md`. **No API-contract or `schema.d.ts`
+change.** Branch `claude/flow-1-requests-offers-admin`.
+
 ## 2026-09-04 — Phase 6: collector saved / favorites
 
 `src/features/saved/`: `SavedController` (OOP) is the one **server-derived** source of truth for the
