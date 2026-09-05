@@ -1,13 +1,27 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-04 · **Current focus:** Phase 4 fully complete on branch
-`phase-4-catalogue`, on top of `phase-3-api-client` (neither merged yet — merge Phase 3 first, then
-Phase 4). Catalogue browse + artwork detail + **Artist list/detail (Phase 4b, no longer deferred)**
-+ **the login gate rebuilt as an exact copy of `app.html`'s `#dzGate`** (was a freehand unbranded
-form — see the "Reusing the design system" rule now in `CLAUDE.md`). Backend companion:
-`darzmarket-api` branch `phase-19.2-catalogue-query` (merged) added `?search=`/`?ordering=` — no
-further backend work was needed for 4b. Next up: **Phase 5** (still backend-blocked) or **Phase 6**
-(saved/favorites — backend-ready).
+**Last updated:** 2026-09-05 · **Current focus:** **Flow 1 (collector request/offer → admin
+inbox) complete** on branch `claude/flow-1-requests-offers-admin`, branched off the Phase 6 branch
+(owner call 2026-09-05, since the flow includes Save and PR #1 is not merged yet). This closes
+**Phase 5's request-creation half** and opens **Phase 7's CRM feed**. The old frontend is now
+reachable as a read-only reference (`ariandarz/darzstudio.art` @ `main` `c46d96d`, cloned outside
+this repo) — the old→new screen/API map is `docs/FRONTEND_PORT_MAP.md`, and the flow's API gaps are
+`docs/FLOW_1_API_GAPS.md`. Previous focus: **Phase 6 (saved/favorites) complete** on branch
+`claude/phase-6-saved-favorites-gy70nd`, off `development` (PR open, not merged). Phases 2/3/4 are
+merged to `development` (tip `7baadc3`): design system, typed API client + auth, catalogue browse +
+artwork detail + artist list/detail + the exact `#dzGate` login gate. Phase 6 was flow 3 of the
+client brief's "build first" set (Login → Artwork list → Save/unsave) — that set is now **done**,
+which is exactly where the brief says to stop. Saved-specific API gaps found while building are in
+`docs/PHASE_6_API_GAPS.md` (**no backend/schema change made**). Next up: **Phase 7** (admin) or
+**Phase 8** (auctions) — both backend-ready; **Phase 5 stays backend-blocked** on backend Phase 19.
+
+**Open for the owner (Phase 6):** (a) `../DarzStudio/app.html` was NOT reachable from the session
+that built Phase 6, so the save control's glyph/placement/microcopy reuse the already-ported card
+and button chrome rather than a fresh line-by-line diff against the original — a fidelity pass is
+worth doing when that repo is to hand; (b) pre-existing, not introduced here: `src/design/base.css`
+sets `a { color: inherit }` but no `text-decoration`, so every link in the app (catalogue card text,
+the "Artists"/"Saved" pills) renders underlined — flagged rather than changed, since it is a
+cross-cutting visual decision.
 
 **Client V1 API brief (2026-09-04) — build order & blockers.** The client shared a brief (their
 `V1_FRONTEND_API_MAP.md`, PR #832 — we only have the rendered PDF, `~/Downloads/DarzV1FrontendAPIBrief.pdf`).
@@ -151,16 +165,22 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[!]` partially blocked on backend Phase 19 (darzmarket-api)
+## Phase 5 — Collector: requests + activity `[~]` creation done; thread/idempotency still blocked
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). **The client brief's
 "stop after Save" line lands here: request _creation/listing_ works today, but the core loop
 (reply thread + safe retry + enforced offer floor) needs backend Phase 19 first — don't ship offers
 or the reply UI against the current API.**
 
-- [ ] Request creation UI per kind: information/price/availability/hold/offer/viewing/purchase/message
-      — each kind's `detail` shape is different, see `apps.crm.serializers.DETAIL_SERIALIZERS`
-- [ ] Collector's own request list/detail (`GET/POST /api/crm/requests/`)
+- [~] Request creation UI per kind: **the four the artwork detail fires are built** —
+      `purchase` (Buy now), `hold` (24h hold), `viewing` (Request viewing), `offer` (Make an
+      Offer sheet), plus `price` as the primary on a price-on-request work. Ported from
+      `app.html`'s `DZ.act()` (:10462) / `DZ.offer()` (:11074) incl. the exact confirmation copy,
+      the live thousands-grouping amount field, and the `dzGuard` double-tap guard (verified at the
+      server: three synchronous taps → one POST). **The `detail` shape is unverified** — the
+      backend's `DETAIL_SERIALIZERS` are not in the OpenAPI document, so `{amount, currency}` is a
+      reading, not a contract (gap G-F1-1). Remaining kinds: availability / message.
+- [ ] Collector's own request list/detail (`GET/POST /api/crm/requests/`) — endpoint ready
 - [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
       (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
 - [ ] **Reply-thread chat UI** `[!]` blocked on backend Phase 19 — two-way `RequestMessage` thread,
@@ -172,18 +192,50 @@ or the reply UI against the current API.**
 - [ ] **Offer UI respects the enforced floor** `[!]` blocked on backend Phase 19 — surface the
       server's floor rejection; don't rely on client-side validation alone.
 
-## Phase 6 — Collector: saved/favorites ✅ backend ready (Phase 10 merged)
+## Phase 6 — Collector: saved/favorites ✅ (branch `claude/phase-6-saved-favorites-gy70nd`)
 
-This is flow 3 of the client brief's "build first" set — do it right after Login + Artwork list.
+Flow 3 of the client brief's "build first" set — built right after Login + Artwork list, and the
+point the brief says to stop. Frontend only: **no backend, API-contract or `schema.d.ts` change.**
 
-- [ ] Save/unsave button + saved-items list UI (backend `SavedArtwork` endpoints exist as of Phase 10)
+- [x] `SavedController` (OOP) — the single **server-derived** source of truth for "is this saved",
+      wrapping the existing `api.crm.saved()` / `save()` / `unsave()`. **No `localStorage`** (owner
+      decision 2026-09-04: offline = NO; the old app's `saved`/`deleted`/`darz_save_edit` local
+      model was its main bug class and is deliberately not ported). Saved state is correct after a
+      refresh because every load re-reads `GET /api/crm/saved/` — verified by screenshot.
+- [x] Per-artwork in-flight guard — `SavedController` refuses a second save/unsave for an id while
+      one is running, and `SaveButton` is `disabled` + `aria-busy` meanwhile, so neither a
+      double-tap nor a key-repeat can fire two writes. Different artworks stay independent.
+- [x] `SaveButton` — one control, two variants: the icon overlay on `ArtworkCard` (a sibling inside
+      `.card-wrap`, since a `<button>` inside the card's `<a>` is invalid HTML) and the
+      `.actions` row on `ArtworkDetailPage`. Kept `.btn.outline` in both states so it does not
+      impersonate the detail page's primary CTA — that slot is Phase 5's "Make an offer".
+- [x] `/saved` route + `SavedItemsPage` — same `.hero`/`.count`/`.grid`/`ArtworkCard` chrome as the
+      catalogue (no second card design), reading the same controller, so unsaving updates it
+      instantly. Empty state, load error + "Try again", and a "Saved" link in the catalogue hero.
+- [x] Loading / success / error states: `dz-state` while the set loads, the pending control while a
+      write is in flight, and one `Toast` ("Saved." / "Removed from your saved works." / the failure
+      message) as the single confirmation surface everywhere.
+- [x] New shared `Observable` base (`src/features/shared/Observable.ts`) — `ListController` and
+      `SavedController` both extend it instead of each re-implementing snapshot/listener plumbing.
+- [x] 14 new tests (`SavedController.test.ts`): page walk, id index, concurrent-`ensureLoaded`
+      dedupe, the duplicate-action guard, unsave incl. the idempotent 404, error surfacing, reset.
+- [x] API gaps documented in `docs/PHASE_6_API_GAPS.md` — no `is_saved` on the artwork payload
+      (G-P6-1), undeclared pagination + no `?artwork=` filter on `saved/` (G-P6-2), no
+      created-vs-restored signal (G-P6-3), no documented ordering (G-P6-4). **Nothing was blocked
+      by them:** the flow shipped complete; they cost an extra full read of the saved set.
 
 ## Phase 7 — Admin: catalog/crm/sales
 
 Matches backend V1 exactly — the only admin surfaces that currently exist.
 
 - [ ] Catalog CRUD (Artist/Artwork/ArtworkImage) — includes the multipart image upload flow
-- [ ] Unified CRM request feed (filterable by kind/status/assignee) + transition actions
+- [x] Unified CRM request feed (filterable by kind/status/assignee) + transition actions —
+      `AdminRequestsPage` at `/admin/requests` over `AdminRequestsController extends ListController`.
+      Chrome ported from `darz-studio.html`'s `.ad-h`/`.ad-toolbar`/`.ad-card`/`.ad-tbl`. Statuses
+      come from `GET /api/options/`, never a hardcoded lookup. **Shows truncated UUIDs for collector
+      and artwork** — `RequestAdmin` embeds neither (gap G-F1-7); this is the main thing keeping it
+      from being a usable inbox. No principal-aware route guard yet — `RequireAuth` only proves a
+      session exists, and the API's own admin permission is the real gate.
 - [ ] Sales CRUD + transition/payment/delivery-status actions
 - [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
 

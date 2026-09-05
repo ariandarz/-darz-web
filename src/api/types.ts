@@ -18,6 +18,35 @@ export type Artist = Schemas['ArtistCollector'];
 export type ArtworkImage = Schemas['ArtworkImage'];
 export type SavedArtwork = Schemas['SavedArtwork'];
 export type CollectorRequest = Schemas['RequestCollector'];
+export type AdminRequest = Schemas['RequestAdmin'];
+
+/** The 8 request kinds the backend accepts (`RequestKindEnum`). The old app's
+ * action verbs map onto these: buy→purchase, hold→hold, visit→viewing,
+ * offer→offer, "Request price"→price, "Ask about"→information. */
+export type RequestKind = Schemas['RequestKindEnum'];
+
+/** `RequestCreate.detail` is `unknown` in the generated schema — the backend's
+ * per-kind shapes (`apps.crm.serializers.DETAIL_SERIALIZERS`) are not published
+ * in the OpenAPI document. See `docs/FLOW_1_API_GAPS.md` (gap G-F1-1): what we
+ * send here is the frontend's best reading, not a contract we can typecheck. */
+export type RequestDetail = Record<string, unknown>;
+
+/** Collector's own request list params (`GET /api/crm/requests/`). */
+export interface CollectorRequestQuery {
+  kind?: string;
+  status?: string;
+  per_page?: number;
+  page?: number;
+}
+
+/** Admin unified request feed params (`GET /api/crm/admin/requests/`). */
+export interface AdminRequestQuery {
+  kind?: string;
+  status?: string;
+  assignee?: string;
+  per_page?: number;
+  page?: number;
+}
 export type CollectorActivity = Schemas['CollectorActivity'];
 export type PublishedRecommendation = Schemas['CollectorPublishedRecommendation'];
 export type Me = Schemas['Me'];
