@@ -38,6 +38,12 @@ four gaps found (`is_saved`, `saved/` query params, created-vs-restored, orderin
 from this session, so the control reuses already-ported chrome instead of a fresh line-by-line diff.
 Branch `claude/phase-6-saved-favorites-gy70nd`.
 
+Follow-up (2026-09-05): the detail-page Save control lost its magenta in Black mode —
+`html.dz-bw .btn.outline` (components.css:83-88, a faithful port of app.html:48) resets every
+outline button's colour with `!important` and flattened the saved state with it. Fixed with a
+feature-scoped `html.dz-bw .btn.dz-save-action.on` override rather than narrowing the ported
+block. The card heart was never affected (it is not a `.btn`) — verified in both themes.
+
 ## 2026-09-04 — Phase 4b/c: artist pages + login-gate design fidelity
 
 Artist list/detail (`ArtistListPage`/`ArtistDetailPage`) over the backend's `ArtistFilterSet` — no
