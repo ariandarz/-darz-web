@@ -132,6 +132,18 @@
   color: inherit;
   padding: 0;
 }
+/* Phase 6: the card is a link, so the save control is a sibling in a
+   positioned wrapper (a <button> inside an <a> is invalid HTML). Placed
+   top-right, mirroring `.cardstat`'s top-left. */
+.card-wrap {
+  position: relative;
+}
+.card-wrap .card-save {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 2;
+}
 .card:active {
   transform: scale(0.985);
 }

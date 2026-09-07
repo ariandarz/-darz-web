@@ -20,9 +20,14 @@ export function CataloguePage() {
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
         >
           <p className="eyebrow">Darz Market</p>
-          <Link to="/artists" className="dz-back" style={{ padding: '6px 13px' }}>
-            Artists
-          </Link>
+          <span style={{ display: 'flex', gap: 8 }}>
+            <Link to="/saved" className="dz-back" style={{ padding: '6px 13px' }}>
+              Saved
+            </Link>
+            <Link to="/artists" className="dz-back" style={{ padding: '6px 13px' }}>
+              Artists
+            </Link>
+          </span>
         </div>
         <h1>
           The <span className="lt">catalogue</span>
