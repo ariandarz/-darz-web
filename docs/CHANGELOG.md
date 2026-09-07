@@ -5,6 +5,45 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-05 — Flow 1: collector request/offer → admin inbox
+
+`src/features/requests/`: `RequestController` (OOP, extends the shared `Observable`) files the four
+artwork-detail actions through `POST /api/crm/requests/` — Buy now→`purchase`, 24h hold→`hold`,
+Request viewing→`viewing`, Make an offer→`offer`, plus `price` as the primary on a price-on-request
+work. `ActionButtons` (`.act-primary` + `.act-row`/`.act-box`, ported from app.html:9236-9243 with
+the v458 column rule), `OfferSheet` (the Make an Offer sheet incl. live thousands-grouping and both
+validation messages verbatim), `ConfirmSheet` (`dzActConfirm`). The `dzGuard` double-tap guard is
+ported and proven at the server: three synchronous taps → one POST. `src/features/admin/`:
+`AdminRequestsPage` at `/admin/requests` over `AdminRequestsController extends ListController` —
+kind/status filters and per-row transition, statuses from `GET /api/options/`. Old frontend attached
+read-only as `ariandarz/darzstudio.art` @ main (c46d96d); nothing copied from it — not the inline
+Supabase credentials, not the OTP gate, not the localStorage model. 12 new tests (47 total);
+typecheck/test/lint/format/build green; flow verified end-to-end in a browser. Maps and gaps in
+`docs/FRONTEND_PORT_MAP.md` and `docs/FLOW_1_API_GAPS.md`. **No API-contract or `schema.d.ts`
+change.** Branch `claude/flow-1-requests-offers-admin`.
+
+## 2026-09-04 — Phase 6: collector saved / favorites
+
+`src/features/saved/`: `SavedController` (OOP) is the one **server-derived** source of truth for the
+saved set — reads `GET /api/crm/saved/`, wraps `crm.save()`/`crm.unsave()`, refuses a second write
+for an artwork while one is in flight, and holds nothing in `localStorage` (owner call: offline =
+NO), so the state is still right after a refresh. `SaveButton` (icon on `ArtworkCard`, `.actions`
+row on `ArtworkDetailPage`), `/saved` + `SavedItemsPage` reusing the catalogue's card/grid chrome,
+and one `Toast` for every confirmation and failure. New shared `Observable` base — `ListController`
+and `SavedController` extend it rather than duplicating snapshot/listener plumbing. 14 new tests
+(31 total); typecheck/test/lint/format/build green; every screen screenshot-verified, including the
+pending, error and after-refresh states. **No backend, API-contract or `schema.d.ts` change** — the
+four gaps found (`is_saved`, `saved/` query params, created-vs-restored, ordering) are written up in
+`docs/PHASE_6_API_GAPS.md`, and none of them blocked the flow. Flagged: `app.html` was unreachable
+from this session, so the control reuses already-ported chrome instead of a fresh line-by-line diff.
+Branch `claude/phase-6-saved-favorites-gy70nd`.
+
+Follow-up (2026-09-05): the detail-page Save control lost its magenta in Black mode —
+`html.dz-bw .btn.outline` (components.css:83-88, a faithful port of app.html:48) resets every
+outline button's colour with `!important` and flattened the saved state with it. Fixed with a
+feature-scoped `html.dz-bw .btn.dz-save-action.on` override rather than narrowing the ported
+block. The card heart was never affected (it is not a `.btn`) — verified in both themes.
+
 ## 2026-09-04 — Phase 4b/c: artist pages + login-gate design fidelity
 
 Artist list/detail (`ArtistListPage`/`ArtistDetailPage`) over the backend's `ArtistFilterSet` — no

@@ -1,0 +1,167 @@
+/* =============================================================================
+   Admin surfaces — heading, toolbar, card, table.
+
+   Ported from `darzstudio.art` @ main (c46d96d) `darz-studio.html`
+   (`.ad-h` :9104, `.ad-toolbar` :8418-8419 + :9141-9142, `.ad-card` :8415-8417
+   + :9111-9113, `.ad-tbl` :8421-8423 + :9120-9122, :8771-8772).
+
+   The old admin hard-codes a light-only palette (#FFFFFF / #EBEBEB / #9A9A9A)
+   and layers a `html.dz-admindark` override on top (:9189-9213). Following the
+   precedent this repo already set for the artists tab (`.dza-*` in
+   catalogue.css), the values are mapped onto this project's tokens instead, so
+   one rule set stays correct in both Paper and Black mode.
+   ========================================================================== */
+
+/* The admin desk is a desktop surface — `.dz-page`'s 480px collector column
+   (design/components.css) is deliberately widened here rather than inline. */
+.ad-page {
+  max-width: 1040px;
+  padding: 24px 20px 40px;
+}
+
+.ad-h {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 20px;
+  color: var(--ink);
+}
+
+.ad-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.ad-toolbar input,
+.ad-toolbar select {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 10px 13px;
+  outline: none;
+}
+.ad-toolbar input {
+  flex: 1;
+  min-width: 0;
+}
+.ad-toolbar input:focus,
+.ad-toolbar select:focus {
+  border-color: var(--ink);
+}
+
+.ad-card {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(10, 10, 10, 0.04);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.ad-card .hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 17px;
+  border-bottom: 1px solid var(--hair);
+}
+.ad-card .hd h2 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* darz-studio.html:755 — the table scrolls inside its card rather than
+   stretching the page. */
+.ad-scroll {
+  overflow-x: auto;
+}
+.ad-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--card);
+  min-width: 560px;
+}
+.ad-tbl thead th {
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  font-weight: 700;
+  border-bottom: 1px solid var(--hair);
+  white-space: nowrap;
+}
+.ad-tbl td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hair2);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.ad-tbl tr:last-child td {
+  border-bottom: 0;
+}
+.ad-tbl tbody tr:hover td {
+  background: var(--soft);
+}
+.ad-tbl td select {
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 6px 9px;
+  outline: none;
+}
+.ad-tbl td select:focus {
+  border-color: var(--ink);
+}
+.ad-tbl td[aria-busy='true'] select {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* the kind / status chips in the feed — same pill treatment as `.d-status` */
+.ad-chip {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--soft);
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.ad-chip.offer {
+  background: #fff2da;
+  color: #9a6a00;
+}
+.ad-chip.purchase {
+  background: #e3f6ee;
+  color: #1f9d57;
+}
+
+.ad-when {
+  font-size: 11.5px;
+  color: var(--ink3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ad-id {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink3);
+}

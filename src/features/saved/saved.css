@@ -1,0 +1,113 @@
+/* =============================================================================
+   Saved / favorites (Phase 6).
+
+   Built from the design system already ported from `DarzStudio/app.html` —
+   `.card` / `.cardstat` (catalogue.css, app.html:107-140 & 237-244), `.btn`
+   (components.css, app.html:627-633) and `.toast` (components.css,
+   app.html ~.toast). NOTE for review: `../DarzStudio/app.html` itself was NOT
+   reachable from this session, so the save control's own glyph/placement could
+   not be diffed line-by-line against the original the way catalogue.css was —
+   it reuses the ported card chrome instead of inventing a new pattern, and is
+   flagged in docs/CHANGELOG.md for a fidelity pass.
+   ========================================================================== */
+
+/* ---- the icon control (overlaid on a card image, mirrors `.cardstat`) ---- */
+.dz-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.62);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  backdrop-filter: blur(10px) saturate(1.2);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    transform var(--dz-t-fast) ease,
+    background var(--dz-t) ease,
+    color var(--dz-t) ease;
+}
+.dz-save:hover {
+  background: rgba(10, 10, 10, 0.82);
+}
+.dz-save:active {
+  transform: scale(0.94);
+}
+.dz-save.on {
+  color: var(--magenta);
+}
+/* pending: the control is inert and says so, rather than silently swallowing
+   a second tap (see SaveButton's duplicate-action guard) */
+.dz-save[disabled],
+.dz-save[aria-busy='true'] {
+  opacity: 0.55;
+  cursor: progress;
+  pointer-events: none;
+}
+
+/* ---- the detail-page action (a `.btn`, so it inherits the ported skin) ---
+   Qualified with `.btn` so it outranks `.btn.block`'s `display: block`, which
+   would otherwise drop the flex row and leave the glyph against the label.
+   Stays `.outline` when saved: the artwork detail's primary CTA belongs to
+   Phase 5 ("Make an offer"), and Save must not impersonate it. */
+.btn.dz-save-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn.dz-save-action.on {
+  color: var(--magenta);
+  border-color: var(--magenta);
+}
+/* Black mode: `html.dz-bw .btn.outline` (design/components.css:83-88) resets
+   every outline button's colour with `!important` — that block is a faithful
+   port of app.html:48, so it is not narrowed here. Without this rule it also
+   flattens the saved state, and the control loses its magenta in Black mode
+   while keeping it in Paper. Matching `!important` at higher specificity is
+   the local, feature-scoped way to opt this one control out. */
+html.dz-bw .btn.dz-save-action.on {
+  color: var(--magenta) !important;
+  border-color: var(--magenta) !important;
+}
+
+/* ---- saved page: header row + empty state -------------------------------- */
+.dz-saved-links {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dz-saved-links .dz-back {
+  padding: 6px 13px;
+}
+
+/* the "nothing here yet" panel — same dashed-frame treatment as the artists
+   tab's empty state (`.dza-aempty`, catalogue.css / app.html:8337-8443) */
+.dz-saved-empty {
+  border: 1px dashed var(--hair);
+  border-radius: 12px;
+  padding: 34px 20px;
+  text-align: center;
+  color: var(--ink3);
+  margin: 16px;
+}
+.dz-saved-empty p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dz-saved-empty .dz-saved-empty-cta {
+  display: inline-block;
+  margin-top: 14px;
+}
+
+/* a full-width retry under the error line on the saved page */
+.dz-saved-retry {
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 8px;
+}
