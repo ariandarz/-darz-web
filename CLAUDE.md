@@ -17,8 +17,13 @@ Two sources are required **together** for every feature — neither alone is eno
 
 ## Where things live
 
-- **This repo**: the new frontend. Local git only for now — no GitHub remote yet (owner connects it
-  when ready, same workflow as the backend: owner pushes/merges, not Claude).
+- **This repo**: the new frontend, on GitHub at `ariandarz/-darz-web`. Default branch is `main`;
+  `development` is the working line and the two are kept level. Work happens on a task branch, which
+  goes to a PR — that part has not changed. What did change: the old "owner pushes/merges, never
+  Claude" rule no longer holds unconditionally. On 2026-09-07 the owner instructed Claude to merge
+  and publish, and PRs #1-#5 were merged by Claude on that instruction. **Merging still needs the
+  owner to ask for it explicitly, per request — it is not a standing permission.** Default remains:
+  open the PR and stop.
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full

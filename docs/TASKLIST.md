@@ -1,19 +1,27 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-05 · **Current focus:** **Flow 1 (collector request/offer → admin
-inbox) complete** on branch `claude/flow-1-requests-offers-admin`, branched off the Phase 6 branch
-(owner call 2026-09-05, since the flow includes Save and PR #1 is not merged yet). This closes
-**Phase 5's request-creation half** and opens **Phase 7's CRM feed**. The old frontend is now
-reachable as a read-only reference (`ariandarz/darzstudio.art` @ `main` `c46d96d`, cloned outside
-this repo) — the old→new screen/API map is `docs/FRONTEND_PORT_MAP.md`, and the flow's API gaps are
-`docs/FLOW_1_API_GAPS.md`. Previous focus: **Phase 6 (saved/favorites) complete** on branch
-`claude/phase-6-saved-favorites-gy70nd`, off `development` (PR open, not merged). Phases 2/3/4 are
-merged to `development` (tip `7baadc3`): design system, typed API client + auth, catalogue browse +
-artwork detail + artist list/detail + the exact `#dzGate` login gate. Phase 6 was flow 3 of the
-client brief's "build first" set (Login → Artwork list → Save/unsave) — that set is now **done**,
-which is exactly where the brief says to stop. Saved-specific API gaps found while building are in
-`docs/PHASE_6_API_GAPS.md` (**no backend/schema change made**). Next up: **Phase 7** (admin) or
-**Phase 8** (auctions) — both backend-ready; **Phase 5 stays backend-blocked** on backend Phase 19.
+**Last updated:** 2026-09-07 · **Current focus:** **everything below is merged and both branches are
+level.** Owner call 2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1
+request/offer → admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the
+Phase 14 deploy config; PR #5 brought `development` back level. `main` and `development` now have
+identical trees (`main` `7214508`, `development` `9e241ff`). Nothing is in flight on a feature
+branch.
+
+**The one thing not done: the deploy itself is blocked.** Owner chose a UI-only deploy
+(2026-09-07), the config is committed and the production build is verified, but creating the Vercel
+project fails with `403 forbidden — "You don't have permission to create the project"` on team
+`Darz Market Studio's projects`. Needs a Vercel role that can create projects, or an empty project
+created by hand to deploy into. See Phase 14.
+
+Delivered so far: Phases 2/3/4 (design system, typed API client + auth, catalogue browse + artwork
+detail + artist list/detail + the exact `#dzGate` login gate), **Phase 6** (saved/favorites), **Phase
+5's request-creation half**, and **Phase 7's CRM feed**. Phase 6 was flow 3 of the client brief's
+"build first" set (Login → Artwork list → Save/unsave) — that set is **done**, which is where the
+brief says to stop. The old frontend is a read-only reference (`ariandarz/darzstudio.art` @ `main`
+`c46d96d`, cloned outside this repo); the old→new screen/API map is `docs/FRONTEND_PORT_MAP.md`, and
+API gaps are in `docs/PHASE_6_API_GAPS.md` and `docs/FLOW_1_API_GAPS.md` (**no backend/schema change
+made** in any of it). Next up: **Phase 7's remaining admin surfaces** or **Phase 8** (auctions) —
+both backend-ready; **Phase 5 stays backend-blocked** on backend Phase 19.
 
 **Open for the owner (Phase 6):** (a) `../DarzStudio/app.html` was NOT reachable from the session
 that built Phase 6, so the save control's glyph/placement/microcopy reuse the already-ported card
@@ -69,7 +77,10 @@ shape.
 
 - [x] Vite + React + TypeScript scaffold (`npm create vite@latest -- --template react-ts`)
 - [x] Separate git repo at `/Users/arya/Work/Projects/darzmarket-web`; GitHub remote now connected
-      (`arex75/darz-web`) — same workflow as the backend: owner pushes/merges, never Claude
+      (`ariandarz/-darz-web`) — task branch → PR is still the workflow. The original "owner
+      pushes/merges, never Claude" rule was relaxed on 2026-09-07: the owner asked Claude to merge
+      and publish, and PRs #1-#5 were merged by Claude on that instruction. Merging remains an
+      explicit per-request ask, not a standing permission; default is still open the PR and stop.
 
 ## Phase 2 — Design system ✅ (branch `phase-2-design-system`)
 
@@ -165,7 +176,7 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[~]` creation done; thread/idempotency still blocked
+## Phase 5 — Collector: requests + activity `[~]` creation merged 2026-09-07 (PR #2); thread/idempotency still blocked
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). **The client brief's
 "stop after Save" line lands here: request _creation/listing_ works today, but the core loop
@@ -192,7 +203,7 @@ or the reply UI against the current API.**
 - [ ] **Offer UI respects the enforced floor** `[!]` blocked on backend Phase 19 — surface the
       server's floor rejection; don't rely on client-side validation alone.
 
-## Phase 6 — Collector: saved/favorites ✅ (branch `claude/phase-6-saved-favorites-gy70nd`)
+## Phase 6 — Collector: saved/favorites ✅ merged 2026-09-07 (PR #1, then #3 to `main`)
 
 Flow 3 of the client brief's "build first" set — built right after Login + Artwork list, and the
 point the brief says to stop. Frontend only: **no backend, API-contract or `schema.d.ts` change.**
@@ -298,8 +309,34 @@ surface before building each. Ordered by V1 relevance:
 - [ ] Component tests for shared/base components
 - [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
 
-## Phase 14 — Deploy & cutover — later, owner-gated
+## Phase 14 — Deploy & cutover `[~]` config landed; deploy blocked on a Vercel permission
 
-- [ ] Build/hosting decision (static hosting vs. SSR — likely static given no server-rendering need)
-- [ ] Environment config (API base URL per environment)
+Owner opened this 2026-09-07 ("deploy it") and chose a **UI-only deploy** — publish the interface
+for visual review now, wire the real API later.
+
+- [x] Build/hosting decision — **static hosting on Vercel** (no server-rendering need, as expected).
+      `vercel.json` committed: `framework: vite`, `outputDirectory: dist`, and the rewrite that does
+      the real work — every route but `/` is client-side, so `/artwork/:id`, `/saved`, `/artists`,
+      `/login` and `/admin/requests` 404 on a static host without a fallback to `index.html`.
+      Verified against the built output: `/` → 200, `/saved` → 200.
+- [~] Environment config (API base URL per environment) — **placeholder only, on purpose.**
+      `.env.production` sets `VITE_API_BASE_URL=https://api.invalid/api`. `darzmarket-api` has no
+      deployed URL yet, and `resolveBaseUrl()` (`src/api/index.ts`) throws when the var is unset with
+      `api` built at module load — so unset is a *blank page*, not a degraded one. `.invalid` is
+      RFC 2606 reserved and can never resolve, so calls fail fast and visibly instead of reaching an
+      unintended host. Verified: the placeholder is baked into the bundle, no `localhost` leaks in,
+      and the app boots and renders the gate rather than white-screening. **Done when the real base
+      URL replaces that one line** — nothing else changes.
+- [!] **Run the deploy** — blocked on Vercel permissions. `create_git_project` for
+      `ariandarz/-darz-web` on team `Darz Market Studio's projects` (`team_N1xHzmEmOOIjt4MMmWTT5XYa`,
+      Pro) returns `403 forbidden — "You don't have permission to create the project"`; retried with
+      the default project name, same result. The connected account can read the team but not create
+      in it. Unblock by granting it a project-creating role, or by hand-creating an empty project
+      linked to the repo to deploy into. Deploying into the existing `darzstudio-art` or
+      `koocheh-web` projects was **not** done — that would overwrite unrelated live projects.
 - [ ] DNS/hosting cutover plan, coordinated with `darzmarket-api`'s own Phase 18
+
+> **What the deployed build will and won't be, until the API URL is real:** layout, chrome,
+> typography, the chroma seam, routing/deep links and both Paper and Black themes are real. Login and
+> every piece of data are **not** — every API call fails with a network error. It is a visual-review
+> build, and should not be shown to anyone as a working product.
