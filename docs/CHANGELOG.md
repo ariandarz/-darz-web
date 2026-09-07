@@ -5,6 +5,40 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-07 — Phase 14: Vercel deploy config (deploy itself blocked)
+
+Owner opened Phase 14 ("deploy it") and chose a **UI-only deploy** — publish the interface for visual
+review now, wire the real API later. Two files, no application code touched. `vercel.json`: static
+hosting on Vercel (`framework: vite`, `outputDirectory: dist`) plus the rewrite that does the real
+work — every route but `/` is client-side, so `/artwork/:id`, `/saved`, `/artists`, `/login` and
+`/admin/requests` would 404 on a static host without a fallback to `index.html`. `.env.production`:
+`VITE_API_BASE_URL=https://api.invalid/api`, a deliberate placeholder — `darzmarket-api` has no
+deployed URL, and `resolveBaseUrl()` throws when the var is unset with `api` built at module load, so
+unset is a blank page rather than a degraded one; `.invalid` is RFC 2606 reserved and can never
+resolve, so calls fail fast instead of reaching an unintended host. This does not weaken the
+no-hardcoded-fallbacks rule — the code still has no fallback and still throws. Verified against the
+real production build with `.env.local` moved aside: placeholder baked into the bundle, no `localhost`
+leaked in, `/` → 200 and `/saved` → 200, and the app boots and renders the gate rather than
+white-screening. **The deploy did not run:** `create_git_project` returns `403 forbidden — "You don't
+have permission to create the project"` on team `Darz Market Studio's projects`; retried with the
+default name, same result. Not worked around by deploying into the existing `darzstudio-art` or
+`koocheh-web` projects — that would overwrite unrelated live projects. PR #4 → `main`, PR #5 →
+`development`.
+
+## 2026-09-07 — Merged and published Phase 6 + Flow 1 to `development` and `main`
+
+Owner call: merge and publish. PR #1 (Phase 6 saved/favorites) → `development` (`5f65f4b`), PR #2
+(Flow 1 request/offer → admin inbox) → `development` (`8ded1fc`), PR #3 synced `main` (`5b7ac9c`).
+Both branches then had identical trees. Full suite re-run on the merge result before each step:
+typecheck clean, 47/47 tests across 6 files, `format:check` clean, build clean; `lint` clean apart
+from the one pre-existing `useCatalogue.ts` exhaustive-deps warning. Nothing was committed — both
+branches were already fully pushed, so this was merge and sync only. `main` could not be pushed
+directly from this session, so the sync went through PR #3 rather than a direct push; the identical
+local merge commit was discarded to keep one merge in history instead of two. Carried forward
+unresolved, unchanged by the merge: the offer `detail` shape (G-F1-1, a reading of the API rather
+than a documented contract — a wrong shape still returns 201) and the missing principal-aware guard
+on `/admin/requests`.
+
 ## 2026-09-05 — Flow 1: collector request/offer → admin inbox
 
 `src/features/requests/`: `RequestController` (OOP, extends the shared `Observable`) files the four
