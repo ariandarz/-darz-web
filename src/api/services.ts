@@ -12,14 +12,19 @@ import type { ApiClient } from './ApiClient';
 import type { AuthSession, Me } from './AuthSession';
 import type { RequestOptions } from './HttpClient';
 import type {
+  AdminRequest,
+  AdminRequestQuery,
   Artist,
   ArtistQuery,
   Artwork,
   CatalogueQuery,
   CollectorActivity,
   CollectorRequest,
+  CollectorRequestQuery,
   Paginated,
   PublishedRecommendation,
+  RequestDetail,
+  RequestKind,
   SavedArtwork,
 } from './types';
 
@@ -72,11 +77,25 @@ export class CrmService extends ResourceService {
     super(client, '/crm');
   }
 
-  requests(query: { per_page?: number; page?: number } = {}) {
-    return this.list<CollectorRequest>('/requests/', query);
+  /** The collector's own requests. `kind`/`status` are server-side filters. */
+  requests(query: CollectorRequestQuery = {}) {
+    return this.list<CollectorRequest>('/requests/', query as RequestOptions['query']);
   }
-  createRequest(body: { kind: string; artwork?: string; detail?: Record<string, unknown> }) {
+  createRequest(body: { kind: RequestKind; artwork?: string; detail?: RequestDetail }) {
     return this.create<CollectorRequest>('/requests/', body);
+  }
+
+  /** Admin: the unified feed of every request across every kind
+   * (`GET /api/crm/admin/requests/`, filterable by kind/status/assignee). */
+  adminRequests(query: AdminRequestQuery = {}) {
+    return this.list<AdminRequest>('/admin/requests/', query as RequestOptions['query']);
+  }
+  /** Admin: move one request to another status (`POST .../transition/`). */
+  transitionRequest(id: string, toStatus: string, note = '') {
+    return this.create<AdminRequest>(`/admin/requests/${id}/transition/`, {
+      to_status: toStatus,
+      note,
+    });
   }
   logActivity(body: { kind: string; artwork?: string; metadata?: Record<string, unknown> }) {
     return this.create<CollectorActivity>('/activity/', body);

@@ -1,0 +1,290 @@
+/* =============================================================================
+   Collector actions — Buy now / 24h hold / Request viewing / Make an offer,
+   the offer sheet, and the confirmation sheet.
+
+   Ported from `darzstudio.art` @ main (c46d96d) `app.html`, same class names so
+   this file diffs 1:1 against the original. Source lines cited per block.
+   `.dz-sheetcta`'s blue variant (app.html:2092) belongs to the old app's
+   alternate blue skin and is deliberately NOT ported — this app ships the
+   ink CTA (app.html:1274).
+   ========================================================================== */
+
+/* ---- primary action (app.html:595-596, 573) ---------------------------- */
+.act-primary {
+  display: block;
+  width: 100%;
+  border: 1px solid #3a3a44;
+  background: #26262e;
+  color: #fff;
+  border-radius: 14px;
+  padding: 16px 14px;
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  touch-action: manipulation; /* app.html:185 */
+  transition:
+    opacity 0.14s,
+    transform 0.12s;
+}
+.act-primary:hover {
+  opacity: 0.92;
+}
+.act-primary:active {
+  transform: scale(0.99);
+}
+/* app.html:599-600 — a closed/unavailable primary action reads as inert. */
+.act-primary.dz-bidclosed {
+  background: rgba(140, 140, 140, 0.16);
+  color: var(--ink3);
+  border: 1px solid var(--hair2);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.act-primary.dz-bidclosed:hover {
+  opacity: 1;
+}
+.act-primary.dz-bidclosed:active {
+  transform: none;
+}
+.act-primary[disabled],
+.act-primary[aria-busy='true'] {
+  opacity: 0.55;
+  cursor: progress;
+  pointer-events: none;
+}
+html.dz-bw .act-primary {
+  background: #26262e;
+  color: #fafafa;
+  border: 1px solid #3a3a44;
+}
+html.dz-bw .act-primary:hover {
+  background: #33333c;
+}
+
+/* ---- secondary action row (app.html:617-621) ---------------------------
+   `--an` is the column count the detail page computes from how many secondary
+   actions there are: 1→1, 2→2, 3→3, 4→2, 5+→3 (app.html:9241). */
+.act-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.act-box {
+  flex: 1 1 calc(100% / var(--an, 3) - 14px);
+  min-width: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  border-radius: 12px;
+  padding: 13px 6px 11px;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+  touch-action: manipulation; /* app.html:185 */
+  transition:
+    border-color 0.14s,
+    background 0.14s,
+    transform 0.12s;
+}
+.act-box:hover {
+  border-color: rgba(10, 10, 10, 0.32);
+  background: #fbfaf7;
+}
+.act-box:active {
+  transform: scale(0.97);
+}
+.act-box[disabled],
+.act-box[aria-busy='true'] {
+  opacity: 0.55;
+  cursor: progress;
+  pointer-events: none;
+}
+.act-box .ai {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink2);
+  height: 18px;
+}
+.act-box .al {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+html.dz-bw .act-box {
+  background: var(--card);
+  border-color: var(--hair);
+  color: var(--ink);
+}
+
+/* ---- offer sheet (app.html:1257-1278, 1265-1273) ----------------------- */
+.dz-offerwrap h3 {
+  font-family: var(--font-head), Georgia, 'Times New Roman', serif;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  line-height: 1.08;
+}
+.dz-offerwrap .si {
+  margin-top: 0;
+  font-size: 13px;
+  color: var(--ink3);
+}
+/* app.html:1269 — the short cyan→magenta seam under the sheet title. */
+.dz-seamline {
+  width: 32px;
+  height: 2px;
+  border-radius: 2px;
+  margin: 9px 0 13px;
+  background: var(--dz-seam);
+}
+.dz-offerline {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  padding: 11px 14px;
+  margin: 2px 0 14px;
+}
+.dz-offerline .l {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dz-offerline b {
+  font-size: 15px;
+  font-weight: 700;
+}
+.dz-offerline b .cur {
+  font-weight: 600;
+  color: var(--ink3);
+  font-size: 12px;
+}
+.dz-offerfield {
+  position: relative;
+  margin-bottom: 12px;
+}
+.dz-offerfield input {
+  margin-bottom: 0;
+  padding-right: 78px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.dz-offercur {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  pointer-events: none;
+  max-width: 62px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dz-offererr {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #e8005c;
+  margin: -4px 0 12px;
+  font-weight: 500;
+}
+/* the calm one-line explainer above the error slot (app.html:11078) */
+.dz-offerhint {
+  font-size: 12px;
+  color: var(--ink3);
+  margin: -4px 0 12px;
+  line-height: 1.5;
+}
+.dz-sheetcta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 1px solid #3a3a44;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-top: 8px;
+  font-family: var(--font-head), Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  background: #26262e;
+  color: #fff;
+  box-shadow: 0 12px 30px -12px rgba(10, 10, 10, 0.5);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.16s ease,
+    opacity 0.14s;
+}
+.dz-sheetcta:hover {
+  box-shadow: 0 16px 40px -12px rgba(10, 10, 10, 0.58);
+  background: #2e2e37;
+}
+.dz-sheetcta:active {
+  transform: scale(0.98);
+}
+.dz-sheetcta[disabled],
+.dz-sheetcta[aria-busy='true'] {
+  opacity: 0.55;
+  cursor: progress;
+  pointer-events: none;
+}
+
+/* ---- confirmation sheet (app.html:1249-1256) --------------------------- */
+.dz-cf {
+  text-align: center;
+  padding: 14px 4px 2px;
+}
+.dz-cf-seam {
+  width: 38px;
+  height: 2px;
+  border-radius: 2px;
+  margin: 2px auto 18px;
+  background: var(--dz-seam);
+}
+.dz-cf h3 {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0 0 9px;
+  font-family: var(--font-head), Georgia, serif;
+}
+.dz-cf-art {
+  font-size: 12px;
+  color: var(--ink3);
+  margin: 0 0 14px;
+  letter-spacing: 0.01em;
+}
+.dz-cf p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink2);
+  margin: 0 auto 4px;
+  max-width: 330px;
+}
+.dz-cf .btn {
+  margin-top: 18px;
+}

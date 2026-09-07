@@ -4,13 +4,14 @@
  * title/subtitle, spec rows, one quiet price moment, description, and the
  * `.actions` block (app.html:503-508).
  *
- * Phase 6 fills `.actions` with the Save / Saved control. "Make an offer" and
- * "Request price" are still absent — they are Phase 5, which stays blocked on
- * backend Phase 19 (offer floor + idempotency key). Intentional V1 scope, not
- * an oversight.
+ * `.actions` now carries the full collector action set: the `.act-primary`
+ * (Buy now, or "Request price" on a price-on-request work) over the `.act-row`
+ * of 24h hold / Request viewing / Make an offer (`ActionButtons`, ported from
+ * app.html:9236-9243), with the Save control beneath it.
  */
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
+import { ActionButtons } from '../requests/ActionButtons';
 import { SaveButton } from '../saved/SaveButton';
 import './catalogue.css';
 import { availabilityClass, availabilityLabel, formatMoney, primaryImage } from './format';
@@ -95,6 +96,8 @@ export function ArtworkDetailPage() {
           )}
           <div className="tick" />
         </div>
+
+        <ActionButtons artwork={artwork} />
 
         <div className="actions">
           <SaveButton artworkId={artwork.id} title={artwork.title} variant="action" />

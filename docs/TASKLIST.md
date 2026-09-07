@@ -1,6 +1,12 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-04 · **Current focus:** **Phase 6 (saved/favorites) complete** on branch
+**Last updated:** 2026-09-05 · **Current focus:** **Flow 1 (collector request/offer → admin
+inbox) complete** on branch `claude/flow-1-requests-offers-admin`, branched off the Phase 6 branch
+(owner call 2026-09-05, since the flow includes Save and PR #1 is not merged yet). This closes
+**Phase 5's request-creation half** and opens **Phase 7's CRM feed**. The old frontend is now
+reachable as a read-only reference (`ariandarz/darzstudio.art` @ `main` `c46d96d`, cloned outside
+this repo) — the old→new screen/API map is `docs/FRONTEND_PORT_MAP.md`, and the flow's API gaps are
+`docs/FLOW_1_API_GAPS.md`. Previous focus: **Phase 6 (saved/favorites) complete** on branch
 `claude/phase-6-saved-favorites-gy70nd`, off `development` (PR open, not merged). Phases 2/3/4 are
 merged to `development` (tip `7baadc3`): design system, typed API client + auth, catalogue browse +
 artwork detail + artist list/detail + the exact `#dzGate` login gate. Phase 6 was flow 3 of the
@@ -159,16 +165,22 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[!]` partially blocked on backend Phase 19 (darzmarket-api)
+## Phase 5 — Collector: requests + activity `[~]` creation done; thread/idempotency still blocked
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). **The client brief's
 "stop after Save" line lands here: request _creation/listing_ works today, but the core loop
 (reply thread + safe retry + enforced offer floor) needs backend Phase 19 first — don't ship offers
 or the reply UI against the current API.**
 
-- [ ] Request creation UI per kind: information/price/availability/hold/offer/viewing/purchase/message
-      — each kind's `detail` shape is different, see `apps.crm.serializers.DETAIL_SERIALIZERS`
-- [ ] Collector's own request list/detail (`GET/POST /api/crm/requests/`)
+- [~] Request creation UI per kind: **the four the artwork detail fires are built** —
+      `purchase` (Buy now), `hold` (24h hold), `viewing` (Request viewing), `offer` (Make an
+      Offer sheet), plus `price` as the primary on a price-on-request work. Ported from
+      `app.html`'s `DZ.act()` (:10462) / `DZ.offer()` (:11074) incl. the exact confirmation copy,
+      the live thousands-grouping amount field, and the `dzGuard` double-tap guard (verified at the
+      server: three synchronous taps → one POST). **The `detail` shape is unverified** — the
+      backend's `DETAIL_SERIALIZERS` are not in the OpenAPI document, so `{amount, currency}` is a
+      reading, not a contract (gap G-F1-1). Remaining kinds: availability / message.
+- [ ] Collector's own request list/detail (`GET/POST /api/crm/requests/`) — endpoint ready
 - [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
       (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
 - [ ] **Reply-thread chat UI** `[!]` blocked on backend Phase 19 — two-way `RequestMessage` thread,
@@ -217,7 +229,13 @@ point the brief says to stop. Frontend only: **no backend, API-contract or `sche
 Matches backend V1 exactly — the only admin surfaces that currently exist.
 
 - [ ] Catalog CRUD (Artist/Artwork/ArtworkImage) — includes the multipart image upload flow
-- [ ] Unified CRM request feed (filterable by kind/status/assignee) + transition actions
+- [x] Unified CRM request feed (filterable by kind/status/assignee) + transition actions —
+      `AdminRequestsPage` at `/admin/requests` over `AdminRequestsController extends ListController`.
+      Chrome ported from `darz-studio.html`'s `.ad-h`/`.ad-toolbar`/`.ad-card`/`.ad-tbl`. Statuses
+      come from `GET /api/options/`, never a hardcoded lookup. **Shows truncated UUIDs for collector
+      and artwork** — `RequestAdmin` embeds neither (gap G-F1-7); this is the main thing keeping it
+      from being a usable inbox. No principal-aware route guard yet — `RequireAuth` only proves a
+      session exists, and the API's own admin permission is the real gate.
 - [ ] Sales CRUD + transition/payment/delivery-status actions
 - [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
 
