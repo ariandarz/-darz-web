@@ -8,6 +8,7 @@
 import { ApiClient } from './ApiClient';
 import { AuthSession } from './AuthSession';
 import {
+  AuctionService,
   AuthService,
   CatalogService,
   CrmService,
@@ -27,12 +28,28 @@ export function resolveBaseUrl(): string {
   return fromEnv.trim();
 }
 
+/** WebSocket origin for the auction live-lot socket (Phase 8), e.g.
+ * `ws://localhost:8000` — NO `/api` suffix, NO trailing slash. From the
+ * environment only, same rule as `resolveBaseUrl()`: no hardcoded fallback,
+ * no deriving it from the HTTP base in code. Set `VITE_API_WS_URL` in `.env`
+ * (or `.env.local`); see `.env.example`. */
+export function resolveWsUrl(): string {
+  const fromEnv = import.meta.env.VITE_API_WS_URL;
+  if (typeof fromEnv !== 'string' || fromEnv.trim() === '') {
+    throw new Error(
+      'VITE_API_WS_URL is not set. Copy .env.example to .env.local (or use the committed .env).',
+    );
+  }
+  return fromEnv.trim().replace(/\/+$/, '');
+}
+
 export class DarzApi {
   readonly session: AuthSession;
   readonly client: ApiClient;
   readonly auth: AuthService;
   readonly catalog: CatalogService;
   readonly crm: CrmService;
+  readonly auctions: AuctionService;
   readonly recommendations: RecommendationService;
   readonly options: OptionsService;
 
@@ -42,6 +59,7 @@ export class DarzApi {
     this.auth = new AuthService(this.client, this.session);
     this.catalog = new CatalogService(this.client);
     this.crm = new CrmService(this.client);
+    this.auctions = new AuctionService(this.client);
     this.recommendations = new RecommendationService(this.client);
     this.options = new OptionsService(this.client);
   }
@@ -56,6 +74,7 @@ export { AuthSession } from './AuthSession';
 export type { Me, Principal } from './AuthSession';
 export {
   ResourceService,
+  AuctionService,
   AuthService,
   CatalogService,
   CrmService,

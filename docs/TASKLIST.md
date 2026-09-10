@@ -1,7 +1,10 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-07 (branch state re-verified 2026-09-07 after a remote re-point) ·
-**Current focus:** **everything below is merged and both branches are level.** Owner call
+**Last updated:** 2026-09-10 (Phase 8 step 1 in flight) ·
+**Current focus:** **Phase 8 (auctions) — step 1 of 4.** Backend `phase-11.1-auctions-lot-browse`
+merged to `darzmarket-api` `development`; frontend PR `phase-8-auctions-browse` open, awaiting owner
+merge. Then step 2 (register + bid). Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
+feed remains merged and level. Owner call
 2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1 request/offer →
 admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the Phase 14 deploy
 config; PR #5 brought `development` back level; PR #6 + #7 were docs-only (recorded the merges +
@@ -254,17 +257,30 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
 - [ ] Sales CRUD + transition/payment/delivery-status actions
 - [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
 
-## Phase 8 — Collector: auctions ✅ backend ready (Phase 11 merged, incl. real increment ladder)
+## Phase 8 — Collector: auctions `[~]` — 4 steps, front + back together per step (see `docs/PHASE_8_PLAN.md`)
 
 Old app's largest single feature (event pages, live server-authoritative bidding, paddle
-registration, outbid/won/lost/closing notifications, results archive). Backend Phase 11 is merged and
-its real-time delivery mechanism is decided/built — confirm WebSocket-vs-polling against the shipped
-backend before designing the live-bid UI (the frontend architecture depends on that choice). The real
-increment ladder + 10-min closing window are now in place (backend PR #1).
+registration, outbid/won/lost/closing notifications, results archive). Backend Phase 11 is merged;
+real-time delivery is **WebSocket via Django Channels** (`ws/auctions/lots/{id}/?token=<jwt>`,
+read-only — bids go over REST). Owner slicing (2026-09-10): Option A (browse → bid → notifications →
+records), transport Option A (WS + a lean REST resync). All backend gaps BE-1…BE-9 in scope; each
+step ships a `darzmarket-api` branch **and** a `darzmarket-web` branch, owner merges both, then the
+next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHASE_8_PLAN.md`.
 
-- [ ] Event/lot pages, live bid display, place-bid UI (proxy/max), paddle registration flow
-- [ ] Notification UI (outbid/won/lost/closing)
-- [ ] Results archive view
+- [~] **Step 1 — browse (read-only)** — frontend PR `phase-8-auctions-browse` open; backend
+      `phase-11.1-auctions-lot-browse` **merged** (BE-1 nested artwork, BE-2 `is_leading`, BE-3
+      `lots_count`, BE-8 WS 4003 close code, BE-9 `seed_auction`). `/auctions`, `/auctions/:id`,
+      `/auctions/lots/:lotId` — `AuctionListController`, `LotSocket` + `LotController` (live frame
+      merge, reconnect/focus refetch, ~8s poll fallback). 13 tests. Verified in-browser against a
+      seeded local backend: a bid placed via the admin path pushed a live WS frame that updated the
+      lot page (current bid / count / "Your bid is leading") with no reload.
+- [ ] **Step 2 — register + bid** — Conditions-of-Sale gate + paddle registration + place/raise-bid
+      sheet + server-rejection surfacing. Backend BE-4 (`Auction.terms`/`terms_required`,
+      `BidderRegistration.terms_accepted_at`), BE-5 (`min_next_amount`/`opening_amount`).
+- [ ] **Step 3 — notifications + status vocabulary** — `/auctions/notifications`, live banner,
+      unified status pills. Backend BE-7 (`lot_artwork_title`/`lot_number` + payload docs).
+- [ ] **Step 4 — results archive** — lean collector view of external auction results. Backend BE-6
+      (`GET /api/auctions/records/`). Full field parity = deferred admin Records desk (Phase 11).
 
 ## Phase 9 — Collector: profile, questionnaire, chat, settings/membership
 

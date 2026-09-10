@@ -5,6 +5,24 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-10 — Phase 8 step 1: collector auctions browse (list / event / lot) + live WebSocket
+
+Read-only browse; bidding/registration is step 2. New `src/features/auctions/`: `AuctionListController`
+(extends the shared `ListController`), `LotSocket` (the `ws/auctions/lots/{id}/?token=` live socket —
+backoff reconnect, one token-refresh-and-retry on close 4003, quiet REST-poll fallback past the retry
+cap) and `LotController` (REST `Lot` snapshot + `LotSocket`; merges live frames, re-fetches on
+reconnect/focus, recomputes `is_leading` from the frame's `leading_bidder_id`). API layer:
+`AuctionService`, `resolveWsUrl()` + `VITE_API_WS_URL` (mirrors `resolveBaseUrl()` — throws if unset,
+no hardcoded fallback), `schema.d.ts` regenerated against `darzmarket-api` `phase-11.1`. Screens
+`/auctions`, `/auctions/:id`, `/auctions/lots/:lotId` ported from `app.html` (`auctionsList` /
+`aucDetail` / lot view; CSS class names + source lines cited). "Auctions" link added to the catalogue
+hero. 13 new tests (60 total), typecheck/lint/format/build clean. Verified in-browser against a
+seeded local backend: a bid placed via the admin path pushed a live WS frame that updated the lot
+page (current bid / bid count / "Your bid is leading") with no reload. Depends on backend
+`phase-11.1-auctions-lot-browse` (merged): nested `artwork` + `is_leading` on the collector lot
+serializer, `lots_count` on `Auction`, WS close-code 4003 for an expired token, `seed_auction`
+command. Plan + step breakdown: `docs/PHASE_8_PLAN.md`. Frontend PR `phase-8-auctions-browse`.
+
 ## 2026-09-07 — Phase 14: Vercel deploy config (deploy itself blocked)
 
 Owner opened Phase 14 ("deploy it") and chose a **UI-only deploy** — publish the interface for visual

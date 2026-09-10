@@ -17,6 +17,35 @@ export type Artwork = Omit<Schemas['ArtworkCollector'], 'artist'> & {
 export type Artist = Schemas['ArtistCollector'];
 export type ArtworkImage = Schemas['ArtworkImage'];
 export type SavedArtwork = Schemas['SavedArtwork'];
+
+/** Auctions (Phase 8). `Auction` carries `lots_count`; `Lot` (the collector
+ * tier) nests the full `artwork` and a request-aware `is_leading` — no
+ * `reserve_amount`/`leading_bidder` identity is ever exposed here. Same
+ * `artist`-nullable caveat as `Artwork`. */
+export type Auction = Schemas['Auction'];
+export type Lot = Omit<Schemas['LotCollector'], 'artwork'> & { artwork: Artwork };
+export type BidHistoryItem = Schemas['BidHistory'];
+export type AuctionStatus = Schemas['AuctionStatusEnum'];
+export type LotStatus = Schemas['LotStatusEnum'];
+
+/** The read-only frame `apps.auctions.consumers.LotConsumer` pushes on every
+ * accepted bid / go-live / close (`_broadcast_lot_state`). Not in the OpenAPI
+ * document — this is the shape the consumer builds by hand. */
+export interface LotStateFrame {
+  lot_id: string;
+  status: LotStatus;
+  current_amount: string | null;
+  bid_count: number;
+  leading_bidder_id: string | null;
+  reserve_met: boolean;
+  ends_at: string;
+}
+
+/** Auctions list params (`GET /api/auctions/`). */
+export interface AuctionQuery {
+  per_page?: number;
+  page?: number;
+}
 export type CollectorRequest = Schemas['RequestCollector'];
 export type AdminRequest = Schemas['RequestAdmin'];
 
