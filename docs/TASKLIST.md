@@ -1,10 +1,12 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-10 (Phase 8 step 3 in flight) ·
-**Current focus:** **Phase 8 (auctions) — step 3 of 4.** Steps 1 (browse) + 2 (register + bid)
-merged both sides. Step 3 (notifications + status vocabulary): backend `phase-11.3-auctions-notifications`
-PR open; frontend `phase-8-auctions-notifications` PR open — both awaiting owner merge. Then step 4
-(results archive). Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
+**Last updated:** 2026-09-10 (Phase 8 step 4 in flight — final step) ·
+**Current focus:** **Phase 8 (auctions) — step 4 of 4 (final).** Steps 1–3 merged both sides.
+Step 4 (results archive): backend `phase-11.4-auctions-records` PR open; frontend
+`phase-8-auctions-records` PR open — both awaiting owner merge. On merge, **Phase 8 is done**
+(the admin Records-desk widening carries over to frontend Phase 11 — see
+`docs/PHASE_8_PLAN.md` § Deferred and `docs/PHASE_8_API_GAPS.md` G-P8-1).
+Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
 feed remains merged and level. Owner call
 2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1 request/offer →
 admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the Phase 14 deploy
@@ -283,19 +285,25 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       verbatim), `BidSheet` (grouped max field, `min_next_amount` prefill, `Toast`). Verified:
       terms gate → register (`terms_accepted_at` stamped) → admin approve → place bid ("Your bid is
       leading" + toast) → a below-your-max raise rejected with the server's message.
-- [~] **Step 3 — notifications + status vocabulary** — both PRs open, awaiting owner merge. Backend
+- [x] **Step 3 — notifications + status vocabulary** — **merged both sides.** Backend
       `phase-11.3-auctions-notifications` (BE-7: `lot_artwork_title`/`lot_number` on the collector
       notification serializer + `payload`-shape docs). Frontend `phase-8-auctions-notifications`:
       `AuctionNotificationsController` (boot + ~45s poll + on-focus, optimistic markRead/markAllRead),
       `AuctionNotificationsProvider` (one on context inside `RequireAuth`, renders the banner),
       `AuctionBanner` (ported `.dz-anotif`), `/auctions/notifications` page, `status.ts` (the one
-      `lotPills`/`notificationPill`/`notificationLine` vocabulary, ported from `aucPill`) wired into
-      the lot rows + lot detail. "Notifications (N)" link in the auctions hero. 12 new tests
-      (80 total). Verified end-to-end in-browser: banner shows the newest unread with the right
-      accent; the feed lists both with pills + "Lot N"; marking one read updates the hero count,
-      the mark-all count and swaps the banner to the next unread — all off one shared polled controller.
-- [ ] **Step 4 — results archive** — lean collector view of external auction results. Backend BE-6
-      (`GET /api/auctions/records/`). Full field parity = deferred admin Records desk (Phase 11).
+      `lotPills`/`notificationPill`/`notificationLine` vocabulary) wired into the lot rows + lot
+      detail. "Notifications (N)" link in the auctions hero. Verified: banner shows the newest unread,
+      the feed lists with pills + "Lot N", marking one read propagates everywhere.
+- [~] **Step 4 — results archive** — both PRs open, awaiting owner merge. Backend
+      `phase-11.4-auctions-records` (BE-6: collector `GET /api/auctions/records/` + `/{id}/` with
+      `?search=` / `?ordering=` / `?artist=`, and a computed `artist_display_name`). Frontend
+      `phase-8-auctions-records`: `RecordsController extends ListController` (debounced search + sort),
+      `/records` + `/records/:id` ported from `recordsView()` (`.rec2-*` chrome), "Records" link in
+      the auctions hero (the old `showRecordsTab` flag is gone). 4 new tests (84 total). Verified:
+      list renders `artist_display_name` (FK + raw fallback), newest-first, debounced server-side
+      search, detail with all fields + source link. **Field-parity gap logged in
+      `docs/PHASE_8_API_GAPS.md` (G-P8-1); the admin Records desk is deferred to Phase 11**
+      (`docs/PHASE_8_PLAN.md` § Deferred).
 
 ## Phase 9 — Collector: profile, questionnaire, chat, settings/membership
 

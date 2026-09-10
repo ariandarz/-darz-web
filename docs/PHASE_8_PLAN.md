@@ -1,6 +1,6 @@
 # Phase 8 — Collector: Auctions — implementation plan
 
-**Status:** Steps 1 + 2 of 4 MERGED both sides; Step 3 of 4 — both PRs open, awaiting owner merge
+**Status:** Steps 1-3 of 4 MERGED both sides; Step 4 of 4 (final) — both PRs open, awaiting owner merge
 (2026-09-10) · **Created:** 2026-09-10 ·
 **Owner-approved slicing:** Option A (browse → bid → notifications → records), Option A transport
 (WebSocket + lean REST resync).
@@ -228,6 +228,9 @@ surface.
 
 ## Step 4 — Results archive
 
+**Status (2026-09-10): implemented both sides, both PRs open, awaiting owner merge.** All items
+below done and verified end-to-end in-browser — see the Progress log. **On merge, Phase 8 is done.**
+
 ### What "Results archive" is
 
 A top-level collector surface in the old app ("Market · Auctions · **Records** · Insights · Profile ·
@@ -419,7 +422,28 @@ _Append one entry per step as it merges. Newest last._
   (proves BE-7); marking one read updates the hero count, the mark-all count and swaps the banner to
   the next unread — all off one shared polled controller.
   Docs updated: this file, `docs/TASKLIST.md`, `docs/CHANGELOG.md` (both repos).
-  Next: owner merges both PRs, then Step 4 (`phase-11.4-auctions-records` + `phase-8-auctions-records`).
+- **2026-09-10 — Step 3: MERGED both sides.** `darzmarket-api` `phase-11.3-auctions-notifications` →
+  `development` (`740ea20`, PRs #8/#9); `darzmarket-web` `phase-8-auctions-notifications` →
+  `development` (`f22ddcf`, PR #11).
+- **2026-09-10 — Step 4: backend + frontend implemented, both PRs open, awaiting owner merge.**
+  Backend `phase-11.4-auctions-records` (`darzmarket-api`, off `development` @ `740ea20`, commit
+  `3db8573`): BE-6 — `GET /api/auctions/records/` + `/{id}/` (`IsCollectorPrincipal`, reuse
+  `AuctionRecordSerializer`), `?search=` / `?ordering=` / `?artist=`, new `operation_id`s,
+  `select_related("artist")`, soft-deleted excluded; `AuctionRecordSerializer` gains read-only
+  `artist_display_name` (linked Artist's name, else `artist_name_raw`). No migration. 6 new backend
+  tests (`apps.auctions` 52→58, full suite 423). `spectacular` + `ruff` clean.
+  Frontend `phase-8-auctions-records` (`darzmarket-web`, off `development` @ `f22ddcf`):
+  `AuctionService.records()/record()`; `RecordsController extends ListController` (debounced search +
+  sort); `/records` + `/records/:id` ported from `recordsView()` (`.rec2-*` chrome); "Records" link
+  in the auctions hero; `auctions.css` additions (cited); `docs/PHASE_8_API_GAPS.md` (G-P8-1 — the
+  field-parity gap vs. the old Records tab). 4 new frontend tests (84 total); typecheck/lint/format/
+  build clean.
+  **Verified end-to-end in-browser** (seeded records): the list renders `artist_display_name` (FK
+  name + `artist_name_raw` fallback both), newest-first sort, a debounced server-side search filters
+  to one house, and the detail shows all fields + the source link.
+  Docs updated: this file, `docs/TASKLIST.md`, `docs/CHANGELOG.md` (both repos), `docs/PHASE_8_API_GAPS.md`.
+  **On merge of both PRs, Phase 8 (auctions) is complete.** The admin Records-desk widening
+  (BE-R1…BE-R6, FE-R1…FE-R4 in § Deferred) carries over to frontend Phase 11.
 
 ## Resolved decisions
 

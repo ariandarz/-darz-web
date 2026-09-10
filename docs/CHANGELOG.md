@@ -5,6 +5,30 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-10 — Phase 8 step 4: auctions — the external auction-house Records archive
+
+Backend `darzmarket-api` `phase-11.4` adds a read-only collector view of `AuctionRecord`:
+`GET /api/auctions/records/` + `/{id}/` (`IsCollectorPrincipal`), `?search=` (artist / house / lot
+title), `?ordering=` (`sale_date` / `price_amount` +/-), `?artist=<uuid>`, plus a computed
+`artist_display_name` (linked Artist's name, else `artist_name_raw`). Frontend:
+`AuctionService.records()/record()`; `RecordsController extends ListController` (debounced 300ms
+`setSearch` + `setOrdering`, like the catalogue toolbar); `useRecords()` / `useRecord()`. `/records`
+(RecordsPage) + `/records/:id` (RecordDetailPage) ported from `app.html` `recordsView()` (~4760+):
+the `.rec2-hd` header + chroma seam, the `.rec2-tools` search/sort row, a `.rec2-grid` of `.rec2-c`
+cards (house + sale-month, artist, lot title, price realised); the detail reuses the shared
+`.detail` shell + `.fields` with the source link + notes. "Records" link in the auctions hero — the
+old `showRecordsTab: 'Hidden'` flag is not reproduced, it is a plain always-on route now.
+`auctions.css` ports the `.rec2-*` chrome (source lines cited). **`docs/PHASE_8_API_GAPS.md` G-P8-1**
+records the field-parity gap: the backend `AuctionRecord` is much leaner than the old Records tab
+(no image / year / medium / dimensions / estimates / hammer-vs-realized / sale_name / provenance /
+Past-Upcoming-Live section / highlights) — the widened model + the admin Records desk that maintains
+it are deferred to Phase 11 (`docs/PHASE_8_PLAN.md` § Deferred). 4 new tests (84 total); typecheck /
+lint / format / build clean. Verified end-to-end in-browser (seeded records): the list renders
+`artist_display_name` (FK name + `artist_name_raw` fallback both), newest-first, a debounced
+server-side search filters to one house, and the detail shows all fields + the source link.
+Frontend PR `phase-8-auctions-records`; backend PR `phase-11.4-auctions-records`.
+**On merge, Phase 8 (auctions) is complete.**
+
 ## 2026-09-10 — Phase 8 step 3: auctions — notifications feed + live banner + unified status pills
 
 Backend `darzmarket-api` `phase-11.3` adds read-only `lot_artwork_title` / `lot_number` to the
