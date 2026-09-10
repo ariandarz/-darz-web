@@ -12,6 +12,7 @@ import { useResource } from '../catalogue/useCatalogue';
 import { useListController } from '../shared/useListController';
 import { AuctionListController } from './AuctionListController';
 import { LotController, type LotControllerSnapshot } from './LotController';
+import { RegistrationController, type RegistrationSnapshot } from './RegistrationController';
 
 export { useResource } from '../catalogue/useCatalogue';
 
@@ -36,8 +37,13 @@ export function useBidHistory(lotId: string) {
 }
 
 /** Live lot state: a `LotController` (REST snapshot + `LotSocket`) constructed
- * per `lotId`, started on mount, stopped on unmount. */
-export function useLot(lotId: string): LotControllerSnapshot & { reload: () => void } {
+ * per `lotId`, started on mount, stopped on unmount. Also exposes the
+ * place-bid action + its in-flight / error / accepted state (Phase 8 step 2). */
+export function useLot(lotId: string): LotControllerSnapshot & {
+  reload: () => void;
+  placeBid: (maxAmount: number | string) => Promise<boolean>;
+  clearBidState: () => void;
+} {
   const { auctions, session } = useApi();
   const { me, principal } = useSession();
   const myCollectorId = principal === 'collector' ? (me?.id ?? null) : null;
@@ -57,5 +63,38 @@ export function useLot(lotId: string): LotControllerSnapshot & { reload: () => v
     () => controller.getSnapshot(),
   );
 
-  return { ...snapshot, reload: () => void controller.reload() };
+  return {
+    ...snapshot,
+    reload: () => void controller.reload(),
+    placeBid: (maxAmount) => controller.placeBid(maxAmount),
+    clearBidState: () => controller.clearBidState(),
+  };
+}
+
+/** The collector's paddle registrations, scoped to one auction event screen.
+ * Loads on mount; `register` files a request and reloads. */
+export function useMyRegistration(auctionId: string): RegistrationSnapshot & {
+  registration: RegistrationSnapshot['registrations'][number] | null;
+  register: (agreeTerms: boolean) => Promise<boolean>;
+  clearRegisterError: () => void;
+} {
+  const { auctions } = useApi();
+  const [controller] = useState(() => new RegistrationController(auctions));
+
+  useEffect(() => {
+    void controller.load();
+  }, [controller]);
+
+  const snapshot = useSyncExternalStore(
+    (cb) => controller.subscribe(cb),
+    () => controller.getSnapshot(),
+    () => controller.getSnapshot(),
+  );
+
+  return {
+    ...snapshot,
+    registration: controller.forAuction(auctionId),
+    register: (agreeTerms) => controller.register(auctionId, agreeTerms),
+    clearRegisterError: () => controller.clearRegisterError(),
+  };
 }

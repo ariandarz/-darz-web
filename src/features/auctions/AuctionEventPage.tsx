@@ -1,12 +1,9 @@
 /**
  * AuctionEventPage — one auction. Ported from `app.html` `aucDetail()`
  * (~8230-8330): back bar, poster hero + status badge, eyebrow/title/date,
- * a Closes-in / Opens-in countdown, description, then `.auc-lots` — the
- * `.lotrow` list (~1736-1762).
- *
- * Step 1 is browse only. The old page's "Register to bid" panel and the
- * registration-state band (`bidRegState`, ~8300) are Phase 8 step 2 — a
- * `RegistrationController` fills that slot then.
+ * a Closes-in / Opens-in countdown, description, the `RegistrationBand`
+ * (`bidRegState` slot, ~8300), then `.auc-lots` — the `.lotrow` list
+ * (~1736-1762).
  */
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { primaryImage } from '../catalogue/format';
@@ -19,13 +16,15 @@ import {
   lotStatusLabel,
   lotTimeLeft,
 } from './format';
-import { useAuction, useLots } from './useAuctions';
+import { RegistrationBand } from './RegistrationBand';
+import { useAuction, useLots, useMyRegistration } from './useAuctions';
 
 export function AuctionEventPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const auctionReq = useAuction(id!);
   const lotsReq = useLots(id!);
+  const reg = useMyRegistration(id!);
 
   if (auctionReq.status === 'loading') return <p className="dz-state">Loading…</p>;
   if (auctionReq.status === 'error') return <p className="dz-state err">{auctionReq.error}</p>;
@@ -85,7 +84,13 @@ export function AuctionEventPage() {
           </div>
         )}
 
-        {/* Registration + bidding land in Phase 8 step 2. */}
+        <RegistrationBand
+          auction={auction}
+          registration={reg.registration}
+          register={reg.register}
+          registering={reg.registering}
+          registerError={reg.registerError}
+        />
 
         <div className="auc-lots-h">
           <span className="lh-t">The lots</span>

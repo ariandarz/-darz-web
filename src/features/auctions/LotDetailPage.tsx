@@ -7,20 +7,27 @@
  *
  * Live price/bid-count/countdown come from `useLot` (`LotController`: REST
  * snapshot + `LotSocket`, with a REST re-fetch on reconnect/focus and an
- * ~8s poll fallback). Step 1 has no place-bid control — that is step 2.
+ * ~8s poll fallback). Step 2 adds the place-bid / raise-bid control — gated
+ * on an approved paddle, opening `BidSheet`; server rejections surface via a
+ * `Toast`, as does an accepted bid.
  */
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Toast } from '../../components';
 import { primaryImage } from '../catalogue/format';
 import './auctions.css';
+import { BidSheet } from './BidSheet';
 import { formatMoney, lotStatusLabel, lotTimeLeft } from './format';
-import { useBidHistory, useLot } from './useAuctions';
+import { useBidHistory, useLot, useMyRegistration } from './useAuctions';
 
 export function LotDetailPage() {
   const { lotId } = useParams<{ lotId: string }>();
   const navigate = useNavigate();
-  const { lot, status, error, live } = useLot(lotId!);
+  const { lot, status, error, live, bidding, bidError, bidAccepted, placeBid, clearBidState } =
+    useLot(lotId!);
   const history = useBidHistory(lotId!);
+  const reg = useMyRegistration(lot?.auction ?? '');
+  const [bidOpen, setBidOpen] = useState(false);
 
   // Re-render the countdown once a second while the lot is live.
   const [, tick] = useState(0);
@@ -124,6 +131,37 @@ export function LotDetailPage() {
           </div>
         </div>
 
+        {lot.status === 'live' && (
+          <div className="actions" style={{ marginTop: 12 }}>
+            {reg.registration?.status === 'approved' ? (
+              <button
+                type="button"
+                className="act-primary bid"
+                onClick={() => {
+                  clearBidState();
+                  setBidOpen(true);
+                }}
+              >
+                {lot.is_leading ? 'Raise your bid' : 'Place a bid'}
+              </button>
+            ) : (
+              <p className="auc-live-hint">
+                {reg.registration?.status === 'pending'
+                  ? 'Your paddle is being confirmed — bidding unlocks automatically.'
+                  : reg.registration?.status === 'rejected'
+                    ? 'Bidding is not available on this account for this auction.'
+                    : null}
+                {!reg.registration && (
+                  <>
+                    <Link to={`/auctions/${lot.auction}`}>Register a paddle</Link> on the
+                    auction page to place bids.
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        )}
+
         {(live === 'reconnecting' || live === 'failed') && (
           <p className="auc-live-hint">
             Reconnecting to live updates… the price shown may be a few seconds behind.
@@ -173,9 +211,23 @@ export function LotDetailPage() {
             ))}
           </div>
         )}
-
-        {/* Place-a-bid / registration: Phase 8 step 2. */}
       </div>
+
+      {bidOpen && (
+        <BidSheet
+          lot={lot}
+          open
+          onClose={() => setBidOpen(false)}
+          onPlaceBid={placeBid}
+          bidding={bidding}
+          error={bidError}
+        />
+      )}
+      <Toast
+        open={bidAccepted || bidError !== null}
+        message={bidAccepted ? 'Your bid is in.' : (bidError ?? '')}
+        onClose={clearBidState}
+      />
     </div>
   );
 }

@@ -24,6 +24,13 @@ export interface LotControllerSnapshot {
   error: string | null;
   /** connection state of the live socket, surfaced for a subtle UI hint */
   live: LotSocketStatus;
+  /** a place-bid POST is in flight — the double-tap / key-repeat guard */
+  bidding: boolean;
+  /** the server's rejection message for the last bid, or null (below-floor,
+   * "your new max must be higher", 403 not-approved, lot-not-live …) */
+  bidError: string | null;
+  /** set once a bid is accepted, for the confirmation toast; cleared by the UI */
+  bidAccepted: boolean;
 }
 
 const POLL_MS = 8000;
@@ -50,7 +57,15 @@ export class LotController extends Observable<LotControllerSnapshot> {
     myCollectorId: string | null,
     wsFactory?: WebSocketFactory,
   ) {
-    super({ lot: null, status: 'loading', error: null, live: 'idle' });
+    super({
+      lot: null,
+      status: 'loading',
+      error: null,
+      live: 'idle',
+      bidding: false,
+      bidError: null,
+      bidAccepted: false,
+    });
     this.auctions = auctions;
     this.lotId = lotId;
     this.myCollectorId = myCollectorId;
@@ -75,6 +90,30 @@ export class LotController extends Observable<LotControllerSnapshot> {
 
   reload(): Promise<void> {
     return this.refetch();
+  }
+
+  /** Place a proxy/max bid. Refuses a second call while one is in flight
+   * (`app.html`'s `dzGuard('bid:'+lot)` double-tap guard). On success the
+   * server returns the updated lot — merge it exactly like a live frame, so
+   * the price / count / `is_leading` update immediately even before the WS
+   * frame arrives. On failure, surface the server's own message verbatim
+   * (the floor / must-increase / not-approved / not-live rejections). */
+  async placeBid(maxAmount: number | string): Promise<boolean> {
+    if (this.getSnapshot().bidding) return false;
+    this.patch({ bidding: true, bidError: null, bidAccepted: false });
+    try {
+      const lot = await this.auctions.placeBid(this.lotId, maxAmount);
+      this.patch({ lot, bidding: false, bidAccepted: true });
+      return true;
+    } catch (err) {
+      this.patch({ bidding: false, bidError: (err as Error).message });
+      return false;
+    }
+  }
+
+  clearBidState(): void {
+    const s = this.getSnapshot();
+    if (s.bidError || s.bidAccepted) this.patch({ bidError: null, bidAccepted: false });
   }
 
   private async refetch(): Promise<void> {

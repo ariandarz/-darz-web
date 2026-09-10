@@ -3834,6 +3834,16 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /**
+             * Conditions of sale
+             * @description Per-auction Conditions of Sale shown at registration. Blank = the app's default text.
+             */
+            readonly terms: string;
+            /**
+             * Terms acceptance required
+             * @description When true, a collector must accept the Conditions of Sale to register a paddle.
+             */
+            readonly terms_required: boolean;
             readonly lots_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
@@ -4003,12 +4013,22 @@ export interface components {
             readonly auction: string;
             readonly status: components["schemas"]["BidderRegistrationStatusEnum"];
             readonly paddle_number: number | null;
+            /**
+             * Format: date-time
+             * @description Set when the collector accepted the auction's Conditions of Sale at registration.
+             */
+            readonly terms_accepted_at: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
         BidderRegistrationCreate: {
             /** Format: uuid */
             auction: string;
+            /**
+             * @description Must be true when the auction's terms_required is set — the collector accepts the Conditions of Sale.
+             * @default false
+             */
+            agree_terms: boolean;
         };
         /**
          * @description * `pending` - Pending
@@ -4950,6 +4970,8 @@ export interface components {
             readonly artwork: components["schemas"]["ArtworkCollector"];
             readonly lot_number: number;
             /** Format: decimal */
+            readonly opening_amount: string;
+            /** Format: decimal */
             readonly low_estimate: string | null;
             /** Format: decimal */
             readonly high_estimate: string | null;
@@ -4969,6 +4991,8 @@ export interface components {
             readonly bid_count: number;
             readonly reserve_met: boolean;
             readonly is_leading: boolean;
+            /** Format: decimal */
+            readonly min_next_amount: string;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */

@@ -57,7 +57,12 @@ const frame = (over: Partial<LotStateFrame>): LotStateFrame => ({
 
 function make(myId: string | null = ME) {
   const sockets: FakeWs[] = [];
-  const auctions = { lot: vi.fn(async () => baseLot()) };
+  const auctions = {
+    lot: vi.fn(async () => baseLot()),
+    placeBid: vi.fn(
+      async () => ({ ...baseLot(), current_amount: '200', bid_count: 2 }) as Lot,
+    ),
+  };
   const session = { currentAccessToken: () => 'tok', refresh: vi.fn(async () => {}) };
   const c = new LotController(
     auctions as never,
@@ -126,6 +131,56 @@ describe('LotController', () => {
     sockets[0].onopen!();
     await tick();
     expect(auctions.lot.mock.calls.length).toBeGreaterThan(afterStart);
+    c.stop();
+  });
+
+  it('placeBid merges the returned lot and flags bidAccepted', async () => {
+    const { c, auctions } = make();
+    c.start();
+    await tick();
+
+    const ok = await c.placeBid(200);
+
+    expect(ok).toBe(true);
+    expect(auctions.placeBid).toHaveBeenCalledWith(LOT, 200);
+    expect(c.getSnapshot().lot?.current_amount).toBe('200');
+    expect(c.getSnapshot().lot?.bid_count).toBe(2);
+    expect(c.getSnapshot().bidAccepted).toBe(true);
+    expect(c.getSnapshot().bidding).toBe(false);
+    c.stop();
+  });
+
+  it('placeBid refuses a second call while one is in flight', async () => {
+    const { c, auctions } = make();
+    let release: (v: Lot) => void = () => {};
+    auctions.placeBid.mockImplementationOnce(() => new Promise<Lot>((r) => (release = r)));
+    c.start();
+    await tick();
+
+    const first = c.placeBid(200);
+    const second = await c.placeBid(300); // guard: returns false immediately
+    expect(second).toBe(false);
+    expect(auctions.placeBid).toHaveBeenCalledTimes(1);
+
+    release({ ...baseLot(), current_amount: '200' } as Lot);
+    await first;
+    c.stop();
+  });
+
+  it('placeBid surfaces the server rejection message on bidError', async () => {
+    const { c, auctions } = make();
+    auctions.placeBid.mockRejectedValueOnce(new Error('Max bid must be at least 200.'));
+    c.start();
+    await tick();
+
+    const ok = await c.placeBid(150);
+
+    expect(ok).toBe(false);
+    expect(c.getSnapshot().bidError).toBe('Max bid must be at least 200.');
+    expect(c.getSnapshot().bidding).toBe(false);
+
+    c.clearBidState();
+    expect(c.getSnapshot().bidError).toBeNull();
     c.stop();
   });
 
