@@ -1,0 +1,969 @@
+/* =============================================================================
+   Collector auctions — list, event page, lot detail, bid history.
+   Ported from the shipped Market App (`DarzStudio/app.html`), same class names
+   so it diffs against the original. Source lines cited per block.
+   Phase 8 step 1 = browse only (no bidding / registration chrome yet).
+   ========================================================================== */
+
+/* ---- auctions list: column of split cards (app.html ~1621-1666, auctionsList
+   ~5674) ----------------------------------------------------------------- */
+.auc-events {
+  padding: 4px 0 8px;
+}
+.card.auc-split {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  padding: 0;
+  margin: 12px 16px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  background: #16120f;
+  cursor: pointer;
+  text-decoration: none;
+}
+.card.auc-split .auc-split-img {
+  flex: 0 0 42%;
+  max-width: 248px;
+  position: relative;
+  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 210px;
+  padding: 11px;
+}
+.card.auc-split .auc-split-img img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 190px;
+  object-fit: contain;
+}
+.card.auc-split .auc-split-img .ph {
+  color: #6b6259;
+  font-family: var(--font-head);
+  font-size: 30px;
+}
+.card.auc-split .auc-split-meta {
+  flex: 1;
+  min-width: 0;
+  padding: 18px 19px;
+  display: flex;
+  flex-direction: column;
+  color: #efe9de;
+}
+/* status badge on the poster + status chip below (app.html ~1628, ~1650-1666) */
+.asm-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  z-index: 3;
+}
+.asm-badge.live {
+  background: #15803d;
+}
+.asm-badge.upcoming {
+  background: #506f8a;
+}
+.asm-badge.ended {
+  background: #6a6a6a;
+}
+.asm-title {
+  font-family: var(--font-head);
+  font-size: 23px;
+  line-height: 1.08;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+.asm-date {
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  color: #b0a89d;
+  margin-top: 6px;
+}
+.asm-chroma {
+  height: 2px;
+  width: 32px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+  margin: 12px 0 0;
+}
+.asm-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.asm-stat .d {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.asm-stat.live {
+  color: #5fd99a;
+}
+.asm-stat.upcoming {
+  color: #9db8cf;
+}
+.asm-stat.ended {
+  color: #a8a39b;
+}
+.asm-count {
+  margin-top: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #cdc6ba;
+}
+.asm-count.live {
+  color: #5fd99a;
+}
+.asm-lots {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9a9189;
+  margin-top: 5px;
+}
+.asm-desc {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #c4bcb0;
+  margin-top: auto;
+  padding-top: 12px;
+  font-weight: 300;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---- event page hero + badge (app.html ~500-507, ~1668-1670) ------------ */
+.auc-hero {
+  background: var(--hair2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 38vh;
+  overflow: hidden;
+  border-bottom: 1px solid var(--hair);
+  position: relative;
+  padding: 14px;
+}
+.auc-hero img {
+  max-width: 100%;
+  max-height: 34vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.auc-hero.poster {
+  background: #0a0a0a;
+  padding: 18px;
+}
+.auc-hbadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  z-index: 2;
+}
+.auc-hbadge.live {
+  background: #15803d;
+}
+.auc-hbadge.upcoming {
+  background: #506f8a;
+}
+.auc-hbadge.ended {
+  background: #6a6a6a;
+}
+
+/* countdown line on the event page (app.html aucDetail ~8286) */
+.auc-cd {
+  margin-top: 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.auc-cd .lab {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.auc-cd .num {
+  display: block;
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ---- lots list on the event page (app.html ~1736-1762) ----------------- */
+.auc-lots-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 22px 0 12px;
+}
+.auc-lots-h .lh-t {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.auc-lots-h .lh-n {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--ink3);
+  font-variant-numeric: tabular-nums;
+}
+.lotrow {
+  display: flex;
+  gap: 15px;
+  padding: 14px;
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  background: var(--card);
+  cursor: pointer;
+  margin-bottom: 11px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+.lotrow:hover {
+  border-color: var(--ink3);
+}
+.lotrow .lt-img {
+  width: 98px;
+  height: 98px;
+  border-radius: 12px;
+  background: var(--hair2) center / cover no-repeat;
+  flex: 0 0 auto;
+  border: 1px solid var(--hair);
+}
+.lotrow .lt-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lt-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.lt-no {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  font-variant-numeric: tabular-nums;
+}
+.lt-artist {
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.18;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lt-title {
+  font-size: 13px;
+  color: var(--ink2);
+  font-family: var(--font-head);
+  font-style: italic;
+  line-height: 1.3;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lt-spec {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lt-est {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+.lt-est b {
+  color: var(--ink2);
+  font-weight: 700;
+}
+.lt-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 12px;
+  margin-top: 10px;
+  padding-top: 11px;
+  border-top: 1px solid var(--hair2);
+  flex-wrap: wrap;
+}
+.lt-money {
+  min-width: 0;
+  flex: 1 1 150px;
+}
+.lt-money .lt-lab {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  display: block;
+  margin-bottom: 3px;
+}
+.lt-money .lt-amt {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lt-money .lt-amt.none {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink3);
+}
+.lt-money .lt-bidders {
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.lt-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+.lt-stat .d {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.lt-stat.live {
+  color: #157346;
+  background: rgba(31, 122, 77, 0.1);
+  border-color: rgba(31, 122, 77, 0.26);
+}
+.lt-stat.opens {
+  color: var(--ink3);
+  background: var(--hair2);
+}
+
+/* ---- bid history (app.html ~1310-1316) --------------------------------- */
+.dz-bidhist {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 14px;
+}
+.dz-bidhist .bh-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--hair2);
+  font-size: 12.5px;
+}
+.dz-bidhist .bh-row:first-child {
+  border-top: 0;
+}
+.dz-bidhist .bh-row.top {
+  background: rgba(31, 122, 77, 0.07);
+}
+.dz-bidhist .bh-who {
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+.dz-bidhist .bh-amt {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.dz-bidhist .bh-t {
+  color: var(--ink3);
+  font-size: 11px;
+}
+
+/* subtle "live connection" hint on the lot page — not in the old app (which
+   used Supabase Realtime silently); shown only when the socket has fallen
+   back to polling or failed, so the collector knows prices may lag. */
+.auc-live-hint {
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.auc-live-hint a {
+  text-decoration: underline;
+}
+
+/* ---- Phase 8 step 2: registration band + terms + bid ------------------- */
+
+/* registration-state band (app.html ~1703-1707) */
+.auc-msg {
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--hair);
+  margin-top: 14px;
+  color: var(--ink2);
+}
+.auc-msg-ok {
+  background: #eaf7ef;
+  border-color: #bfe6cf;
+  color: #1f6b43;
+}
+.auc-msg-pending {
+  background: #fff6e5;
+  border-color: #f0d9a0;
+  color: #7a5a00;
+}
+
+/* "Register to bid" CTA panel (app.html ~1718-1733) */
+.auc-reg {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 18px;
+  padding: 17px 18px 17px 20px;
+  cursor: pointer;
+  margin-top: 16px;
+  font: inherit;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.auc-reg:hover {
+  border-color: var(--ink3);
+}
+.auc-reg .arg-txt {
+  flex: 1;
+  min-width: 0;
+}
+.auc-reg .arg-ttl {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.auc-reg .arg-sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.auc-reg .arg-cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #26262e;
+  color: #fff;
+  border: 1px solid #3a3a44;
+  border-radius: 12px;
+  padding: 12px 17px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+@media (max-width: 460px) {
+  .auc-reg {
+    flex-wrap: wrap;
+    gap: 13px;
+  }
+  .auc-reg .arg-cta {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Conditions of Sale sheet (app.html ~dz-trm* rules, ~9039 inline block) */
+.dz-trmwrap h3 {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 600;
+}
+.dz-trm-tagline {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink2);
+  margin-top: 6px;
+}
+.dz-trmtext {
+  max-height: 46vh;
+  overflow: auto;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--hair2);
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: var(--ink2);
+  line-height: 1.6;
+  white-space: pre-line;
+  -webkit-overflow-scrolling: touch;
+}
+.dz-trmck {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.dz-trmck input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: var(--ink);
+  flex: 0 0 auto;
+}
+
+/* the lot-detail "Place a bid" primary — charcoal fill (app.html ~626,
+   `.actions .btn.bid`) so it reads as the auction CTA, not the catalogue one */
+.actions .act-primary.bid {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+/* ---- Phase 8 step 3: status pills + notification banner + feed ---------- */
+
+/* the unified status pill (app.html ~1300-1308: `aucpill` good/bad/soon/ext/
+   neutral/won) */
+.aucpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  line-height: 1;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.aucpill.good {
+  color: var(--pl-done);
+  background: var(--pl-donebg);
+  border-color: rgba(31, 157, 87, 0.3);
+}
+.aucpill.won {
+  color: var(--pl-done);
+  background: var(--pl-donebg);
+  border-color: rgba(31, 157, 87, 0.34);
+}
+.aucpill.bad {
+  color: var(--pl-block);
+  background: var(--pl-blockbg);
+  border-color: rgba(225, 29, 72, 0.3);
+}
+.aucpill.soon {
+  color: var(--pl-attn);
+  background: var(--pl-attnbg);
+  border-color: rgba(232, 0, 92, 0.28);
+}
+.aucpill.ext,
+.aucpill.neutral {
+  color: var(--ink2);
+  background: rgba(120, 120, 120, 0.08);
+  border-color: var(--hair2);
+}
+
+/* live auction notification banner (app.html ~793-807: `.dz-anotif`) */
+.dz-anotif {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 86;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: calc(100% - 36px);
+  max-width: 320px;
+  background: #0e0e0e;
+  color: #f4f4f2;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 10px 11px 10px 15px;
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+.dz-anotif::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 0 3px 3px 0;
+  background: var(--dz-seam-v);
+}
+.dz-anotif.acc-ok::before {
+  background: #34d399;
+}
+.dz-anotif.acc-bad::before {
+  background: #e0635e;
+}
+.dz-anotif.acc-soon::before {
+  background: #e89a4c;
+}
+.dz-anotif.acc-ext::before {
+  background: #8a7b5c;
+}
+.dz-anotif-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+.dz-anotif-st {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #9c9a95;
+  text-transform: uppercase;
+}
+.dz-anotif-st.ok {
+  color: #34d399;
+}
+.dz-anotif-st.warn {
+  color: #e8b45c;
+}
+.dz-anotif-st.bad {
+  color: #e8736e;
+}
+.dz-anotif-st.soon {
+  color: #f0a85c;
+}
+.dz-anotif-st.ext {
+  color: #d8c7a6;
+}
+.dz-anotif-line {
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.dz-anotif-x {
+  flex: 0 0 auto;
+  background: none;
+  border: 0;
+  color: #8a8a86;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+.dz-notif-ct {
+  align-self: flex-start;
+  margin-top: 4px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgba(232, 0, 92, 0.14);
+  color: #e8005c;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 19px;
+  text-align: center;
+}
+html.dz-desktop .dz-anotif {
+  bottom: auto;
+  top: 96px;
+}
+
+/* the /auctions/notifications feed */
+.dz-notiflist {
+  padding: 6px 16px 24px;
+}
+.dz-notifrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: var(--card);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.dz-notifrow:hover {
+  border-color: var(--ink3);
+}
+.dz-notifrow.unread {
+  border-color: var(--ink3);
+  background: var(--soft);
+}
+.dz-notifbody {
+  flex: 1;
+  min-width: 0;
+}
+.dz-notiftext {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.dz-notifmeta {
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.dz-notifread {
+  flex: 0 0 auto;
+  align-self: center;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink2);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---- Phase 8 step 4: the external auction-house records archive --------- */
+/* ported from app.html `recordsView()` (~4760+): `.rec2-*` */
+.rec2-hd {
+  padding: 26px 20px 4px;
+}
+.rec2-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.rec2-h1 {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1;
+  margin: 6px 0 0;
+  color: var(--ink);
+}
+.rec2-seam {
+  height: 2px;
+  width: 44px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+  margin: 9px 0 0;
+}
+.rec2-curnote {
+  font-size: 12px;
+  color: var(--ink3);
+  line-height: 1.55;
+  margin: 10px 0 0;
+  max-width: 90%;
+}
+.rec2-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 16px 20px 0;
+  flex-wrap: wrap;
+}
+.rec2-search {
+  flex: 1;
+  min-width: 150px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+}
+.rec2-search input {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  width: 100%;
+  height: 100%;
+  padding: 0 13px;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.rec2-sort {
+  height: 38px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rec2-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 13px;
+  padding: 14px 20px 30px;
+}
+.rec2-c {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  padding: 13px 13px 15px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.16s ease;
+}
+.rec2-c:hover {
+  transform: translateY(-2px);
+}
+.rec2-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 8px;
+}
+.rec2-meta .h {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec2-meta .d {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink3);
+}
+.rec2-ar {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.06;
+  color: var(--ink);
+}
+.rec2-ti {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.rec2-line {
+  height: 1px;
+  background: var(--hair2);
+  margin: 9px 0;
+}
+.rec2-pl {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.rec2-price {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--ink);
+  margin-top: 2px;
+}
+.rec2-price .c {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--ink3);
+  letter-spacing: 0.02em;
+}
+.rec2-wait {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+html.dz-desktop .rec2-grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+}

@@ -18,6 +18,13 @@ import { ArtistListPage } from './features/catalogue/ArtistListPage';
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
+import { AuctionEventPage } from './features/auctions/AuctionEventPage';
+import { AuctionListPage } from './features/auctions/AuctionListPage';
+import { AuctionNotificationsPage } from './features/auctions/AuctionNotificationsPage';
+import { AuctionNotificationsProvider } from './features/auctions/AuctionNotificationsProvider';
+import { LotDetailPage } from './features/auctions/LotDetailPage';
+import { RecordDetailPage } from './features/auctions/RecordDetailPage';
+import { RecordsPage } from './features/auctions/RecordsPage';
 import { RequestProvider } from './features/requests/RequestProvider';
 import { SavedItemsPage } from './features/saved/SavedItemsPage';
 import { SavedProvider } from './features/saved/SavedProvider';
@@ -27,7 +34,9 @@ function CollectorLayout() {
     <RequireAuth>
       <SavedProvider>
         <RequestProvider>
-          <Outlet />
+          <AuctionNotificationsProvider>
+            <Outlet />
+          </AuctionNotificationsProvider>
         </RequestProvider>
       </SavedProvider>
     </RequireAuth>
@@ -44,6 +53,14 @@ export function AppRoutes() {
         <Route path="/artists" element={<ArtistListPage />} />
         <Route path="/artists/:id" element={<ArtistDetailPage />} />
         <Route path="/saved" element={<SavedItemsPage />} />
+        <Route path="/auctions" element={<AuctionListPage />} />
+        <Route path="/auctions/notifications" element={<AuctionNotificationsPage />} />
+        <Route path="/auctions/:id" element={<AuctionEventPage />} />
+        <Route path="/auctions/lots/:lotId" element={<LotDetailPage />} />
+        {/* External auction-house results — the old app's "Records" tab, now a
+            plain route (the `showRecordsTab` feature flag is gone). */}
+        <Route path="/records" element={<RecordsPage />} />
+        <Route path="/records/:id" element={<RecordDetailPage />} />
         {/* Admin desk. `RequireAuth` only proves a session exists — the API's
             own admin permissions are the real gate, and a collector token gets
             403s here. A principal-aware guard is Phase 7 proper. */}

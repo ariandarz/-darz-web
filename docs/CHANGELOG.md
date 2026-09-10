@@ -5,6 +5,89 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-10 — Phase 8 step 4: auctions — the external auction-house Records archive
+
+Backend `darzmarket-api` `phase-11.4` adds a read-only collector view of `AuctionRecord`:
+`GET /api/auctions/records/` + `/{id}/` (`IsCollectorPrincipal`), `?search=` (artist / house / lot
+title), `?ordering=` (`sale_date` / `price_amount` +/-), `?artist=<uuid>`, plus a computed
+`artist_display_name` (linked Artist's name, else `artist_name_raw`). Frontend:
+`AuctionService.records()/record()`; `RecordsController extends ListController` (debounced 300ms
+`setSearch` + `setOrdering`, like the catalogue toolbar); `useRecords()` / `useRecord()`. `/records`
+(RecordsPage) + `/records/:id` (RecordDetailPage) ported from `app.html` `recordsView()` (~4760+):
+the `.rec2-hd` header + chroma seam, the `.rec2-tools` search/sort row, a `.rec2-grid` of `.rec2-c`
+cards (house + sale-month, artist, lot title, price realised); the detail reuses the shared
+`.detail` shell + `.fields` with the source link + notes. "Records" link in the auctions hero — the
+old `showRecordsTab: 'Hidden'` flag is not reproduced, it is a plain always-on route now.
+`auctions.css` ports the `.rec2-*` chrome (source lines cited). **`docs/PHASE_8_API_GAPS.md` G-P8-1**
+records the field-parity gap: the backend `AuctionRecord` is much leaner than the old Records tab
+(no image / year / medium / dimensions / estimates / hammer-vs-realized / sale_name / provenance /
+Past-Upcoming-Live section / highlights) — the widened model + the admin Records desk that maintains
+it are deferred to Phase 11 (`docs/PHASE_8_PLAN.md` § Deferred). 4 new tests (84 total); typecheck /
+lint / format / build clean. Verified end-to-end in-browser (seeded records): the list renders
+`artist_display_name` (FK name + `artist_name_raw` fallback both), newest-first, a debounced
+server-side search filters to one house, and the detail shows all fields + the source link.
+Frontend PR `phase-8-auctions-records`; backend PR `phase-11.4-auctions-records`.
+**On merge, Phase 8 (auctions) is complete.**
+
+## 2026-09-10 — Phase 8 step 3: auctions — notifications feed + live banner + unified status pills
+
+Backend `darzmarket-api` `phase-11.3` adds read-only `lot_artwork_title` / `lot_number` to the
+collector notification serializer + documents the `payload` shape per kind. Frontend:
+`AuctionService.notifications() / markRead()`; `AuctionNotificationsController extends ListController`
+— the feed with a boot + ~45s poll + on-focus refresh (no WS for notifications, matching the Phase 5
+thread decision), optimistic `markRead` / `markAllRead`, and `unread` / `unreadCount` / `latestUnread`.
+`AuctionNotificationsProvider` puts one on context inside `RequireAuth` (mirrors `SavedProvider`) and
+renders `AuctionBanner` — the live "Darz auction" banner ported from `app.html` `.dz-anotif` (~793):
+fixed bottom-centre, independent of any reply banner, kind-coloured status word + a matching left
+seam bar, count chip, tap → the related lot (marks read). `/auctions/notifications` page — newest
+first, unread emphasised, per-row + "Mark all read", tap → the lot; "Notifications (N)" link in the
+auctions hero. `status.ts` — the one vocabulary (`lotPills` / `notificationPill` / `notificationLine`,
+ported from `aucPill`, app.html ~6258) wired into the lot rows + lot detail; `auctions.css` ports
+`.aucpill*` + `.dz-anotif*` + the feed rows (source lines cited). 12 new tests (80 total);
+typecheck / lint / format / build clean. Verified end-to-end in-browser (two notifications for a real
+collector): the banner shows the newest unread with the right accent, the feed lists both with pills
++ "Lot N" (proves BE-7), and marking one read updates the hero count, the mark-all count and swaps
+the banner to the next unread — all off one shared polled controller. Frontend PR
+`phase-8-auctions-notifications`; backend PR `phase-11.3-auctions-notifications`.
+
+## 2026-09-10 — Phase 8 step 2: auctions — Conditions of Sale + paddle registration + place/raise bid
+
+Backend `darzmarket-api` `phase-11.2` adds `Auction.terms`/`terms_required`,
+`BidderRegistration.terms_accepted_at` + `agree_terms`, and `opening_amount`/`min_next_amount` on the
+collector lot. Frontend: `AuctionService.registrations()/register()/placeBid()`; `RegistrationController`
+(Observable) loads the collector's paddles, `forAuction(id)`, `register()` with an in-flight guard and
+the server's terms-required 400 surfaced verbatim; `LotController.placeBid()` — double-tap guard,
+merges the returned lot like a live frame (price / count / `is_leading` before the WS echo), surfaces
+the floor / must-increase / not-approved / not-live rejections verbatim. `ConditionsSheet` renders
+`auction.terms` or the ported `DARZ_AUC_TERMS` (app.html ~8177-8195) + the "I have read and agree"
+checkbox; `RegistrationBand` is the event-page `bidRegState` slot (`.auc-reg` CTA / `.auc-msg`
+pending|approved|rejected, app.html ~8300); `BidSheet` is a grouped max-amount field (reuses
+`requests/amount`) pre-filled with `min_next_amount`, label by `is_leading`, `Toast` on accept /
+rejection. `auctions.css` ports `.auc-msg*` / `.auc-reg` / `.dz-trm*` / `.actions .act-primary.bid`
+(source lines cited). 13 new tests (68 total); typecheck / lint / format / build clean. Verified
+end-to-end in-browser against a seeded local backend (real collector + admin approval): terms gate →
+register (`terms_accepted_at` stamped) → approve → place bid ("Your bid is leading" + "Your bid is
+in." toast) → a below-your-max raise is rejected with the server's message in the sheet + toast.
+Frontend PR `phase-8-auctions-bidding`; backend PR `phase-11.2-auctions-bidding`.
+
+## 2026-09-10 — Phase 8 step 1: collector auctions browse (list / event / lot) + live WebSocket
+
+Read-only browse; bidding/registration is step 2. New `src/features/auctions/`: `AuctionListController`
+(extends the shared `ListController`), `LotSocket` (the `ws/auctions/lots/{id}/?token=` live socket —
+backoff reconnect, one token-refresh-and-retry on close 4003, quiet REST-poll fallback past the retry
+cap) and `LotController` (REST `Lot` snapshot + `LotSocket`; merges live frames, re-fetches on
+reconnect/focus, recomputes `is_leading` from the frame's `leading_bidder_id`). API layer:
+`AuctionService`, `resolveWsUrl()` + `VITE_API_WS_URL` (mirrors `resolveBaseUrl()` — throws if unset,
+no hardcoded fallback), `schema.d.ts` regenerated against `darzmarket-api` `phase-11.1`. Screens
+`/auctions`, `/auctions/:id`, `/auctions/lots/:lotId` ported from `app.html` (`auctionsList` /
+`aucDetail` / lot view; CSS class names + source lines cited). "Auctions" link added to the catalogue
+hero. 13 new tests (60 total), typecheck/lint/format/build clean. Verified in-browser against a
+seeded local backend: a bid placed via the admin path pushed a live WS frame that updated the lot
+page (current bid / bid count / "Your bid is leading") with no reload. Depends on backend
+`phase-11.1-auctions-lot-browse` (merged): nested `artwork` + `is_leading` on the collector lot
+serializer, `lots_count` on `Auction`, WS close-code 4003 for an expired token, `seed_auction`
+command. Plan + step breakdown: `docs/PHASE_8_PLAN.md`. Frontend PR `phase-8-auctions-browse`.
+
 ## 2026-09-07 — Phase 14: Vercel deploy config (deploy itself blocked)
 
 Owner opened Phase 14 ("deploy it") and chose a **UI-only deploy** — publish the interface for visual

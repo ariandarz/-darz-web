@@ -1,11 +1,21 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-07 · **Current focus:** **everything below is merged and both branches are
-level.** Owner call 2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1
-request/offer → admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the
-Phase 14 deploy config; PR #5 brought `development` back level. `main` and `development` now have
-identical trees (`main` `7214508`, `development` `9e241ff`). Nothing is in flight on a feature
-branch.
+**Last updated:** 2026-09-10 (Phase 8 step 4 in flight — final step) ·
+**Current focus:** **Phase 8 (auctions) — step 4 of 4 (final).** Steps 1–3 merged both sides.
+Step 4 (results archive): backend `phase-11.4-auctions-records` PR open; frontend
+`phase-8-auctions-records` PR open — both awaiting owner merge. On merge, **Phase 8 is done**
+(the admin Records-desk widening carries over to frontend Phase 11 — see
+`docs/PHASE_8_PLAN.md` § Deferred and `docs/PHASE_8_API_GAPS.md` G-P8-1).
+Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
+feed remains merged and level. Owner call
+2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1 request/offer →
+admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the Phase 14 deploy
+config; PR #5 brought `development` back level; PR #6 + #7 were docs-only (recorded the merges +
+deploy state in this file, `CLAUDE.md`, `CHANGELOG.md`). `main` (`76bc65d`) and `development`
+(`602f547`) now have **identical trees**. **No open PRs** (GitHub API, 2026-09-07). Two stale
+remote branches remain — `origin/claude/flow-1-requests-offers-admin` and
+`origin/claude/phase-6-saved-favorites-gy70nd` — their work is fully merged; safe to delete.
+Nothing is in flight on a feature branch.
 
 **The one thing not done: the deploy itself is blocked.** Owner chose a UI-only deploy
 (2026-09-07), the config is committed and the production build is verified, but creating the Vercel
@@ -250,17 +260,50 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
 - [ ] Sales CRUD + transition/payment/delivery-status actions
 - [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
 
-## Phase 8 — Collector: auctions ✅ backend ready (Phase 11 merged, incl. real increment ladder)
+## Phase 8 — Collector: auctions `[~]` — 4 steps, front + back together per step (see `docs/PHASE_8_PLAN.md`)
 
 Old app's largest single feature (event pages, live server-authoritative bidding, paddle
-registration, outbid/won/lost/closing notifications, results archive). Backend Phase 11 is merged and
-its real-time delivery mechanism is decided/built — confirm WebSocket-vs-polling against the shipped
-backend before designing the live-bid UI (the frontend architecture depends on that choice). The real
-increment ladder + 10-min closing window are now in place (backend PR #1).
+registration, outbid/won/lost/closing notifications, results archive). Backend Phase 11 is merged;
+real-time delivery is **WebSocket via Django Channels** (`ws/auctions/lots/{id}/?token=<jwt>`,
+read-only — bids go over REST). Owner slicing (2026-09-10): Option A (browse → bid → notifications →
+records), transport Option A (WS + a lean REST resync). All backend gaps BE-1…BE-9 in scope; each
+step ships a `darzmarket-api` branch **and** a `darzmarket-web` branch, owner merges both, then the
+next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHASE_8_PLAN.md`.
 
-- [ ] Event/lot pages, live bid display, place-bid UI (proxy/max), paddle registration flow
-- [ ] Notification UI (outbid/won/lost/closing)
-- [ ] Results archive view
+- [x] **Step 1 — browse (read-only)** — **merged both sides.** Backend `phase-11.1-auctions-lot-browse`
+      (BE-1 nested artwork, BE-2 `is_leading`, BE-3 `lots_count`, BE-8 WS 4003 close code, BE-9
+      `seed_auction`). Frontend `phase-8-auctions-browse`: `/auctions`, `/auctions/:id`,
+      `/auctions/lots/:lotId` — `AuctionListController`, `LotSocket` + `LotController` (live frame
+      merge, reconnect/focus refetch, ~8s poll fallback). Verified: a bid via the admin path pushed a
+      live WS frame that updated the lot page with no reload.
+- [x] **Step 2 — register + bid** — **merged both sides.** Backend
+      `phase-11.2-auctions-bidding` (BE-4 `Auction.terms`/`terms_required` +
+      `BidderRegistration.terms_accepted_at` + `agree_terms`; BE-5 `opening_amount`/`min_next_amount`
+      on the lot). Frontend `phase-8-auctions-bidding`: `RegistrationController`, `ConditionsSheet`
+      (ported `DARZ_AUC_TERMS`), `RegistrationBand` (CTA / pending / approved / rejected),
+      `LotController.placeBid` (in-flight guard, merges the returned lot, surfaces server rejections
+      verbatim), `BidSheet` (grouped max field, `min_next_amount` prefill, `Toast`). Verified:
+      terms gate → register (`terms_accepted_at` stamped) → admin approve → place bid ("Your bid is
+      leading" + toast) → a below-your-max raise rejected with the server's message.
+- [x] **Step 3 — notifications + status vocabulary** — **merged both sides.** Backend
+      `phase-11.3-auctions-notifications` (BE-7: `lot_artwork_title`/`lot_number` on the collector
+      notification serializer + `payload`-shape docs). Frontend `phase-8-auctions-notifications`:
+      `AuctionNotificationsController` (boot + ~45s poll + on-focus, optimistic markRead/markAllRead),
+      `AuctionNotificationsProvider` (one on context inside `RequireAuth`, renders the banner),
+      `AuctionBanner` (ported `.dz-anotif`), `/auctions/notifications` page, `status.ts` (the one
+      `lotPills`/`notificationPill`/`notificationLine` vocabulary) wired into the lot rows + lot
+      detail. "Notifications (N)" link in the auctions hero. Verified: banner shows the newest unread,
+      the feed lists with pills + "Lot N", marking one read propagates everywhere.
+- [~] **Step 4 — results archive** — both PRs open, awaiting owner merge. Backend
+      `phase-11.4-auctions-records` (BE-6: collector `GET /api/auctions/records/` + `/{id}/` with
+      `?search=` / `?ordering=` / `?artist=`, and a computed `artist_display_name`). Frontend
+      `phase-8-auctions-records`: `RecordsController extends ListController` (debounced search + sort),
+      `/records` + `/records/:id` ported from `recordsView()` (`.rec2-*` chrome), "Records" link in
+      the auctions hero (the old `showRecordsTab` flag is gone). 4 new tests (84 total). Verified:
+      list renders `artist_display_name` (FK + raw fallback), newest-first, debounced server-side
+      search, detail with all fields + source link. **Field-parity gap logged in
+      `docs/PHASE_8_API_GAPS.md` (G-P8-1); the admin Records desk is deferred to Phase 11**
+      (`docs/PHASE_8_PLAN.md` § Deferred).
 
 ## Phase 9 — Collector: profile, questionnaire, chat, settings/membership
 

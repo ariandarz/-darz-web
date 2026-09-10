@@ -587,7 +587,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List my auction notifications */
+        /**
+         * List my auction notifications
+         * @description Newest first. `payload` shape by `kind`: `outbid` / `won` -> `{"amount": "<decimal>"}`, `lost` -> `{}`, `closing_soon` -> `{"ends_at": "<iso8601>"}`. `lot_artwork_title` / `lot_number` are null when the referenced lot has been deleted.
+         */
         get: operations["auctions_notifications_retrieve"];
         put?: never;
         post?: never;
@@ -608,6 +611,43 @@ export interface paths {
         put?: never;
         /** Mark a notification read */
         post: operations["auctions_notifications_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auctions/records/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List external auction-house results
+         * @description Market-intelligence comparables — read-only. `?search=` (artist / house / lot title), `?ordering=` (`sale_date` / `price_amount` +/- prefixes), `?artist=<uuid>`.
+         */
+        get: operations["auctions_records_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auctions/records/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one external auction-house result */
+        get: operations["auctions_records_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3816,7 +3856,13 @@ export interface components {
          * @enum {string}
          */
         ArtworkVisibilityEnum: "internal_only" | "hidden" | "visible_all" | "selected" | "private_selection" | "auction_only" | "gallery_portal";
-        /** @description Single tier — nothing confidential lives on Auction itself. */
+        /**
+         * @description Single tier — nothing confidential lives on Auction itself.
+         *
+         *     ``lots_count`` reads a ``lots_count`` queryset annotation when present
+         *     (the list views add it); on a bare instance it falls back to one COUNT
+         *     query so a detail fetch never 500s for the missing annotation.
+         */
         Auction: {
             /** Format: uuid */
             readonly id: string;
@@ -3828,6 +3874,17 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /**
+             * Conditions of sale
+             * @description Per-auction Conditions of Sale shown at registration. Blank = the app's default text.
+             */
+            readonly terms: string;
+            /**
+             * Terms acceptance required
+             * @description When true, a collector must accept the Conditions of Sale to register a paddle.
+             */
+            readonly terms_required: boolean;
+            readonly lots_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -3873,11 +3930,17 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description ``artist_display_name`` is the label to show: the linked catalog
+         *     Artist's name when one is matched, else the free-text ``artist_name_raw``
+         *     (write endpoints ignore this read-only field).
+         */
         AuctionRecord: {
             /** Format: uuid */
             readonly id: string;
             /** Format: uuid */
             artist?: string | null;
+            readonly artist_display_name: string | null;
             /**
              * Artist name (as reported)
              * @description Free-text fallback when the reported name doesn't confidently match a catalog Artist.
@@ -3905,6 +3968,34 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        AuctionRecordDetailResponse: {
+            data: components["schemas"]["AuctionRecord"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AuctionRecordListResponse: {
+            data: components["schemas"]["AuctionRecordListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AuctionRecordListResponseData: {
+            pagination: components["schemas"]["AuctionRecordListResponsePagination"];
+            results: components["schemas"]["AuctionRecord"][];
+        };
+        AuctionRecordListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
         };
         /**
          * @description * `draft` - Draft
@@ -3996,12 +4087,22 @@ export interface components {
             readonly auction: string;
             readonly status: components["schemas"]["BidderRegistrationStatusEnum"];
             readonly paddle_number: number | null;
+            /**
+             * Format: date-time
+             * @description Set when the collector accepted the auction's Conditions of Sale at registration.
+             */
+            readonly terms_accepted_at: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
         BidderRegistrationCreate: {
             /** Format: uuid */
             auction: string;
+            /**
+             * @description Must be true when the auction's terms_required is set — the collector accepts the Conditions of Sale.
+             * @default false
+             */
+            agree_terms: boolean;
         };
         /**
          * @description * `pending` - Pending
@@ -4926,15 +5027,24 @@ export interface components {
         /**
          * @description No ``reserve_amount``/``leading_bidder`` — confidential/internal
          *     (see Lot.reserve_amount's help_text).
+         *
+         *     ``artwork`` is the full collector-tier artwork object (not a bare id) so
+         *     a lot row/detail renders without a second round-trip per lot. ``is_leading``
+         *     is request-aware: true only when the authenticated collector currently
+         *     holds the lot. The live WebSocket payload still carries the raw
+         *     ``leading_bidder_id`` (apps.auctions.services._broadcast_lot_state) — an
+         *     owner-acknowledged minor correlation surface, deliberately left as-is;
+         *     the REST tier never exposes another bidder's identity.
          */
         LotCollector: {
             /** Format: uuid */
             readonly id: string;
             /** Format: uuid */
             readonly auction: string;
-            /** Format: uuid */
-            readonly artwork: string;
+            readonly artwork: components["schemas"]["ArtworkCollector"];
             readonly lot_number: number;
+            /** Format: decimal */
+            readonly opening_amount: string;
             /** Format: decimal */
             readonly low_estimate: string | null;
             /** Format: decimal */
@@ -4954,6 +5064,9 @@ export interface components {
             readonly current_amount: string | null;
             readonly bid_count: number;
             readonly reserve_met: boolean;
+            readonly is_leading: boolean;
+            /** Format: decimal */
+            readonly min_next_amount: string;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -5195,12 +5308,20 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description ``payload`` keys per kind: outbid/won -> {"amount"}, lost -> {},
+         *     closing_soon -> {"ends_at"}. ``lot_artwork_title`` / ``lot_number`` are
+         *     denormalised so the client can render "outbid on «Title»" without a
+         *     per-notification lot fetch (both null when the lot was deleted).
+         */
         Notification: {
             /** Format: uuid */
             readonly id: string;
             readonly kind: components["schemas"]["NotificationKindEnum"];
             /** Format: uuid */
             readonly lot: string | null;
+            readonly lot_artwork_title: string | null;
+            readonly lot_number: number | null;
             readonly payload: unknown;
             /** Format: date-time */
             readonly read_at: string | null;
@@ -5297,11 +5418,17 @@ export interface components {
             readonly updated_at?: string;
             expected_version?: number;
         };
+        /**
+         * @description ``artist_display_name`` is the label to show: the linked catalog
+         *     Artist's name when one is matched, else the free-text ``artist_name_raw``
+         *     (write endpoints ignore this read-only field).
+         */
         PatchedAuctionRecord: {
             /** Format: uuid */
             readonly id?: string;
             /** Format: uuid */
             artist?: string | null;
+            readonly artist_display_name?: string | null;
             /**
              * Artist name (as reported)
              * @description Free-text fallback when the reported name doesn't confidently match a catalog Artist.
@@ -8009,6 +8136,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationReadResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_records_list: {
+        parameters: {
+            query?: {
+                artist?: string;
+                ordering?: string;
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuctionRecordListResponse"];
+                };
+            };
+        };
+    };
+    auctions_records_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuctionRecordDetailResponse"];
                 };
             };
             404: {

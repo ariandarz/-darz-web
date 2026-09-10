@@ -17,10 +17,18 @@ import type {
   Artist,
   ArtistQuery,
   Artwork,
+  Auction,
+  AuctionNotification,
+  AuctionQuery,
+  AuctionRecord,
+  AuctionRecordQuery,
+  BidderRegistration,
+  BidHistoryItem,
   CatalogueQuery,
   CollectorActivity,
   CollectorRequest,
   CollectorRequestQuery,
+  Lot,
   Paginated,
   PublishedRecommendation,
   RequestDetail,
@@ -108,6 +116,72 @@ export class CrmService extends ResourceService {
   }
   unsave(artworkId: string) {
     return this.remove(`/saved/${artworkId}/`);
+  }
+}
+
+/** `/api/auctions/` — collector-facing auction browse + live lot state
+ * (Phase 8). Bidding/registration/notifications land in later steps; step 1
+ * is read-only. Live price movement comes over the WebSocket
+ * (`LotSocket`), not from here. */
+export class AuctionService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/auctions');
+  }
+
+  auctions(query: AuctionQuery = {}) {
+    return this.list<Auction>('/', query as RequestOptions['query']);
+  }
+  auction(id: string) {
+    return this.retrieve<Auction>(`/${id}/`);
+  }
+  /** Lots in one auction (`GET /api/auctions/{auction_pk}/lots/`). */
+  lots(auctionId: string, query: { per_page?: number; page?: number } = {}) {
+    return this.list<Lot>(`/${auctionId}/lots/`, query);
+  }
+  /** One lot's public live state (`GET /api/auctions/lots/{id}/`). */
+  lot(id: string) {
+    return this.retrieve<Lot>(`/lots/${id}/`);
+  }
+  /** Anonymous bid ladder — paddle number + amount only. */
+  bidHistory(lotId: string, query: { per_page?: number; page?: number } = {}) {
+    return this.list<BidHistoryItem>(`/lots/${lotId}/bids/`, query);
+  }
+
+  /** The collector's own paddle registrations (Phase 8 step 2). */
+  registrations(query: { per_page?: number; page?: number } = {}) {
+    return this.list<BidderRegistration>('/registrations/', query);
+  }
+  /** Request a paddle. `agreeTerms` accepts the auction's Conditions of Sale
+   * (required when `auction.terms_required`). */
+  register(auctionId: string, agreeTerms: boolean) {
+    return this.create<BidderRegistration>('/registrations/', {
+      auction: auctionId,
+      agree_terms: agreeTerms,
+    });
+  }
+  /** Place a proxy/max bid. `maxAmount` is the confidential ceiling; the
+   * server resolves the displayed price and returns the updated lot. */
+  placeBid(lotId: string, maxAmount: number | string) {
+    return this.create<Lot>(`/lots/${lotId}/bids/`, { max_amount: String(maxAmount) });
+  }
+
+  /** The collector's auction notifications, newest first (Phase 8 step 3).
+   * `outbid` / `won` / `lost` / `closing_soon`. */
+  notifications(query: { per_page?: number; page?: number } = {}) {
+    return this.list<AuctionNotification>('/notifications/', query);
+  }
+  /** Mark one notification read. */
+  markRead(id: string) {
+    return this.create<AuctionNotification>(`/notifications/${id}/read/`);
+  }
+
+  /** External auction-house results — read-only comparables (Phase 8 step 4).
+   * `search` / `ordering` / `artist` are server-side. */
+  records(query: AuctionRecordQuery = {}) {
+    return this.list<AuctionRecord>('/records/', query as RequestOptions['query']);
+  }
+  record(id: string) {
+    return this.retrieve<AuctionRecord>(`/records/${id}/`);
   }
 }
 
