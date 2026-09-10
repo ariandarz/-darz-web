@@ -587,7 +587,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List my auction notifications */
+        /**
+         * List my auction notifications
+         * @description Newest first. `payload` shape by `kind`: `outbid` / `won` -> `{"amount": "<decimal>"}`, `lost` -> `{}`, `closing_soon` -> `{"ends_at": "<iso8601>"}`. `lot_artwork_title` / `lot_number` are null when the referenced lot has been deleted.
+         */
         get: operations["auctions_notifications_retrieve"];
         put?: never;
         post?: never;
@@ -5234,12 +5237,20 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description ``payload`` keys per kind: outbid/won -> {"amount"}, lost -> {},
+         *     closing_soon -> {"ends_at"}. ``lot_artwork_title`` / ``lot_number`` are
+         *     denormalised so the client can render "outbid on «Title»" without a
+         *     per-notification lot fetch (both null when the lot was deleted).
+         */
         Notification: {
             /** Format: uuid */
             readonly id: string;
             readonly kind: components["schemas"]["NotificationKindEnum"];
             /** Format: uuid */
             readonly lot: string | null;
+            readonly lot_artwork_title: string | null;
+            readonly lot_number: number | null;
             readonly payload: unknown;
             /** Format: date-time */
             readonly read_at: string | null;

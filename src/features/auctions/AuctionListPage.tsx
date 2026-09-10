@@ -10,20 +10,36 @@ import { Pager } from '../catalogue/Pager';
 import './auctions.css';
 import { auctionCountdown, auctionState, auctionStateLabel } from './format';
 import { useAuctionList } from './useAuctions';
+import { useAuctionNotifications } from './useAuctionNotifications';
 
 export function AuctionListPage() {
   const { state, setPage } = useAuctionList();
+  const { unreadCount } = useAuctionNotifications();
 
   return (
     <div className="dz-page">
       <div className="hero">
         <div
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: 8,
+          }}
         >
           <p className="eyebrow">Auctions</p>
-          <Link to="/" className="dz-back" style={{ padding: '6px 13px' }}>
-            Catalogue
-          </Link>
+          <span style={{ display: 'flex', gap: 8 }}>
+            <Link
+              to="/auctions/notifications"
+              className="dz-back"
+              style={{ padding: '6px 13px' }}
+            >
+              Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}
+            </Link>
+            <Link to="/" className="dz-back" style={{ padding: '6px 13px' }}>
+              Catalogue
+            </Link>
+          </span>
         </div>
         <h1>
           Live &amp; <span className="lt">Upcoming</span>

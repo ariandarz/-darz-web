@@ -32,6 +32,13 @@ export type LotStatus = Schemas['LotStatusEnum'];
 export type BidderRegistration = Schemas['BidderRegistrationCollector'];
 export type RegistrationStatus = Schemas['BidderRegistrationStatusEnum'];
 
+/** Auction notification (Phase 8 step 3). `payload` is `unknown` in the
+ * schema; shape by `kind`: outbid/won → `{ amount: string }`, lost → `{}`,
+ * closing_soon → `{ ends_at: string }` (documented on the list endpoint).
+ * `lot_artwork_title` / `lot_number` are null when the lot was deleted. */
+export type AuctionNotification = Schemas['Notification'];
+export type NotificationKind = Schemas['NotificationKindEnum'];
+
 /** The read-only frame `apps.auctions.consumers.LotConsumer` pushes on every
  * accepted bid / go-live / close (`_broadcast_lot_state`). Not in the OpenAPI
  * document — this is the shape the consumer builds by hand. */
