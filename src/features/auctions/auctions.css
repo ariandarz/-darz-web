@@ -445,4 +445,148 @@
   font-size: 11px;
   color: var(--ink3);
   margin-top: 8px;
+  line-height: 1.5;
+}
+.auc-live-hint a {
+  text-decoration: underline;
+}
+
+/* ---- Phase 8 step 2: registration band + terms + bid ------------------- */
+
+/* registration-state band (app.html ~1703-1707) */
+.auc-msg {
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--hair);
+  margin-top: 14px;
+  color: var(--ink2);
+}
+.auc-msg-ok {
+  background: #eaf7ef;
+  border-color: #bfe6cf;
+  color: #1f6b43;
+}
+.auc-msg-pending {
+  background: #fff6e5;
+  border-color: #f0d9a0;
+  color: #7a5a00;
+}
+
+/* "Register to bid" CTA panel (app.html ~1718-1733) */
+.auc-reg {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 18px;
+  padding: 17px 18px 17px 20px;
+  cursor: pointer;
+  margin-top: 16px;
+  font: inherit;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.auc-reg:hover {
+  border-color: var(--ink3);
+}
+.auc-reg .arg-txt {
+  flex: 1;
+  min-width: 0;
+}
+.auc-reg .arg-ttl {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.auc-reg .arg-sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.auc-reg .arg-cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #26262e;
+  color: #fff;
+  border: 1px solid #3a3a44;
+  border-radius: 12px;
+  padding: 12px 17px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+@media (max-width: 460px) {
+  .auc-reg {
+    flex-wrap: wrap;
+    gap: 13px;
+  }
+  .auc-reg .arg-cta {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Conditions of Sale sheet (app.html ~dz-trm* rules, ~9039 inline block) */
+.dz-trmwrap h3 {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 600;
+}
+.dz-trm-tagline {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink2);
+  margin-top: 6px;
+}
+.dz-trmtext {
+  max-height: 46vh;
+  overflow: auto;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--hair2);
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: var(--ink2);
+  line-height: 1.6;
+  white-space: pre-line;
+  -webkit-overflow-scrolling: touch;
+}
+.dz-trmck {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.dz-trmck input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: var(--ink);
+  flex: 0 0 auto;
+}
+
+/* the lot-detail "Place a bid" primary — charcoal fill (app.html ~626,
+   `.actions .btn.bid`) so it reads as the auction CTA, not the catalogue one */
+.actions .act-primary.bid {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
 }

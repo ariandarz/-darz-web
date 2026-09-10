@@ -1,9 +1,10 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-10 (Phase 8 step 1 in flight) ·
-**Current focus:** **Phase 8 (auctions) — step 1 of 4.** Backend `phase-11.1-auctions-lot-browse`
-merged to `darzmarket-api` `development`; frontend PR `phase-8-auctions-browse` open, awaiting owner
-merge. Then step 2 (register + bid). Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
+**Last updated:** 2026-09-10 (Phase 8 step 2 in flight) ·
+**Current focus:** **Phase 8 (auctions) — step 2 of 4.** Step 1 (browse) merged both sides.
+Step 2 (register + bid): backend `phase-11.2-auctions-bidding` PR open; frontend
+`phase-8-auctions-bidding` PR open — both awaiting owner merge. Then step 3 (notifications).
+Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
 feed remains merged and level. Owner call
 2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1 request/offer →
 admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the Phase 14 deploy
@@ -267,16 +268,22 @@ records), transport Option A (WS + a lean REST resync). All backend gaps BE-1…
 step ships a `darzmarket-api` branch **and** a `darzmarket-web` branch, owner merges both, then the
 next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHASE_8_PLAN.md`.
 
-- [~] **Step 1 — browse (read-only)** — frontend PR `phase-8-auctions-browse` open; backend
-      `phase-11.1-auctions-lot-browse` **merged** (BE-1 nested artwork, BE-2 `is_leading`, BE-3
-      `lots_count`, BE-8 WS 4003 close code, BE-9 `seed_auction`). `/auctions`, `/auctions/:id`,
+- [x] **Step 1 — browse (read-only)** — **merged both sides.** Backend `phase-11.1-auctions-lot-browse`
+      (BE-1 nested artwork, BE-2 `is_leading`, BE-3 `lots_count`, BE-8 WS 4003 close code, BE-9
+      `seed_auction`). Frontend `phase-8-auctions-browse`: `/auctions`, `/auctions/:id`,
       `/auctions/lots/:lotId` — `AuctionListController`, `LotSocket` + `LotController` (live frame
-      merge, reconnect/focus refetch, ~8s poll fallback). 13 tests. Verified in-browser against a
-      seeded local backend: a bid placed via the admin path pushed a live WS frame that updated the
-      lot page (current bid / count / "Your bid is leading") with no reload.
-- [ ] **Step 2 — register + bid** — Conditions-of-Sale gate + paddle registration + place/raise-bid
-      sheet + server-rejection surfacing. Backend BE-4 (`Auction.terms`/`terms_required`,
-      `BidderRegistration.terms_accepted_at`), BE-5 (`min_next_amount`/`opening_amount`).
+      merge, reconnect/focus refetch, ~8s poll fallback). Verified: a bid via the admin path pushed a
+      live WS frame that updated the lot page with no reload.
+- [~] **Step 2 — register + bid** — both PRs open, awaiting owner merge. Backend
+      `phase-11.2-auctions-bidding` (BE-4 `Auction.terms`/`terms_required` +
+      `BidderRegistration.terms_accepted_at` + `agree_terms`; BE-5 `opening_amount`/`min_next_amount`
+      on the lot). Frontend `phase-8-auctions-bidding`: `RegistrationController`, `ConditionsSheet`
+      (ported `DARZ_AUC_TERMS`), `RegistrationBand` (CTA / pending / approved / rejected),
+      `LotController.placeBid` (in-flight guard, merges the returned lot, surfaces server rejections
+      verbatim), `BidSheet` (grouped max field, `min_next_amount` prefill, `Toast`). 13 new tests
+      (68 total). Verified end-to-end in-browser: terms gate → register (`terms_accepted_at`
+      stamped) → admin approve → place bid ("Your bid is leading" + toast) → a below-your-max raise
+      rejected with the server's message shown in the sheet + toast.
 - [ ] **Step 3 — notifications + status vocabulary** — `/auctions/notifications`, live banner,
       unified status pills. Backend BE-7 (`lot_artwork_title`/`lot_number` + payload docs).
 - [ ] **Step 4 — results archive** — lean collector view of external auction results. Backend BE-6

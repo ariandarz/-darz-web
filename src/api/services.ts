@@ -19,6 +19,7 @@ import type {
   Artwork,
   Auction,
   AuctionQuery,
+  BidderRegistration,
   BidHistoryItem,
   CatalogueQuery,
   CollectorActivity,
@@ -141,6 +142,24 @@ export class AuctionService extends ResourceService {
   /** Anonymous bid ladder — paddle number + amount only. */
   bidHistory(lotId: string, query: { per_page?: number; page?: number } = {}) {
     return this.list<BidHistoryItem>(`/lots/${lotId}/bids/`, query);
+  }
+
+  /** The collector's own paddle registrations (Phase 8 step 2). */
+  registrations(query: { per_page?: number; page?: number } = {}) {
+    return this.list<BidderRegistration>('/registrations/', query);
+  }
+  /** Request a paddle. `agreeTerms` accepts the auction's Conditions of Sale
+   * (required when `auction.terms_required`). */
+  register(auctionId: string, agreeTerms: boolean) {
+    return this.create<BidderRegistration>('/registrations/', {
+      auction: auctionId,
+      agree_terms: agreeTerms,
+    });
+  }
+  /** Place a proxy/max bid. `maxAmount` is the confidential ceiling; the
+   * server resolves the displayed price and returns the updated lot. */
+  placeBid(lotId: string, maxAmount: number | string) {
+    return this.create<Lot>(`/lots/${lotId}/bids/`, { max_amount: String(maxAmount) });
   }
 }
 

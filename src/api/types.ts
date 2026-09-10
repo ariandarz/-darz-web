@@ -28,6 +28,10 @@ export type BidHistoryItem = Schemas['BidHistory'];
 export type AuctionStatus = Schemas['AuctionStatusEnum'];
 export type LotStatus = Schemas['LotStatusEnum'];
 
+/** The collector's own paddle registration for an auction (Phase 8 step 2). */
+export type BidderRegistration = Schemas['BidderRegistrationCollector'];
+export type RegistrationStatus = Schemas['BidderRegistrationStatusEnum'];
+
 /** The read-only frame `apps.auctions.consumers.LotConsumer` pushes on every
  * accepted bid / go-live / close (`_broadcast_lot_state`). Not in the OpenAPI
  * document — this is the shape the consumer builds by hand. */
