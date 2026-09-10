@@ -1,11 +1,15 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-07 · **Current focus:** **everything below is merged and both branches are
-level.** Owner call 2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1
-request/offer → admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the
-Phase 14 deploy config; PR #5 brought `development` back level. `main` and `development` now have
-identical trees (`main` `7214508`, `development` `9e241ff`). Nothing is in flight on a feature
-branch.
+**Last updated:** 2026-09-07 (branch state re-verified 2026-09-07 after a remote re-point) ·
+**Current focus:** **everything below is merged and both branches are level.** Owner call
+2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1 request/offer →
+admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the Phase 14 deploy
+config; PR #5 brought `development` back level; PR #6 + #7 were docs-only (recorded the merges +
+deploy state in this file, `CLAUDE.md`, `CHANGELOG.md`). `main` (`76bc65d`) and `development`
+(`602f547`) now have **identical trees**. **No open PRs** (GitHub API, 2026-09-07). Two stale
+remote branches remain — `origin/claude/flow-1-requests-offers-admin` and
+`origin/claude/phase-6-saved-favorites-gy70nd` — their work is fully merged; safe to delete.
+Nothing is in flight on a feature branch.
 
 **The one thing not done: the deploy itself is blocked.** Owner chose a UI-only deploy
 (2026-09-07), the config is committed and the production build is verified, but creating the Vercel
