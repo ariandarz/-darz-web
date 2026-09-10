@@ -1,6 +1,7 @@
 # Phase 8 — Collector: Auctions — implementation plan
 
-**Status:** Step 1 of 4 — backend merged, frontend PR open (2026-09-10) · **Created:** 2026-09-10 ·
+**Status:** Step 1 of 4 MERGED both sides; Step 2 of 4 — both PRs open, awaiting owner merge
+(2026-09-10) · **Created:** 2026-09-10 ·
 **Owner-approved slicing:** Option A (browse → bid → notifications → records), Option A transport
 (WebSocket + lean REST resync).
 
@@ -129,6 +130,9 @@ during testing). No registration, no bidding UI.
 ---
 
 ## Step 2 — Register + bid
+
+**Status (2026-09-10): implemented both sides, both PRs open, awaiting owner merge.** All items
+below done and verified end-to-end in-browser — see the Progress log.
 
 **Backend branch `phase-11.2-auctions-bidding`**
 
@@ -369,8 +373,30 @@ _Append one entry per step as it merges. Newest last._
   screens render from real data; a bid placed via the admin path pushed a live WS frame that updated
   the lot page (current bid / count / "Your bid is leading") with no reload — full WS path proven.
   Docs updated: this file, `README.md`, `docs/TASKLIST.md`, `docs/CHANGELOG.md`.
-  Next: owner merges the frontend PR, then Step 2 (`phase-11.2-auctions-bidding` +
-  `phase-8-auctions-bidding`).
+- **2026-09-10 — Step 1: MERGED both sides.** `darzmarket-web` PR #9 (`phase-8-auctions-browse`) →
+  `development` (`698c226`); `darzmarket-api` docs PR #5 also merged (`04446e8`).
+- **2026-09-10 — Step 2: backend + frontend implemented, both PRs open, awaiting owner merge.**
+  Backend `phase-11.2-auctions-bidding` (`darzmarket-api`, commit `813c0bf`): BE-4 (`Auction.terms` +
+  `terms_required`; `BidderRegistration.terms_accepted_at` + write-only `agree_terms` —
+  `BidderRegistrationService.request` rejects 400 when required-and-not-agreed, else stamps the
+  acceptance moment; `terms_accepted_at` on the collector serializer; Django admin shows
+  `terms_required`), BE-5 (`opening_amount` + `min_next_amount` on `LotCollectorSerializer`, the
+  latter mirroring `BidService.place_bid`'s `min_acceptable` via `next_increment`). Migration `0002`.
+  `AuctionsTestBase` auction set `terms_required=False`; 7 new backend tests (`apps.auctions` 42→49,
+  full suite 414). `spectacular` + `ruff` clean (pre-existing `models.py` E501 aside).
+  Frontend `phase-8-auctions-bidding` (`darzmarket-web`, off `development` @ `698c226`):
+  `AuctionService` `registrations()/register()/placeBid()`; `RegistrationController` (Observable);
+  `LotController.placeBid` (double-tap guard, merges the returned lot, surfaces server rejections
+  verbatim; `bidding`/`bidError`/`bidAccepted`); `ConditionsSheet` (ported `DARZ_AUC_TERMS`),
+  `RegistrationBand`, `BidSheet`; `auctions.css` additions (cited). 13 new frontend tests (68 total);
+  typecheck/lint/format/build clean.
+  **Verified end-to-end in-browser** (seeded local backend, real collector + admin approval): terms
+  gate → register (`terms_accepted_at` stamped) → approve → place bid ("Your bid is leading" + toast)
+  → a below-your-max raise rejected with the server's message shown in the sheet + toast.
+  Docs updated: this file, `docs/TASKLIST.md`, `docs/CHANGELOG.md` (both repos), `darzmarket-api`
+  `README.md`.
+  Next: owner merges both PRs, then Step 3 (`phase-11.3-auctions-notifications` +
+  `phase-8-auctions-notifications`).
 
 ## Resolved decisions
 

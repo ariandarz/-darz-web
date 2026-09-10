@@ -5,6 +5,26 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-10 — Phase 8 step 2: auctions — Conditions of Sale + paddle registration + place/raise bid
+
+Backend `darzmarket-api` `phase-11.2` adds `Auction.terms`/`terms_required`,
+`BidderRegistration.terms_accepted_at` + `agree_terms`, and `opening_amount`/`min_next_amount` on the
+collector lot. Frontend: `AuctionService.registrations()/register()/placeBid()`; `RegistrationController`
+(Observable) loads the collector's paddles, `forAuction(id)`, `register()` with an in-flight guard and
+the server's terms-required 400 surfaced verbatim; `LotController.placeBid()` — double-tap guard,
+merges the returned lot like a live frame (price / count / `is_leading` before the WS echo), surfaces
+the floor / must-increase / not-approved / not-live rejections verbatim. `ConditionsSheet` renders
+`auction.terms` or the ported `DARZ_AUC_TERMS` (app.html ~8177-8195) + the "I have read and agree"
+checkbox; `RegistrationBand` is the event-page `bidRegState` slot (`.auc-reg` CTA / `.auc-msg`
+pending|approved|rejected, app.html ~8300); `BidSheet` is a grouped max-amount field (reuses
+`requests/amount`) pre-filled with `min_next_amount`, label by `is_leading`, `Toast` on accept /
+rejection. `auctions.css` ports `.auc-msg*` / `.auc-reg` / `.dz-trm*` / `.actions .act-primary.bid`
+(source lines cited). 13 new tests (68 total); typecheck / lint / format / build clean. Verified
+end-to-end in-browser against a seeded local backend (real collector + admin approval): terms gate →
+register (`terms_accepted_at` stamped) → approve → place bid ("Your bid is leading" + "Your bid is
+in." toast) → a below-your-max raise is rejected with the server's message in the sheet + toast.
+Frontend PR `phase-8-auctions-bidding`; backend PR `phase-11.2-auctions-bidding`.
+
 ## 2026-09-10 — Phase 8 step 1: collector auctions browse (list / event / lot) + live WebSocket
 
 Read-only browse; bidding/registration is step 2. New `src/features/auctions/`: `AuctionListController`
