@@ -20,6 +20,8 @@ import type {
   Auction,
   AuctionNotification,
   AuctionQuery,
+  AuctionRecord,
+  AuctionRecordQuery,
   BidderRegistration,
   BidHistoryItem,
   CatalogueQuery,
@@ -171,6 +173,15 @@ export class AuctionService extends ResourceService {
   /** Mark one notification read. */
   markRead(id: string) {
     return this.create<AuctionNotification>(`/notifications/${id}/read/`);
+  }
+
+  /** External auction-house results — read-only comparables (Phase 8 step 4).
+   * `search` / `ordering` / `artist` are server-side. */
+  records(query: AuctionRecordQuery = {}) {
+    return this.list<AuctionRecord>('/records/', query as RequestOptions['query']);
+  }
+  record(id: string) {
+    return this.retrieve<AuctionRecord>(`/records/${id}/`);
   }
 }
 

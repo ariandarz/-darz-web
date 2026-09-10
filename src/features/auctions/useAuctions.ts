@@ -7,11 +7,12 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { resolveWsUrl } from '../../api';
 import { useApi, useSession } from '../../api/hooks';
-import type { AuctionQuery } from '../../api/types';
+import type { AuctionQuery, AuctionRecordQuery } from '../../api/types';
 import { useResource } from '../catalogue/useCatalogue';
 import { useListController } from '../shared/useListController';
 import { AuctionListController } from './AuctionListController';
 import { LotController, type LotControllerSnapshot } from './LotController';
+import { RecordsController } from './RecordsController';
 import { RegistrationController, type RegistrationSnapshot } from './RegistrationController';
 
 export { useResource } from '../catalogue/useCatalogue';
@@ -19,6 +20,28 @@ export { useResource } from '../catalogue/useCatalogue';
 export function useAuctionList(initial: AuctionQuery = {}) {
   const { auctions } = useApi();
   return useListController(() => new AuctionListController(auctions, initial));
+}
+
+/** The external auction-house results archive (`/records`). Returns the
+ * shared list-controller seam plus the concrete `RecordsController` for its
+ * `setSearch` / `setOrdering`. */
+export function useRecords(initial: AuctionRecordQuery = {}) {
+  const { auctions } = useApi();
+  const [controller] = useState(() => new RecordsController(auctions, initial));
+  useEffect(() => {
+    void controller.reload();
+  }, [controller]);
+  const state = useSyncExternalStore(
+    (cb) => controller.subscribe(cb),
+    () => controller.getSnapshot(),
+    () => controller.getSnapshot(),
+  );
+  return { state, controller };
+}
+
+export function useRecord(id: string) {
+  const { auctions } = useApi();
+  return useResource(() => auctions.record(id), [id]);
 }
 
 export function useAuction(id: string) {

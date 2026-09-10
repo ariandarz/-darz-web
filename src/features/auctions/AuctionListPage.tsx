@@ -28,7 +28,10 @@ export function AuctionListPage() {
           }}
         >
           <p className="eyebrow">Auctions</p>
-          <span style={{ display: 'flex', gap: 8 }}>
+          <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link to="/records" className="dz-back" style={{ padding: '6px 13px' }}>
+              Records
+            </Link>
             <Link
               to="/auctions/notifications"
               className="dz-back"
