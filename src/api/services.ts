@@ -18,6 +18,7 @@ import type {
   ArtistQuery,
   Artwork,
   Auction,
+  AuctionNotification,
   AuctionQuery,
   BidderRegistration,
   BidHistoryItem,
@@ -160,6 +161,16 @@ export class AuctionService extends ResourceService {
    * server resolves the displayed price and returns the updated lot. */
   placeBid(lotId: string, maxAmount: number | string) {
     return this.create<Lot>(`/lots/${lotId}/bids/`, { max_amount: String(maxAmount) });
+  }
+
+  /** The collector's auction notifications, newest first (Phase 8 step 3).
+   * `outbid` / `won` / `lost` / `closing_soon`. */
+  notifications(query: { per_page?: number; page?: number } = {}) {
+    return this.list<AuctionNotification>('/notifications/', query);
+  }
+  /** Mark one notification read. */
+  markRead(id: string) {
+    return this.create<AuctionNotification>(`/notifications/${id}/read/`);
   }
 }
 

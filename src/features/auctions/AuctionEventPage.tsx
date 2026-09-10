@@ -17,6 +17,7 @@ import {
   lotTimeLeft,
 } from './format';
 import { RegistrationBand } from './RegistrationBand';
+import { lotPills } from './status';
 import { useAuction, useLots, useMyRegistration } from './useAuctions';
 
 export function AuctionEventPage() {
@@ -154,19 +155,18 @@ export function AuctionEventPage() {
                       ) : (
                         <span className="lt-amt none">No bids yet</span>
                       )}
-                      {lot.bid_count > 0 && (
+                      {(lot.bid_count > 0 || lotPills(lot).length > 0) && (
                         <div className="lt-bidders">
-                          <span>
-                            {lot.bid_count} bid{lot.bid_count === 1 ? '' : 's'}
-                          </span>
-                          {lot.status === 'live' && (
-                            <>
-                              <span>·</span>
-                              <span>
-                                {lot.reserve_met ? 'Reserve met' : 'Reserve not met'}
-                              </span>
-                            </>
+                          {lot.bid_count > 0 && (
+                            <span>
+                              {lot.bid_count} bid{lot.bid_count === 1 ? '' : 's'}
+                            </span>
                           )}
+                          {lotPills(lot).map((p) => (
+                            <span key={p.label} className={`aucpill ${p.kind}`}>
+                              {p.label}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>

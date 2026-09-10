@@ -18,6 +18,7 @@ import { primaryImage } from '../catalogue/format';
 import './auctions.css';
 import { BidSheet } from './BidSheet';
 import { formatMoney, lotStatusLabel, lotTimeLeft } from './format';
+import { lotPills } from './status';
 import { useBidHistory, useLot, useMyRegistration } from './useAuctions';
 
 export function LotDetailPage() {
@@ -110,18 +111,11 @@ export function LotDetailPage() {
               <span>
                 {lot.bid_count} bid{lot.bid_count === 1 ? '' : 's'}
               </span>
-              {lot.status === 'live' && (
-                <>
-                  <span>·</span>
-                  <span>{lot.reserve_met ? 'Reserve met' : 'Reserve not met'}</span>
-                </>
-              )}
-              {lot.is_leading && (
-                <>
-                  <span>·</span>
-                  <span>Your bid is leading</span>
-                </>
-              )}
+              {lotPills(lot).map((p) => (
+                <span key={p.label} className={`aucpill ${p.kind}`}>
+                  {p.label}
+                </span>
+              ))}
             </div>
             {left && (
               <div className="lt-est" style={{ marginTop: 6 }}>
