@@ -23,6 +23,8 @@ import { AuctionListPage } from './features/auctions/AuctionListPage';
 import { AuctionNotificationsPage } from './features/auctions/AuctionNotificationsPage';
 import { AuctionNotificationsProvider } from './features/auctions/AuctionNotificationsProvider';
 import { LotDetailPage } from './features/auctions/LotDetailPage';
+import { RecordDetailPage } from './features/auctions/RecordDetailPage';
+import { RecordsPage } from './features/auctions/RecordsPage';
 import { RequestProvider } from './features/requests/RequestProvider';
 import { SavedItemsPage } from './features/saved/SavedItemsPage';
 import { SavedProvider } from './features/saved/SavedProvider';
@@ -55,6 +57,10 @@ export function AppRoutes() {
         <Route path="/auctions/notifications" element={<AuctionNotificationsPage />} />
         <Route path="/auctions/:id" element={<AuctionEventPage />} />
         <Route path="/auctions/lots/:lotId" element={<LotDetailPage />} />
+        {/* External auction-house results — the old app's "Records" tab, now a
+            plain route (the `showRecordsTab` feature flag is gone). */}
+        <Route path="/records" element={<RecordsPage />} />
+        <Route path="/records/:id" element={<RecordDetailPage />} />
         {/* Admin desk. `RequireAuth` only proves a session exists — the API's
             own admin permissions are the real gate, and a collector token gets
             403s here. A principal-aware guard is Phase 7 proper. */}

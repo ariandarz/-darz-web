@@ -617,6 +617,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auctions/records/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List external auction-house results
+         * @description Market-intelligence comparables — read-only. `?search=` (artist / house / lot title), `?ordering=` (`sale_date` / `price_amount` +/- prefixes), `?artist=<uuid>`.
+         */
+        get: operations["auctions_records_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auctions/records/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one external auction-house result */
+        get: operations["auctions_records_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auctions/registrations/": {
         parameters: {
             query?: never;
@@ -3893,11 +3930,17 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description ``artist_display_name`` is the label to show: the linked catalog
+         *     Artist's name when one is matched, else the free-text ``artist_name_raw``
+         *     (write endpoints ignore this read-only field).
+         */
         AuctionRecord: {
             /** Format: uuid */
             readonly id: string;
             /** Format: uuid */
             artist?: string | null;
+            readonly artist_display_name: string | null;
             /**
              * Artist name (as reported)
              * @description Free-text fallback when the reported name doesn't confidently match a catalog Artist.
@@ -3925,6 +3968,34 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        AuctionRecordDetailResponse: {
+            data: components["schemas"]["AuctionRecord"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AuctionRecordListResponse: {
+            data: components["schemas"]["AuctionRecordListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AuctionRecordListResponseData: {
+            pagination: components["schemas"]["AuctionRecordListResponsePagination"];
+            results: components["schemas"]["AuctionRecord"][];
+        };
+        AuctionRecordListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
         };
         /**
          * @description * `draft` - Draft
@@ -5347,11 +5418,17 @@ export interface components {
             readonly updated_at?: string;
             expected_version?: number;
         };
+        /**
+         * @description ``artist_display_name`` is the label to show: the linked catalog
+         *     Artist's name when one is matched, else the free-text ``artist_name_raw``
+         *     (write endpoints ignore this read-only field).
+         */
         PatchedAuctionRecord: {
             /** Format: uuid */
             readonly id?: string;
             /** Format: uuid */
             artist?: string | null;
+            readonly artist_display_name?: string | null;
             /**
              * Artist name (as reported)
              * @description Free-text fallback when the reported name doesn't confidently match a catalog Artist.
@@ -8059,6 +8136,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationReadResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_records_list: {
+        parameters: {
+            query?: {
+                artist?: string;
+                ordering?: string;
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuctionRecordListResponse"];
+                };
+            };
+        };
+    };
+    auctions_records_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuctionRecordDetailResponse"];
                 };
             };
             404: {

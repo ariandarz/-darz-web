@@ -39,6 +39,22 @@ export type RegistrationStatus = Schemas['BidderRegistrationStatusEnum'];
 export type AuctionNotification = Schemas['Notification'];
 export type NotificationKind = Schemas['NotificationKindEnum'];
 
+/** External auction-house result — market-intelligence comparables, read-only
+ * for collectors (Phase 8 step 4). Backend has ~10 fields; the old app's
+ * Records tab showed more (image, medium, estimates, hammer-vs-realized …) —
+ * see `docs/PHASE_8_API_GAPS.md`. */
+export type AuctionRecord = Schemas['AuctionRecord'];
+
+/** `GET /api/auctions/records/` params. */
+export interface AuctionRecordQuery {
+  search?: string;
+  /** `sale_date` | `-sale_date` | `price_amount` | `-price_amount` (+ created_at) */
+  ordering?: string;
+  artist?: string;
+  per_page?: number;
+  page?: number;
+}
+
 /** The read-only frame `apps.auctions.consumers.LotConsumer` pushes on every
  * accepted bid / go-live / close (`_broadcast_lot_state`). Not in the OpenAPI
  * document — this is the shape the consumer builds by hand. */

@@ -799,3 +799,171 @@ html.dz-desktop .dz-anotif {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ---- Phase 8 step 4: the external auction-house records archive --------- */
+/* ported from app.html `recordsView()` (~4760+): `.rec2-*` */
+.rec2-hd {
+  padding: 26px 20px 4px;
+}
+.rec2-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.rec2-h1 {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1;
+  margin: 6px 0 0;
+  color: var(--ink);
+}
+.rec2-seam {
+  height: 2px;
+  width: 44px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+  margin: 9px 0 0;
+}
+.rec2-curnote {
+  font-size: 12px;
+  color: var(--ink3);
+  line-height: 1.55;
+  margin: 10px 0 0;
+  max-width: 90%;
+}
+.rec2-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 16px 20px 0;
+  flex-wrap: wrap;
+}
+.rec2-search {
+  flex: 1;
+  min-width: 150px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+}
+.rec2-search input {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  width: 100%;
+  height: 100%;
+  padding: 0 13px;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.rec2-sort {
+  height: 38px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rec2-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 13px;
+  padding: 14px 20px 30px;
+}
+.rec2-c {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  padding: 13px 13px 15px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.16s ease;
+}
+.rec2-c:hover {
+  transform: translateY(-2px);
+}
+.rec2-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 8px;
+}
+.rec2-meta .h {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec2-meta .d {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink3);
+}
+.rec2-ar {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.06;
+  color: var(--ink);
+}
+.rec2-ti {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.rec2-line {
+  height: 1px;
+  background: var(--hair2);
+  margin: 9px 0;
+}
+.rec2-pl {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.rec2-price {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--ink);
+  margin-top: 2px;
+}
+.rec2-price .c {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--ink3);
+  letter-spacing: 0.02em;
+}
+.rec2-wait {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+html.dz-desktop .rec2-grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+}
