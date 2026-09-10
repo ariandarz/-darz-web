@@ -1,10 +1,10 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-10 (Phase 8 step 2 in flight) ·
-**Current focus:** **Phase 8 (auctions) — step 2 of 4.** Step 1 (browse) merged both sides.
-Step 2 (register + bid): backend `phase-11.2-auctions-bidding` PR open; frontend
-`phase-8-auctions-bidding` PR open — both awaiting owner merge. Then step 3 (notifications).
-Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
+**Last updated:** 2026-09-10 (Phase 8 step 3 in flight) ·
+**Current focus:** **Phase 8 (auctions) — step 3 of 4.** Steps 1 (browse) + 2 (register + bid)
+merged both sides. Step 3 (notifications + status vocabulary): backend `phase-11.3-auctions-notifications`
+PR open; frontend `phase-8-auctions-notifications` PR open — both awaiting owner merge. Then step 4
+(results archive). Plan: `docs/PHASE_8_PLAN.md`. Everything through Phase 7's CRM
 feed remains merged and level. Owner call
 2026-09-07: merge and publish. PR #1 (Phase 6 saved/favorites) and PR #2 (Flow 1 request/offer →
 admin inbox) both merged to `development`; PR #3 synced `main`; PR #4 landed the Phase 14 deploy
@@ -274,18 +274,26 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       `/auctions/lots/:lotId` — `AuctionListController`, `LotSocket` + `LotController` (live frame
       merge, reconnect/focus refetch, ~8s poll fallback). Verified: a bid via the admin path pushed a
       live WS frame that updated the lot page with no reload.
-- [~] **Step 2 — register + bid** — both PRs open, awaiting owner merge. Backend
+- [x] **Step 2 — register + bid** — **merged both sides.** Backend
       `phase-11.2-auctions-bidding` (BE-4 `Auction.terms`/`terms_required` +
       `BidderRegistration.terms_accepted_at` + `agree_terms`; BE-5 `opening_amount`/`min_next_amount`
       on the lot). Frontend `phase-8-auctions-bidding`: `RegistrationController`, `ConditionsSheet`
       (ported `DARZ_AUC_TERMS`), `RegistrationBand` (CTA / pending / approved / rejected),
       `LotController.placeBid` (in-flight guard, merges the returned lot, surfaces server rejections
-      verbatim), `BidSheet` (grouped max field, `min_next_amount` prefill, `Toast`). 13 new tests
-      (68 total). Verified end-to-end in-browser: terms gate → register (`terms_accepted_at`
-      stamped) → admin approve → place bid ("Your bid is leading" + toast) → a below-your-max raise
-      rejected with the server's message shown in the sheet + toast.
-- [ ] **Step 3 — notifications + status vocabulary** — `/auctions/notifications`, live banner,
-      unified status pills. Backend BE-7 (`lot_artwork_title`/`lot_number` + payload docs).
+      verbatim), `BidSheet` (grouped max field, `min_next_amount` prefill, `Toast`). Verified:
+      terms gate → register (`terms_accepted_at` stamped) → admin approve → place bid ("Your bid is
+      leading" + toast) → a below-your-max raise rejected with the server's message.
+- [~] **Step 3 — notifications + status vocabulary** — both PRs open, awaiting owner merge. Backend
+      `phase-11.3-auctions-notifications` (BE-7: `lot_artwork_title`/`lot_number` on the collector
+      notification serializer + `payload`-shape docs). Frontend `phase-8-auctions-notifications`:
+      `AuctionNotificationsController` (boot + ~45s poll + on-focus, optimistic markRead/markAllRead),
+      `AuctionNotificationsProvider` (one on context inside `RequireAuth`, renders the banner),
+      `AuctionBanner` (ported `.dz-anotif`), `/auctions/notifications` page, `status.ts` (the one
+      `lotPills`/`notificationPill`/`notificationLine` vocabulary, ported from `aucPill`) wired into
+      the lot rows + lot detail. "Notifications (N)" link in the auctions hero. 12 new tests
+      (80 total). Verified end-to-end in-browser: banner shows the newest unread with the right
+      accent; the feed lists both with pills + "Lot N"; marking one read updates the hero count,
+      the mark-all count and swaps the banner to the next unread — all off one shared polled controller.
 - [ ] **Step 4 — results archive** — lean collector view of external auction results. Backend BE-6
       (`GET /api/auctions/records/`). Full field parity = deferred admin Records desk (Phase 11).
 

@@ -1,6 +1,6 @@
 # Phase 8 — Collector: Auctions — implementation plan
 
-**Status:** Step 1 of 4 MERGED both sides; Step 2 of 4 — both PRs open, awaiting owner merge
+**Status:** Steps 1 + 2 of 4 MERGED both sides; Step 3 of 4 — both PRs open, awaiting owner merge
 (2026-09-10) · **Created:** 2026-09-10 ·
 **Owner-approved slicing:** Option A (browse → bid → notifications → records), Option A transport
 (WebSocket + lean REST resync).
@@ -187,6 +187,9 @@ once an admin approves — place proxy/max bids that move the live price; server
 ---
 
 ## Step 3 — Notifications + live status vocabulary
+
+**Status (2026-09-10): implemented both sides, both PRs open, awaiting owner merge.** All items
+below done and verified end-to-end in-browser — see the Progress log.
 
 **Backend branch `phase-11.3-auctions-notifications`**
 
@@ -395,8 +398,28 @@ _Append one entry per step as it merges. Newest last._
   → a below-your-max raise rejected with the server's message shown in the sheet + toast.
   Docs updated: this file, `docs/TASKLIST.md`, `docs/CHANGELOG.md` (both repos), `darzmarket-api`
   `README.md`.
-  Next: owner merges both PRs, then Step 3 (`phase-11.3-auctions-notifications` +
-  `phase-8-auctions-notifications`).
+- **2026-09-10 — Step 2: MERGED both sides.** `darzmarket-api` `phase-11.2-auctions-bidding` →
+  `development` (`d776e85`, PRs #6/#7); `darzmarket-web` `phase-8-auctions-bidding` → `development`
+  (`d074725`, PR #10).
+- **2026-09-10 — Step 3: backend + frontend implemented, both PRs open, awaiting owner merge.**
+  Backend `phase-11.3-auctions-notifications` (`darzmarket-api`, off `development` @ `d776e85`,
+  commit `39b7c5f`): BE-7 — `NotificationSerializer` gains read-only `lot_artwork_title` (str|null) +
+  `lot_number` (int|null) from `obj.lot`; `notification_list` `select_related("lot__artwork")` and
+  its `@extend_schema` documents the `payload` shape per kind. No migration. 3 new backend tests
+  (`apps.auctions` 49→52, full suite 417). `spectacular` + `ruff` clean.
+  Frontend `phase-8-auctions-notifications` (`darzmarket-web`, off `development` @ `d074725`):
+  `AuctionService.notifications()/markRead()`; `AuctionNotificationsController extends ListController`
+  (poll + on-focus, optimistic markRead/markAllRead, unread helpers); `AuctionNotificationsProvider`
+  (context inside `RequireAuth`, renders the banner); `AuctionBanner` (ported `.dz-anotif`);
+  `/auctions/notifications` page; `status.ts` (unified `lotPills`/`notificationPill`/`notificationLine`)
+  wired into the lot rows + lot detail; `auctions.css` additions (cited). 12 new frontend tests
+  (80 total); typecheck/lint/format/build clean.
+  **Verified end-to-end in-browser** (seeded local backend, two notifications for a real collector):
+  the banner shows the newest unread with the right accent; the feed lists both with pills + "Lot N"
+  (proves BE-7); marking one read updates the hero count, the mark-all count and swaps the banner to
+  the next unread — all off one shared polled controller.
+  Docs updated: this file, `docs/TASKLIST.md`, `docs/CHANGELOG.md` (both repos).
+  Next: owner merges both PRs, then Step 4 (`phase-11.4-auctions-records` + `phase-8-auctions-records`).
 
 ## Resolved decisions
 

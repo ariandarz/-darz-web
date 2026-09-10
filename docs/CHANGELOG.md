@@ -5,6 +5,27 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-10 — Phase 8 step 3: auctions — notifications feed + live banner + unified status pills
+
+Backend `darzmarket-api` `phase-11.3` adds read-only `lot_artwork_title` / `lot_number` to the
+collector notification serializer + documents the `payload` shape per kind. Frontend:
+`AuctionService.notifications() / markRead()`; `AuctionNotificationsController extends ListController`
+— the feed with a boot + ~45s poll + on-focus refresh (no WS for notifications, matching the Phase 5
+thread decision), optimistic `markRead` / `markAllRead`, and `unread` / `unreadCount` / `latestUnread`.
+`AuctionNotificationsProvider` puts one on context inside `RequireAuth` (mirrors `SavedProvider`) and
+renders `AuctionBanner` — the live "Darz auction" banner ported from `app.html` `.dz-anotif` (~793):
+fixed bottom-centre, independent of any reply banner, kind-coloured status word + a matching left
+seam bar, count chip, tap → the related lot (marks read). `/auctions/notifications` page — newest
+first, unread emphasised, per-row + "Mark all read", tap → the lot; "Notifications (N)" link in the
+auctions hero. `status.ts` — the one vocabulary (`lotPills` / `notificationPill` / `notificationLine`,
+ported from `aucPill`, app.html ~6258) wired into the lot rows + lot detail; `auctions.css` ports
+`.aucpill*` + `.dz-anotif*` + the feed rows (source lines cited). 12 new tests (80 total);
+typecheck / lint / format / build clean. Verified end-to-end in-browser (two notifications for a real
+collector): the banner shows the newest unread with the right accent, the feed lists both with pills
++ "Lot N" (proves BE-7), and marking one read updates the hero count, the mark-all count and swaps
+the banner to the next unread — all off one shared polled controller. Frontend PR
+`phase-8-auctions-notifications`; backend PR `phase-11.3-auctions-notifications`.
+
 ## 2026-09-10 — Phase 8 step 2: auctions — Conditions of Sale + paddle registration + place/raise bid
 
 Backend `darzmarket-api` `phase-11.2` adds `Auction.terms`/`terms_required`,
