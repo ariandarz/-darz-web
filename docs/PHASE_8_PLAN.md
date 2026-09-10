@@ -1,7 +1,8 @@
 # Phase 8 — Collector: Auctions — implementation plan
 
-**Status:** not started · **Created:** 2026-09-10 · **Owner-approved slicing:** Option A (browse →
-bid → notifications → records), Option A transport (WebSocket + lean REST resync).
+**Status:** Step 1 of 4 — backend merged, frontend PR open (2026-09-10) · **Created:** 2026-09-10 ·
+**Owner-approved slicing:** Option A (browse → bid → notifications → records), Option A transport
+(WebSocket + lean REST resync).
 
 This plan is the working contract for Phase 8. It spans **two repos** — `darzmarket-web` (this repo)
 and `darzmarket-api` (`../darzmarket-api`, remote `ariandarz/darz-backend-api`). Every step ships
@@ -62,6 +63,9 @@ gets a dotted sub-number off the original phase).
 ---
 
 ## Step 1 — Browse (read-only), no bidding
+
+**Status (2026-09-10): backend MERGED · frontend PR open.** All items below done and verified —
+see the Progress log. Checkboxes left as-authored for the record.
 
 **Backend branch `phase-11.1-auctions-lot-browse`**
 
@@ -350,15 +354,23 @@ Run after Step 3 (Records is independent). Two collector sessions + one admin.
 
 _Append one entry per step as it merges. Newest last._
 
-- **2026-09-10 — Step 1 backend: implemented + pushed, PR open, awaiting owner merge.**
-  Branch `phase-11.1-auctions-lot-browse` (`darzmarket-api`, off `development` @ `a0b4dd0`), commit
-  `9d907ca`. BE-1 (nested `artwork` on `LotCollectorSerializer` + N+1-safe querysets), BE-2
-  (`is_leading`, request-aware), BE-3 (`lots_count` annotation + fallback), BE-8 (WS `4003` vs
-  `4001`), BE-9 (`seed_auction` command). 8 new tests, `apps.auctions` 35→42, full suite 407 green,
-  `ruff check` clean on touched files, `spectacular` clean. No migration. PR:
-  https://github.com/ariandarz/darz-backend-api/pull/new/phase-11.1-auctions-lot-browse
-  Step 1 frontend (`phase-8-auctions-browse`) not started yet — needs `schema.d.ts` regenerated
-  against this backend branch.
+- **2026-09-10 — Step 1 backend: MERGED.** `darzmarket-api` PR #4 (`phase-11.1-auctions-lot-browse`)
+  merged to `development` (`d452ee2`). BE-1 (nested `artwork` on `LotCollectorSerializer` + N+1-safe
+  querysets), BE-2 (`is_leading`, request-aware), BE-3 (`lots_count` annotation + fallback), BE-8
+  (WS `4003` vs `4001`), BE-9 (`seed_auction` command). 8 new tests, `apps.auctions` 35→42, full
+  suite 407 green, `ruff check` clean on touched files, `spectacular` clean. No migration.
+- **2026-09-10 — Step 1 frontend: implemented + pushed, PR open, awaiting owner merge.**
+  Branch `phase-8-auctions-browse` (`darzmarket-web`, off `development` @ `0f695a9`), commit
+  `e681d4e`. `AuctionService` + `resolveWsUrl()`/`VITE_API_WS_URL`; `src/features/auctions/`
+  (`AuctionListController`, `LotSocket`, `LotController`, `useAuctions`, `format.ts`, `auctions.css`,
+  three screens); routes `/auctions`, `/auctions/:id`, `/auctions/lots/:lotId`; "Auctions" link in
+  the catalogue hero; `schema.d.ts` regenerated. 13 new tests (60 total), typecheck/lint/format/build
+  clean. **Verified in-browser** (seeded local backend, real collector "Demo Collector"): all three
+  screens render from real data; a bid placed via the admin path pushed a live WS frame that updated
+  the lot page (current bid / count / "Your bid is leading") with no reload — full WS path proven.
+  Docs updated: this file, `README.md`, `docs/TASKLIST.md`, `docs/CHANGELOG.md`.
+  Next: owner merges the frontend PR, then Step 2 (`phase-11.2-auctions-bidding` +
+  `phase-8-auctions-bidding`).
 
 ## Resolved decisions
 

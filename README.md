@@ -33,10 +33,13 @@ See `CLAUDE.md` for the full cross-repo context and `docs/TASKLIST.md` for the p
 
 ```bash
 npm install
-cp .env.example .env.local     # then set VITE_API_BASE_URL (no hardcoded fallback)
+cp .env.example .env.local     # then set VITE_API_BASE_URL + VITE_API_WS_URL (no hardcoded fallback)
 ```
 
-Every env var the app reads is listed in `.env.example`. The API client needs a running backend:
+Every env var the app reads is listed in `.env.example` — currently `VITE_API_BASE_URL` (HTTP API,
+incl. the `/api` prefix) and `VITE_API_WS_URL` (WebSocket origin for the auction live-lot socket,
+Phase 8 — no `/api`, no trailing slash). `resolveBaseUrl()` / `resolveWsUrl()` in `src/api/index.ts`
+each throw if their var is unset. The API client needs a running backend:
 `cd ../darzmarket-api && docker compose -f docker-compose-local.yml up -d && python manage.py runserver`.
 Regenerate types after any backend API change:
 `npx openapi-typescript "http://localhost:8000/api/schema/?format=json" -o src/api/schema.d.ts`.
@@ -70,6 +73,11 @@ src/
   components/        Base component library — one typed module per component
     index.ts          the only public entry
   lib/              small framework-free helpers
+  features/         one folder per collector/admin surface — a `*Controller`
+                    (OOP, extends `shared/ListController` or `shared/Observable`),
+                    its hooks, ported CSS (app.html class names, line-cited) and
+                    the React views. e.g. `auctions/` (Phase 8): `AuctionListController`,
+                    `LotSocket` (the `ws/auctions/lots/{id}/` live socket) + `LotController`.
   App.tsx           currently the Phase 2 design-system showcase
 docs/
   TASKLIST.md       phase plan + status (source of progress truth)
