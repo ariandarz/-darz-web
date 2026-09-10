@@ -3816,7 +3816,13 @@ export interface components {
          * @enum {string}
          */
         ArtworkVisibilityEnum: "internal_only" | "hidden" | "visible_all" | "selected" | "private_selection" | "auction_only" | "gallery_portal";
-        /** @description Single tier — nothing confidential lives on Auction itself. */
+        /**
+         * @description Single tier — nothing confidential lives on Auction itself.
+         *
+         *     ``lots_count`` reads a ``lots_count`` queryset annotation when present
+         *     (the list views add it); on a bare instance it falls back to one COUNT
+         *     query so a detail fetch never 500s for the missing annotation.
+         */
         Auction: {
             /** Format: uuid */
             readonly id: string;
@@ -3828,6 +3834,7 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            readonly lots_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -4926,14 +4933,21 @@ export interface components {
         /**
          * @description No ``reserve_amount``/``leading_bidder`` — confidential/internal
          *     (see Lot.reserve_amount's help_text).
+         *
+         *     ``artwork`` is the full collector-tier artwork object (not a bare id) so
+         *     a lot row/detail renders without a second round-trip per lot. ``is_leading``
+         *     is request-aware: true only when the authenticated collector currently
+         *     holds the lot. The live WebSocket payload still carries the raw
+         *     ``leading_bidder_id`` (apps.auctions.services._broadcast_lot_state) — an
+         *     owner-acknowledged minor correlation surface, deliberately left as-is;
+         *     the REST tier never exposes another bidder's identity.
          */
         LotCollector: {
             /** Format: uuid */
             readonly id: string;
             /** Format: uuid */
             readonly auction: string;
-            /** Format: uuid */
-            readonly artwork: string;
+            readonly artwork: components["schemas"]["ArtworkCollector"];
             readonly lot_number: number;
             /** Format: decimal */
             readonly low_estimate: string | null;
@@ -4954,6 +4968,7 @@ export interface components {
             readonly current_amount: string | null;
             readonly bid_count: number;
             readonly reserve_met: boolean;
+            readonly is_leading: boolean;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */

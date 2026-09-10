@@ -18,6 +18,9 @@ import { ArtistListPage } from './features/catalogue/ArtistListPage';
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
+import { AuctionEventPage } from './features/auctions/AuctionEventPage';
+import { AuctionListPage } from './features/auctions/AuctionListPage';
+import { LotDetailPage } from './features/auctions/LotDetailPage';
 import { RequestProvider } from './features/requests/RequestProvider';
 import { SavedItemsPage } from './features/saved/SavedItemsPage';
 import { SavedProvider } from './features/saved/SavedProvider';
@@ -44,6 +47,9 @@ export function AppRoutes() {
         <Route path="/artists" element={<ArtistListPage />} />
         <Route path="/artists/:id" element={<ArtistDetailPage />} />
         <Route path="/saved" element={<SavedItemsPage />} />
+        <Route path="/auctions" element={<AuctionListPage />} />
+        <Route path="/auctions/:id" element={<AuctionEventPage />} />
+        <Route path="/auctions/lots/:lotId" element={<LotDetailPage />} />
         {/* Admin desk. `RequireAuth` only proves a session exists — the API's
             own admin permissions are the real gate, and a collector token gets
             403s here. A principal-aware guard is Phase 7 proper. */}

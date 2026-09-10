@@ -24,6 +24,9 @@ export function CataloguePage() {
             <Link to="/saved" className="dz-back" style={{ padding: '6px 13px' }}>
               Saved
             </Link>
+            <Link to="/auctions" className="dz-back" style={{ padding: '6px 13px' }}>
+              Auctions
+            </Link>
             <Link to="/artists" className="dz-back" style={{ padding: '6px 13px' }}>
               Artists
             </Link>
