@@ -26,7 +26,12 @@ import type { Artwork, CollectorAction } from '../../api/types';
 import { ActionIcon } from './icons';
 import { columnsFor } from './layout';
 import { OfferSheet } from './OfferSheet';
-import { ACTION_KIND, ACTION_LABEL, RequestController, type ActionVerb } from './RequestController';
+import {
+  ACTION_KIND,
+  ACTION_LABEL,
+  RequestController,
+  type ActionVerb,
+} from './RequestController';
 import './requests.css';
 import { useRequests } from './useRequests';
 
@@ -86,7 +91,10 @@ export function ActionButtons({ artwork }: { artwork: Artwork }) {
         )}
 
         {secondary.length > 0 && (
-          <div className="act-row" style={{ ['--an' as string]: columnsFor(secondary.length) }}>
+          <div
+            className="act-row"
+            style={{ ['--an' as string]: columnsFor(secondary.length) }}
+          >
             {secondary.map((verb) => {
               const busy = isBusy(verb);
               return (

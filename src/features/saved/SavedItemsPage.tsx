@@ -60,7 +60,8 @@ export function SavedItemsPage() {
 
       {state.status !== 'loading' && state.pagination && state.pagination.total_count > 0 && (
         <div className="count">
-          {state.pagination.total_count} {state.pagination.total_count === 1 ? 'work' : 'works'}
+          {state.pagination.total_count}{' '}
+          {state.pagination.total_count === 1 ? 'work' : 'works'}
         </div>
       )}
 

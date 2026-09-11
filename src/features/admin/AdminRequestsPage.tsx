@@ -18,7 +18,12 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
-import type { AdminRequest, AdminRequestQuery, Choice, RequestStatusByKind } from '../../api/types';
+import type {
+  AdminRequest,
+  AdminRequestQuery,
+  Choice,
+  RequestStatusByKind,
+} from '../../api/types';
 import { Pager } from '../catalogue/Pager';
 import { useListController } from '../shared/useListController';
 import { AdminRequestsController } from './AdminRequestsController';
@@ -150,9 +155,7 @@ export function AdminRequestsPage() {
                     <td>
                       <span className={`ad-chip ${r.kind}`}>{titleCase(r.kind)}</span>
                     </td>
-                    <td>
-                      {r.collector?.display_name ?? shortId(String(r.collector))}
-                    </td>
+                    <td>{r.collector?.display_name ?? shortId(String(r.collector))}</td>
                     <td>{artworkLabel(r.artwork)}</td>
                     <td>{detailLine(r.detail)}</td>
                     <td>

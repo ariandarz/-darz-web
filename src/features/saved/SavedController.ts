@@ -84,7 +84,9 @@ export class SavedController extends Observable<SavedSnapshot> {
    * (already computed server-side — see `ArtworkCollectorSerializer`). */
   isSaved(artwork: { id: string; is_saved?: boolean }): boolean {
     const { overrides } = this.getSnapshot();
-    return overrides.has(artwork.id) ? (overrides.get(artwork.id) ?? false) : (artwork.is_saved ?? false);
+    return overrides.has(artwork.id)
+      ? (overrides.get(artwork.id) ?? false)
+      : (artwork.is_saved ?? false);
   }
 
   /** True while this artwork's own save/unsave is in flight. */
@@ -183,7 +185,12 @@ function result(artworkId: string, op: SaveOp, created: boolean): SavedActionRes
   return { artworkId, op, created, at: Date.now() };
 }
 
-function failure(artworkId: string, op: SaveOp, created: boolean, message: string): SavedActionFailure {
+function failure(
+  artworkId: string,
+  op: SaveOp,
+  created: boolean,
+  message: string,
+): SavedActionFailure {
   return { ...result(artworkId, op, created), message };
 }
 
