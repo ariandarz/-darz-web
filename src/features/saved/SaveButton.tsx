@@ -3,9 +3,12 @@
  * it: overlaid on a catalogue `ArtworkCard` (`variant="icon"`) and as the
  * artwork detail's action (`variant="action"`).
  *
- * All state comes from `SavedController` (server-derived), so a card, the
- * detail page and the Saved page can never show different answers for the same
- * work, and a refresh re-reads the truth instead of trusting the browser.
+ * Takes the full `Artwork` (not just an id) since `docs/PHASE_6_API_GAPS.md`
+ * G-P6-1: `artwork.is_saved` is the server's own answer, computed in the same
+ * request that fetched the artwork. `SavedController.isSaved()` overlays this
+ * tab's own writes on top of it, so a save/unsave here is reflected
+ * immediately everywhere else the same artwork is rendered this session,
+ * without a refetch — but the baseline truth always comes from the server.
  *
  * Duplicate-action guard: while this artwork's own call is in flight the
  * button is `disabled` + `aria-busy`, and `SavedController.toggle()` refuses a
@@ -18,36 +21,30 @@
  * `../DarzStudio/app.html` in this session (that repo isn't reachable here) —
  * flagged to the owner rather than presented as verified.
  */
+import type { Artwork } from '../../api/types';
 import { Button } from '../../components';
 import { cx } from '../../lib/cx';
 import './saved.css';
 import { useSaved } from './useSaved';
 
 export interface SaveButtonProps {
-  artworkId: string;
-  /** the work's title — used to make the control's accessible name specific */
-  title?: string;
+  artwork: Pick<Artwork, 'id' | 'title' | 'is_saved'>;
   variant?: 'icon' | 'action';
   className?: string;
 }
 
-export function SaveButton({
-  artworkId,
-  title,
-  variant = 'icon',
-  className,
-}: SaveButtonProps) {
-  const { ids, pending, controller } = useSaved();
-  const saved = ids.has(artworkId);
-  const busy = pending.has(artworkId);
-  const what = title ? `“${title}”` : 'this work';
+export function SaveButton({ artwork, variant = 'icon', className }: SaveButtonProps) {
+  const { pending, controller } = useSaved();
+  const saved = controller.isSaved(artwork);
+  const busy = pending.has(artwork.id);
+  const what = artwork.title ? `“${artwork.title}”` : 'this work';
   const label = saved ? 'Saved' : 'Save';
   const description = saved ? `Remove ${what} from your saved works` : `Save ${what}`;
 
   // Guarded here too so the click never even reaches the controller twice.
   const onClick = () => {
     if (busy) return;
-    void controller.toggle(artworkId);
+    void controller.toggle(artwork);
   };
 
   if (variant === 'action') {

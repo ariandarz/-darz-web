@@ -5,7 +5,9 @@
  *
  * Reuses the existing `Toast` component (`app.html`'s `.toast`) rather than a
  * bespoke banner. Copy is factual, not celebratory (VOICE_AND_COPY.md):
- * "Saved." / "Removed from your saved works."
+ * "Saved." / "Already saved." / "Removed from your saved works." — the
+ * middle one only possible now that `created` (docs/PHASE_6_API_GAPS.md
+ * G-P6-3) says whether the server actually did anything.
  */
 import { Toast } from '../../components';
 import { useSaved } from './useSaved';
@@ -31,8 +33,13 @@ export function SavedToast() {
     <Toast
       key={lastAction ? `ok-${lastAction.at}` : 'idle'}
       open={Boolean(lastAction)}
-      message={lastAction?.op === 'unsave' ? 'Removed from your saved works.' : 'Saved.'}
+      message={lastAction ? saveMessage(lastAction) : ''}
       onClose={() => controller.clearLastAction()}
     />
   );
+}
+
+function saveMessage(action: { op: 'save' | 'unsave'; created: boolean }): string {
+  if (action.op === 'unsave') return 'Removed from your saved works.';
+  return action.created ? 'Saved.' : 'Already saved.';
 }
