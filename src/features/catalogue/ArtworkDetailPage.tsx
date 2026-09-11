@@ -100,7 +100,7 @@ export function ArtworkDetailPage() {
         <ActionButtons artwork={artwork} />
 
         <div className="actions">
-          <SaveButton artworkId={artwork.id} title={artwork.title} variant="action" />
+          <SaveButton artwork={artwork} variant="action" />
         </div>
 
         {artwork.public_description && (
