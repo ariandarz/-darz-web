@@ -8,9 +8,13 @@
  *
  * **The accepted-offer floor stays private.** app.html:11077 is explicit about
  * it ("the accepted-offer limit is kept PRIVATE — never reveal the floor
- * number"), and the new API does not expose a floor to the client at all, so
- * this sheet cannot leak one: a rejected-as-too-low offer is surfaced from the
- * server's own error message. See `docs/FLOW_1_API_GAPS.md` (G-F1-2).
+ * number"), and the API never sends the floor value to the client. As of
+ * `docs/FLOW_1_API_GAPS.md` G-F1-2 the floor is enforced server-side (an
+ * offer below it is rejected 400 `offer_below_floor`) — this sheet needs no
+ * code for that: the rejection's own message ("Your offer is below the
+ * accepted range for this work — please enter a higher amount.") already
+ * flows through the same `error` state every other submit failure uses,
+ * shown inline right here next to the field.
  */
 import { useEffect, useRef, useState } from 'react';
 import type { Artwork } from '../../api/types';

@@ -3,10 +3,12 @@
  * step with the session.
  *
  * Mounted inside `RequireAuth`'d routes only: `/api/crm/saved/` needs a
- * collector session, so there is nothing to read before login. The controller
- * reads the saved set from the server on mount — that read (not any browser
- * storage) is what makes the saved state correct after a refresh — and resets
- * when the collector logs out or a different one signs in.
+ * collector session, so there is nothing to read before login. The
+ * controller no longer eagerly reads the whole saved set on mount
+ * (docs/PHASE_6_API_GAPS.md G-P6-1 — `artwork.is_saved` already answers that
+ * per-artwork, server-side); it only needs resetting when the collector logs
+ * out or a different one signs in, so this tab's local write-overrides never
+ * leak across accounts.
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { useApi, useSession } from '../../api/hooks';
@@ -20,15 +22,11 @@ export function SavedProvider({ children }: { children: ReactNode }) {
   const [controller] = useState(() => new SavedController(crm));
 
   // `me` is null until `/auth/me/` resolves; key on the id once we have it so a
-  // second collector in the same tab never inherits the first one's saved set.
+  // second collector in the same tab never inherits the first one's overrides.
   const identity = isAuthenticated ? (me?.id ?? 'pending') : null;
 
   useEffect(() => {
-    if (identity === null) {
-      controller.reset();
-      return;
-    }
-    void controller.ensureLoaded();
+    controller.reset();
   }, [controller, identity]);
 
   return (

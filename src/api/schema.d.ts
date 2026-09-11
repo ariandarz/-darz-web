@@ -455,7 +455,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List external auction-house results */
+        /**
+         * List external auction-house results
+         * @description `?search=`, `?ordering=` (incl. `highlight_order`), `?artist=`, `?section=`, `?status=`, `?is_highlight=` (BE-R4).
+         */
         get: operations["auctions_admin_record_list"];
         put?: never;
         /** Add an external auction-house result */
@@ -626,7 +629,7 @@ export interface paths {
         };
         /**
          * List external auction-house results
-         * @description Market-intelligence comparables — read-only. `?search=` (artist / house / lot title), `?ordering=` (`sale_date` / `price_amount` +/- prefixes), `?artist=<uuid>`.
+         * @description Market-intelligence comparables — read-only. `?search=` (artist / house / lot title), `?ordering=` (`sale_date` / `price_amount` +/- prefixes / `highlight_order`), `?artist=<uuid>`, `?section=` (past/upcoming/live), `?is_highlight=`.
          */
         get: operations["auctions_records_list"];
         put?: never;
@@ -646,6 +649,26 @@ export interface paths {
         };
         /** Get one external auction-house result */
         get: operations["auctions_records_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auctions/records/highlights/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The 'Auction highlights' strip
+         * @description Highlighted records only, in curated order — equivalent to `?is_highlight=true&ordering=highlight_order` (BE-R6).
+         */
+        get: operations["auctions_records_highlights"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1047,6 +1070,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/artworks/change-stamp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catalogue change-stamp (flow-2 hardening, docs/TASKLIST.md Phase 19)
+         * @description A cheap `{count, last_updated}` for the same (optionally filtered — same params as the list endpoint) catalogue view, with no row body — a poller checks this before deciding whether to re-fetch the full list. Also the atomic partial-publish guard: fetch this before a paginated walk and again after; if either value changed, an admin publish/unpublish may have crossed the walk — discard it and retry, exactly like the old app's "read an expected count, only swap when it still matches" check.
+         */
+        get: operations["catalog_artworks_change_stamp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/legacy-lookup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resolve a legacy id to its current UUID (docs/TASKLIST.md Phase 19)
+         * @description For an old Darz/Airtable deep link carrying a pre-migration string id. Public (no auth) — resolving an id reveals nothing about the artwork itself, and this lets a logged-out old link redirect straight through login to the right page instead of 401ing first. Today only `Artwork` carries legacy ids (`legacy_darz_id` / `legacy_airtable_id`); a legacy id for anything else 404s the same as an unrecognized one.
+         */
+        get: operations["catalog_legacy_lookup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/crm/activity/": {
         parameters: {
             query?: never;
@@ -1076,11 +1139,52 @@ export interface paths {
         };
         /**
          * Unified admin request feed
-         * @description Every request across every kind, filterable by kind/status/assignee.
+         * @description Every request across every kind, filterable by kind/status/assignee/archived.
          */
         get: operations["crm_admin_requests_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/admin/requests/{id}/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a request's messages (admin)
+         * @description The full two-way thread, oldest first.
+         */
+        get: operations["crm_admin_request_messages_list"];
+        put?: never;
+        /** Reply on a request (admin) */
+        post: operations["crm_admin_requests_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/admin/requests/{id}/messages/mark-seen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a request's collector messages as seen (admin)
+         * @description Clears the team-side unread badge for this request.
+         */
+        post: operations["crm_admin_requests_messages_mark_seen_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1122,9 +1226,50 @@ export interface paths {
         put?: never;
         /**
          * Create a request
-         * @description `status` is always server-derived from `kind`, never client-supplied. `detail` shape depends on `kind` — see apps.crm.serializers.DETAIL_SERIALIZERS.
+         * @description `status` is always server-derived from `kind`, never client-supplied. `detail` shape depends on `kind` — see apps.crm.serializers.DETAIL_SERIALIZERS. An optional `client_req_id` makes the create idempotent: a repeat with the same key returns the already-created row (200) instead of a new one (201). A `kind` gated by the artwork's `allowed_actions` (purchase/hold/offer/viewing) is rejected (400, `action_not_allowed`) if the work doesn't offer it; an offer below the artwork's (private) floor is rejected (400, `offer_below_floor`).
          */
         post: operations["crm_requests_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/requests/{id}/messages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a request's messages
+         * @description The full two-way thread, oldest first. Own request only.
+         */
+        get: operations["crm_request_messages_list"];
+        put?: never;
+        /** Reply on a request */
+        post: operations["crm_requests_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/requests/{id}/messages/mark-seen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a request's team messages as seen
+         * @description Clears the collector-side unread badge for this request.
+         */
+        post: operations["crm_requests_messages_mark_seen_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1140,13 +1285,13 @@ export interface paths {
         };
         /**
          * List my saved artworks
-         * @description The authenticated collector's own saved artworks only.
+         * @description The authenticated collector's own saved artworks only. Default order is newest-first (-created_at); a paginated walk is stable across pages.
          */
         get: operations["crm_saved_list"];
         put?: never;
         /**
          * Save an artwork
-         * @description Idempotent — saving an already-saved artwork is a no-op; re-saving a previously unsaved one restores it (soft-delete, never a hard delete, matching the old system).
+         * @description Idempotent — saving an already-saved artwork is a no-op; re-saving a previously unsaved one restores it (soft-delete, never a hard delete, matching the old system). The response's `created` flag says which of the three happened.
          */
         post: operations["crm_saved_create"];
         delete?: never;
@@ -3336,6 +3481,16 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        AdminMarkSeenResponse: {
+            data?: {
+                [key: string]: unknown;
+            };
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminRegistrationListResponse: {
             data: components["schemas"]["AdminRegistrationListResponseData"];
             /** @default true */
@@ -3369,6 +3524,34 @@ export interface components {
             results: components["schemas"]["RequestAdmin"][];
         };
         AdminRequestListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminRequestMessageCreateResponse: {
+            data: components["schemas"]["RequestMessage"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminRequestMessageListResponse: {
+            data: components["schemas"]["AdminRequestMessageListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminRequestMessageListResponseData: {
+            pagination: components["schemas"]["AdminRequestMessageListResponsePagination"];
+            results: components["schemas"]["RequestMessage"][];
+        };
+        AdminRequestMessageListResponsePagination: {
             page: number;
             per_page: number;
             total_pages: number;
@@ -3652,6 +3835,10 @@ export interface components {
             internal_notes?: string;
             provenance?: string;
             tags?: unknown;
+            /** Format: decimal */
+            offer_floor?: string | null;
+            /** Allowed collector actions */
+            allowed_actions?: unknown;
             readonly is_published: boolean;
             /** Format: date-time */
             readonly published_at: string | null;
@@ -3682,6 +3869,14 @@ export interface components {
          * @enum {string}
          */
         ArtworkAvailabilityStatusEnum: "available" | "on_hold" | "reserved" | "sold" | "archived" | "withdrawn";
+        ArtworkChangeStampResponse: {
+            data: components["schemas"]["CatalogueChangeStamp"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         /**
          * @description Public + collector tier only. Internal fields (notes, provenance, raw
          *     legacy ids, visibility, source_name...) never appear here.
@@ -3705,6 +3900,13 @@ export interface components {
             readonly public_description: string;
             readonly tags: unknown;
             readonly images: components["schemas"]["ArtworkImage"][];
+            readonly allowed_actions: string[];
+            readonly is_saved: boolean;
+            /** Format: date-time */
+            readonly saved_at: string | null;
+            readonly refine_tags: {
+                [key: string]: string[];
+            };
         };
         ArtworkDetailResponse: {
             data: components["schemas"]["ArtworkCollector"];
@@ -3933,7 +4135,9 @@ export interface components {
         /**
          * @description ``artist_display_name`` is the label to show: the linked catalog
          *     Artist's name when one is matched, else the free-text ``artist_name_raw``
-         *     (write endpoints ignore this read-only field).
+         *     (write endpoints ignore this read-only field). Same serializer for
+         *     collector read and admin CRUD — nothing on this model is confidential
+         *     (see the model docstring), so there's no tiering to split.
          */
         AuctionRecord: {
             /** Format: uuid */
@@ -3962,6 +4166,43 @@ export interface components {
             /** Format: uri */
             source_url?: string;
             notes?: string;
+            /** Format: uri */
+            image_url?: string;
+            /** @description Free text — old-house data is often imprecise, e.g. "c. 1971". */
+            year?: string;
+            medium?: string;
+            dimensions?: string;
+            /** Format: decimal */
+            low_estimate?: string | null;
+            /** Format: decimal */
+            high_estimate?: string | null;
+            /**
+             * Hammer price
+             * Format: decimal
+             */
+            hammer_amount?: string | null;
+            /**
+             * Realized price
+             * Format: decimal
+             * @description Hammer + buyer's premium, when the house reports it separately.
+             */
+            realized_amount?: string | null;
+            sale_name?: string;
+            provenance?: string;
+            literature?: string;
+            exhibition?: string;
+            house_notes?: string;
+            previous_record?: string;
+            section?: components["schemas"]["SectionEnum"];
+            /** Format: date-time */
+            opens_at?: string | null;
+            /** Format: date-time */
+            closes_at?: string | null;
+            /** Timezone */
+            tz?: string;
+            status?: components["schemas"]["AuctionRecordStatusEnum"];
+            is_highlight?: boolean;
+            highlight_order?: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -3976,6 +4217,26 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        AuctionRecordHighlightsResponse: {
+            data: components["schemas"]["AuctionRecordHighlightsResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AuctionRecordHighlightsResponseData: {
+            pagination: components["schemas"]["AuctionRecordHighlightsResponsePagination"];
+            results: components["schemas"]["AuctionRecord"][];
+        };
+        AuctionRecordHighlightsResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
         };
         AuctionRecordListResponse: {
             data: components["schemas"]["AuctionRecordListResponseData"];
@@ -3997,6 +4258,15 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description * `sold` - Sold
+         *     * `unsold` - Unsold
+         *     * `passed` - Passed
+         *     * `withdrawn` - Withdrawn
+         *     * `pending` - Pending
+         * @enum {string}
+         */
+        AuctionRecordStatusEnum: "sold" | "unsold" | "passed" | "withdrawn" | "pending";
         /**
          * @description * `draft` - Draft
          *     * `scheduled` - Scheduled
@@ -4138,6 +4408,17 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        /**
+         * @description `{count, last_updated}` for the (possibly filtered) collector
+         *     catalogue — a client walks pages, then re-fetches this; if either value
+         *     changed, the walk may have crossed a publish/unpublish and should be
+         *     discarded and restarted rather than trusted.
+         */
+        CatalogueChangeStamp: {
+            count: number;
+            /** Format: date-time */
+            last_updated: string | null;
         };
         /**
          * @description * `instagram` - Instagram
@@ -4950,6 +5231,25 @@ export interface components {
         LedgerStatus: {
             status: components["schemas"]["LedgerEntryStatusEnum"];
         };
+        /**
+         * @description A resolved legacy id. `resource_type` is always "artwork" today —
+         *     the only model carrying legacy ids (see Artwork.legacy_darz_id /
+         *     legacy_airtable_id) — but is a real field, not a hardcoded assumption,
+         *     so a future legacy-id-bearing model doesn't need a second endpoint.
+         */
+        LegacyLookup: {
+            /** Format: uuid */
+            id: string;
+            resource_type: string;
+        };
+        LegacyLookupResponse: {
+            data: components["schemas"]["LegacyLookup"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         LogoutInput: {
             refresh: string;
         };
@@ -5146,6 +5446,16 @@ export interface components {
          * @enum {string}
          */
         LotStatusEnum: "scheduled" | "live" | "sold" | "passed" | "cancelled";
+        MarkSeenResponse: {
+            data?: {
+                [key: string]: unknown;
+            };
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         MarketingCampaign: {
             /** Format: uuid */
             readonly id: string;
@@ -5405,6 +5715,10 @@ export interface components {
             internal_notes?: string;
             provenance?: string;
             tags?: unknown;
+            /** Format: decimal */
+            offer_floor?: string | null;
+            /** Allowed collector actions */
+            allowed_actions?: unknown;
             readonly is_published?: boolean;
             /** Format: date-time */
             readonly published_at?: string | null;
@@ -5421,7 +5735,9 @@ export interface components {
         /**
          * @description ``artist_display_name`` is the label to show: the linked catalog
          *     Artist's name when one is matched, else the free-text ``artist_name_raw``
-         *     (write endpoints ignore this read-only field).
+         *     (write endpoints ignore this read-only field). Same serializer for
+         *     collector read and admin CRUD — nothing on this model is confidential
+         *     (see the model docstring), so there's no tiering to split.
          */
         PatchedAuctionRecord: {
             /** Format: uuid */
@@ -5450,6 +5766,43 @@ export interface components {
             /** Format: uri */
             source_url?: string;
             notes?: string;
+            /** Format: uri */
+            image_url?: string;
+            /** @description Free text — old-house data is often imprecise, e.g. "c. 1971". */
+            year?: string;
+            medium?: string;
+            dimensions?: string;
+            /** Format: decimal */
+            low_estimate?: string | null;
+            /** Format: decimal */
+            high_estimate?: string | null;
+            /**
+             * Hammer price
+             * Format: decimal
+             */
+            hammer_amount?: string | null;
+            /**
+             * Realized price
+             * Format: decimal
+             * @description Hammer + buyer's premium, when the house reports it separately.
+             */
+            realized_amount?: string | null;
+            sale_name?: string;
+            provenance?: string;
+            literature?: string;
+            exhibition?: string;
+            house_notes?: string;
+            previous_record?: string;
+            section?: components["schemas"]["SectionEnum"];
+            /** Format: date-time */
+            opens_at?: string | null;
+            /** Format: date-time */
+            closes_at?: string | null;
+            /** Timezone */
+            tz?: string;
+            status?: components["schemas"]["AuctionRecordStatusEnum"];
+            is_highlight?: boolean;
+            highlight_order?: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version?: number;
             /** Format: date-time */
@@ -6373,18 +6726,27 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /**
+         * @description Nests collector/artwork (G-F1-7) instead of bare ids, and reports the
+         *     legal next statuses (G-F1-4) so the "Move to…" control never offers an
+         *     illegal transition. Requires the view to select_related("collector",
+         *     "artwork__artist") — see admin_request_list.
+         */
         RequestAdmin: {
             /** Format: uuid */
             readonly id: string;
-            /** Format: uuid */
-            readonly collector: string;
-            /** Format: uuid */
-            readonly artwork: string | null;
+            readonly collector: components["schemas"]["_RequestAdminCollector"];
+            readonly artwork: components["schemas"]["_RequestAdminArtwork"] | null;
             readonly kind: components["schemas"]["RequestKindEnum"];
             readonly status: string;
+            readonly allowed_transitions: string[];
             /** Format: uuid */
             readonly assignee: string | null;
             readonly detail: unknown;
+            readonly contact_snapshot: unknown;
+            /** Archived by admin */
+            readonly admin_archived: boolean;
+            readonly unread_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -6392,7 +6754,10 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
-        /** @description Output for the collector who owns it — no ``assignee`` (internal tier). */
+        /**
+         * @description Output for the collector who owns it — no ``assignee``/``contact_
+         *     snapshot`` (internal tier).
+         */
         RequestCollector: {
             /** Format: uuid */
             readonly id: string;
@@ -6401,6 +6766,7 @@ export interface components {
             /** Format: uuid */
             readonly artwork: string | null;
             readonly detail: unknown;
+            readonly unread_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -6417,6 +6783,16 @@ export interface components {
             /** Format: uuid */
             artwork?: string | null;
             detail?: unknown;
+            /** @default  */
+            client_req_id: string;
+        };
+        RequestCreateReplayResponse: {
+            data: components["schemas"]["RequestCollector"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         RequestCreateResponse: {
             data: components["schemas"]["RequestCollector"];
@@ -6458,6 +6834,57 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        RequestMessage: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly request: string;
+            readonly sender: components["schemas"]["RequestMessageSenderEnum"];
+            readonly body: string;
+            readonly artwork_refs: unknown;
+            readonly seen_by_collector: boolean;
+            readonly seen_by_team: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        RequestMessageCreate: {
+            body: string;
+            artwork_refs?: string[];
+        };
+        RequestMessageCreateResponse: {
+            data: components["schemas"]["RequestMessage"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        RequestMessageListResponse: {
+            data: components["schemas"]["RequestMessageListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        RequestMessageListResponseData: {
+            pagination: components["schemas"]["RequestMessageListResponsePagination"];
+            results: components["schemas"]["RequestMessage"][];
+        };
+        RequestMessageListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        /**
+         * @description * `collector` - Collector
+         *     * `team` - Darz team
+         * @enum {string}
+         */
+        RequestMessageSenderEnum: "collector" | "team";
         /**
          * @description * `draft` - Draft
          *     * `requested` - Requested
@@ -6566,6 +6993,7 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly artwork: components["schemas"]["ArtworkCollector"];
+            readonly created: boolean;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -6601,6 +7029,13 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description * `past` - Past
+         *     * `upcoming` - Upcoming
+         *     * `live` - Live
+         * @enum {string}
+         */
+        SectionEnum: "past" | "upcoming" | "live";
         /**
          * @description * `unpaid` - Not yet paid
          *     * `partial` - Partially paid
@@ -6693,6 +7128,26 @@ export interface components {
         _HealthData: {
             status: string;
             service: string;
+        };
+        _RequestAdminArtist: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+        };
+        /**
+         * @description Nested artwork summary for the admin feed (docs/FLOW_1_API_GAPS.md
+         *     G-F1-7) — the operator sees "Untitled (Hexagon)", not a bare UUID.
+         */
+        _RequestAdminArtwork: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            artist: components["schemas"]["_RequestAdminArtist"] | null;
+        };
+        _RequestAdminCollector: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
         };
         _TokenPair: {
             access: string;
@@ -7759,7 +8214,14 @@ export interface operations {
     };
     auctions_admin_record_list: {
         parameters: {
-            query?: never;
+            query?: {
+                artist?: string;
+                is_highlight?: boolean;
+                ordering?: string;
+                search?: string;
+                section?: string;
+                status?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8152,8 +8614,10 @@ export interface operations {
         parameters: {
             query?: {
                 artist?: string;
+                is_highlight?: boolean;
                 ordering?: string;
                 search?: string;
+                section?: string;
             };
             header?: never;
             path?: never;
@@ -8196,6 +8660,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_records_highlights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuctionRecordHighlightsResponse"];
                 };
             };
         };
@@ -8615,6 +9098,8 @@ export interface operations {
                 price_min?: string;
                 /** @description Filter by exact price_type (fixed | estimate | on_request). */
                 price_type?: string;
+                /** @description "Refine" smart-filter dimensions (see GET /api/options/ 'catalog.refine_dimension' for the full list of params and 'catalog.refine_vocab' for each one's values): refine_subject, refine_style, refine_colour, refine_scale, refine_priceRange, refine_decade, refine_mood, refine_visualLanguage, refine_artistType, refine_collectingValue, refine_theme, refine_medium. Each may repeat — AND-combined, like `tag`. */
+                "refine_*"?: string[];
                 /** @description Case-insensitive substring across artist name, title, medium, dimensions. */
                 search?: string;
                 /** @description Artworks whose tags list contains this value. May repeat — AND-combined. */
@@ -9050,6 +9535,8 @@ export interface operations {
                 price_min?: string;
                 /** @description Filter by exact price_type (fixed | estimate | on_request). */
                 price_type?: string;
+                /** @description "Refine" smart-filter dimensions (see GET /api/options/ 'catalog.refine_dimension' for the full list of params and 'catalog.refine_vocab' for each one's values): refine_subject, refine_style, refine_colour, refine_scale, refine_priceRange, refine_decade, refine_mood, refine_visualLanguage, refine_artistType, refine_collectingValue, refine_theme, refine_medium. Each may repeat — AND-combined, like `tag`. */
+                "refine_*"?: string[];
                 /** @description Case-insensitive substring across artist name, title, medium, dimensions. */
                 search?: string;
                 /** @description Artworks whose tags list contains this value. May repeat — AND-combined. */
@@ -9100,6 +9587,77 @@ export interface operations {
             };
         };
     };
+    catalog_artworks_change_stamp: {
+        parameters: {
+            query?: {
+                /** @description Filter by artist id. */
+                artist?: string;
+                /** @description Filter by exact availability_status. */
+                availability_status?: string;
+                /** @description Filter by exact currency code. */
+                currency?: string;
+                /** @description Case-insensitive substring match on medium. */
+                medium?: string;
+                /** @description Sort: year | -year | artist | -artist | price | -price. Absent = newest published first. Sort by price only within one `currency`. */
+                ordering?: string;
+                /** @description Maximum price_amount (inclusive). */
+                price_max?: string;
+                /** @description Minimum price_amount (inclusive). */
+                price_min?: string;
+                /** @description Filter by exact price_type (fixed | estimate | on_request). */
+                price_type?: string;
+                /** @description "Refine" smart-filter dimensions (see GET /api/options/ 'catalog.refine_dimension' for the full list of params and 'catalog.refine_vocab' for each one's values): refine_subject, refine_style, refine_colour, refine_scale, refine_priceRange, refine_decade, refine_mood, refine_visualLanguage, refine_artistType, refine_collectingValue, refine_theme, refine_medium. Each may repeat — AND-combined, like `tag`. */
+                "refine_*"?: string[];
+                /** @description Case-insensitive substring across artist name, title, medium, dimensions. */
+                search?: string;
+                /** @description Artworks whose tags list contains this value. May repeat — AND-combined. */
+                tag?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtworkChangeStampResponse"];
+                };
+            };
+        };
+    };
+    catalog_legacy_lookup: {
+        parameters: {
+            query: {
+                legacy_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegacyLookupResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     crm_activity_create: {
         parameters: {
             query?: never;
@@ -9136,6 +9694,8 @@ export interface operations {
     crm_admin_requests_retrieve: {
         parameters: {
             query?: {
+                /** @description Filter by admin_archived (true/false). */
+                archived?: boolean;
                 /** @description Filter by assignee (TeamUser) id. */
                 assignee?: string;
                 /** @description Filter by exact kind. */
@@ -9155,6 +9715,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminRequestListResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_request_messages_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRequestMessageListResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_requests_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestMessageCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["RequestMessageCreate"];
+                "multipart/form-data": components["schemas"]["RequestMessageCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRequestMessageCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_requests_messages_mark_seen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMarkSeenResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -9241,6 +9902,14 @@ export interface operations {
             };
         };
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestCreateReplayResponse"];
+                };
+            };
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -9259,9 +9928,119 @@ export interface operations {
             };
         };
     };
-    crm_saved_list: {
+    crm_request_messages_list: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMessageListResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_requests_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestMessageCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["RequestMessageCreate"];
+                "multipart/form-data": components["schemas"]["RequestMessageCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMessageCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_requests_messages_mark_seen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkSeenResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_saved_list: {
+        parameters: {
+            query?: {
+                /** @description Only these artwork ids (repeatable) — e.g. "is this saved?" for one work without walking the whole list. */
+                artwork?: string[];
+                /** @description created_at | -created_at. Default -created_at. */
+                ordering?: string;
+                /** @description Page number (1-indexed). */
+                page?: number;
+                /** @description Page size (default 20, max 100). */
+                per_page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

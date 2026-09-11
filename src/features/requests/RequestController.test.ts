@@ -45,7 +45,11 @@ describe('RequestController — filing an action', () => {
 
     await c.act(ARTWORK, 'hold');
 
-    expect(crm.createRequest).toHaveBeenCalledWith({ kind: 'hold', artwork: 'aw1' });
+    expect(crm.createRequest).toHaveBeenCalledWith({
+      kind: 'hold',
+      artwork: 'aw1',
+      clientReqId: 'act:aw1:hold',
+    });
     const { confirmation } = c.getSnapshot();
     expect(confirmation?.title).toBe('Hold request received');
     expect(confirmation?.message).toBe(
@@ -101,6 +105,7 @@ describe('RequestController — filing an action', () => {
     expect(crm.createRequest).toHaveBeenCalledWith({
       kind: 'offer',
       artwork: 'aw1',
+      clientReqId: 'offer:aw1:9500',
       detail: { amount: 9500, currency: 'USD' },
     });
     expect(c.getSnapshot().confirmation?.title).toBe('Offer received');

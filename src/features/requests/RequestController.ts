@@ -164,9 +164,16 @@ export class RequestController extends Observable<RequestSnapshot> {
     this.patch({ pending: withKey(pending, key), error: null });
 
     try {
+      // `key` (the same double-tap guard key above) doubles as the
+      // idempotency key (docs/FLOW_1_API_GAPS.md G-F1-5): a retry of the
+      // exact same action — same artwork/verb[/amount] — is deduped
+      // server-side too, surviving a reload mid-flight, not just this tab's
+      // in-memory guard. A materially different retry (a corrected offer
+      // amount) gets a different key, so it's still a fresh request.
       const row = await this.crm.createRequest({
         kind: ACTION_KIND[verb],
         artwork: artwork.id,
+        clientReqId: key,
         ...(detail ? { detail } : {}),
       });
       const copy = CONFIRM_COPY[verb];

@@ -1,5 +1,9 @@
 # Phase 8 — API gaps
 
+> **2026-09-11:** G-P8-1's backend half (BE-R1…BE-R6, the widened `AuctionRecord` + import command)
+> is done — see `docs/API_INTEGRATION_GAPS.md`. The frontend half (FE-R1…FE-R4 — admin Records
+> desk, highlight curation, collector sub-tabs) is still open, its own follow-up PR.
+
 Gaps found while building the collector auction surfaces (Phase 8). None blocked
 a step; each is a **flag for an owner decision**, not a silent omission.
 

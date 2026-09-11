@@ -1,21 +1,29 @@
 /**
  * AdminRequestsPage — `/admin/requests`. The unified CRM request feed: every
  * collector action (Buy now / 24h hold / Request viewing / Make an offer)
- * arrives here, filterable by kind and status, with a per-row status
- * transition. This is the "Admin receives the action" end of flow 1.
+ * arrives here, filterable by kind, status and archived, with a per-row
+ * status transition. This is the "Admin receives the action" end of flow 1.
  *
  * Chrome ported from `darzstudio.art` `darz-studio.html`: `.ad-h`, `.ad-toolbar`,
  * `.ad-card` + `.ad-tbl` (see admin.css for the per-block line citations).
  *
- * Statuses come from `GET /api/options/` — never a hardcoded label lookup
- * (CLAUDE.md, "API access"). The status vocabulary depends on the kind, which
- * the options endpoint does not express; see `docs/FLOW_1_API_GAPS.md`
- * (G-F1-4).
+ * `collector`/`artwork` are nested objects now, not bare uuids
+ * (`docs/FLOW_1_API_GAPS.md` G-F1-7) — the feed shows a real name and work
+ * title. Statuses come from `GET /api/options/`'s `crm.request_status_by_kind`
+ * (G-F1-4, derived live from the backend's own guarded state machine so it
+ * can never drift) — never a hardcoded label lookup (CLAUDE.md). The per-row
+ * "Move to…" control uses that row's own `allowed_transitions`, so it only
+ * ever offers a legal next status.
  */
 import { useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
-import type { AdminRequest, AdminRequestQuery } from '../../api/types';
+import type {
+  AdminRequest,
+  AdminRequestQuery,
+  Choice,
+  RequestStatusByKind,
+} from '../../api/types';
 import { Pager } from '../catalogue/Pager';
 import { useListController } from '../shared/useListController';
 import { AdminRequestsController } from './AdminRequestsController';
@@ -54,7 +62,12 @@ export function AdminRequestsPage() {
     };
   }, [options]);
 
-  const statuses = statusChoices(choices);
+  const statusByKind = requestStatusByKind(choices);
+  // The filter dropdown: scoped to the selected kind's own vocabulary once one
+  // is chosen, else every status across every kind (deduped).
+  const filterStatuses = state.query.kind
+    ? (statusByKind[state.query.kind] ?? [])
+    : unionOfStatuses(statusByKind);
 
   const transition = async (id: string, toStatus: string) => {
     if (!toStatus || busyId) return; // one transition at a time
@@ -93,12 +106,20 @@ export function AdminRequestsPage() {
           aria-label="Filter by status"
         >
           <option value="">All statuses</option>
-          {statuses.map((s) => (
+          {filterStatuses.map((s) => (
             <option key={s.value} value={s.value}>
               {s.label}
             </option>
           ))}
         </select>
+        <label className="ad-archived-toggle">
+          <input
+            type="checkbox"
+            checked={state.query.archived ?? false}
+            onChange={(e) => setQuery({ archived: e.target.checked || undefined })}
+          />
+          Archived only
+        </label>
       </div>
 
       {state.status === 'loading' && state.results.length === 0 && (
@@ -134,24 +155,31 @@ export function AdminRequestsPage() {
                     <td>
                       <span className={`ad-chip ${r.kind}`}>{titleCase(r.kind)}</span>
                     </td>
-                    <td className="ad-id">{shortId(r.collector)}</td>
-                    <td className="ad-id">{r.artwork ? shortId(r.artwork) : '—'}</td>
+                    <td>{r.collector?.display_name ?? shortId(String(r.collector))}</td>
+                    <td>{artworkLabel(r.artwork)}</td>
                     <td>{detailLine(r.detail)}</td>
-                    <td>{titleCase(r.status)}</td>
+                    <td>
+                      {titleCase(r.status)}
+                      {r.unread_count > 0 && (
+                        <span className="ad-unread" title={`${r.unread_count} unread reply`}>
+                          {r.unread_count}
+                        </span>
+                      )}
+                      {r.admin_archived && <span className="ad-archived-chip">Archived</span>}
+                    </td>
                     <td aria-busy={busyId === r.id || undefined}>
                       <select
                         value=""
                         onChange={(e) => void transition(r.id, e.target.value)}
                         aria-label={`Move request ${shortId(r.id)} to another status`}
+                        disabled={r.allowed_transitions.length === 0}
                       >
                         <option value="">Move to…</option>
-                        {statuses
-                          .filter((s) => s.value !== r.status)
-                          .map((s) => (
-                            <option key={s.value} value={s.value}>
-                              {s.label}
-                            </option>
-                          ))}
+                        {r.allowed_transitions.map((value) => (
+                          <option key={value} value={value}>
+                            {statusLabel(statusByKind, r.kind, value)}
+                          </option>
+                        ))}
                       </select>
                     </td>
                   </tr>
@@ -169,12 +197,29 @@ export function AdminRequestsPage() {
 
 // --- helpers ---------------------------------------------------------------
 
-/** `GET /api/options/` publishes choice sets keyed by `app.field`. The request
- * status set is `crm.request_status`; fall back to an empty list rather than
- * inventing labels. */
-function statusChoices(map: OptionsMap | null): Array<{ value: string; label: string }> {
-  if (!map) return [];
-  return map['crm.request_status'] ?? map['crm.status'] ?? [];
+/** `crm.request_status_by_kind` on `GET /api/options/` (G-F1-4) — the legal
+ * status vocabulary per kind, derived live from the backend's own guarded
+ * state machine. Never hardcode this lookup (CLAUDE.md). */
+function requestStatusByKind(map: OptionsMap | null): RequestStatusByKind {
+  if (!map) return {};
+  return (map['crm.request_status_by_kind'] as RequestStatusByKind | undefined) ?? {};
+}
+
+function unionOfStatuses(byKind: RequestStatusByKind): Choice[] {
+  const seen = new Map<string, string>();
+  Object.values(byKind).forEach((choices) => {
+    choices.forEach((c) => seen.set(c.value, c.label));
+  });
+  return Array.from(seen, ([value, label]) => ({ value, label }));
+}
+
+function statusLabel(byKind: RequestStatusByKind, kind: string, value: string): string {
+  return byKind[kind]?.find((c) => c.value === value)?.label ?? titleCase(value);
+}
+
+function artworkLabel(artwork: AdminRequest['artwork']): string {
+  if (!artwork) return '—';
+  return artwork.artist ? `${artwork.artist.display_name} — ${artwork.title}` : artwork.title;
 }
 
 function titleCase(s: string): string {
