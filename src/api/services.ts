@@ -111,7 +111,10 @@ export class CrmService extends ResourceService {
   /** A request's reply thread (`GET/POST /api/crm/requests/{id}/messages/`,
    * G-F1-6) — own request only. API-only for now; no thread UI yet. */
   requestMessages(id: string, query: RequestMessageQuery = {}) {
-    return this.list<RequestMessage>(`/requests/${id}/messages/`, query as RequestOptions['query']);
+    return this.list<RequestMessage>(
+      `/requests/${id}/messages/`,
+      query as RequestOptions['query'],
+    );
   }
   postRequestMessage(id: string, body: string, artworkRefs?: string[]) {
     return this.create<RequestMessage>(`/requests/${id}/messages/`, {
