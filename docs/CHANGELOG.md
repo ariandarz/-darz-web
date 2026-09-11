@@ -5,6 +5,22 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-11 — Design pass: the Market App shell + every screen re-skinned to the design package
+
+Source of truth is now the Market App design-system handoff package (`darzstudio.art`
+`design/market-app/`, PR #846, build 1229): tokens ported verbatim (`src/design/tokens.css`), the
+charcoal skin is the collector default, and every screen was captured with Playwright at 390×844 and
+1440×900 against the package's own captures (fonts served from the package's `inline.css`). New:
+`features/shell` (`.frame` · glass header + **Leave the Room** · chroma line · bottom nav / desktop
+top nav, `LayoutController` for `html.dz-desktop`), `Dropdown` (`dzSel`) and `Segment` (`.viewseg`)
+components, catalogue single view (`ViewPreference`), previous/next arrows on the detail
+(`BrowseSet`), View in Room, share, the "More works by this artist" card, the artist page's
+`dzUniCard` tiles + enquiry, auction posters (first lot), the event page's countdown/register card/
+lot rows, the records tab (sub-sections · sort · Cards|List · empty state), **Profile** (Overview ·
+Market · Auctions · Account, `ProfileController`), **Settings** (`DevicePreferences`), and the
+`#dzGate` black-world login. Typecheck / lint (3 pre-existing-style warnings) / 82 tests / format /
+build clean. Owner-facing scope flags are listed in `docs/API_INTEGRATION_GAPS.md` § Still open.
+
 ## 2026-09-11 — API integration: wire Saved/Requests/Admin to the merged backend gaps
 
 New `docs/API_INTEGRATION_GAPS.md` — the live map of what four merged `darzmarket-api` PRs now

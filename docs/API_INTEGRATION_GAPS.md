@@ -187,5 +187,25 @@ image-led cards + record detail.
   (`requestMessages`/`postRequestMessage`/`markMessagesSeen`), UI is a follow-up PR.
 - **G-F1-1** — the typed per-kind `detail` union needs the backend to wire
   `detail_polymorphic_serializer()` into the create endpoint's `@extend_schema`. Backend follow-up.
+- **Design-pass flags (2026-09-11)** — surfaces the design package shows that this backend has no
+  field or endpoint for, left out rather than faked (each is a code comment at the call site too):
+  - **Insights & Stories** nav tab and the **Chat** pill — no editorial or chat model (`TASKLIST.md`
+    Phase 12+; chat = G-F1-6's thread UI above).
+  - **Collector questionnaire** card on Profile → Overview (`qbQuestions`) — no backend model.
+  - **Access key** card on Profile → Account — `GET /api/auth/me/` does not return the key.
+  - **Account details** are read-only — no profile-edit endpoint (Phase 9); phone / city / preferred
+    language are not on `Me`.
+  - **Chat on WhatsApp** (detail, lot, profile) — needs the gallery's number (`theme.whatsapp`); no
+    theme/settings endpoint. Same for the owner-editable copy the app ships as defaults
+    (`shipNote`, hero copy, About text, social links) and the Terms / Privacy legal text.
+  - **Auction poster** — `Auction` has no cover image; the first lot's artwork stands in (one
+    `per_page=1` lots read per card). A `cover_image_url` on `Auction` would remove that read.
+  - **Push to this device** — the VAPID public key is not published by the API.
+  - **Documents** on Profile → Account — issued documents are not exposed to collectors.
+  - **Logistics & payment** sheet and the auction-record panel under a work (`artwork.logi`,
+    per-artist records join) — no fields.
+  - Records: **Past** is shown (owner-toggled off by default in the old app) because it is the
+    archive; **Highlights** stays hidden (no curated rows). Sections split client-side on
+    `section` — no `?section=` filter on `GET /api/auctions/records/`.
 - **Catalogue change-stamp / legacy-id lookup** — endpoints exist, nothing consumes them yet (see
   above) — wire in when the frontend actually needs a poller or handles an external deep link.

@@ -4,7 +4,7 @@
  * row and "Mark all read", tap a row → the related lot. Reads the same polled
  * `AuctionNotificationsController` the live banner uses.
  */
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './auctions.css';
 import { notificationLine, notificationPill } from './status';
 import { useAuctionNotifications } from './useAuctionNotifications';
@@ -16,14 +16,7 @@ export function AuctionNotificationsPage() {
   return (
     <div className="dz-page">
       <div className="hero">
-        <div
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
-        >
-          <p className="eyebrow">Auctions</p>
-          <Link to="/auctions" className="dz-back" style={{ padding: '6px 13px' }}>
-            Auctions
-          </Link>
-        </div>
+        <p className="eyebrow">Auctions</p>
         <h1>
           Your <span className="lt">notifications</span>
         </h1>

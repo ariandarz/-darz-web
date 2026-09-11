@@ -37,6 +37,14 @@ pair, `darz_save_edit`), and none of its env files or generated assets.
 
 ---
 
+## Design pass — 2026-09-11
+
+Every screen below was re-skinned to `darzstudio.art` `design/market-app/` (build 1229) and
+screenshot-compared at 390×844 / 1440×900, dark and light. Shell (`features/shell`): header · chroma ·
+bottom nav / desktop top nav · `LayoutController`. New screens: `/profile[/:tab]`, `/settings`.
+Not ported (no backend): Insights tab, Chat pill, questionnaire, access-key card, WhatsApp,
+legal copy, push — see `docs/API_INTEGRATION_GAPS.md` § Still open.
+
 ## Remaining flows — API availability (not yet built)
 
 Every row below is backend-ready unless marked. This is the build order the endpoints support.

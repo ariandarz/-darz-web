@@ -22,6 +22,7 @@
  * app; flagged, not silently dropped.
  */
 import { useState } from 'react';
+import { cx } from '../../lib/cx';
 import type { Artwork, CollectorAction } from '../../api/types';
 import { ActionIcon } from './icons';
 import { columnsFor } from './layout';
@@ -81,7 +82,12 @@ export function ActionButtons({ artwork }: { artwork: Artwork }) {
         {primary && (
           <button
             type="button"
-            className="act-primary"
+            className={cx(
+              'act-primary',
+              // app.html `.dzglow`: the green pulsing border on an available
+              // work's Buy now (SCREENS.md §04: "green pulse when available")
+              primary === 'buy' && artwork.availability_status === 'available' && 'dzglow',
+            )}
             onClick={() => fire(primary)}
             disabled={primaryBusy}
             aria-busy={primaryBusy || undefined}

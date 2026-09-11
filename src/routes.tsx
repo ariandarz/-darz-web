@@ -7,7 +7,8 @@
  * saved set is read once per session and every screen — catalogue card,
  * artwork detail, the Saved page — reads the same server-derived state
  * (Phase 6). The provider is inside the guard because `/api/crm/saved/`
- * needs a session to answer at all.
+ * needs a session to answer at all. `AppShell` (header · chroma · nav — the
+ * Market App frame from the design package) wraps every signed-in screen.
  */
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import App from './App';
@@ -28,6 +29,9 @@ import { RecordsPage } from './features/auctions/RecordsPage';
 import { RequestProvider } from './features/requests/RequestProvider';
 import { SavedItemsPage } from './features/saved/SavedItemsPage';
 import { SavedProvider } from './features/saved/SavedProvider';
+import { ProfilePage } from './features/profile/ProfilePage';
+import { SettingsPage } from './features/settings/SettingsPage';
+import { AppShell } from './features/shell/AppShell';
 
 function CollectorLayout() {
   return (
@@ -35,7 +39,9 @@ function CollectorLayout() {
       <SavedProvider>
         <RequestProvider>
           <AuctionNotificationsProvider>
-            <Outlet />
+            <AppShell>
+              <Outlet />
+            </AppShell>
           </AuctionNotificationsProvider>
         </RequestProvider>
       </SavedProvider>
@@ -61,6 +67,11 @@ export function AppRoutes() {
             plain route (the `showRecordsTab` feature flag is gone). */}
         <Route path="/records" element={<RecordsPage />} />
         <Route path="/records/:id" element={<RecordDetailPage />} />
+        {/* Profile (Overview · Market · Auctions · Account) and Settings — the
+            two remaining nav tabs of the Market App (SCREENS.md §11–12). */}
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:tab" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         {/* Admin desk. `RequireAuth` only proves a session exists — the API's
             own admin permissions are the real gate, and a collector token gets
             403s here. A principal-aware guard is Phase 7 proper. */}

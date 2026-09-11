@@ -1,0 +1,499 @@
+/* =============================================================================
+   Profile — head, segments, overview tiles, activity rows, account cards.
+   Ported from app.html (`.phead`, `.ov-tiles`, `.ov-pending`, `.prof-sech`,
+   `.prof-empty`, `.actli`, `.pf-grp`, `.pf-card`) as documented in the design
+   package COMPONENTS.md § Tiles and rows (build 1229).
+   ========================================================================== */
+.phead {
+  padding: 18px 16px 10px;
+}
+.phead .eyebrow {
+  margin-bottom: 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  color: var(--ink3);
+}
+.phead h1 {
+  font-size: 24px;
+  font-weight: 600;
+  font-family: var(--font-head);
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.profbody {
+  padding: 14px 0 30px;
+}
+
+/* ---- overview tiles ----------------------------------------------------- */
+.ov-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  padding: 0 16px;
+}
+.ov-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 15px;
+  padding: 14px 15px 13px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 0.14s,
+    transform 0.07s;
+}
+.ov-tile:hover {
+  border-color: var(--ink3);
+}
+.ov-tile:active {
+  transform: scale(0.985);
+}
+.ov-tile .n {
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ov-tile .l {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 6px;
+}
+.ov-tile .s {
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+.ov-tile .chev {
+  align-self: flex-end;
+  margin-top: -18px;
+  color: var(--ink3);
+  font-size: 18px;
+  line-height: 0.6;
+  font-weight: 300;
+}
+.ov-pending {
+  margin: 13px 16px 0;
+  padding: 13px 15px;
+  border: 1px solid rgba(0, 212, 204, 0.34);
+  border-radius: 14px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.ov-pending .pd {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #00a89f;
+  flex: 0 0 auto;
+}
+.ov-pending .pb {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ov-pending .pt {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.ov-pending .ps {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.ov-pending .pchev {
+  color: var(--ink3);
+  font-size: 20px;
+  line-height: 0.6;
+  font-weight: 300;
+}
+
+/* ---- section heads, empty state, "more" link --------------------------- */
+.prof-sech {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 8px;
+}
+.prof-sech .t {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.prof-sech .c {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink3);
+  font-variant-numeric: tabular-nums;
+}
+.prof-empty {
+  margin: 4px 16px 8px;
+  padding: 34px 22px;
+  text-align: center;
+  border: 1px dashed var(--hair);
+  border-radius: 16px;
+  background: var(--card);
+}
+.prof-empty .pe-t {
+  font-family: var(--font-head), Georgia, serif;
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.prof-empty .pe-s {
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin: 8px auto 0;
+  line-height: 1.55;
+  max-width: 34ch;
+}
+.prof-empty .pe-b {
+  margin-top: 16px;
+}
+.btn.dzpb {
+  display: inline-block;
+  width: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 11px 20px;
+  border-radius: 12px;
+}
+.prof-more {
+  padding: 4px 16px 10px;
+  display: flex;
+  justify-content: center;
+}
+.profile .grid {
+  padding: 2px 16px 10px;
+}
+
+/* ---- activity rows (app.html `.actli`) --------------------------------- */
+.actlist {
+  padding: 0 16px 4px;
+}
+.actli {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 13px;
+  padding: 11px 12px;
+  margin: 0 0 8px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 0.14s,
+    transform 0.07s;
+  overflow: hidden;
+}
+.actli:hover {
+  border-color: var(--ink3);
+}
+.actli:active {
+  transform: scale(0.992);
+}
+.actli--rep {
+  padding-left: 14px;
+}
+.actli--rep::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 11px;
+  bottom: 11px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--dz-seam-v);
+}
+.actli-th {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: var(--hair2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink3);
+}
+.actli-th img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.actli-b {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.actli-k {
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.actli-t {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.actli-d {
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.actli-r {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.actli-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.actli-amt {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.actli-amt span {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--ink3);
+  margin-left: 2px;
+}
+.actli-stat {
+  font-family: var(--sans);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  color: var(--ink2);
+}
+.actli-stat.s-rev {
+  color: var(--pl-attn);
+  border-color: rgba(232, 0, 92, 0.34);
+}
+.actli-stat.s-ok {
+  color: var(--pl-done);
+  border-color: rgba(31, 157, 87, 0.46);
+}
+.actli-stat.s-no {
+  color: var(--pl-block);
+  border-color: rgba(225, 29, 72, 0.38);
+}
+.actli-stat.s-cl {
+  color: var(--ink3);
+}
+.actli-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e8005c;
+  flex: 0 0 auto;
+  margin-left: 1px;
+}
+.actli-chev {
+  color: var(--ink3);
+  font-size: 19px;
+  line-height: 0.6;
+  font-weight: 300;
+  flex: 0 0 auto;
+}
+
+/* ---- account cards (app.html `.pf-grp`, `.pf-card`, `field()`) ---------- */
+.pf-grp {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 20px 16px 9px;
+}
+.pf-card {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  padding: 15px 16px;
+  margin: 0 16px;
+}
+.pf-card + .pf-card {
+  margin-top: 11px;
+}
+.pf-card .dz-field-wrap + .dz-field-wrap {
+  margin-top: 12px;
+}
+.pf-card .dz-field {
+  font-family: var(--font-body);
+  font-size: 16px;
+  padding: 12px 14px;
+  background: var(--paper);
+}
+.pf-card .dz-field[readonly] {
+  color: var(--ink);
+}
+.pf-note {
+  font-size: 12.5px;
+  color: var(--ink3);
+  line-height: 1.5;
+  margin-top: 10px;
+}
+.pf-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.pf-member-t {
+  font-size: 14px;
+  color: var(--ink2);
+  text-transform: capitalize;
+}
+.pf-redeem {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.pf-redeem .dz-field-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.pf-redeem .btn {
+  flex: 0 0 auto;
+  padding: 13px 16px;
+  font-size: 12px;
+}
+.pf-leave {
+  padding: 22px 16px 2px;
+}
+.pf-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  padding: 15px 16px;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.pf-row:hover {
+  border-color: var(--ink3);
+}
+.pf-row-ic {
+  display: flex;
+  color: var(--ink2);
+}
+.pf-row-t {
+  flex: 1;
+  font-family: var(--font-head);
+  font-size: 17px;
+}
+.pf-row-chev {
+  color: var(--ink3);
+  font-size: 20px;
+  line-height: 0.6;
+  font-weight: 300;
+}
+
+/* ---- desktop: the profile spans the wide band on the gutter, four tiles
+   across (capture desktop/15-profile-overview) ----------------------------- */
+html.dz-desktop .profile {
+  max-width: calc(var(--dz-wide) + 2 * var(--dz-gut));
+  padding: 0 var(--dz-gut);
+}
+html.dz-desktop .profile .phead,
+html.dz-desktop .profile .ptabs,
+html.dz-desktop .profile .ov-tiles,
+html.dz-desktop .profile .ov-pending,
+html.dz-desktop .profile .prof-sech,
+html.dz-desktop .profile .actlist,
+html.dz-desktop .profile .prof-empty,
+html.dz-desktop .profile .pf-grp,
+html.dz-desktop .profile .pf-card,
+html.dz-desktop .profile .pf-leave,
+html.dz-desktop .profile .grid,
+html.dz-desktop .profile .prof-more {
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+html.dz-desktop .profile .ptabs.seg4 {
+  padding-bottom: 14px;
+}
+html.dz-desktop .profile .ov-tiles {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+html.dz-desktop .profile .grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+html.dz-desktop .profile .pf-card,
+html.dz-desktop .profile .pf-leave {
+  max-width: 640px;
+}

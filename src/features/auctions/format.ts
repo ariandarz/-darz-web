@@ -50,10 +50,62 @@ export function durationLong(msUntil: number): string {
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
-  if (d) return `${d} day${d === 1 ? '' : 's'}, ${h} hr`;
-  if (h) return `${h} hr, ${m} min`;
+  if (d) return `${d} day${d === 1 ? '' : 's'}, ${h} hour${h === 1 ? '' : 's'}`;
+  if (h) return `${h} hour${h === 1 ? '' : 's'}, ${m} min`;
   if (m) return `${m} min, ${sec} sec`;
   return `${sec} sec`;
+}
+
+/** "2d 23h" / "5h 12m" / "40s" — the compact countdown the event page's
+ * "CLOSES IN" block and the lot cards carry (COMPONENTS.md § Auction:
+ * `.auc-cd` "2d 23h"). '' once the target is in the past. */
+export function durationShort(msUntil: number): string {
+  if (msUntil <= 0) return '';
+  const s = Math.floor(msUntil / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m`;
+  return `${s}s`;
+}
+
+const TEHRAN = 'Asia/Tehran';
+
+/** "Closes 14 Sept, 14:06 · Tehran time" / "Opens 1 Oct, 14:06 · Tehran time"
+ * — the sale's own clock (SCREENS.md §06). */
+export function auctionClockLine(
+  auction: Pick<Auction, 'status' | 'starts_at' | 'ends_at'>,
+): string {
+  const state = auctionState(auction);
+  if (state === 'ended') return '';
+  const at = new Date(state === 'live' ? auction.ends_at : auction.starts_at);
+  const day = at.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: TEHRAN,
+  });
+  const time = at.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TEHRAN,
+  });
+  return `${state === 'live' ? 'Closes' : 'Opens'} ${day}, ${time} · Tehran time`;
+}
+
+/** "Sep 9 – Sep 14, 2026" — the event card's date range. */
+export function auctionDateRange(auction: Pick<Auction, 'starts_at' | 'ends_at'>): string {
+  const a = new Date(auction.starts_at);
+  const b = new Date(auction.ends_at);
+  const md = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const sameYear = a.getFullYear() === b.getFullYear();
+  return `${md(a)}${sameYear ? '' : `, ${a.getFullYear()}`} – ${md(b)}, ${b.getFullYear()}`;
+}
+
+/** "01" — lot numbers are two digits on the cards ("Lot 01 · Spring Evening Auction"). */
+export function lotNo(n: number): string {
+  return String(n).padStart(2, '0');
 }
 
 /** The countdown line + its lead word for an auction, matching

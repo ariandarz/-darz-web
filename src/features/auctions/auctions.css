@@ -967,3 +967,557 @@ html.dz-desktop .rec2-grid {
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 18px;
 }
+
+/* =============================================================================
+   Design-package pass (design/market-app, build 1229 — 2026-09-11): the
+   pieces the captures show that the Phase 8 port did not carry yet.
+   ========================================================================== */
+
+/* event card: poster image, 28px title, the "Closes 14 Sept, 14:06 · Tehran
+   time" line (COMPONENTS.md § Auction components "event card") */
+.card.auc-split .auc-split-img img {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.asm-title {
+  font-size: 28px;
+}
+.asm-date {
+  font-size: 13px;
+}
+.asm-close {
+  font-size: 11.5px;
+  color: #9a9189;
+  margin-top: 4px;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.asm-desc {
+  font-size: 13px;
+}
+@media (max-width: 430px) {
+  .asm-title {
+    font-size: 24px;
+  }
+}
+html.dz-desktop .auc-events {
+  max-width: var(--dz-wide);
+  margin-left: var(--dz-gut);
+  margin-right: var(--dz-gut);
+}
+html.dz-desktop .card.auc-split {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* event page: the hero poster sits on the ink well; the "CLOSES IN 2d 23h ·
+   Share" block re-uses the `.price` rule (app.html `.price.auc-cd`) */
+.auc-hero.poster {
+  background: #0a0a0a;
+  padding: 18px;
+  min-height: 160px;
+}
+.auc-hero.poster img {
+  max-height: 36vh;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+}
+html.dz-bw .auc-hero.poster {
+  background: var(--hair2);
+}
+.detail.auc-event .dbody .eyebrow {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  color: var(--ink3);
+}
+.detail.auc-event .dbody .sub {
+  font-style: normal;
+}
+.price.auc-cd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 16px;
+  margin-top: 16px;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: transparent;
+  border-radius: 0;
+}
+.price.auc-cd .cd-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.price.auc-cd .lab {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.price.auc-cd.live .lab {
+  color: #157346;
+}
+html.dz-bw .price.auc-cd.live .lab {
+  color: #5fd99a;
+}
+.price.auc-cd.upcoming .lab {
+  color: #3f5e78;
+}
+html.dz-bw .price.auc-cd.upcoming .lab {
+  color: #9db8cf;
+}
+.price.auc-cd .num {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.price.auc-cd .cd-share {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 9px 16px;
+}
+.detail.auc-event .about {
+  margin-top: 14px;
+}
+
+/* Register-to-bid card: vertical chroma seam + 46px icon square (app.html
+   `.auc-reg::before`, `.arg-ico`) */
+.auc-reg {
+  position: relative;
+  overflow: hidden;
+  margin-top: 14px;
+  padding: 17px 18px 17px 20px;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px -18px rgba(0, 0, 0, 0.55);
+}
+.auc-reg::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--dz-seam-v);
+}
+.auc-reg .arg-ico {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--soft);
+  color: var(--ink);
+}
+@media (max-width: 430px) {
+  .auc-reg {
+    flex-wrap: wrap;
+    gap: 13px;
+    padding: 15px 16px 15px 18px;
+  }
+  .auc-reg .arg-txt {
+    flex: 1 1 calc(100% - 61px);
+  }
+  .auc-reg .arg-ttl {
+    font-size: 16px;
+  }
+  .auc-reg .arg-cta {
+    width: 100%;
+    justify-content: center;
+    padding: 13px;
+    font-size: 13.5px;
+  }
+}
+
+/* lot card: the spec line + the "Place a bid" action bottom-right (app.html
+   `.lt-spec`, `.lt-bid-btn`) */
+.lt-spec {
+  font-family: var(--sans);
+}
+.lt-bid-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid #3a3a44;
+  border-radius: 13px;
+  background: #26262e;
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  align-self: flex-end;
+  margin-left: auto;
+  box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.6);
+  transition:
+    transform 0.12s ease,
+    background 0.14s ease;
+}
+.lotrow:hover .lt-bid-btn {
+  background: #2e2e37;
+}
+@media (max-width: 430px) {
+  .lotrow {
+    gap: 12px;
+    padding: 12px;
+  }
+  .lotrow .lt-img {
+    width: 86px;
+    height: 86px;
+  }
+  .lt-money .lt-amt {
+    font-size: 16px;
+  }
+  .lt-bid-btn {
+    padding: 0 18px;
+  }
+}
+html.dz-desktop .lotrow:hover {
+  background: rgba(0, 0, 0, 0.018);
+}
+
+/* lot page: status chips on the eyebrow row, the estimate figure, the
+   "LIVE BIDDING" status block and the current-bid box (app.html `.dz-bidstat`,
+   `.dz-bidnow`) */
+.d-eyebrow .lt-no {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.d-status .d {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: currentColor;
+}
+.d-status.live {
+  background: #e3f6ee;
+  color: #157346;
+}
+.d-status.upcoming {
+  background: #e8eef4;
+  color: #3f5e78;
+}
+.d-status.ended {
+  background: #edebe6;
+  color: #5f5f5f;
+}
+html.dz-bw .d-status.live {
+  background: #11331f;
+  color: #5fd99a;
+}
+html.dz-bw .d-status.upcoming {
+  background: #1c2a35;
+  color: #9db8cf;
+}
+html.dz-bw .d-status.ended {
+  background: #26262c;
+  color: #a8a39b;
+}
+.price .amt .num.est {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.dz-bidstat-wrap {
+  margin-top: 8px;
+}
+.dz-bidstat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0 0 6px;
+  color: var(--ink2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+}
+.dz-bidstat-sub {
+  font-size: var(--f-body);
+  color: var(--ink2);
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+.dz-bidnow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin: 10px 0;
+}
+.dz-bidnow .l {
+  display: block;
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 3px;
+}
+.dz-bidnow b {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.dz-bidnow .lt-bidders {
+  font-size: 10.5px;
+  color: var(--ink3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.act-primary.dz-bidclosed + .auc-live-hint {
+  margin-top: 4px;
+}
+
+/* records: tools (dropdown + cards|list segment), image well on cards, the
+   list rows, the artist index and the empty state */
+.rec2-hd {
+  padding: 26px 20px 8px;
+}
+.rec2-eyebrow {
+  font-family: var(--mono);
+}
+.rec2-tools {
+  padding: 10px 20px 0;
+}
+.rec2-tools .dzsel {
+  flex: 0 0 auto;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+.rec2-tools .dzsel-btn {
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 11px;
+  border-width: 1px;
+  box-shadow: none;
+}
+.rec2-tools .rec2-view {
+  flex: 0 0 auto;
+}
+.rec2-tools .rec2-view button {
+  min-height: 38px;
+  padding: 0 16px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+}
+.rec2-view button.on::after {
+  display: none;
+}
+.rec2-c {
+  overflow: hidden;
+  padding-top: 0;
+}
+.rec2-c > .rec2-meta {
+  margin-top: 13px;
+}
+.rec2-img {
+  aspect-ratio: 4 / 3;
+  margin: 0 -13px 10px;
+  background: var(--hair2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rec2-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 7%;
+  box-sizing: border-box;
+  display: block;
+}
+.rec2-list,
+.rec2-artists {
+  padding: 8px 20px 24px;
+}
+.rec2-row {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 2px;
+  border: 0;
+  border-top: 1px solid var(--hair);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rec2-row:first-child {
+  border-top: 0;
+}
+.rec2-row-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--hair2);
+  flex: 0 0 auto;
+}
+.rec2-row-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.rec2-row-b {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rec2-row-ar {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.1;
+}
+.rec2-row-ti {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec2-row-h {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 3px;
+}
+.rec2-row-pr,
+.rec2-row-n {
+  flex: 0 0 auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  margin-left: auto;
+}
+.rec2-row-n {
+  font-weight: 500;
+  color: var(--ink3);
+  font-size: 11.5px;
+}
+.rec2-artists-back {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px 0;
+}
+.rec2-artists-back .dz-back {
+  padding: 6px 13px;
+}
+.rec2-artists-name {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 600;
+}
+.rec2-empty {
+  padding: 52px 28px;
+  text-align: center;
+  max-width: 340px;
+  margin: 0 auto;
+}
+.rec2-empty-t {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.rec2-empty-s {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink3);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+html.dz-desktop .rec2-hd,
+html.dz-desktop .rec2-tools,
+html.dz-desktop .rec2-grid,
+html.dz-desktop .rec2-list,
+html.dz-desktop .rec2-artists,
+html.dz-desktop .ptabs.sub {
+  padding-left: var(--dz-gut);
+  padding-right: var(--dz-gut);
+  max-width: calc(var(--dz-wide) + 2 * var(--dz-gut));
+}
+html.dz-desktop .rec2-tools .rec2-view {
+  flex-basis: auto;
+}
+html.dz-desktop .rec2-tools .rec2-search {
+  max-width: 420px;
+}
+
+/* desktop: two event cards per row (capture desktop/09-auctions), the event
+   page as the 920px detail column (app.html `html.dz-desktop .detail`) */
+html.dz-desktop .auc-events {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  padding: 18px 0 40px;
+}
+@media (max-width: 1180px) {
+  html.dz-desktop .auc-events {
+    grid-template-columns: 1fr;
+  }
+}
+html.dz-desktop .card.auc-split {
+  margin: 0;
+}
+html.dz-desktop .detail.auc-event {
+  max-width: 920px;
+  margin: 0;
+  padding: 0 var(--dz-gut) 60px;
+}
+html.dz-desktop .detail.auc-event .dtop,
+html.dz-desktop .detail.auc-event .dbody {
+  padding-left: 0;
+  padding-right: 0;
+}
+html.dz-desktop .detail.auc-event .auc-hero {
+  border-radius: 14px;
+  margin-top: 6px;
+}

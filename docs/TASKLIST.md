@@ -328,11 +328,15 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 
 ## Phase 9 — Collector: profile, questionnaire, chat, settings/membership
 
-- [ ] Profile view/edit (partially supported today via `Collector.preferences` JSON — confirm real
-      field mapping against the old questionnaire before building)
+- [~] Profile view — **shipped 2026-09-11 (design pass)**: `/profile[/:tab]` Overview · Market ·
+      Auctions · Account (`features/profile`, `ProfileController`); account details are read-only
+      (no edit endpoint), the access key and questionnaire card are flagged in
+      `docs/API_INTEGRATION_GAPS.md`. Edit + questionnaire still open.
 - [ ] "Chat with Darz" — maps to `crm.Request(kind=message)` unless a distinct channel is decided
-- [ ] Settings (language/currency/layout)
-- [ ] Membership display/redemption (backend Phase 13 merged — ready)
+- [~] Settings — **shipped 2026-09-11**: `/settings` (`features/settings`, `DevicePreferences`):
+      notification switches (per device, as the old app), language, appearance, auction terms,
+      about, Leave the Room. Currency + push opt-in still open.
+- [x] Membership display/redemption — Profile → Account (2026-09-11).
 - [ ] PWA install + push opt-in (backend Phase 13 merged — VAPID/web-push ready)
 
 ## Phase 10 — Gallery Update Portal (frontend) ✅ backend ready (Phase 12 A+B merged)
