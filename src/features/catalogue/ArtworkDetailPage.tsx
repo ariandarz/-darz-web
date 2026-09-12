@@ -109,7 +109,7 @@ export function ArtworkDetailPage() {
 
         {features.save && (
           <div className="actions">
-            <SaveButton artworkId={artwork.id} title={artwork.title} variant="action" />
+            <SaveButton artwork={artwork} variant="action" />
           </div>
         )}
 

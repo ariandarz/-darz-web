@@ -63,7 +63,7 @@ typed table, `src/features/shell/features.ts` (`VITE_FEATURE_SET=v0.1` | `full`,
 | Settings | Appearance Paper/Black, links, Leave the Room |
 | Hidden deep links | `/auctions`, `/auctions/lots/x`, `/auctions/notifications` → `/` |
 
-Gates: `tsc -b --noEmit` clean · `oxlint` clean (one pre-existing warning) · `vitest` 100/100 ·
+Gates: `tsc -b --noEmit` clean · `oxlint` clean (one pre-existing warning) · `vitest` 98/98 (17 files) ·
 `vite build` ok.
 
 ## 4. Flags for the owner (decisions, not omissions)

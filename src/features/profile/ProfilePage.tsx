@@ -17,16 +17,18 @@
  *              (`profAccountHTML`, :9738). Read-only: the backend has no
  *              profile-update endpoint yet (flagged in docs/V0_1_SCOPE.md).
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
-import type { CollectorRequest } from '../../api/types';
+import type { CollectorRequest, SavedArtwork, SavedArtworkQuery } from '../../api/types';
 import { ArtworkCard } from '../catalogue/ArtworkCard';
 import { useArtworks } from '../catalogue/useArtworkCache';
 import '../catalogue/catalogue.css';
 import { ConversationRow } from '../conversations/ConversationRow';
 import { useConversations } from '../conversations/useConversations';
+import { SavedListController } from '../saved/SavedListController';
 import { useSaved } from '../saved/useSaved';
+import { useListController } from '../shared/useListController';
 import { features } from '../shell/features';
 import './profile.css';
 
@@ -68,7 +70,6 @@ export function ProfilePage() {
   const { me, session } = useSession();
   const { auth } = useApi();
   const { controller: conversations, status } = useConversations();
-  const saved = useSaved();
 
   const tabs: Array<[Anchor, string, boolean]> = [
     ['overview', 'Overview', false],
@@ -124,9 +125,6 @@ export function ProfilePage() {
         {status === 'error' && anchor !== 'account' && (
           <p className="dz-state err">Your activity could not be loaded. Pull to refresh.</p>
         )}
-        {saved.status === 'error' && anchor === 'market' && (
-          <p className="dz-state err">{saved.error}</p>
-        )}
       </div>
     </div>
   );
@@ -136,7 +134,7 @@ export function ProfilePage() {
 function Overview({ go }: { go: (a: Anchor) => void }) {
   const navigate = useNavigate();
   const { controller } = useConversations();
-  const saved = useSaved();
+  const saved = useSavedList();
   const acts = controller.activity();
   const unseen = controller.unreadTotal();
   const recent = useMemo(
@@ -144,7 +142,7 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
     [controller, acts],
   );
   const lookup = useArtworks(recent.map((r) => r.artwork));
-  const sv = saved.items.length;
+  const sv = saved.state.pagination?.total_count ?? saved.state.results.length;
 
   return (
     <>
@@ -219,7 +217,7 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
 /* ---- Market (profMarketHTML, app.html:9704-9735) -------------------------- */
 function Market() {
   const { controller } = useConversations();
-  const saved = useSaved();
+  const saved = useSavedList();
   const [filter, setFilter] = useState<Filter>('all');
   const all = useMemo(
     () => [...controller.conversations(), ...controller.activity()].sort(byNewest),
@@ -231,9 +229,10 @@ function Market() {
   const active: Filter = counts[filter] ? filter : 'all';
   const shown = all.filter((r) => filterMatch(r, active));
   const lookup = useArtworks(shown.map((r) => r.artwork));
-  const items = saved.items;
+  const items = saved.state.results;
+  const savedReady = saved.state.status === 'idle' && saved.state.pagination !== null;
 
-  if (saved.status === 'ready' && items.length === 0 && all.length === 0) {
+  if (savedReady && items.length === 0 && all.length === 0) {
     return (
       <div className="prof-empty">
         <div className="pe-ic">
@@ -270,13 +269,20 @@ function Market() {
         <>
           <div className="prof-sech">
             <span className="t">Saved works</span>
-            <span className="c">{items.length}</span>
+            <span className="c">{saved.state.pagination?.total_count ?? items.length}</span>
           </div>
           <div className="grid">
-            {items.map((row) =>
+            {items.map((row: SavedArtwork) =>
               row.artwork ? <ArtworkCard key={row.id} artwork={row.artwork} /> : null,
             )}
           </div>
+          {saved.state.pagination && saved.state.pagination.has_next && (
+            <div className="prof-sech">
+              <Link to="/saved" className="t">
+                All saved works →
+              </Link>
+            </div>
+          )}
         </>
       )}
       {all.length > 0 && (
@@ -398,6 +404,23 @@ function Account({
       </div>
     </>
   );
+}
+
+/** The collector's saved works as the paginated `/saved` list (upstream's
+ * `SavedListController` seam), reloaded when a save/unsave lands anywhere. */
+function useSavedList() {
+  const { crm } = useApi();
+  const list = useListController<SavedArtwork, SavedArtworkQuery>(
+    () => new SavedListController(crm, { per_page: 12 }),
+  );
+  const { lastAction } = useSaved();
+  const seen = useRef<number | null>(null);
+  useEffect(() => {
+    if (!lastAction || lastAction.at === seen.current) return;
+    seen.current = lastAction.at;
+    void list.reload();
+  }, [lastAction, list]);
+  return list;
 }
 
 function byNewest(a: CollectorRequest, b: CollectorRequest): number {

@@ -10,13 +10,21 @@ type Schemas = components['schemas'];
 
 /** `artist` is nullable at the DB level (`on_delete=SET_NULL` — legacy rows
  * with an unmatched artist name) even though the generated type omits `null`;
- * every consumer must handle it. */
+ * every consumer must handle it. `allowed_actions` (G-F1-3), `is_saved`/
+ * `saved_at` (G-P6-1) and `refine_tags` (G7) all ride along automatically —
+ * they're just more fields on the same `ArtworkCollector` schema now. */
 export type Artwork = Omit<Schemas['ArtworkCollector'], 'artist'> & {
   artist: Schemas['ArtistCollector'] | null;
 };
 export type Artist = Schemas['ArtistCollector'];
 export type ArtworkImage = Schemas['ArtworkImage'];
 export type SavedArtwork = Schemas['SavedArtwork'];
+
+/** The four collector actions the gallery can allow/disallow per artwork
+ * (`Artwork.allowed_actions`, already resolved server-side — an empty stored
+ * list means all four, but the client never sees the raw list, only the
+ * resolved one). See `docs/API_INTEGRATION_GAPS.md` G-F1-3. */
+export type CollectorAction = 'purchase' | 'hold' | 'offer' | 'viewing';
 
 /** Auctions (Phase 8). `Auction` carries `lots_count`; `Lot` (the collector
  * tier) nests the full `artwork` and a request-aware `is_leading` — no
@@ -73,6 +81,10 @@ export interface AuctionQuery {
   per_page?: number;
   page?: number;
 }
+/** `RequestCollector` now carries `unread_count` (G-F1-6, unseen team
+ * replies); `RequestAdmin` nests `collector`/`artwork` (G-F1-7, no more bare
+ * uuids), reports `allowed_transitions` (G-F1-4) and `unread_count` (unseen
+ * collector replies), plus `contact_snapshot`/`admin_archived`. */
 export type CollectorRequest = Schemas['RequestCollector'];
 export type AdminRequest = Schemas['RequestAdmin'];
 
@@ -105,10 +117,13 @@ export interface CreatedRequest {
  * offer→offer, "Request price"→price, "Ask about"→information. */
 export type RequestKind = Schemas['RequestKindEnum'];
 
-/** `RequestCreate.detail` is `unknown` in the generated schema — the backend's
- * per-kind shapes (`apps.crm.serializers.DETAIL_SERIALIZERS`) are not published
- * in the OpenAPI document. See `docs/FLOW_1_API_GAPS.md` (gap G-F1-1): what we
- * send here is the frontend's best reading, not a contract we can typecheck. */
+/** `RequestCreate.detail` is still `unknown` in the generated schema — the
+ * backend publishes a `detail_polymorphic_serializer()` helper
+ * (`apps.crm.serializers`) but it isn't yet wired into the create endpoint's
+ * `@extend_schema(request=...)`, so the per-kind union never reaches this
+ * file. Flagged as a follow-up, not silently worked around: what we send
+ * here is still the frontend's best reading, not a typechecked contract. See
+ * `docs/API_INTEGRATION_GAPS.md` G-F1-1. */
 export type RequestDetail = Record<string, unknown>;
 
 /** Collector's own request list params (`GET /api/crm/requests/`). */
@@ -119,18 +134,34 @@ export interface CollectorRequestQuery {
   page?: number;
 }
 
-/** Admin unified request feed params (`GET /api/crm/admin/requests/`). */
+/** Admin unified request feed params (`GET /api/crm/admin/requests/`).
+ * `archived` filters `admin_archived` (Q13). */
 export interface AdminRequestQuery {
   kind?: string;
   status?: string;
   assignee?: string;
+  archived?: boolean;
   per_page?: number;
   page?: number;
 }
+
 export type CollectorActivity = Schemas['CollectorActivity'];
 export type PublishedRecommendation = Schemas['CollectorPublishedRecommendation'];
 export type Me = Schemas['Me'];
 export type Principal = Me['principal'];
+
+/** One `{value, label}` choice, as `GET /api/options/` returns every flat
+ * choice field. */
+export interface Choice {
+  value: string;
+  label: string;
+}
+
+/** `crm.request_status_by_kind` on `GET /api/options/` (G-F1-4) — the legal
+ * status vocabulary per request kind, derived live from
+ * `apps.crm.lifecycle.TRANSITIONS` so it can never drift from the backend's
+ * guarded state machine. Never hardcode this lookup (CLAUDE.md). */
+export type RequestStatusByKind = Record<string, Choice[]>;
 
 /** The `data` block of every paginated list endpoint (see
  * `apps.core.pagination.CustomPagination`). */
@@ -163,12 +194,30 @@ export interface CatalogueQuery {
   ordering?: string;
   per_page?: number;
   page?: number;
+  /** "Refine" smart-filter dimensions (G7) — `refine_subject`, `refine_colour`,
+   * `refine_scale`, `refine_priceRange`, `refine_decade`, `refine_mood`,
+   * `refine_visualLanguage`, `refine_artistType`, `refine_collectingValue`,
+   * plus the two bonus dims `refine_theme`/`refine_medium`. The full param
+   * list + vocab comes from `GET /api/options/` (`catalog.refine_dimension` /
+   * `catalog.refine_vocab` / `catalog.refine_dimensions_enabled`) — never
+   * hardcode it. Each may repeat (pass a string[]) — AND-combined, like `tag`. */
+  [refineParam: `refine_${string}`]: string | string[] | number | undefined;
 }
 
 /** Artists list params (`GET /api/catalog/artists/`). */
 export interface ArtistQuery {
   search?: string;
   /** `name` | `-name` | `works` */
+  ordering?: string;
+  per_page?: number;
+  page?: number;
+}
+
+/** Saved-list params (`GET /api/crm/saved/`, G-P6-2). `artwork` is
+ * repeatable — pass a string[] to ask about several specific works. */
+export interface SavedArtworkQuery {
+  artwork?: string | string[];
+  /** `created_at` | `-created_at`; default `-created_at` (G-P6-4) */
   ordering?: string;
   per_page?: number;
   page?: number;

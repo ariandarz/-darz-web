@@ -1,5 +1,10 @@
 # Flow 1 (Collector request / offer → Admin inbox) — API gaps
 
+> **2026-09-11:** every gap below (G-F1-1…G-F1-7) is now closed on the backend; see
+> `docs/API_INTEGRATION_GAPS.md` for what's live and exactly where the frontend consumes each one
+> (G-F1-1's typed `detail` union is the one still-open follow-up). This doc stays as the historical
+> record of the original analysis.
+
 **Date:** 2026-09-05 · **Flow:** Collector Login → Artwork List → Artwork Details →
 Save / Request / Offer → Admin receives the action
 **Reference:** `ariandarz/darzstudio.art` @ `main` (`c46d96d`) — `app.html`, `darz-studio.html`

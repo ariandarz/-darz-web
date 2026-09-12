@@ -37,6 +37,7 @@ import type {
   RequestMessage,
   RequestMessageQuery,
   SavedArtwork,
+  SavedArtworkQuery,
 } from './types';
 
 export abstract class ResourceService {
@@ -131,7 +132,9 @@ export class CrmService extends ResourceService {
   }
 
   /** Admin: the unified feed of every request across every kind
-   * (`GET /api/crm/admin/requests/`, filterable by kind/status/assignee). */
+   * (`GET /api/crm/admin/requests/`, filterable by kind/status/assignee/
+   * archived). `collector`/`artwork` are nested objects now (G-F1-7), not
+   * bare uuids; `allowed_transitions` reports the legal next statuses. */
   adminRequests(query: AdminRequestQuery = {}) {
     return this.list<AdminRequest>('/admin/requests/', query as RequestOptions['query']);
   }
@@ -165,9 +168,13 @@ export class CrmService extends ResourceService {
   logActivity(body: { kind: string; artwork?: string; metadata?: Record<string, unknown> }) {
     return this.create<CollectorActivity>('/activity/', body);
   }
-  saved(query: { per_page?: number; page?: number } = {}) {
-    return this.list<SavedArtwork>('/saved/', query);
+  /** `?artwork=` (repeatable) and `?ordering=` (G-P6-2/G-P6-4); default order
+   * is newest-first. */
+  saved(query: SavedArtworkQuery = {}) {
+    return this.list<SavedArtwork>('/saved/', query as RequestOptions['query']);
   }
+  /** The response's `created` flag distinguishes newly-saved/restored from
+   * an already-saved no-op (G-P6-3). */
   save(artworkId: string) {
     return this.create<SavedArtwork>('/saved/', { artwork: artworkId });
   }
@@ -256,10 +263,18 @@ export class RecommendationService extends ResourceService {
   }
 }
 
-export type OptionsMap = Record<string, Array<{ value: string; label: string }>>;
+/** Most keys are a flat `[{value, label}]` list, but a few aren't — e.g.
+ * `crm.request_status_by_kind` (`{kind: [{value,label}]}`, G-F1-4) and
+ * `catalog.refine_dimensions_enabled` (`string[]`, G7) are shaped
+ * differently and read live (an owner toggle applies immediately, not just
+ * after the next deploy). Cast at the read site with the typed helpers in
+ * `./types` (`RequestStatusByKind`, etc.) rather than assuming every key is
+ * a flat list. */
+export type OptionsMap = Record<string, unknown>;
 
-/** `GET /api/options/` — every choice field as `{value, label}`. Cached for
- * the tab's lifetime (it's static metadata; never hardcode a label lookup). */
+/** `GET /api/options/` — every choice field as `{value, label}` (or, for a
+ * few dynamic keys, a differently-shaped live value — see `OptionsMap`).
+ * Cached for the tab's lifetime; never hardcode a label lookup. */
 export class OptionsService extends ResourceService {
   private cache: Promise<OptionsMap> | null = null;
 

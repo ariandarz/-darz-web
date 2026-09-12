@@ -10,30 +10,57 @@
  *
  * A price-on-request work has no Buy now: the old app collapses to a single
  * request entry point (:9245, "ONE request entry point"), so the primary
- * becomes "Request price".
+ * becomes "Request price" — always shown; `price`/`information` aren't
+ * gated by `allowed_actions`, only the four commerce verbs below are.
  *
  * The old app gated these behind `DZ.otpGate` and a per-artwork allow-list
  * (`DZ._actAllows`, v1131 "gallery chooses which collector actions are
- * available on this work"). Neither is ported: the new API has no per-artwork
- * action allow-list — see `docs/FLOW_1_API_GAPS.md` (G-F1-3).
+ * available on this work"). The allow-list is ported now:
+ * `artwork.allowed_actions` (docs/FLOW_1_API_GAPS.md G-F1-3, already
+ * resolved server-side — an artwork with no explicit list shows all four).
+ * `otpGate` (a one-time-passcode step) is not — there is no OTP flow in this
+ * app; flagged, not silently dropped.
  */
 import { useState } from 'react';
-import type { Artwork } from '../../api/types';
+import type { Artwork, CollectorAction } from '../../api/types';
 import { ActionIcon } from './icons';
 import { columnsFor } from './layout';
 import { OfferSheet } from './OfferSheet';
-import { ACTION_LABEL, RequestController, type ActionVerb } from './RequestController';
+import {
+  ACTION_KIND,
+  ACTION_LABEL,
+  RequestController,
+  type ActionVerb,
+} from './RequestController';
 import './requests.css';
 import { useRequests } from './useRequests';
+
+/** The four verbs the gallery's per-artwork `allowed_actions` gates — every
+ * other verb (`price`, `information`) is always offered. */
+const GATED_VERBS: ActionVerb[] = ['buy', 'hold', 'visit', 'offer'];
+
+function isAllowed(artwork: Artwork, verb: ActionVerb): boolean {
+  if (!GATED_VERBS.includes(verb)) return true;
+  const allowed = artwork.allowed_actions as CollectorAction[] | undefined;
+  return (allowed ?? []).includes(ACTION_KIND[verb] as CollectorAction);
+}
 
 export function ActionButtons({ artwork }: { artwork: Artwork }) {
   const { pending, controller } = useRequests();
   const [offerOpen, setOfferOpen] = useState(false);
 
-  // app.html:9245 — a price-on-request work shows no Buy now.
+  // app.html:9245 — a price-on-request work shows no Buy now. "price" is
+  // ungated, so it's always available as the fallback primary.
   const onRequest = artwork.price_type === 'on_request' || !artwork.price_amount;
-  const primary: ActionVerb = onRequest ? 'price' : 'buy';
-  const secondary: ActionVerb[] = ['hold', 'visit', 'offer'];
+  const wantsBuy = !onRequest;
+  const primary: ActionVerb | null = wantsBuy
+    ? isAllowed(artwork, 'buy')
+      ? 'buy'
+      : null // the gallery hasn't enabled purchase on this work — no primary
+    : 'price';
+  const secondary: ActionVerb[] = (['hold', 'visit', 'offer'] as ActionVerb[]).filter((verb) =>
+    isAllowed(artwork, verb),
+  );
 
   const isBusy = (verb: ActionVerb) => pending.has(RequestController.actKey(artwork.id, verb));
 
@@ -46,42 +73,49 @@ export function ActionButtons({ artwork }: { artwork: Artwork }) {
     void controller.act(artwork, verb);
   };
 
-  const primaryBusy = isBusy(primary);
+  const primaryBusy = primary ? isBusy(primary) : false;
 
   return (
     <>
       <div className="actions">
-        <button
-          type="button"
-          className="act-primary"
-          onClick={() => fire(primary)}
-          disabled={primaryBusy}
-          aria-busy={primaryBusy || undefined}
-        >
-          {primaryBusy ? 'Sending…' : ACTION_LABEL[primary]}
-        </button>
+        {primary && (
+          <button
+            type="button"
+            className="act-primary"
+            onClick={() => fire(primary)}
+            disabled={primaryBusy}
+            aria-busy={primaryBusy || undefined}
+          >
+            {primaryBusy ? 'Sending…' : ACTION_LABEL[primary]}
+          </button>
+        )}
 
-        <div className="act-row" style={{ ['--an' as string]: columnsFor(secondary.length) }}>
-          {secondary.map((verb) => {
-            const busy = isBusy(verb);
-            return (
-              <button
-                key={verb}
-                type="button"
-                className="act-box"
-                onClick={() => fire(verb)}
-                disabled={busy}
-                aria-busy={busy || undefined}
-                aria-label={ACTION_LABEL[verb]}
-              >
-                <span className="ai">
-                  <ActionIcon verb={verb} />
-                </span>
-                <span className="al">{busy ? 'Sending…' : ACTION_LABEL[verb]}</span>
-              </button>
-            );
-          })}
-        </div>
+        {secondary.length > 0 && (
+          <div
+            className="act-row"
+            style={{ ['--an' as string]: columnsFor(secondary.length) }}
+          >
+            {secondary.map((verb) => {
+              const busy = isBusy(verb);
+              return (
+                <button
+                  key={verb}
+                  type="button"
+                  className="act-box"
+                  onClick={() => fire(verb)}
+                  disabled={busy}
+                  aria-busy={busy || undefined}
+                  aria-label={ACTION_LABEL[verb]}
+                >
+                  <span className="ai">
+                    <ActionIcon verb={verb} />
+                  </span>
+                  <span className="al">{busy ? 'Sending…' : ACTION_LABEL[verb]}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Mounted only while open: `app.html`'s `openSheet()` rebuilds the sheet

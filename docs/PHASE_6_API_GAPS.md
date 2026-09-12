@@ -1,5 +1,9 @@
 # Phase 6 (Saved / Favorites) — API gaps
 
+> **2026-09-11:** every gap below (G-P6-1…G-P6-4) is now closed, backend and frontend both — see
+> `docs/API_INTEGRATION_GAPS.md` for what changed (`SavedController` was rewritten around
+> `is_saved`, and `/saved` is a real paginated list now). This doc stays as the historical record.
+
 **Date:** 2026-09-04 · **Phase:** 6 (frontend saved/favorites) · **Repo:** `-darz-web`
 **Backend:** `darzmarket-api` (`ariandarz/darz-backend-api`), Phase 10 `SavedArtwork` endpoints.
 **Status:** open — for the owner to decide. **No backend, API-contract or `src/api/schema.d.ts`
