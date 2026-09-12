@@ -70,10 +70,12 @@ Gates: `tsc -b --noEmit` clean · `oxlint` clean (one pre-existing warning) · `
 
 1. **Nav "Chat" tab** — the old app opened chat from a floating pill and Profile; v0.1 gives it a
    nav tab and real routes per the brief.
-2. **Frame width 480px** on a phone (old: 430px) — matches every already-approved screen in this
-   repo. Change in `shell.css` if the old width is wanted.
-3. **Settings › Appearance** — the old app's moon toggle lived in the header; this port has no
-   header, so the Paper/Black choice sits under DISPLAY. Notifications, Membership and "Get the
+2. **Frame width** — v0.1 shipped at 480px on a phone; the design-pass merge (PR #15, 2026-09-12)
+   restored the package's 430px (`--frame-max` in `src/design/tokens.css`, applied in `shell.css`)
+   because every `design/market-app/` capture is that width. Change the token if 480px is wanted.
+3. **Settings › Appearance** — the old app's moon toggle lived in the header; the design-pass
+   header (wordmark · Leave the Room) carries no toggle either, so the Paper/Black choice sits under
+   DISPLAY. Notifications, Membership and "Get the
    app" rows are behind flags (no backend / no service worker yet).
 4. **Profile › Account is read-only** — the backend has no profile-update or password endpoint;
    the copy says to write to Darz in Chat.

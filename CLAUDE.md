@@ -35,6 +35,12 @@ Two sources are required **together** for every feature — neither alone is eno
 
 ## Key reference files in `../DarzStudio` (read before building each feature)
 
+0. **`design/market-app/`** (`darzstudio.art` PR #846, 2026-09-11) — **the approved design package
+   and the first thing to open**: `tokens.css`/`tokens.json` (the as-built values, ported verbatim
+   into `src/design/tokens.css`), `COMPONENTS.md` (every recipe), `SCREENS.md` (every screen and its
+   states), `VOICE.md` (shipped strings), and `screenshots/{mobile,desktop}/{dark,light}/` — the
+   captures every new screen here is compared against (owner instruction, 2026-09-11: where the
+   package and the older `app.html` reading differ, the package wins).
 1. `DARZ_DESIGN_GUIDELINE.md` (repo root) — palette, type, logo.
 2. `docs/design/DESIGN_SYSTEM.md` — more detailed design-system doc; check `docs/INDEX.md`'s status
    label to see which of these two is canonical vs. supplementary before treating either as final.

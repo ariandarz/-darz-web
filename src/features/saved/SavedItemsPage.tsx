@@ -46,12 +46,7 @@ export function SavedItemsPage() {
   return (
     <div className="dz-page">
       <div className="hero">
-        <div className="dz-saved-links">
-          <p className="eyebrow">Darz Market</p>
-          <Link to="/" className="dz-back">
-            The catalogue
-          </Link>
-        </div>
+        <p className="eyebrow">Saved</p>
         <h1>
           Your <span className="lt">saved works</span>
         </h1>

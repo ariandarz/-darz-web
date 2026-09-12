@@ -1,16 +1,12 @@
 /* =============================================================================
-   App shell — the frame, the scrolling main, and the one nav bar.
-
-   Ported from `darzstudio.art` `app.html`: `.frame` (:73), `main` (:216), the
-   bottom nav `nav` / `nav button` / `.ic` / `.lb` / `.on::before` / `.navdot`
-   (:445-460, :186), and the desktop skin that turns the SAME nav into a sticky
-   top bar — the editorial, text-only variant (:1462-1471, :102, :183/:1535).
-   The old app renders one `<nav id="nav">` for both layouts and restyles it
-   under `html.dz-desktop`; so does this file.
-
-   One adaptation: the mobile frame is 480px, not the old 430px, to match the
-   `.dz-page` column every already-approved screen in this repo was built and
-   screenshot-verified at (design/components.css). Flagged in docs/V0_1_SCOPE.md.
+   The Market App shell — frame, header, chroma, main, nav.
+   Ported from app.html (`.frame` :73, `header`, `main` :216, the bottom nav
+   `nav` / `nav button` / `.ic` / `.lb` / `.on::before` / `.navdot` :445-460,
+   `.wm`, `.dz-leave`, and the `html.dz-desktop` skin that turns the SAME nav
+   into the editorial top bar :1462-1471) as documented in the design package
+   COMPONENTS.md § Shell / Navigation (build 1229). Values are the package's:
+   the 430px frame, the glass header and nav, the 2.5px chroma underline on
+   the active desktop tab.
    ========================================================================== */
 
 /* app.html:64 — the document is a locked viewport; only `main` scrolls. */
@@ -29,20 +25,19 @@ html.dz-shell body {
   justify-content: center;
 }
 
-/* app.html:73 */
+/* ---- frame (app.html `.frame`) ----------------------------------------- */
 .frame {
   width: 100%;
-  max-width: 480px;
+  max-width: var(--frame-max);
   height: 100vh;
   height: 100dvh;
   background: var(--bg);
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--sh-frame);
   overflow: hidden;
 }
-/* app.html:216 */
 .frame > main {
   flex: 1;
   min-height: 0;
@@ -58,10 +53,82 @@ html.dz-shell body {
   min-height: 100%;
 }
 
+/* ---- header (app.html `header`) ---------------------------------------- */
+.frame > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: nowrap;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) 16px 10px;
+  background: var(--header-glass);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  backdrop-filter: saturate(1.4) blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+/* wordmark sizes at the phone breakpoints (app.html `.wm .t` @430 / @360) */
+@media (max-width: 430px) {
+  .wm__t {
+    font-size: 15.5px;
+  }
+}
+@media (max-width: 360px) {
+  .wm__t {
+    font-size: 14.5px;
+  }
+}
+/* "Leave the Room" pill (app.html `.dz-leave`) */
+.dz-leave {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  color: var(--ink2);
+  cursor: pointer;
+  font: inherit;
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.dz-leave svg {
+  flex: none;
+  opacity: 0.85;
+}
+.dz-leave:hover {
+  color: var(--ink);
+  border-color: var(--ink2);
+}
+@media (max-width: 430px) {
+  .dz-leave {
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    padding: 5px 10px;
+    gap: 5px;
+  }
+  .dz-leave svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
 /* ---- the nav (app.html:445-460, :186) ---------------------------------- */
 nav#nav {
   display: flex;
-  background: rgba(250, 248, 243, 0.95);
+  background: var(--nav-glass);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--hair);
@@ -76,9 +143,6 @@ nav#nav {
 }
 nav#nav::-webkit-scrollbar {
   display: none;
-}
-html.dz-bw nav#nav {
-  background: rgba(16, 16, 20, 0.95);
 }
 nav#nav button {
   flex: 1 0 60px;
@@ -104,6 +168,7 @@ nav#nav button .ic {
   position: relative;
 }
 nav#nav button .lb {
+  font-family: var(--sans);
   font-size: var(--f-nav);
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -112,6 +177,7 @@ nav#nav button .lb {
 nav#nav button.on {
   color: var(--ink);
 }
+/* the 34×2 chroma bar at the TOP of the active tab */
 nav#nav button.on::before {
   content: '';
   position: absolute;
@@ -120,7 +186,16 @@ nav#nav button.on::before {
   transform: translateX(-50%);
   width: 34px;
   height: 2px;
-  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  background: var(--dz-seam);
+}
+@media (max-width: 820px) {
+  nav#nav button {
+    padding: 11px 0 10px;
+    min-height: 52px;
+  }
+  nav#nav button .lb {
+    font-size: 10px;
+  }
 }
 /* app.html:455-460 — the calm rippling red dot for unseen activity */
 .navdot {
@@ -150,73 +225,78 @@ nav#nav button.nav-hasnew .navdot {
     box-shadow: 0 0 0 0 rgba(232, 0, 92, 0);
   }
 }
-
-/* ---- desktop: the same nav as an editorial top bar (app.html:102, :1462-1471) */
-html.dz-desktop {
-  --dz-gut: clamp(32px, 4vw, 72px);
-  --dz-read: 880px;
-  --dz-wide: 1320px;
+@media (prefers-reduced-motion: reduce) {
+  .navdot {
+    animation: none;
+  }
 }
+
+/* ---- desktop: the same nav as the editorial top bar (app.html
+   `html.dz-desktop header` / `nav`, COMPONENTS.md § Navigation) ------------ */
 html.dz-desktop .frame {
-  max-width: 100%;
-  box-shadow: none;
+  max-width: var(--frame-max);
+  box-shadow: var(--sh-frame);
+}
+html.dz-desktop .frame > header {
+  order: -2;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 15px var(--dz-gut);
+  background: var(--paper);
+  border-bottom: 1px solid var(--hair);
+  position: static;
 }
 html.dz-desktop nav#nav {
   order: -1;
-  background: var(--paper);
+  position: sticky;
+  top: 0;
+  bottom: auto;
   border-top: 0;
   border-bottom: 1px solid var(--hair);
   justify-content: flex-start;
-  gap: 0;
+  gap: 2px;
   padding: 0 var(--dz-gut);
-  position: static;
+  background: rgba(250, 248, 243, 0.96);
+  overflow-x: auto;
+  flex-wrap: nowrap;
 }
-html.dz-bw.dz-desktop nav#nav {
-  background: var(--bg);
+html.dz-desktop.dz-bw nav#nav {
+  background: var(--nav-glass);
 }
 html.dz-desktop nav#nav button {
   flex: 0 0 auto;
   flex-direction: row;
-  padding: 15px 17px;
+  gap: 10px;
+  padding: 20px 26px;
   border-radius: 0;
-  color: var(--ink2);
-}
-html.dz-desktop nav#nav button:first-child {
-  padding-left: 0;
+  min-height: 0;
 }
 html.dz-desktop nav#nav button .ic {
   display: none; /* editorial nav is text-only (app.html:1465) */
 }
 html.dz-desktop nav#nav button .lb {
+  font-family: var(--font-head);
   font-size: 14.5px;
   letter-spacing: 0.005em;
   font-weight: 500;
   text-transform: none;
 }
-html.dz-desktop nav#nav button:hover,
-html.dz-desktop nav#nav button.on {
-  color: var(--ink);
-}
-html.dz-desktop nav#nav button.on .lb {
-  font-weight: 600;
-}
 html.dz-desktop nav#nav button.on::before {
   top: auto;
-  bottom: -1px;
-  left: 17px;
-  right: 17px;
-  width: auto;
-  height: 2px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
   transform: none;
 }
-html.dz-desktop nav#nav button:first-child.on::before {
-  left: 0;
+html.dz-desktop nav#nav button:hover {
+  color: var(--ink);
 }
 /* the desktop nav keeps the dot beside the label */
 html.dz-desktop .navdot {
   left: auto;
-  right: 4px;
-  top: 12px;
+  right: 10px;
+  top: 14px;
 }
 /* app.html:183 / :1535 — under 760px the desktop class falls back to a bottom bar */
 @media (max-width: 760px) {
@@ -236,85 +316,14 @@ html.dz-desktop .navdot {
     flex-direction: column;
     padding: 11px 0 10px;
   }
-}
-/* the wide-layout page column: left-anchored on the shared gutter (app.html:139, :144) */
-html.dz-desktop .frame .dz-page {
-  max-width: none;
-}
-html.dz-desktop .hero {
-  padding: 30px var(--dz-gut) 22px;
-}
-html.dz-desktop .grid {
-  grid-template-columns: repeat(4, 1fr);
-  gap: 26px;
-  padding: 22px var(--dz-gut) 64px;
-}
-html.dz-desktop .count {
-  padding: 10px var(--dz-gut) 0;
-}
-html.dz-desktop .toolbar {
-  padding: 16px var(--dz-gut) 4px;
-  align-items: center;
-  gap: 10px;
-}
-@media (min-width: 1640px) {
-  html.dz-desktop .grid {
-    grid-template-columns: repeat(5, 1fr);
+  html.dz-desktop nav#nav button .ic {
+    display: flex;
   }
-}
-
-/* ---- desktop artwork detail: the two-column reading layout (app.html:147-160,
-   :161-180). Left: the sticky hero (whole work, capped to the viewport); right:
-   the body. `.dtop` spans both columns. Plain `.detail` pages without a
-   template class stay a single calm column on the shared gutter. */
-html.dz-desktop .detail {
-  max-width: 920px;
-  margin: 0;
-  padding-left: var(--dz-gut);
-  padding-right: var(--dz-gut);
-}
-html.dz-desktop .detail .dtop,
-html.dz-desktop .detail .dbody {
-  padding-left: 0;
-  padding-right: 0;
-}
-html.dz-desktop .detail[class*='dtpl-'] {
-  max-width: calc(var(--dz-wide) + 2 * var(--dz-gut));
-  margin: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  column-gap: 56px;
-  padding: 14px var(--dz-gut) 80px;
-  align-items: start;
-}
-html.dz-desktop .detail[class*='dtpl-'] > * {
-  grid-column: 2;
-}
-html.dz-desktop .detail[class*='dtpl-'] > .dtop {
-  grid-column: 1 / -1;
-}
-html.dz-desktop .detail[class*='dtpl-'] > .dhero {
-  grid-column: 1;
-  grid-row: 2 / span 99;
-  position: sticky;
-  top: 24px;
-  align-self: start;
-  max-height: calc(100vh - 130px);
-  border-radius: 14px;
-}
-html.dz-desktop .detail[class*='dtpl-'] > .dhero img {
-  border-radius: 14px;
-}
-html.dz-desktop .detail[class*='dtpl-'] .dbody {
-  padding-top: 4px;
-}
-html.dz-desktop .detail[class*='dtpl-'] .act-primary {
-  font-size: 17px;
-  padding: 16px 18px;
-}
-@media (min-width: 1760px) {
-  html.dz-desktop .detail[class*='dtpl-'] {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 640px);
-    column-gap: 72px;
+  html.dz-desktop nav#nav button .lb {
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    text-transform: uppercase;
   }
 }

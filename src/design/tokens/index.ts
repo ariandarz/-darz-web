@@ -10,6 +10,8 @@
  * Keep the two in lockstep: if you change a value here, change `tokens.css`.
  */
 
+/* Values mirror `tokens.css`, ported from the Market App design package
+ * (darzstudio.art `design/market-app/tokens.json`, build 1229, 2026-09-11). */
 export const palette = {
   white: '#FAF8F3',
   ink: '#1A1714',
@@ -23,7 +25,8 @@ export const palette = {
   hair2: '#EFEBE2',
   cyan: '#00D4CC',
   magenta: '#E8005C',
-  accent: '#E11D48',
+  accent: '#1A1714',
+  danger: '#E11D48',
 } as const;
 
 /** The dark ("Black") app mode — `html.dz-bw`. Only the keys that change. */
@@ -37,6 +40,8 @@ export const paletteDark = {
   paper: '#16161A',
   hair: '#2E2E35',
   hair2: '#26262C',
+  bg: '#121215',
+  accent: '#F1EFE9',
 } as const;
 
 export const status = {
@@ -57,14 +62,36 @@ export const typography = {
 
 /** Inline-sized headings app.html drives from `:root`. */
 export const fontSize = {
-  hero: '34px',
-  detail: '28px',
-  sec: '22px',
-  artist: '13px',
-  cardTitle: '11.5px',
-  price: '40px',
-  body: '13.5px',
+  hero: '40px',
+  detail: '30px',
+  sec: '24px',
+  artist: '16px',
+  cardTitle: '13.5px',
+  price: '26px',
+  body: '15px',
   nav: '9.5px',
+} as const;
+
+/** `--btn-scale` — every `.btn` is sized from 12px × this (THEME_DEFAULT). */
+export const buttonScale = 0.72;
+
+/** The charcoal control every primary action uses, in BOTH skins
+ * (COMPONENTS.md: "charcoal #26262E box · white text · #3A3A44 hairline"). */
+export const control = {
+  bg: '#26262E',
+  hover: '#33333C',
+  border: '#3A3A44',
+  text: '#FFFFFF',
+} as const;
+
+/** Shell layout (tokens.json `layout`). */
+export const layout = {
+  frameMax: '430px',
+  gutter: '16px',
+  desktopMin: 900,
+  desktopGutter: 'clamp(32px,4vw,72px)',
+  read: '880px',
+  wide: '1320px',
 } as const;
 
 export const radius = {
