@@ -41,9 +41,12 @@ pair, `darz_save_edit`), and none of its env files or generated assets.
 
 Every screen below was re-skinned to `darzstudio.art` `design/market-app/` (build 1229) and
 screenshot-compared at 390×844 / 1440×900, dark and light. Shell (`features/shell`): header · chroma ·
-bottom nav / desktop top nav · `LayoutController`. New screens: `/profile[/:tab]`, `/settings`.
-Not ported (no backend): Insights tab, Chat pill, questionnaire, access-key card, WhatsApp,
-legal copy, push — see `docs/API_INTEGRATION_GAPS.md` § Still open.
+bottom nav / desktop top nav · `LayoutController`. Merged onto v0.1 (`docs/V0_1_SCOPE.md`) on
+2026-09-12: v0.1 owns the routes, nav set (Market · Records · Chat · Profile · Settings), Profile,
+Settings, Records and Chat screens; the design pass owns the tokens, shell skin (430px frame,
+glass header, chroma, nav pips), catalogue, artwork detail, artist page, auctions, lot, gate and the
+shared `Dropdown` / `Segment` components. Not ported (no backend): Insights tab, questionnaire,
+access-key card, WhatsApp, legal copy, push — see `docs/API_INTEGRATION_GAPS.md` § Still open.
 
 ## Remaining flows — API availability (not yet built)
 

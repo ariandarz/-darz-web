@@ -1300,8 +1300,9 @@ html.dz-bw .d-status.ended {
   margin-top: 4px;
 }
 
-/* records: tools (dropdown + cards|list segment), image well on cards, the
-   list rows, the artist index and the empty state */
+/* records: the v0.1 archive (`features/records/records.css`) owns the list,
+   the artist index and the empty state; only the header/tools spacing the
+   design pass adjusted stays here */
 .rec2-hd {
   padding: 26px 20px 8px;
 }
@@ -1311,184 +1312,12 @@ html.dz-bw .d-status.ended {
 .rec2-tools {
   padding: 10px 20px 0;
 }
-.rec2-tools .dzsel {
-  flex: 0 0 auto;
-  min-width: 150px;
-  margin-bottom: 0;
-}
-.rec2-tools .dzsel-btn {
-  height: 38px;
-  padding: 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 11px;
-  border-width: 1px;
-  box-shadow: none;
-}
-.rec2-tools .rec2-view {
-  flex: 0 0 auto;
-}
-.rec2-tools .rec2-view button {
-  min-height: 38px;
-  padding: 0 16px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 700;
-}
-.rec2-view button.on::after {
-  display: none;
-}
-.rec2-c {
-  overflow: hidden;
-  padding-top: 0;
-}
-.rec2-c > .rec2-meta {
-  margin-top: 13px;
-}
-.rec2-img {
-  aspect-ratio: 4 / 3;
-  margin: 0 -13px 10px;
-  background: var(--hair2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.rec2-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 7%;
-  box-sizing: border-box;
-  display: block;
-}
-.rec2-list,
-.rec2-artists {
-  padding: 8px 20px 24px;
-}
-.rec2-row {
-  display: flex;
-  gap: 13px;
-  align-items: center;
-  width: 100%;
-  padding: 12px 2px;
-  border: 0;
-  border-top: 1px solid var(--hair);
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.rec2-row:first-child {
-  border-top: 0;
-}
-.rec2-row-img {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--hair2);
-  flex: 0 0 auto;
-}
-.rec2-row-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.rec2-row-b {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.rec2-row-ar {
-  font-family: var(--font-head);
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 1.1;
-}
-.rec2-row-ti {
-  font-family: var(--font-head);
-  font-style: italic;
-  font-size: 12.5px;
-  color: var(--ink3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.rec2-row-h {
-  font-family: var(--mono);
-  font-size: 8.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink3);
-  margin-top: 3px;
-}
-.rec2-row-pr,
-.rec2-row-n {
-  flex: 0 0 auto;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-  margin-left: auto;
-}
-.rec2-row-n {
-  font-weight: 500;
-  color: var(--ink3);
-  font-size: 11.5px;
-}
-.rec2-artists-back {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px 0;
-}
-.rec2-artists-back .dz-back {
-  padding: 6px 13px;
-}
-.rec2-artists-name {
-  font-family: var(--font-head);
-  font-size: 18px;
-  font-weight: 600;
-}
-.rec2-empty {
-  padding: 52px 28px;
-  text-align: center;
-  max-width: 340px;
-  margin: 0 auto;
-}
-.rec2-empty-t {
-  font-family: var(--font-head);
-  font-size: 26px;
-  font-weight: 500;
-  line-height: 1.15;
-  color: var(--ink);
-}
-.rec2-empty-s {
-  font-family: var(--sans);
-  font-size: 13.5px;
-  color: var(--ink3);
-  margin-top: 10px;
-  line-height: 1.5;
-}
 html.dz-desktop .rec2-hd,
 html.dz-desktop .rec2-tools,
-html.dz-desktop .rec2-grid,
-html.dz-desktop .rec2-list,
-html.dz-desktop .rec2-artists,
-html.dz-desktop .ptabs.sub {
+html.dz-desktop .rec2-grid {
   padding-left: var(--dz-gut);
   padding-right: var(--dz-gut);
   max-width: calc(var(--dz-wide) + 2 * var(--dz-gut));
-}
-html.dz-desktop .rec2-tools .rec2-view {
-  flex-basis: auto;
-}
-html.dz-desktop .rec2-tools .rec2-search {
-  max-width: 420px;
 }
 
 /* desktop: two event cards per row (capture desktop/09-auctions), the event

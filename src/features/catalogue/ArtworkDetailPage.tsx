@@ -9,7 +9,9 @@
  *   4. artist name (h1) · "Title, year" · **ABOUT THE ARTIST ›** pill;
  *   5. spec rows Medium · Size · Year · Edition · Artist born;
  *   6. the price block — ASKING PRICE · amount · ink tick, or "Price on request";
- *   7. `ActionButtons` (Buy now · 24h hold · Request viewing · Make an offer);
+ *   7. the action block — v0.1: `InquiryAction` (Send Inquiry); the commerce set
+ *      `ActionButtons` (Buy now · 24h hold · Request viewing · Make an offer)
+ *      behind `features.commerceActions`;
  *   8. the delivery note inset;
  *   9. "WANT TO SEE MORE WORKS BY / Artist / n more works / View more works".
  *
@@ -23,7 +25,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import { Toast } from '../../components';
 import { ActionButtons } from '../requests/ActionButtons';
+import { InquiryAction } from '../requests/InquiryAction';
 import { SaveButton } from '../saved/SaveButton';
+import { features } from '../shell/features';
 import { browseSet } from './BrowseSet';
 import './catalogue.css';
 import { availabilityClass, availabilityLabel, formatMoney, primaryImage } from './format';
@@ -177,7 +181,7 @@ export function ArtworkDetailPage() {
           {BACK_ICON}
           <span>Back</span>
         </button>
-        <SaveButton artwork={artwork} variant="icon" />
+        {features.save && <SaveButton artwork={artwork} variant="icon" />}
       </div>
 
       <div className="dz-herocol">
@@ -258,7 +262,11 @@ export function ArtworkDetailPage() {
           <div className="tick" />
         </div>
 
-        <ActionButtons artwork={artwork} />
+        {/* v0.1: the one contact CTA is Send Inquiry. The commerce set (Buy
+            now / 24h hold / Request viewing / Make an offer / Request price)
+            is preserved behind `features.commerceActions`. */}
+        {features.sendInquiry && <InquiryAction artwork={artwork} />}
+        {features.commerceActions && <ActionButtons artwork={artwork} />}
 
         <div className="dz-shipnote">
           {IC_TRUCK}

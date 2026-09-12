@@ -6,45 +6,42 @@
  *   - the 430px frame (desktop: `min(1760px,96vw)`), only `<main>` scrolls;
  *   - a sticky glass header: wordmark left, **Leave the Room** pill right;
  *   - the 2px cyan→magenta chroma line directly under the header;
- *   - the bottom nav (desktop: `order:-1`, a top nav with a chroma underline).
+ *   - the one `<nav id="nav">` — the bottom tab bar on a phone, the editorial
+ *     top bar on desktop (`html.dz-desktop`, `LayoutController`).
  *
- * Nav tabs are the shipped DOM order minus the sections this backend has no
- * data for: Market · Auctions · Records · Profile · Settings. Highlights is
- * always hidden in the old app too; **Insights & Stories** is owner-toggled
- * there and has no backend model here (docs/TASKLIST.md Phase 12+), so it is
- * left out rather than shown as a dead tab — flagged, not silently dropped.
- * The floating **Chat** pill is omitted for the same reason (no chat API).
+ * The visible v0.1 order is Market → Records → Chat → Profile → Settings
+ * (`features.ts`, the port of the old `theme.navOff` gate, app.html:2969-2976).
+ * Auctions and Insights render only when their flag is on; Highlights was
+ * already hard-hidden in the old app. The Profile dot (`.navdot`,
+ * app.html:455-460) signals unseen Darz replies; Chat carries the same dot.
  */
-import { useEffect, type ReactNode } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import { Wordmark } from '../../components';
-import { cx } from '../../lib/cx';
+import { useConversations } from '../conversations/useConversations';
+import { features } from './features';
 import { layoutController } from './LayoutController';
-import { NAV_ICONS, type NavIconKey } from './navIcons';
+import {
+  AuctionsIcon,
+  ChatIcon,
+  MarketIcon,
+  ProfileIcon,
+  RecordsIcon,
+  SettingsIcon,
+  StoriesIcon,
+} from './NavIcons';
 import './shell.css';
 
 interface Tab {
-  key: NavIconKey;
+  key: string;
   label: string;
   to: string;
-  /** which route prefixes light this tab (Market owns the catalogue, artwork,
-   * artists and saved routes — they are all the same "Market" section) */
+  icon: ReactNode;
+  /** active when the path starts with one of these */
   match: string[];
-}
-
-const TABS: Tab[] = [
-  { key: 'market', label: 'Market', to: '/', match: ['/', '/artwork', '/artists', '/saved'] },
-  { key: 'auctions', label: 'Auctions', to: '/auctions', match: ['/auctions'] },
-  { key: 'records', label: 'Records', to: '/records', match: ['/records'] },
-  { key: 'profile', label: 'Profile', to: '/profile', match: ['/profile'] },
-  { key: 'settings', label: 'Settings', to: '/settings', match: ['/settings'] },
-];
-
-function isActive(tab: Tab, pathname: string): boolean {
-  return tab.match.some((m) =>
-    m === '/' ? pathname === '/' : pathname === m || pathname.startsWith(m + '/'),
-  );
+  show: boolean;
+  dot?: boolean;
 }
 
 const LEAVE_ICON = (
@@ -65,43 +62,127 @@ const LEAVE_ICON = (
 );
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { auth } = useApi();
-  const { pathname } = useLocation();
+  const { controller } = useConversations();
+  const unread = controller.unreadTotal();
 
-  // The layout engine lives for the whole app; start it once with the shell.
+  useSyncExternalStore(
+    (cb) => layoutController.subscribe(cb),
+    () => layoutController.isDesktop,
+    () => false,
+  );
+
   useEffect(() => {
+    document.documentElement.classList.add('dz-shell');
     layoutController.start();
-    return () => layoutController.stop();
+    return () => {
+      layoutController.stop();
+      document.documentElement.classList.remove('dz-shell');
+    };
   }, []);
+
+  const tabs: Tab[] = [
+    {
+      key: 'market',
+      label: 'Market',
+      to: '/',
+      icon: <MarketIcon />,
+      match: ['/', '/artwork', '/artists', '/saved'],
+      show: features.market,
+    },
+    {
+      key: 'auctions',
+      label: 'Auctions',
+      to: '/auctions',
+      icon: <AuctionsIcon />,
+      match: ['/auctions'],
+      show: features.auctions,
+    },
+    {
+      key: 'records',
+      label: 'Records',
+      to: '/records',
+      icon: <RecordsIcon />,
+      match: ['/records'],
+      show: features.records,
+    },
+    {
+      key: 'stories',
+      label: 'Insights',
+      to: '/stories',
+      icon: <StoriesIcon />,
+      match: ['/stories'],
+      show: features.stories,
+    },
+    {
+      key: 'chat',
+      label: 'Chat',
+      to: '/chat',
+      icon: <ChatIcon />,
+      match: ['/chat'],
+      show: features.chat,
+      dot: unread > 0,
+    },
+    {
+      key: 'profile',
+      label: 'Profile',
+      to: '/profile',
+      icon: <ProfileIcon />,
+      match: ['/profile'],
+      show: features.profile,
+      dot: unread > 0,
+    },
+    {
+      key: 'settings',
+      label: 'Settings',
+      to: '/settings',
+      icon: <SettingsIcon />,
+      match: ['/settings'],
+      show: features.settings,
+    },
+  ];
+
+  const path = location.pathname;
+  const isOn = (t: Tab) =>
+    t.match.some((m) => (m === '/' ? path === '/' : path === m || path.startsWith(m + '/')));
+
+  const signOut = () =>
+    void auth.logout().finally(() => navigate('/login', { replace: true }));
 
   return (
     <div className="frame">
       <header>
         <Wordmark suffix="market.art" withMark={false} />
-        <button
-          type="button"
-          className="dz-leave"
-          title="Leave the Room"
-          onClick={() => void auth.logout()}
-        >
+        <button type="button" className="dz-leave" title="Leave the Room" onClick={signOut}>
           {LEAVE_ICON}
           <span>Leave the Room</span>
         </button>
       </header>
       <div className="chroma" />
       <main id="dzMain">{children}</main>
-      <nav aria-label="Sections">
-        {TABS.map((tab) => (
-          <NavLink
-            key={tab.key}
-            to={tab.to}
-            className={cx(isActive(tab, pathname) && 'on')}
-            aria-current={isActive(tab, pathname) ? 'page' : undefined}
-          >
-            <span className="ic">{NAV_ICONS[tab.key]}</span>
-            <span className="lb">{tab.label}</span>
-          </NavLink>
-        ))}
+      <nav id="nav" aria-label="Sections">
+        {tabs
+          .filter((t) => t.show)
+          .map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              data-tab={t.key}
+              className={[isOn(t) ? 'on' : '', t.dot ? 'nav-hasnew' : ''].join(' ').trim()}
+              aria-current={isOn(t) ? 'page' : undefined}
+              onClick={() => navigate(t.to)}
+            >
+              <span className="ic">
+                {t.icon}
+                {t.key === 'profile' || t.key === 'chat' ? (
+                  <span className="navdot" aria-hidden="true" />
+                ) : null}
+              </span>
+              <span className="lb">{t.label}</span>
+            </button>
+          ))}
       </nav>
     </div>
   );

@@ -88,6 +88,30 @@ export interface AuctionQuery {
 export type CollectorRequest = Schemas['RequestCollector'];
 export type AdminRequest = Schemas['RequestAdmin'];
 
+/** One message on a request's reply thread (backend Phase 19.3,
+ * `RequestMessage`). `sender` is `collector` | `team`; the thread lists
+ * oldest-first. `artwork_refs` is `unknown` in the schema — it is a list of
+ * artwork uuids the message refers to. */
+export type RequestMessage = Omit<Schemas['RequestMessage'], 'artwork_refs'> & {
+  artwork_refs: string[];
+};
+export type RequestMessageSender = Schemas['RequestMessageSenderEnum'];
+
+/** `GET /api/crm/requests/{id}/messages/` params. */
+export interface RequestMessageQuery {
+  per_page?: number;
+  page?: number;
+}
+
+/** What `POST /api/crm/requests/` answers. `replayed` is true when the
+ * backend already held a request with this `client_req_id` and returned it
+ * again (HTTP 200) instead of creating a second one (201) — the idempotency
+ * contract that makes a retry or a double-tap safe. */
+export interface CreatedRequest {
+  row: CollectorRequest;
+  replayed: boolean;
+}
+
 /** The 8 request kinds the backend accepts (`RequestKindEnum`). The old app's
  * action verbs map onto these: buy→purchase, hold→hold, visit→viewing,
  * offer→offer, "Request price"→price, "Ask about"→information. */
@@ -117,15 +141,6 @@ export interface AdminRequestQuery {
   status?: string;
   assignee?: string;
   archived?: boolean;
-  per_page?: number;
-  page?: number;
-}
-
-/** One message in a request's reply thread (`GET/POST
- * /api/crm/requests/{id}/messages/`, G-F1-6). API-only for now — no thread UI
- * yet; see `docs/API_INTEGRATION_GAPS.md`. */
-export type RequestMessage = Schemas['RequestMessage'];
-export interface RequestMessageQuery {
   per_page?: number;
   page?: number;
 }

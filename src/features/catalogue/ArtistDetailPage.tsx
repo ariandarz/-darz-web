@@ -7,16 +7,17 @@
  * (charcoal) · "A Darz specialist will respond within two days."
  *
  * The enquiry files a `kind=information` request with no artwork (the API
- * allows `artwork` to be null) carrying the artist in `detail`. Not ported:
- * the auction-record rows and market metrics (they need `auction_records`
- * joined per artist — `docs/PHASE_8_API_GAPS.md`) and the owner-authored
- * profile block (`dz-ap-*`, no backend field). Flagged, not faked.
+ * allows `artwork` to be null) carrying the artist in `detail`. The auction
+ * records and market metrics live on the Records tab in v0.1 (the page links
+ * to `/records/artist/:id`); the owner-authored profile block (`dz-ap-*`) has
+ * no backend field. Flagged, not faked.
  */
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import type { Artwork } from '../../api/types';
 import { Toast } from '../../components';
+import { features } from '../shell/features';
 import { browseSet } from './BrowseSet';
 import '../requests/requests.css'; // `.dz-sheetcta`
 import './catalogue.css';
@@ -112,7 +113,7 @@ export function ArtistDetailPage() {
           artist: artist.id,
           message: `Please let me know about available works by ${artist.display_name}.`,
         },
-        clientReqId: `artist:${artist.id}:${Date.now()}`,
+        client_req_id: `artist:${artist.id}:${Date.now()}`,
       });
       setToast('Request sent.');
     } catch (e) {
@@ -142,6 +143,15 @@ export function ArtistDetailPage() {
           </p>
         )}
         {artist.bio && <p className="dza-bio">{artist.bio}</p>}
+        {/* v0.1: Artist → Records → Insights. The old artist page carried the
+            records + market metrics inline (app.html:5341-5381); here they
+            live on the Records tab, one tap away. */}
+        {features.records && (
+          <Link to={`/records/artist/${artist.id}`} className="dz-aplink">
+            Auction records &amp; insights
+            <span aria-hidden="true">›</span>
+          </Link>
+        )}
 
         {works.results.length > 0 && (
           <>

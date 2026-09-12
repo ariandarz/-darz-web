@@ -5,6 +5,22 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-11 — v0.1 launch scope (branch `claude/darz-market-v0-1-hpy1xy`)
+
+- **Feature controls** — `src/features/shell/features.ts` (`VITE_FEATURE_SET`): v0.1 shows Market ·
+  Records · Chat · Profile · Settings and Send Inquiry; auctions, bidding, offers, holds, viewings,
+  the questionnaire, AI chat and stories stay in the codebase, hidden; hidden routes redirect.
+- **App shell + nav** — `AppShell` with the old `<nav id="nav">` (bottom bar / desktop top bar),
+  `LayoutController` (the `html.dz-desktop` switch at 900px), desktop two-column artwork detail.
+- **Inquiry loop** — `InquiryAction` / `InquirySheet`; `RequestController` idempotency keys;
+  `ConversationsController` + `ThreadController`; `/chat`, `/chat/:id`; admin feed shows names,
+  the message and a `New` chip.
+- **Profile** (`/profile`) and **Settings** (`/settings`) — Phase 9's first cut, read-only account.
+- **Records** — `RecordsArchiveController` (five houses), Cards / List, artist page with
+  evidence-gated insights (`insights.ts`, tested), full record detail; artist page links to it.
+- **Images** — one fit-not-crop rule on every artwork image (`catalogue.css` `.card .img img`).
+- Schema regenerated from backend Phase 19.3; 17 test files / 98 tests. Details and owner flags:
+  `docs/V0_1_SCOPE.md`.
 ## 2026-09-11 — Design pass: the Market App shell + every screen re-skinned to the design package
 
 Source of truth is now the Market App design-system handoff package (`darzstudio.art`
@@ -20,6 +36,10 @@ lot rows, the records tab (sub-sections · sort · Cards|List · empty state), *
 Market · Auctions · Account, `ProfileController`), **Settings** (`DevicePreferences`), and the
 `#dzGate` black-world login. Typecheck / lint (3 pre-existing-style warnings) / 82 tests / format /
 build clean. Owner-facing scope flags are listed in `docs/API_INTEGRATION_GAPS.md` § Still open.
+**Merged onto v0.1 (2026-09-12):** v0.1's feature controls, nav order (Market → Records → Chat →
+Profile → Settings), Send Inquiry, Chat, Records archive, Profile and Settings pages are the
+behaviour; the design pass supplies the tokens, the shell chrome (header · chroma · 430px frame), the
+catalogue / detail / artist / auction styling and the `#dzGate` login on top of them.
 
 ## 2026-09-11 — API integration: wire Saved/Requests/Admin to the merged backend gaps
 

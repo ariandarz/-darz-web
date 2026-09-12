@@ -173,7 +173,7 @@ export function CatalogueToolbar({
             className="dz-vtoggle"
             title="Switch to the phone layout on this device"
             aria-label="Switch to the phone layout on this device"
-            onClick={() => layoutController.toggle()}
+            onClick={() => layoutController.setOverride('mobile')}
           >
             {layout === 'desktop' ? IC_MOBILE : IC_DESKTOP}
           </button>

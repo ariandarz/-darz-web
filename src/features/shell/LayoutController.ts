@@ -1,30 +1,31 @@
 /**
- * LayoutController — owns the *runtime* layout: mobile (the 430px frame with a
- * bottom nav) or desktop (`html.dz-desktop`: top nav, gutter-aligned pages,
- * wide grid). Faithful port of app.html's `wantDesktop()` + `applyTheme()`
- * (SCREENS.md §15, COMPONENTS.md § Shell / Navigation):
+ * LayoutController — owns the `html.dz-desktop` class, the old app's one
+ * responsive switch (`wantDesktop()`, app.html:2936-2945): the desktop layout
+ * is the SAME app shown on large screens, chosen by viewport width against
+ * `DZ_DESK_BP = 900` (app.html:2924), with a per-device override in
+ * `localStorage.darz_layout` (`'mobile'` | `'desktop'`). A phone can never be
+ * stranded in the wide layout: `'desktop'` still needs the viewport.
  *
- *   - `auto` picks by viewport width (≥ 900px → desktop) and a debounced
- *     `resize` listener re-evaluates, notifying only when the layout flips;
- *   - a per-device override (`localStorage.darz_layout` = 'mobile' | 'desktop',
- *     the toolbar's 🖥/📱 toggle) wins over the automatic choice.
+ * The owner-side `theme.appLayout` / `appDesktopMode` gates are not ported —
+ * the new backend has no owner theme yet — so this resolves `auto` only.
  *
- * Same shape as `design/ThemeController`: framework-free, observable, one
- * singleton, a thin hook (`useLayout`) for React.
+ * Framework-free like `ThemeController`; `AppShell` starts/stops it.
  */
-export type LayoutName = 'mobile' | 'desktop';
-
+export const DESKTOP_BREAKPOINT = 900;
 const STORAGE_KEY = 'darz_layout';
-const DESKTOP_MIN = 900; // tokens.json layout.breakpoints.desktop
 
-type Listener = (layout: LayoutName) => void;
+export type LayoutOverride = 'mobile' | 'desktop' | null;
 
 export class LayoutController {
-  private current: LayoutName;
-  private readonly listeners = new Set<Listener>();
   private readonly storage: Storage | null;
   private readonly root: HTMLElement | null;
-  private resizeTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly listeners = new Set<() => void>();
+  private desktop = false;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private readonly onResize = () => {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.apply(), 120); // debounced, like app.html
+  };
 
   constructor(opts: { storage?: Storage | null; root?: HTMLElement | null } = {}) {
     this.storage =
@@ -39,76 +40,67 @@ export class LayoutController {
         : typeof document !== 'undefined'
           ? document.documentElement
           : null;
-    this.current = this.resolve();
   }
 
-  /** Apply the resolved layout and start watching the viewport. */
-  start(): LayoutName {
-    this.apply(this.current);
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.onResize);
+  /** app.html:2936-2945 — the decision, pure. */
+  static wantDesktop(viewportWidth: number, override: LayoutOverride): boolean {
+    if (override === 'mobile') return false;
+    return viewportWidth >= DESKTOP_BREAKPOINT;
+  }
+
+  get isDesktop(): boolean {
+    return this.desktop;
+  }
+
+  override(): LayoutOverride {
+    try {
+      const v = this.storage?.getItem(STORAGE_KEY);
+      return v === 'mobile' || v === 'desktop' ? v : null;
+    } catch {
+      return null;
     }
-    return this.current;
+  }
+
+  /** The per-device toggle (the old toolbar 🖥/📱, `DZ.toggleLayout`). */
+  setOverride(value: LayoutOverride): void {
+    try {
+      if (value) this.storage?.setItem(STORAGE_KEY, value);
+      else this.storage?.removeItem(STORAGE_KEY);
+    } catch {
+      /* private mode — non-fatal */
+    }
+    this.apply();
+  }
+
+  start(): void {
+    this.apply();
+    if (typeof window !== 'undefined') window.addEventListener('resize', this.onResize);
   }
 
   stop(): void {
     if (typeof window !== 'undefined') window.removeEventListener('resize', this.onResize);
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
   }
 
-  get layout(): LayoutName {
-    return this.current;
-  }
-
-  isDesktop(): boolean {
-    return this.current === 'desktop';
-  }
-
-  /** The device override, if the collector set one with the toolbar toggle. */
-  get override(): LayoutName | null {
-    const v = this.storage?.getItem(STORAGE_KEY);
-    return v === 'mobile' || v === 'desktop' ? v : null;
-  }
-
-  /** app.html `DZ.toggleLayout`: flip and remember for this device. */
-  toggle(): LayoutName {
-    const next: LayoutName = this.current === 'desktop' ? 'mobile' : 'desktop';
-    try {
-      this.storage?.setItem(STORAGE_KEY, next);
-    } catch {
-      /* storage may be unavailable (private mode) — the flip still applies */
-    }
-    this.set(next);
-    return next;
-  }
-
-  subscribe(fn: Listener): () => void {
+  subscribe(fn: () => void): () => void {
     this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
+    return () => {
+      this.listeners.delete(fn);
+    };
   }
 
-  private set(next: LayoutName): void {
-    if (next === this.current) return;
-    this.current = next;
-    this.apply(next);
-    this.listeners.forEach((fn) => fn(next));
+  private apply(): void {
+    const vw =
+      typeof window !== 'undefined'
+        ? window.innerWidth || document.documentElement.clientWidth || 0
+        : 0;
+    const next = LayoutController.wantDesktop(vw, this.override());
+    if (next === this.desktop && this.root?.classList.contains('dz-desktop') === next) return;
+    this.desktop = next;
+    this.root?.classList.toggle('dz-desktop', next);
+    this.listeners.forEach((fn) => fn());
   }
-
-  private resolve(): LayoutName {
-    const forced = this.override;
-    if (forced) return forced;
-    const wide = typeof window !== 'undefined' && window.innerWidth >= DESKTOP_MIN;
-    return wide ? 'desktop' : 'mobile';
-  }
-
-  private apply(layout: LayoutName): void {
-    this.root?.classList.toggle('dz-desktop', layout === 'desktop');
-  }
-
-  private readonly onResize = (): void => {
-    if (this.resizeTimer) clearTimeout(this.resizeTimer);
-    // app.html debounces the re-evaluation so a drag-resize doesn't thrash.
-    this.resizeTimer = setTimeout(() => this.set(this.resolve()), 120);
-  };
 }
 
 export const layoutController = new LayoutController();

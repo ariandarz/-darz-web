@@ -189,8 +189,8 @@ image-led cards + record detail.
   `detail_polymorphic_serializer()` into the create endpoint's `@extend_schema`. Backend follow-up.
 - **Design-pass flags (2026-09-11)** — surfaces the design package shows that this backend has no
   field or endpoint for, left out rather than faked (each is a code comment at the call site too):
-  - **Insights & Stories** nav tab and the **Chat** pill — no editorial or chat model (`TASKLIST.md`
-    Phase 12+; chat = G-F1-6's thread UI above).
+  - **Insights & Stories** nav tab — no editorial model (`TASKLIST.md` Phase 12+). The **Chat** pill
+    is superseded by v0.1's Chat nav tab (`features/chat`, merged 2026-09-12).
   - **Collector questionnaire** card on Profile → Overview (`qbQuestions`) — no backend model.
   - **Access key** card on Profile → Account — `GET /api/auth/me/` does not return the key.
   - **Account details** are read-only — no profile-edit endpoint (Phase 9); phone / city / preferred

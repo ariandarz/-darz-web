@@ -11,12 +11,12 @@ interface ImportMetaEnv {
    * `.env` / `.env.local` (see `.env.example`); `resolveWsUrl()` throws if it
    * is missing. */
   readonly VITE_API_WS_URL: string;
+
+  /** Which feature set the build runs — `v0.1` (default when unset) or
+   * `full`. See `src/features/shell/features.ts` and `.env.example`. */
+  readonly VITE_FEATURE_SET?: string;
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-
-/** The package version, inlined by `vite.config.ts` (`define`) for the build
- * stamp at the foot of Settings. */
-declare const __APP_VERSION__: string;

@@ -234,6 +234,8 @@ function shortId(id: string): string {
 function detailLine(detail: unknown): string {
   if (!detail || typeof detail !== 'object') return '—';
   const d = detail as Record<string, unknown>;
+  // v0.1 Send Inquiry: the collector's message travels in `detail.message`
+  if (typeof d.message === 'string' && d.message.trim()) return `“${d.message.trim()}”`;
   if (d.amount != null) {
     const amount = Number(d.amount);
     const shown = Number.isFinite(amount) ? amount.toLocaleString('en-US') : String(d.amount);

@@ -210,18 +210,29 @@
 }
 .card .img {
   aspect-ratio: 4 / 5;
-  background: #0a0a0a;
+  background: var(--hair2);
   position: relative;
   overflow: hidden;
   display: block;
 }
-html.dz-bw .card .img {
-  background: #141417;
-}
+/* v826 fit-not-crop (app.html:1585, :1599-1604; `packages/ui/artwork-card.js`):
+   the ONE artwork-display rule — every card image, with or without `.dz-fit`,
+   is absolutely fitted to the definite 4/5 box and `object-fit: contain`
+   letterboxes the whole work; the mat comes from padding (a %-padding
+   resolves against width in every engine). Never crops. */
 .card .img img {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  padding: 15% 8%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 4px 12px rgba(10, 10, 10, 0.26));
   display: block;
 }
 /* the Market App's fit-not-crop well (app.html `.dz-fit`, packages/ui/

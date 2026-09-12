@@ -28,6 +28,7 @@ import type {
   CollectorActivity,
   CollectorRequest,
   CollectorRequestQuery,
+  CreatedRequest,
   Lot,
   Paginated,
   PublishedRecommendation,
@@ -92,39 +93,42 @@ export class CrmService extends ResourceService {
   requests(query: CollectorRequestQuery = {}) {
     return this.list<CollectorRequest>('/requests/', query as RequestOptions['query']);
   }
-  /** `clientReqId` makes the create idempotent (G-F1-5) — a repeat with the
-   * same key returns the already-created row instead of a duplicate. Pass
-   * the same double-tap/retry guard key the caller already uses. */
-  createRequest(body: {
+  /** File a request. `client_req_id` is the idempotency key the backend
+   * dedupes on per collector: the same key answers 200 with the row it
+   * already holds instead of creating a second one (`replayed: true`). */
+  async createRequest(body: {
     kind: RequestKind;
-    artwork?: string;
+    artwork?: string | null;
     detail?: RequestDetail;
-    clientReqId?: string;
-  }) {
-    const { clientReqId, ...rest } = body;
-    return this.create<CollectorRequest>('/requests/', {
-      ...rest,
-      ...(clientReqId ? { client_req_id: clientReqId } : {}),
-    });
+    client_req_id?: string;
+  }): Promise<CreatedRequest> {
+    const res = await this.client.sendEnveloped<CollectorRequest>(
+      'POST',
+      this.basePath + '/requests/',
+      { body },
+    );
+    return { row: res.data, replayed: res.status === 200 };
   }
 
-  /** A request's reply thread (`GET/POST /api/crm/requests/{id}/messages/`,
-   * G-F1-6) — own request only. API-only for now; no thread UI yet. */
-  requestMessages(id: string, query: RequestMessageQuery = {}) {
+  /** The reply thread on one of the collector's own requests, oldest first
+   * (`GET /api/crm/requests/{id}/messages/`). */
+  messages(requestId: string, query: RequestMessageQuery = {}) {
     return this.list<RequestMessage>(
-      `/requests/${id}/messages/`,
+      `/requests/${requestId}/messages/`,
       query as RequestOptions['query'],
     );
   }
-  postRequestMessage(id: string, body: string, artworkRefs?: string[]) {
-    return this.create<RequestMessage>(`/requests/${id}/messages/`, {
+  /** Post to the thread (`POST .../messages/`). The backend marks the
+   * collector's own message seen by the collector; the team sees it unread. */
+  postMessage(requestId: string, body: string, artworkRefs: string[] = []) {
+    return this.create<RequestMessage>(`/requests/${requestId}/messages/`, {
       body,
-      ...(artworkRefs ? { artwork_refs: artworkRefs } : {}),
+      artwork_refs: artworkRefs,
     });
   }
-  /** Clears the collector-side unread badge for this request. */
-  markMessagesSeen(id: string) {
-    return this.create<{ unread_count: number }>(`/requests/${id}/messages/mark-seen/`);
+  /** Mark every team message on the thread seen (`POST .../mark-seen/`). */
+  markSeen(requestId: string) {
+    return this.create<{ unread_count: number }>(`/requests/${requestId}/messages/mark-seen/`);
   }
 
   /** Admin: the unified feed of every request across every kind
@@ -134,6 +138,26 @@ export class CrmService extends ResourceService {
   adminRequests(query: AdminRequestQuery = {}) {
     return this.list<AdminRequest>('/admin/requests/', query as RequestOptions['query']);
   }
+  /** Admin: the thread on any request (`GET /api/crm/admin/requests/{id}/messages/`). */
+  adminMessages(requestId: string, query: RequestMessageQuery = {}) {
+    return this.list<RequestMessage>(
+      `/admin/requests/${requestId}/messages/`,
+      query as RequestOptions['query'],
+    );
+  }
+  /** Admin: reply on a request's thread. */
+  adminPostMessage(requestId: string, body: string, artworkRefs: string[] = []) {
+    return this.create<RequestMessage>(`/admin/requests/${requestId}/messages/`, {
+      body,
+      artwork_refs: artworkRefs,
+    });
+  }
+  /** Admin: mark every collector message on the thread seen. */
+  adminMarkSeen(requestId: string) {
+    return this.create<{ unread_count: number }>(
+      `/admin/requests/${requestId}/messages/mark-seen/`,
+    );
+  }
   /** Admin: move one request to another status (`POST .../transition/`). */
   transitionRequest(id: string, toStatus: string, note = '') {
     return this.create<AdminRequest>(`/admin/requests/${id}/transition/`, {
@@ -141,24 +165,6 @@ export class CrmService extends ResourceService {
       note,
     });
   }
-  /** Admin mirror of the reply thread. API-only for now. */
-  adminRequestMessages(id: string, query: RequestMessageQuery = {}) {
-    return this.list<RequestMessage>(
-      `/admin/requests/${id}/messages/`,
-      query as RequestOptions['query'],
-    );
-  }
-  postAdminRequestMessage(id: string, body: string, artworkRefs?: string[]) {
-    return this.create<RequestMessage>(`/admin/requests/${id}/messages/`, {
-      body,
-      ...(artworkRefs ? { artwork_refs: artworkRefs } : {}),
-    });
-  }
-  /** Clears the team-side unread badge for this request. */
-  markAdminMessagesSeen(id: string) {
-    return this.create<{ unread_count: number }>(`/admin/requests/${id}/messages/mark-seen/`);
-  }
-
   logActivity(body: { kind: string; artwork?: string; metadata?: Record<string, unknown> }) {
     return this.create<CollectorActivity>('/activity/', body);
   }

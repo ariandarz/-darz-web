@@ -1,42 +1,38 @@
 /* =============================================================================
-   Settings — cards, group heads, rows, toggles, about card, leave, stamp.
-   Ported from app.html `settingsView()` (:9827) — the original styles its
-   rows inline (`CARD`, `head()`, `row()`, `toggle()`); the same values are
-   given class names here. Design package capture `19-settings`.
+   Settings — the preferences page.
+
+   Ported from `settingsView()` (`darzstudio.art` `app.html:9827-9939`). The old
+   page styles everything inline (`CARD`, `head()`, `row()`, `toggle()`,
+   :9832-9836); here the same values are named classes so the page reads.
    ========================================================================== */
-.settings .phead {
-  padding: 18px 20px 10px;
-}
+
 .st-card {
-  display: block;
   background: var(--card);
   border: 1px solid rgba(10, 10, 10, 0.05);
   border-radius: 18px;
   box-shadow: 0 1px 3px rgba(10, 10, 10, 0.05);
   margin: 14px 16px 0;
   overflow: hidden;
-  color: inherit;
 }
 html.dz-bw .st-card {
   border-color: var(--hair);
-  box-shadow: none;
 }
 .st-head {
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 15px 18px 12px;
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--ink3);
 }
-.st-ic {
+.st-head .ic {
   color: var(--ink3);
   display: flex;
   align-items: center;
+}
+.st-head .lb {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--ink3);
 }
 .st-row {
   display: flex;
@@ -45,180 +41,158 @@ html.dz-bw .st-card {
   gap: 14px;
   padding: 13px 18px;
   width: 100%;
+  text-align: left;
   background: none;
   border: 0;
   font: inherit;
   color: inherit;
-  text-align: left;
+  text-decoration: none;
 }
 .st-row.top {
   border-top: 1px solid var(--hair2);
 }
-.st-link {
+.st-row.click {
   cursor: pointer;
 }
-.st-link:hover .st-t {
-  color: var(--ink);
-}
-.st-b {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.st-t {
-  font-family: var(--font-head);
-  font-size: 17px;
+.st-row .t {
+  font-size: 15px;
   font-weight: 600;
   color: var(--ink);
   line-height: 1.25;
 }
-.st-s {
-  font-size: 12.5px;
+.st-row .s {
+  font-size: 12px;
   color: var(--ink3);
   margin-top: 3px;
   line-height: 1.3;
 }
+.st-row .ctl {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .st-chev {
-  color: var(--ink3);
+  color: #cfcabd;
   font-size: 22px;
   line-height: 0.6;
   font-weight: 300;
-  flex: 0 0 auto;
 }
-.st-profile .st-row {
+/* the profile row at the top (:9892-9895) */
+.st-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 16px 18px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
 }
-/* 46×28 pill — on: the accent (ink at runtime) track with a card knob */
-.st-toggle {
-  width: 46px;
-  height: 28px;
-  border-radius: 20px;
+.st-profile .n {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.st-profile .m {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* the segmented control (`langSeg`, :9839) — reused for Appearance */
+.st-seg {
+  display: inline-flex;
+  background: #e7e4dc;
+  border-radius: 12px;
+  padding: 3px;
+}
+html.dz-bw .st-seg {
+  background: #2a2a31;
+}
+.st-seg button {
   border: none;
   cursor: pointer;
-  background: #cfcabd;
-  position: relative;
-  transition: 0.18s;
-  flex: 0 0 auto;
-  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 15px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  transition: 0.15s;
 }
-.st-toggle.on {
-  background: var(--accent);
+.st-seg button.on {
+  font-weight: 700;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
 }
-html.dz-bw .st-toggle {
-  background: #3a3a42;
+html.dz-bw .st-seg button.on {
+  background: #101014;
 }
-html.dz-bw .st-toggle.on {
-  background: #e9e5dc;
-}
-.st-knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--card);
-  transition: 0.18s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-}
-.st-toggle.on .st-knob {
-  left: 21px;
-}
-.st-lang {
-  flex: 0 0 auto;
-  min-width: 130px;
-  margin-bottom: 0;
-}
-.st-lang .dzsel-btn {
-  padding: 9px 14px;
-  font-size: 13.5px;
-  font-weight: 600;
-  border-radius: 11px;
-  border-width: 1px;
-  box-shadow: none;
-  font-family: var(--font-body);
-}
-.st-about {
-  padding: 18px 20px 20px;
-}
-.st-about-h {
+/* About (:9931-9933) */
+.st-about-t {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-family: var(--font-head);
-  font-size: 19px;
+  gap: 10px;
+  padding: 22px 22px 0;
+  font-size: 17px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--ink);
+  font-family: var(--font-head);
 }
 .st-about-p {
-  font-size: var(--f-body);
-  line-height: 1.65;
+  font-size: 14.5px;
   color: var(--ink2);
-  margin-top: 10px;
+  line-height: 1.85;
+  letter-spacing: 0.002em;
+  margin: 12px 0 0;
+  padding: 0 22px 18px;
 }
-.st-social {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
-}
-.st-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--sans);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink);
-  border: 1px solid rgba(10, 10, 10, 0.14);
-  background: var(--card);
-  border-radius: 30px;
-  padding: 9px 15px;
-}
-html.dz-bw .st-pill {
-  border-color: var(--hair);
-  background: var(--soft);
-}
-.st-pill-ic {
-  display: flex;
+/* Leave the Room (:9936-9938) */
+.st-leave-wrap {
+  padding: 18px 16px 30px;
 }
 .st-leave {
-  padding: 22px 16px 6px;
-}
-.st-leave-btn {
   width: 100%;
   background: var(--card);
-  border: 1px solid var(--hair);
+  border: 1px solid rgba(10, 10, 10, 0.1);
   border-radius: 16px;
-  padding: 16px;
-  font-family: var(--sans);
-  font-size: 12.5px;
+  padding: 17px;
+  font: inherit;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--ink);
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(10, 10, 10, 0.05);
 }
-.st-leave-btn:hover {
-  border-color: var(--ink3);
-}
-.st-build {
+.dz-powered {
   text-align: center;
-  font-family: var(--sans);
-  font-size: 9px;
-  font-weight: 700;
+  margin-top: 16px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--ink3);
-  opacity: 0.55;
-  padding: 14px 0 26px;
-  letter-spacing: 0.08em;
 }
-.st-legal {
-  white-space: pre-line;
-  font-size: var(--f-body);
-  line-height: 1.65;
-  color: var(--ink2);
+.st-ver {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  opacity: 0.5;
+  font-weight: 600;
 }
-html.dz-desktop .settings {
-  max-width: var(--dz-read);
+html.dz-desktop .st-card,
+html.dz-desktop .st-leave-wrap {
+  max-width: 640px;
   margin-left: var(--dz-gut);
 }

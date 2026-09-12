@@ -24,8 +24,11 @@ import type { CrmService } from '../../api/services';
 import type { Artwork, CollectorRequest, RequestDetail, RequestKind } from '../../api/types';
 import { Observable } from '../shared/Observable';
 
-/** The action verbs the artwork detail renders, as `app.html` names them. */
-export type ActionVerb = 'buy' | 'hold' | 'visit' | 'offer' | 'price' | 'information';
+/** The action verbs the artwork detail renders, as `app.html` names them.
+ * `inquiry` is the v0.1 "Send Inquiry" — the one collector→Darz contact CTA
+ * (kind `information`, with the collector's message in `detail`). */
+export type ActionVerb =
+  'buy' | 'hold' | 'visit' | 'offer' | 'price' | 'information' | 'inquiry';
 
 /** app.html:9236 — the default secondary actions and their exact labels. */
 export const ACTION_LABEL: Record<ActionVerb, string> = {
@@ -35,6 +38,7 @@ export const ACTION_LABEL: Record<ActionVerb, string> = {
   offer: 'Make an offer',
   price: 'Request price',
   information: 'Ask about this work',
+  inquiry: 'Send Inquiry',
 };
 
 /** Action verb → the backend's `RequestKindEnum` value. */
@@ -45,6 +49,7 @@ export const ACTION_KIND: Record<ActionVerb, RequestKind> = {
   offer: 'offer',
   price: 'price',
   information: 'information',
+  inquiry: 'information',
 };
 
 /** app.html:10464-10468 — the confirmation copy, verbatim, per action. */
@@ -79,6 +84,13 @@ export const CONFIRM_COPY: Record<ActionVerb, { title: string; message: string }
     message:
       'Thank you. Your request has been received. Darz will review it and get back to you shortly.',
   },
+  // v0.1 — the inquiry lands in a conversation the collector can open from
+  // Chat or Profile, so the confirmation says where the reply will arrive.
+  inquiry: {
+    title: 'Inquiry sent',
+    message:
+      'Darz has received your inquiry about this work and will reply in your conversation.',
+  },
 };
 
 export interface RequestConfirmation {
@@ -94,6 +106,8 @@ export interface RequestConfirmation {
 export interface RequestSnapshot {
   /** guard keys with a POST in flight — `act:<id>:<verb>` / `offer:<id>:<amount>` */
   pending: ReadonlySet<string>;
+  /** the request the last successful action created (or replayed) */
+  lastFiled: { key: string; request: CollectorRequest; replayed: boolean } | null;
   /** the confirmation sheet to show, or null */
   confirmation: RequestConfirmation | null;
   /** a failed submit, shown inline in the sheet (never a stack trace) */
@@ -105,6 +119,7 @@ export interface RequestSnapshot {
 
 const EMPTY: RequestSnapshot = {
   pending: new Set(),
+  lastFiled: null,
   confirmation: null,
   error: null,
   filed: [],
@@ -112,10 +127,26 @@ const EMPTY: RequestSnapshot = {
 
 export class RequestController extends Observable<RequestSnapshot> {
   private readonly crm: CrmService;
+  /** Idempotency keys by guard key. Minted on the first attempt of an action
+   * and kept across a failed attempt, so a retry of the SAME action re-sends
+   * the same `client_req_id` and the backend replays the row it already
+   * holds instead of filing a second one. Cleared once the action succeeds —
+   * a later, separate request for the same work is a new key. */
+  private readonly clientIds = new Map<string, string>();
 
   constructor(crm: CrmService) {
     super(EMPTY);
     this.crm = crm;
+  }
+
+  /** The `client_req_id` for a guard key — reused until the action lands. */
+  clientRequestId(key: string): string {
+    let id = this.clientIds.get(key);
+    if (!id) {
+      id = newClientId();
+      this.clientIds.set(key, id);
+    }
+    return id;
   }
 
   isPending(key: string): boolean {
@@ -135,6 +166,19 @@ export class RequestController extends Observable<RequestSnapshot> {
   /** Buy now / 24h hold / Request viewing / Request price / Ask about. */
   act(artwork: Artwork, verb: ActionVerb, detail?: RequestDetail): Promise<void> {
     return this.file(RequestController.actKey(artwork.id, verb), artwork, verb, detail);
+  }
+
+  /** v0.1 Send Inquiry: one `information` request carrying the collector's
+   * message, linked to the artwork. Resolves true when the backend confirmed
+   * it (created or replayed) — the caller shows success only then. */
+  async inquire(artwork: Artwork, message: string): Promise<boolean> {
+    const text = message.trim();
+    if (!text) return false;
+    await this.file(RequestController.actKey(artwork.id, 'inquiry'), artwork, 'inquiry', {
+      message: text,
+    });
+    const { lastFiled } = this.getSnapshot();
+    return lastFiled?.key === RequestController.actKey(artwork.id, 'inquiry');
   }
 
   /** Make an offer. `amount` is already validated by the caller (the sheet owns
@@ -164,21 +208,18 @@ export class RequestController extends Observable<RequestSnapshot> {
     this.patch({ pending: withKey(pending, key), error: null });
 
     try {
-      // `key` (the same double-tap guard key above) doubles as the
-      // idempotency key (docs/FLOW_1_API_GAPS.md G-F1-5): a retry of the
-      // exact same action — same artwork/verb[/amount] — is deduped
-      // server-side too, surviving a reload mid-flight, not just this tab's
-      // in-memory guard. A materially different retry (a corrected offer
-      // amount) gets a different key, so it's still a fresh request.
-      const row = await this.crm.createRequest({
+      const { row, replayed } = await this.crm.createRequest({
         kind: ACTION_KIND[verb],
         artwork: artwork.id,
-        clientReqId: key,
         ...(detail ? { detail } : {}),
+        client_req_id: this.clientRequestId(key),
       });
+      this.clientIds.delete(key);
       const copy = CONFIRM_COPY[verb];
+      const filed = this.getSnapshot().filed.filter((r) => r.id !== row.id);
       this.patch({
-        filed: [row, ...this.getSnapshot().filed],
+        filed: [row, ...filed],
+        lastFiled: { key, request: row, replayed },
         confirmation: {
           verb,
           artworkId: artwork.id,
@@ -197,6 +238,13 @@ export class RequestController extends Observable<RequestSnapshot> {
 }
 
 // --- helpers ---------------------------------------------------------------
+
+/** A fresh idempotency key (≤ 64 chars, the backend's `client_req_id` limit). */
+function newClientId(): string {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
 
 function withKey(set: ReadonlySet<string>, key: string): ReadonlySet<string> {
   const next = new Set(set);

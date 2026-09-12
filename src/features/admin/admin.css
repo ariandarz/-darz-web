@@ -199,3 +199,10 @@
   font-size: 10.5px;
   color: var(--ink3);
 }
+
+/* v0.1 — an unseen collector message on the request (the team's inbox signal) */
+.ad-chip.ad-new {
+  margin-left: 6px;
+  background: #e8005c;
+  color: #fff;
+}

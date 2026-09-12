@@ -1,11 +1,14 @@
 import { useSyncExternalStore } from 'react';
-import { layoutController, type LayoutName } from './LayoutController';
+import { layoutController } from './LayoutController';
+
+export type LayoutName = 'mobile' | 'desktop';
 
 /** Subscribes the component to the layout (mobile ⇄ desktop). */
 export function useLayout(): LayoutName {
-  return useSyncExternalStore(
+  const desktop = useSyncExternalStore(
     (cb) => layoutController.subscribe(cb),
-    () => layoutController.layout,
-    () => layoutController.layout,
+    () => layoutController.isDesktop,
+    () => false,
   );
+  return desktop ? 'desktop' : 'mobile';
 }
