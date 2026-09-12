@@ -4,7 +4,7 @@
  * and error surfacing. `CrmService` is a fake; no network.
  */
 import { describe, expect, it, vi } from 'vitest';
-import type { Artwork, CollectorRequest } from '../../api/types';
+import type { Artwork, CollectorRequest, CreatedRequest } from '../../api/types';
 import { caretAfterGrouping, digitsBefore, groupDigits, parseAmount } from './amount';
 import { columnsFor } from './layout';
 import { ACTION_KIND, RequestController, workLine } from './RequestController';
@@ -21,7 +21,11 @@ const ARTWORK = {
 function fakeCrm(over: Partial<{ createRequest: ReturnType<typeof vi.fn> }> = {}) {
   return {
     createRequest: vi.fn(
-      async () => ({ id: 'r1', kind: 'purchase' }) as unknown as CollectorRequest,
+      async () =>
+        ({
+          row: { id: 'r1', kind: 'purchase' } as unknown as CollectorRequest,
+          replayed: false,
+        }) as CreatedRequest,
     ),
     ...over,
   };
@@ -48,7 +52,7 @@ describe('RequestController — filing an action', () => {
     expect(crm.createRequest).toHaveBeenCalledWith({
       kind: 'hold',
       artwork: 'aw1',
-      clientReqId: 'act:aw1:hold',
+      client_req_id: expect.any(String),
     });
     const { confirmation } = c.getSnapshot();
     expect(confirmation?.title).toBe('Hold request received');
@@ -59,11 +63,11 @@ describe('RequestController — filing an action', () => {
   });
 
   it('ignores a second tap of the same action while one is in flight', async () => {
-    let release!: (v: CollectorRequest) => void;
+    let release!: (v: CreatedRequest) => void;
     const crm = fakeCrm({
       createRequest: vi.fn(
         () =>
-          new Promise<CollectorRequest>((res) => {
+          new Promise<CreatedRequest>((res) => {
             release = res;
           }),
       ),
@@ -77,7 +81,7 @@ describe('RequestController — filing an action', () => {
     await c.act(ARTWORK, 'buy'); // the double-tap
     expect(crm.createRequest).toHaveBeenCalledTimes(1);
 
-    release({ id: 'r1' } as unknown as CollectorRequest);
+    release({ row: { id: 'r1' } as unknown as CollectorRequest, replayed: false });
     await first;
     expect(c.isPending(RequestController.actKey('aw1', 'buy'))).toBe(false);
   });
@@ -86,7 +90,7 @@ describe('RequestController — filing an action', () => {
     const crm = fakeCrm({
       createRequest: vi.fn(async () => {
         await flush();
-        return { id: 'r' } as unknown as CollectorRequest;
+        return { row: { id: 'r' } as unknown as CollectorRequest, replayed: false };
       }),
     });
     const c = make(crm);
@@ -105,8 +109,8 @@ describe('RequestController — filing an action', () => {
     expect(crm.createRequest).toHaveBeenCalledWith({
       kind: 'offer',
       artwork: 'aw1',
-      clientReqId: 'offer:aw1:9500',
       detail: { amount: 9500, currency: 'USD' },
+      client_req_id: expect.any(String),
     });
     expect(c.getSnapshot().confirmation?.title).toBe('Offer received');
   });
@@ -116,8 +120,10 @@ describe('RequestController — filing an action', () => {
     const crm = fakeCrm({
       createRequest: vi.fn(
         () =>
-          new Promise<CollectorRequest>((res) => {
-            pendingResolvers.push(() => res({ id: 'r' } as unknown as CollectorRequest));
+          new Promise<CreatedRequest>((res) => {
+            pendingResolvers.push(() =>
+              res({ row: { id: 'r' } as unknown as CollectorRequest, replayed: false }),
+            );
           }),
       ),
     });
@@ -131,6 +137,61 @@ describe('RequestController — filing an action', () => {
     void c.offer(ARTWORK, 9600, 'USD'); // corrected amount → allowed
     expect(crm.createRequest).toHaveBeenCalledTimes(2);
     pendingResolvers.forEach((r) => r());
+  });
+
+  it('re-sends the same client_req_id on a retry, and mints a new one after success', async () => {
+    const crm = fakeCrm({
+      createRequest: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Could not reach the server.'))
+        .mockResolvedValueOnce({
+          row: { id: 'r1' } as unknown as CollectorRequest,
+          replayed: false,
+        })
+        .mockResolvedValueOnce({
+          row: { id: 'r2' } as unknown as CollectorRequest,
+          replayed: false,
+        }),
+    });
+    const c = make(crm);
+
+    await c.act(ARTWORK, 'visit'); // fails
+    await c.act(ARTWORK, 'visit'); // retry → same key
+    await c.act(ARTWORK, 'visit'); // a later, separate request → new key
+
+    const keys = crm.createRequest.mock.calls.map((call) => call[0].client_req_id as string);
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[2]).not.toBe(keys[0]);
+    expect(keys.every((k) => k.length > 0 && k.length <= 64)).toBe(true);
+  });
+
+  it('files Send Inquiry as an `information` request carrying the message, and reports the replay', async () => {
+    const crm = fakeCrm({
+      createRequest: vi.fn(async () => ({
+        row: { id: 'r9', kind: 'information', status: 'new' } as unknown as CollectorRequest,
+        replayed: true,
+      })),
+    });
+    const c = make(crm);
+
+    expect(await c.inquire(ARTWORK, '   ')).toBe(false); // nothing to send
+    expect(crm.createRequest).not.toHaveBeenCalled();
+
+    expect(await c.inquire(ARTWORK, '  Is this work still available?  ')).toBe(true);
+    expect(crm.createRequest).toHaveBeenCalledWith({
+      kind: 'information',
+      artwork: 'aw1',
+      detail: { message: 'Is this work still available?' },
+      client_req_id: expect.any(String),
+    });
+    const snap = c.getSnapshot();
+    expect(snap.lastFiled).toEqual({
+      key: RequestController.actKey('aw1', 'inquiry'),
+      request: expect.objectContaining({ id: 'r9' }),
+      replayed: true,
+    });
+    expect(snap.confirmation?.title).toBe('Inquiry sent');
+    expect(snap.filed.map((r) => r.id)).toEqual(['r9']);
   });
 
   it('reports a failure and opens no confirmation', async () => {

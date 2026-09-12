@@ -1,0 +1,272 @@
+/* =============================================================================
+   Conversations / activity rows — the collector's requests as a list.
+
+   Ported from `darzstudio.art` `app.html`: the activity list `.actlist`
+   (:858), the row `.actli` + its parts (:859-885), the filter chips `.actfil`
+   (:847-853), the list header `.acthd` (:854-857) and the profile empty state
+   `.prof-empty` (:1142-1147). Same class names, so it diffs 1:1.
+   ========================================================================== */
+
+.actfil {
+  display: flex;
+  gap: 7px;
+  padding: 10px 16px 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.actfil::-webkit-scrollbar {
+  display: none;
+}
+.actfil button {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink2);
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  padding: 7px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.actfil button:hover {
+  border-color: var(--ink3);
+}
+.actfil button.on {
+  background: #0a0a0a;
+  color: #fff;
+  border-color: #0a0a0a;
+}
+.actfil .n {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+  margin-left: 5px;
+}
+.acthd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px 7px;
+}
+.acthd .c {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.actlist {
+  padding: 0 16px 4px;
+}
+.actli {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 13px;
+  padding: 11px 12px;
+  margin: 0 0 8px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.actli:hover {
+  border-color: var(--ink3);
+}
+.actli:active {
+  transform: scale(0.992);
+}
+/* a Darz reply on the thread: the chroma seam down the left edge (:862-863) */
+.actli--rep {
+  padding-left: 14px;
+}
+.actli--rep::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 11px;
+  bottom: 11px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--dz-seam-v);
+}
+.actli-th {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: var(--hair2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink3);
+}
+/* the thumbnail shows the whole work — the same contain rule as every artwork
+   image in this app (never crop) */
+.actli-th img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+}
+.actli-b {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.actli-k {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+}
+.actli-t {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.actli-t.q {
+  font-style: italic;
+  font-weight: 500;
+  font-family: var(--font-head);
+  font-size: 14px;
+}
+.actli-d {
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.actli-r {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.actli-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.actli-rep {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.actli-rep.nw {
+  color: #fff;
+  background: #0a0a0a;
+  border-color: #0a0a0a;
+}
+.actli-stat {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  color: var(--ink2);
+}
+.actli-stat.s-ok {
+  color: var(--ok, #1f9d57);
+  border-color: rgba(31, 157, 87, 0.46);
+}
+.actli-stat.s-cl {
+  color: var(--ink3);
+}
+.actli-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e8005c;
+  flex: 0 0 auto;
+  margin-left: 1px;
+  box-shadow: 0 0 0 0 rgba(232, 0, 92, 0.45);
+  animation: dzNavDot 2.1s ease-out infinite;
+}
+.actli-chev {
+  color: var(--ink3);
+  font-size: 19px;
+  line-height: 0.6;
+  font-weight: 300;
+  flex: 0 0 auto;
+}
+
+/* app.html:1142-1147 */
+.prof-empty {
+  margin: 16px 16px 8px;
+  padding: 34px 22px;
+  text-align: center;
+  border: 1px dashed var(--hair);
+  border-radius: 16px;
+  background: var(--card);
+}
+.prof-empty .pe-ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 13px;
+  background: var(--hair2);
+  color: var(--ink3);
+}
+.prof-empty .pe-t {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.prof-empty .pe-s {
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin: 8px auto 0;
+  line-height: 1.55;
+  max-width: 34ch;
+}
+.prof-empty .pe-b {
+  margin-top: 16px;
+}
+.prof-empty .btn {
+  display: inline-block;
+  width: auto;
+  padding: 11px 20px;
+}
+
+html.dz-desktop .actlist,
+html.dz-desktop .actfil,
+html.dz-desktop .acthd,
+html.dz-desktop .prof-empty {
+  max-width: var(--dz-read);
+}

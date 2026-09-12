@@ -5,6 +5,23 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-11 — v0.1 launch scope (branch `claude/darz-market-v0-1-hpy1xy`)
+
+- **Feature controls** — `src/features/shell/features.ts` (`VITE_FEATURE_SET`): v0.1 shows Market ·
+  Records · Chat · Profile · Settings and Send Inquiry; auctions, bidding, offers, holds, viewings,
+  the questionnaire, AI chat and stories stay in the codebase, hidden; hidden routes redirect.
+- **App shell + nav** — `AppShell` with the old `<nav id="nav">` (bottom bar / desktop top bar),
+  `LayoutController` (the `html.dz-desktop` switch at 900px), desktop two-column artwork detail.
+- **Inquiry loop** — `InquiryAction` / `InquirySheet`; `RequestController` idempotency keys;
+  `ConversationsController` + `ThreadController`; `/chat`, `/chat/:id`; admin feed shows names,
+  the message and a `New` chip.
+- **Profile** (`/profile`) and **Settings** (`/settings`) — Phase 9's first cut, read-only account.
+- **Records** — `RecordsArchiveController` (five houses), Cards / List, artist page with
+  evidence-gated insights (`insights.ts`, tested), full record detail; artist page links to it.
+- **Images** — one fit-not-crop rule on every artwork image (`catalogue.css` `.card .img img`).
+- Schema regenerated from backend Phase 19.3; 17 test files / 98 tests. Details and owner flags:
+  `docs/V0_1_SCOPE.md`.
+
 ## 2026-09-11 — API integration: wire Saved/Requests/Admin to the merged backend gaps
 
 New `docs/API_INTEGRATION_GAPS.md` — the live map of what four merged `darzmarket-api` PRs now
