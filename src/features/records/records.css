@@ -1,0 +1,687 @@
+/* =============================================================================
+   Records — the artist auction-record archive (v0.1).
+
+   Ported from `recordsView()` / `recordDetailView()` in `darzstudio.art`
+   `app.html` (the inline `<style>` at :4770-4917 and :5078-5111). The shared
+   `.rec2-hd` / `.rec2-tools` / `.rec2-grid` / `.rec2-c` blocks were ported in
+   Phase 8 (`features/auctions/auctions.css:804-967`) and are reused; this file
+   adds what v0.1 needs on top: the record image `.rec2-im` (:4806-4808, the
+   same matted contain rule as the Market card — never cropped), the Cards /
+   List toggle `.rec2-vtog` (:4894-4896), the list rows `.rec2-row*`
+   (:4898-4909), the artist cards `.rec2-agrid` / `.rec2-acard` (:4855-4866),
+   the empty state `.rec2-empty` (:4880-4884), and the artist-page metric grid
+   `.dza-stat2` (:8396-8400) that carries the insights.
+   ========================================================================== */
+
+.rec2-im {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background: var(--soft);
+  overflow: hidden;
+}
+.rec2-im img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  box-sizing: border-box;
+  padding: 11% 7%;
+  filter: drop-shadow(0 4px 12px rgba(10, 10, 10, 0.22));
+}
+.rec2-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink3);
+}
+.rec2-ph .m {
+  font-family: var(--font-head);
+  font-size: 28px;
+}
+.rec2-c {
+  padding: 0;
+  overflow: hidden;
+}
+.rec2-b {
+  padding: 11px 12px 13px;
+}
+.rec2-cfoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  text-transform: uppercase;
+}
+.rec2-cfoot .sn {
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 58%;
+}
+.rec2-statuslab {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink3);
+  letter-spacing: 0.01em;
+}
+.rec2-estsm {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink3);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cards / List (:4894-4896) */
+.rec2-vtog {
+  display: flex;
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  overflow: hidden;
+  height: 38px;
+}
+.rec2-vtog button {
+  border: 0;
+  background: var(--card);
+  color: var(--ink3);
+  padding: 0 13px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.rec2-vtog button.on {
+  background: #1c1c22;
+  color: #fff;
+}
+html.dz-bw .rec2-vtog button.on {
+  background: #26262e;
+}
+
+/* list rows (:4898-4909) */
+.rec2-listwrap {
+  padding: 18px 20px 30px;
+}
+.rec2-row {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 12px 2px;
+  border-top: 1px solid var(--hair);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+}
+.rec2-row:first-child {
+  border-top: 0;
+}
+.rec2-row:active {
+  opacity: 0.7;
+}
+.rec2-rimg {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rec2-rimg img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6%;
+  box-sizing: border-box;
+}
+.rec2-rimg span {
+  font-family: var(--font-head);
+  font-size: 20px;
+  color: var(--ink3);
+}
+.rec2-rmain {
+  flex: 1;
+  min-width: 0;
+}
+.rec2-ran {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.rec2-rti {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rec2-rmeta {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+.rec2-rright {
+  text-align: right;
+  flex: 0 0 auto;
+}
+.rec2-rprice {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--ink);
+}
+.rec2-rprice .c {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--ink3);
+  letter-spacing: 0.02em;
+}
+.rec2-rstatus {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.rec2-rlab {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.rec2-go {
+  color: var(--ink3);
+  font-size: 18px;
+  margin-left: 12px;
+}
+
+/* artist cards (:4855-4866) — the image is the best record, whole, never cropped */
+.rec2-agrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding: 18px 20px 30px;
+}
+.rec2-acard {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.16s;
+  text-align: left;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+.rec2-acard:active {
+  transform: scale(0.99);
+}
+.rec2-aimg {
+  aspect-ratio: 1 / 1;
+  background: var(--soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.rec2-aimg img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8%;
+  box-sizing: border-box;
+}
+.rec2-amono {
+  font-family: var(--font-head);
+  font-size: 40px;
+  color: var(--ink3);
+}
+.rec2-ab {
+  padding: 12px 13px 14px;
+}
+.rec2-an {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.rec2-asum {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+.rec2-abest {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* empty state (:4880-4884) */
+.rec2-empty {
+  padding: 52px 28px;
+  text-align: center;
+  max-width: 340px;
+  margin: 0 auto;
+}
+.rec2-empty .lk {
+  width: 44px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+  margin: 0 auto 16px;
+}
+.rec2-empty h3 {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 22px;
+  margin: 0;
+  color: var(--ink);
+}
+.rec2-empty p {
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+/* the artist page head + the insight grid (`.dza-stat2`, app.html:8396-8400) */
+.rec2-ahead {
+  padding: 22px 20px 4px;
+}
+.rec2-ahead .rec2-h1 {
+  font-size: 30px;
+}
+.rec2-sech {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 18px 20px 6px;
+}
+.rec2-sech .t {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--ink);
+}
+.rec2-sech .c {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dza-stat2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 12px 20px 4px;
+}
+.dza-stat2 > div {
+  background: var(--card);
+  padding: 14px 15px 13px;
+  min-width: 0;
+  box-shadow: inset 1px 1px 0 0 var(--hair);
+}
+.dza-stat2 .l {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dza-stat2 .v {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.16;
+  margin-top: 7px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.dza-stat2 .v.sm {
+  font-size: 14px;
+  font-family: var(--sans);
+  font-weight: 600;
+  line-height: 1.32;
+}
+.dza-stat2 .v .c {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink3);
+  margin-left: 4px;
+}
+/* results over time — one row per year, a quiet bar scaled to the best year */
+.rec2-years {
+  margin: 10px 20px 0;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 12px 14px 8px;
+}
+.rec2-yrow {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+.rec2-yrow .y {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+}
+.rec2-ybar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--hair2);
+  overflow: hidden;
+}
+.rec2-ybar i {
+  display: block;
+  height: 100%;
+  background: var(--dz-seam);
+  border-radius: 4px;
+}
+.rec2-yrow .v {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.rec2-yrow .v small {
+  font-size: 9px;
+  color: var(--ink3);
+  margin-left: 4px;
+}
+.rec2-note {
+  font-size: 11px;
+  color: var(--ink3);
+  line-height: 1.5;
+  margin: 8px 20px 0;
+}
+
+/* record detail (:5085-5111) */
+.rec2-dtop {
+  padding: 16px 20px 0;
+}
+.rec2-dwrap {
+  padding: 16px 20px 30px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+.rec2-dhero {
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 4 / 5;
+}
+.rec2-dhero img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.rec2-dhero .ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-size: 56px;
+  color: var(--ink3);
+}
+.rec2-deyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.rec2-dh1 {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: clamp(26px, 6vw, 34px);
+  line-height: 1.03;
+  margin: 5px 0 0;
+  color: var(--ink);
+}
+.rec2-dti {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink3);
+  margin-top: 3px;
+}
+.rec2-moment {
+  margin: 16px 0;
+  padding: 15px 0;
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.rec2-moment .lb {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.rec2-moment .amt {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.rec2-moment .amt.st {
+  font-size: 17px;
+  color: var(--ink3);
+}
+.rec2-dl {
+  margin: 0;
+}
+.rec2-dl .r {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.rec2-dl .r dt {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding-top: 2px;
+}
+.rec2-dl .r dd {
+  margin: 0;
+  text-align: right;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.rec2-prov {
+  margin-top: 14px;
+}
+.rec2-prov p {
+  color: var(--ink3);
+  font-size: 13px;
+  margin: 7px 0 0;
+  padding-left: 12px;
+  border-left: 1px solid var(--hair);
+}
+.rec2-hist {
+  margin-top: 18px;
+}
+.rec2-hist .hh {
+  font-family: var(--font-head);
+  font-size: 15px;
+  margin: 0 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+}
+.rec2-hist .hh::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hair);
+}
+.rec2-hrow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hair);
+  cursor: pointer;
+  font-size: 12.5px;
+  width: 100%;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+.rec2-hrow:hover {
+  opacity: 0.7;
+}
+.rec2-hrow .hy {
+  color: var(--ink3);
+}
+.rec2-hrow .hp {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rec2-cta {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.rec2-cta a,
+.rec2-cta button {
+  flex: 1;
+  min-width: 130px;
+  background: #1c1c22;
+  color: #fff;
+  border: 0;
+  border-radius: 11px;
+  padding: 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+.rec2-cta .ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--hair);
+}
+
+/* desktop (:4870-4879) */
+html.dz-desktop .rec2-hd,
+html.dz-desktop .rec2-ahead {
+  padding: 34px var(--dz-gut) 6px;
+}
+html.dz-desktop .rec2-h1 {
+  font-size: 44px;
+}
+html.dz-desktop .rec2-tools {
+  padding: 18px var(--dz-gut) 0;
+  max-width: 900px;
+}
+html.dz-desktop .rec2-agrid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+  padding: 22px var(--dz-gut) 60px;
+}
+html.dz-desktop .rec2-listwrap {
+  padding: 18px var(--dz-gut) 60px;
+  max-width: 1000px;
+}
+html.dz-desktop .rec2-sech,
+html.dz-desktop .rec2-note {
+  padding-left: var(--dz-gut);
+  padding-right: var(--dz-gut);
+  max-width: 1000px;
+}
+html.dz-desktop .dza-stat2,
+html.dz-desktop .rec2-years {
+  margin-left: var(--dz-gut);
+  max-width: calc(1000px - var(--dz-gut));
+}
+html.dz-desktop .rec2-dwrap {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 34px;
+  align-items: start;
+  padding: 16px var(--dz-gut) 60px;
+  max-width: var(--dz-wide);
+}
+html.dz-desktop .rec2-dtop {
+  padding: 16px var(--dz-gut) 0;
+}

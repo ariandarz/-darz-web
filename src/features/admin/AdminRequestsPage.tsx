@@ -10,7 +10,8 @@
  * Statuses come from `GET /api/options/` — never a hardcoded label lookup
  * (CLAUDE.md, "API access"). The status vocabulary depends on the kind, which
  * the options endpoint does not express; see `docs/FLOW_1_API_GAPS.md`
- * (G-F1-4).
+ * (G-F1-4). Collector and artwork arrive nested (backend Phase 19.3 closed
+ * G-F1-7), so the rows show names, not truncated ids.
  */
 import { useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
@@ -133,9 +134,18 @@ export function AdminRequestsPage() {
                     <td className="ad-when">{whenLabel(r.created_at)}</td>
                     <td>
                       <span className={`ad-chip ${r.kind}`}>{titleCase(r.kind)}</span>
+                      {/* the admin notification: a collector message the team
+                          has not seen yet (`unread_count`, Phase 19.3) */}
+                      {r.unread_count > 0 && <span className="ad-chip ad-new">New</span>}
                     </td>
-                    <td className="ad-id">{shortId(r.collector)}</td>
-                    <td className="ad-id">{r.artwork ? shortId(r.artwork) : '—'}</td>
+                    <td>{r.collector.display_name || shortId(r.collector.id)}</td>
+                    <td>
+                      {r.artwork
+                        ? [r.artwork.artist?.display_name, r.artwork.title]
+                            .filter(Boolean)
+                            .join(' — ')
+                        : '—'}
+                    </td>
                     <td>{detailLine(r.detail)}</td>
                     <td>{titleCase(r.status)}</td>
                     <td aria-busy={busyId === r.id || undefined}>
@@ -189,6 +199,7 @@ function shortId(id: string): string {
 function detailLine(detail: unknown): string {
   if (!detail || typeof detail !== 'object') return '—';
   const d = detail as Record<string, unknown>;
+  if (typeof d.message === 'string' && d.message.trim()) return `“${d.message.trim()}”`;
   if (d.amount != null) {
     const amount = Number(d.amount);
     const shown = Number.isFinite(amount) ? amount.toLocaleString('en-US') : String(d.amount);

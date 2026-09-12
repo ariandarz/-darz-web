@@ -28,11 +28,14 @@ import type {
   CollectorActivity,
   CollectorRequest,
   CollectorRequestQuery,
+  CreatedRequest,
   Lot,
   Paginated,
   PublishedRecommendation,
   RequestDetail,
   RequestKind,
+  RequestMessage,
+  RequestMessageQuery,
   SavedArtwork,
 } from './types';
 
@@ -89,14 +92,68 @@ export class CrmService extends ResourceService {
   requests(query: CollectorRequestQuery = {}) {
     return this.list<CollectorRequest>('/requests/', query as RequestOptions['query']);
   }
-  createRequest(body: { kind: RequestKind; artwork?: string; detail?: RequestDetail }) {
-    return this.create<CollectorRequest>('/requests/', body);
+  /** File a request. `client_req_id` is the idempotency key the backend
+   * dedupes on per collector: the same key answers 200 with the row it
+   * already holds instead of creating a second one (`replayed: true`). */
+  async createRequest(body: {
+    kind: RequestKind;
+    artwork?: string | null;
+    detail?: RequestDetail;
+    client_req_id?: string;
+  }): Promise<CreatedRequest> {
+    const res = await this.client.sendEnveloped<CollectorRequest>(
+      'POST',
+      this.basePath + '/requests/',
+      { body },
+    );
+    return { row: res.data, replayed: res.status === 200 };
+  }
+
+  /** The reply thread on one of the collector's own requests, oldest first
+   * (`GET /api/crm/requests/{id}/messages/`). */
+  messages(requestId: string, query: RequestMessageQuery = {}) {
+    return this.list<RequestMessage>(
+      `/requests/${requestId}/messages/`,
+      query as RequestOptions['query'],
+    );
+  }
+  /** Post to the thread (`POST .../messages/`). The backend marks the
+   * collector's own message seen by the collector; the team sees it unread. */
+  postMessage(requestId: string, body: string, artworkRefs: string[] = []) {
+    return this.create<RequestMessage>(`/requests/${requestId}/messages/`, {
+      body,
+      artwork_refs: artworkRefs,
+    });
+  }
+  /** Mark every team message on the thread seen (`POST .../mark-seen/`). */
+  markSeen(requestId: string) {
+    return this.create<{ unread_count: number }>(`/requests/${requestId}/messages/mark-seen/`);
   }
 
   /** Admin: the unified feed of every request across every kind
    * (`GET /api/crm/admin/requests/`, filterable by kind/status/assignee). */
   adminRequests(query: AdminRequestQuery = {}) {
     return this.list<AdminRequest>('/admin/requests/', query as RequestOptions['query']);
+  }
+  /** Admin: the thread on any request (`GET /api/crm/admin/requests/{id}/messages/`). */
+  adminMessages(requestId: string, query: RequestMessageQuery = {}) {
+    return this.list<RequestMessage>(
+      `/admin/requests/${requestId}/messages/`,
+      query as RequestOptions['query'],
+    );
+  }
+  /** Admin: reply on a request's thread. */
+  adminPostMessage(requestId: string, body: string, artworkRefs: string[] = []) {
+    return this.create<RequestMessage>(`/admin/requests/${requestId}/messages/`, {
+      body,
+      artwork_refs: artworkRefs,
+    });
+  }
+  /** Admin: mark every collector message on the thread seen. */
+  adminMarkSeen(requestId: string) {
+    return this.create<{ unread_count: number }>(
+      `/admin/requests/${requestId}/messages/mark-seen/`,
+    );
   }
   /** Admin: move one request to another status (`POST .../transition/`). */
   transitionRequest(id: string, toStatus: string, note = '') {

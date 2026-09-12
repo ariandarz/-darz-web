@@ -1,0 +1,198 @@
+/* =============================================================================
+   Settings — the preferences page.
+
+   Ported from `settingsView()` (`darzstudio.art` `app.html:9827-9939`). The old
+   page styles everything inline (`CARD`, `head()`, `row()`, `toggle()`,
+   :9832-9836); here the same values are named classes so the page reads.
+   ========================================================================== */
+
+.st-card {
+  background: var(--card);
+  border: 1px solid rgba(10, 10, 10, 0.05);
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(10, 10, 10, 0.05);
+  margin: 14px 16px 0;
+  overflow: hidden;
+}
+html.dz-bw .st-card {
+  border-color: var(--hair);
+}
+.st-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 15px 18px 12px;
+}
+.st-head .ic {
+  color: var(--ink3);
+  display: flex;
+  align-items: center;
+}
+.st-head .lb {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--ink3);
+}
+.st-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 18px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+}
+.st-row.top {
+  border-top: 1px solid var(--hair2);
+}
+.st-row.click {
+  cursor: pointer;
+}
+.st-row .t {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.st-row .s {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+.st-row .ctl {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.st-chev {
+  color: #cfcabd;
+  font-size: 22px;
+  line-height: 0.6;
+  font-weight: 300;
+}
+/* the profile row at the top (:9892-9895) */
+.st-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+}
+.st-profile .n {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.st-profile .m {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* the segmented control (`langSeg`, :9839) — reused for Appearance */
+.st-seg {
+  display: inline-flex;
+  background: #e7e4dc;
+  border-radius: 12px;
+  padding: 3px;
+}
+html.dz-bw .st-seg {
+  background: #2a2a31;
+}
+.st-seg button {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 15px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  transition: 0.15s;
+}
+.st-seg button.on {
+  font-weight: 700;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+html.dz-bw .st-seg button.on {
+  background: #101014;
+}
+/* About (:9931-9933) */
+.st-about-t {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 22px 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  font-family: var(--font-head);
+}
+.st-about-p {
+  font-size: 14.5px;
+  color: var(--ink2);
+  line-height: 1.85;
+  letter-spacing: 0.002em;
+  margin: 12px 0 0;
+  padding: 0 22px 18px;
+}
+/* Leave the Room (:9936-9938) */
+.st-leave-wrap {
+  padding: 18px 16px 30px;
+}
+.st-leave {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  border-radius: 16px;
+  padding: 17px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(10, 10, 10, 0.05);
+}
+.dz-powered {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.st-ver {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  opacity: 0.5;
+  font-weight: 600;
+}
+html.dz-desktop .st-card,
+html.dz-desktop .st-leave-wrap {
+  max-width: 640px;
+  margin-left: var(--dz-gut);
+}

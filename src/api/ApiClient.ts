@@ -11,7 +11,7 @@
  * The base verbs are `protected`; `send()` is the public entry the service
  * layer calls.
  */
-import { HttpClient, type RequestOptions } from './HttpClient';
+import { HttpClient, type Enveloped, type RequestOptions } from './HttpClient';
 import type { AuthSession } from './AuthSession';
 
 export class ApiClient extends HttpClient {
@@ -29,6 +29,16 @@ export class ApiClient extends HttpClient {
     opts: RequestOptions = {},
   ) {
     return this.request<T>(method, path, opts);
+  }
+
+  /** Same as `send`, keeping the envelope `message` and the HTTP status — for
+   * the idempotent create that must tell a fresh 201 from a 200 replay. */
+  sendEnveloped<T>(
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    path: string,
+    opts: RequestOptions = {},
+  ): Promise<Enveloped<T>> {
+    return this.requestEnveloped<T>(method, path, opts);
   }
 
   protected override async decorate(_method: string, _path: string, headers: Headers) {

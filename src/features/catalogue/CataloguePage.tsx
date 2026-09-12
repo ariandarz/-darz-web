@@ -4,6 +4,7 @@
  * `CatalogueController` (via `useCatalogue`).
  */
 import { Link } from 'react-router-dom';
+import { features } from '../shell/features';
 import './catalogue.css';
 import { ArtworkCard } from './ArtworkCard';
 import { CatalogueToolbar } from './CatalogueToolbar';
@@ -24,9 +25,11 @@ export function CataloguePage() {
             <Link to="/saved" className="dz-back" style={{ padding: '6px 13px' }}>
               Saved
             </Link>
-            <Link to="/auctions" className="dz-back" style={{ padding: '6px 13px' }}>
-              Auctions
-            </Link>
+            {features.auctions && (
+              <Link to="/auctions" className="dz-back" style={{ padding: '6px 13px' }}>
+                Auctions
+              </Link>
+            )}
             <Link to="/artists" className="dz-back" style={{ padding: '6px 13px' }}>
               Artists
             </Link>

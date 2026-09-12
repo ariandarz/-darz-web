@@ -288,3 +288,38 @@ html.dz-bw .act-box {
 .dz-cf .btn {
   margin-top: 18px;
 }
+
+/* ---- v0.1 · the "Inquiry sent" state of the primary action ------------- */
+.act-primary.dz-inq-sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-decoration: none;
+  text-align: center;
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--hair);
+}
+.act-primary.dz-inq-sent .dz-inq-l {
+  font-size: 15px;
+}
+.act-primary.dz-inq-sent .dz-inq-s {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink3);
+  letter-spacing: 0.01em;
+}
+html.dz-bw .act-primary.dz-inq-sent {
+  background: var(--card);
+  color: var(--ink);
+}
+.dz-offerfield textarea.dz-field {
+  width: 100%;
+  min-height: 108px;
+  resize: vertical;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 0;
+}

@@ -1,7 +1,11 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-10 (Phase 8 step 4 in flight — final step) ·
-**Current focus:** **Phase 8 (auctions) — step 4 of 4 (final).** Steps 1–3 merged both sides.
+**Last updated:** 2026-09-11 (v0.1 launch scope) ·
+**Current focus:** **v0.1 — the launch scope** (`docs/V0_1_SCOPE.md`): Market → Records → Chat →
+Profile → Settings, one contact CTA (Send Inquiry), everything else preserved behind
+`src/features/shell/features.ts`. Branch `claude/darz-market-v0-1-hpy1xy`. Phase 9's Profile / Chat /
+Settings and Phase 5's reply thread + idempotency key shipped inside it (backend Phase 19.3 landed).
+Previously: **Phase 8 (auctions) — step 4 of 4 (final).** Steps 1–3 merged both sides.
 Step 4 (results archive): backend `phase-11.4-auctions-records` PR open; frontend
 `phase-8-auctions-records` PR open — both awaiting owner merge. On merge, **Phase 8 is done**
 (the admin Records-desk widening carries over to frontend Phase 11 — see
@@ -204,12 +208,14 @@ or the reply UI against the current API.**
 - [ ] Collector's own request list/detail (`GET/POST /api/crm/requests/`) — endpoint ready
 - [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
       (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
-- [ ] **Reply-thread chat UI** `[!]` blocked on backend Phase 19 — two-way `RequestMessage` thread,
-      polling (~30-60s + on focus), unread badges; also the unified "Chat with Darz" surface. Faithful
-      port of the old `request_thread` (v754+); do NOT build against the current `RequestEvent` (that's
-      an internal admin status log, not a chat).
-- [ ] **Send `client_req_id` on request/offer POST** `[!]` blocked on backend Phase 19 — idempotency
-      key so a retry/double-tap doesn't duplicate; handle the already-landed (409/200) response.
+- [x] **Reply-thread chat UI** — shipped in v0.1 (2026-09-11) over backend Phase 19.3
+      (`GET/POST /api/crm/requests/{id}/messages/` + `mark-seen`): `ThreadController`, `ThreadPage`,
+      polling + on focus, unread from `unread_count`. See Phase 9.
+- [x] **Send `client_req_id` on request/offer POST** — shipped in v0.1: `RequestController` mints one
+      key per action, re-sends it on a retry, drops it on success; `CrmService.createRequest` returns
+      `{row, replayed}` (201 vs 200) via `ApiClient.sendEnveloped`.
+- [x] **Send Inquiry** (v0.1's one contact CTA) — `InquiryAction` + `InquirySheet`; `information`
+      kind with the message in `detail`; duplicate guard shows the open inquiry instead of a second Send.
 - [ ] **Offer UI respects the enforced floor** `[!]` blocked on backend Phase 19 — surface the
       server's floor rejection; don't rely on client-side validation alone.
 
@@ -305,12 +311,19 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       `docs/PHASE_8_API_GAPS.md` (G-P8-1); the admin Records desk is deferred to Phase 11**
       (`docs/PHASE_8_PLAN.md` § Deferred).
 
-## Phase 9 — Collector: profile, questionnaire, chat, settings/membership
+## Phase 9 — Collector: profile, questionnaire, chat, settings/membership `[~]` v0.1 (2026-09-11)
 
-- [ ] Profile view/edit (partially supported today via `Collector.preferences` JSON — confirm real
-      field mapping against the old questionnaire before building)
-- [ ] "Chat with Darz" — maps to `crm.Request(kind=message)` unless a distinct channel is decided
-- [ ] Settings (language/currency/layout)
+- [x] Profile — `/profile` (`ProfilePage`, port of `profileView` :9802): Overview · Market · Account
+      anchors (Auctions behind `features.profileAuctions`); saved works, requests & activity with
+      filter chips, account details. **Read-only**: no profile-update / password endpoint exists.
+- [x] "Chat with Darz" — `/chat` + `/chat/:id` (`ChatPage`, `ThreadPage`): the general conversation
+      is one `Request(kind=message)` created with a stable `client_req_id`; artwork inquiries are
+      `Request(kind=information)` threads. `ConversationsController` (boot + 45s poll + focus) and
+      `ThreadController` (30s poll, mark-seen). AI chat stays off (`features.aiChat`).
+- [x] Settings — `/settings` (`SettingsPage`, port of `settingsView` :9827): profile row, Appearance
+      (Paper/Black), account links, legal, about, Leave the Room. Notifications / membership / PWA
+      rows behind flags.
+- [ ] Questionnaire `[!]` backend Phase 25 (hidden, `features.questionnaire`)
 - [ ] Membership display/redemption (backend Phase 13 merged — ready)
 - [ ] PWA install + push opt-in (backend Phase 13 merged — VAPID/web-push ready)
 
