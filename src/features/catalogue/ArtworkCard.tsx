@@ -52,12 +52,7 @@ export function ArtworkCard({ artwork }: { artwork: Artwork }) {
           ) : null}
         </div>
       </Link>
-      <SaveButton
-        artworkId={artwork.id}
-        title={artwork.title}
-        variant="icon"
-        className="card-save"
-      />
+      <SaveButton artwork={artwork} variant="icon" className="card-save" />
     </div>
   );
 }

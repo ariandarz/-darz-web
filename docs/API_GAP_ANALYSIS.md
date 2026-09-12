@@ -1,5 +1,9 @@
 # API gap analysis — old app vs. backend V1
 
+> **2026-09-11:** the live status of every gap here (closed vs. still open, and exactly where the
+> frontend uses each one) is now tracked in `docs/API_INTEGRATION_GAPS.md`. This doc stays as the
+> historical record of the original analysis and reasoning.
+
 **Date:** 2026-09-04 · **Phase:** 3 · **Status:** decided — see "Decisions" below.
 
 ## Decisions (owner, 2026-09-04)

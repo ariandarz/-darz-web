@@ -4,15 +4,19 @@
  * title/subtitle, spec rows, one quiet price moment, description, and the
  * `.actions` block (app.html:503-508).
  *
- * `.actions` now carries the full collector action set: the `.act-primary`
- * (Buy now, or "Request price" on a price-on-request work) over the `.act-row`
- * of 24h hold / Request viewing / Make an offer (`ActionButtons`, ported from
- * app.html:9236-9243), with the Save control beneath it.
+ * `.actions` carries the collector action set. In v0.1 that is ONE primary,
+ * "Send Inquiry" (`InquiryAction`), with the Save control beneath it; the
+ * full set — the `.act-primary` (Buy now, or "Request price" on a
+ * price-on-request work) over the `.act-row` of 24h hold / Request viewing /
+ * Make an offer (`ActionButtons`, ported from app.html:9236-9243) — stays in
+ * the codebase behind `features.commerceActions`.
  */
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import { ActionButtons } from '../requests/ActionButtons';
+import { InquiryAction } from '../requests/InquiryAction';
 import { SaveButton } from '../saved/SaveButton';
+import { features } from '../shell/features';
 import './catalogue.css';
 import { availabilityClass, availabilityLabel, formatMoney, primaryImage } from './format';
 import { useResource } from './useCatalogue';
@@ -97,11 +101,17 @@ export function ArtworkDetailPage() {
           <div className="tick" />
         </div>
 
-        <ActionButtons artwork={artwork} />
+        {/* v0.1: the one contact CTA is Send Inquiry. The commerce set (Buy
+            now / 24h hold / Request viewing / Make an offer / Request price)
+            is preserved behind `features.commerceActions`. */}
+        {features.sendInquiry && <InquiryAction artwork={artwork} />}
+        {features.commerceActions && <ActionButtons artwork={artwork} />}
 
-        <div className="actions">
-          <SaveButton artworkId={artwork.id} title={artwork.title} variant="action" />
-        </div>
+        {features.save && (
+          <div className="actions">
+            <SaveButton artwork={artwork} variant="action" />
+          </div>
+        )}
 
         {artwork.public_description && (
           <>

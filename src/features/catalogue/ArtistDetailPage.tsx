@@ -1,12 +1,13 @@
 /**
  * ArtistDetailPage — the artist's bio + their available works, faithful to
  * the "Available works" section of app.html's `artistView()`. The old page
- * also shows auction market metrics and a full records archive; those need
- * auction data the backend doesn't expose yet and are intentionally left out
- * (see docs/API_GAP_ANALYSIS.md, G9 partial).
+ * also shows auction market metrics and a full records archive; in v0.1
+ * those live on the Records tab (`/records/artist/:id`) and this page links
+ * to them.
  */
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
+import { features } from '../shell/features';
 import { ArtworkCard } from './ArtworkCard';
 import './catalogue.css';
 import { useCatalogue, useResource } from './useCatalogue';
@@ -59,6 +60,16 @@ export function ArtistDetailPage() {
           <p className="about" style={{ marginTop: 14 }}>
             {artist.bio}
           </p>
+        )}
+        {/* v0.1: Artist → Records → Insights. The old artist page carried the
+            records + market metrics inline (app.html:5341-5381); here they
+            live on the Records tab, one tap away. */}
+        {features.records && (
+          <div style={{ marginTop: 16 }}>
+            <Link to={`/records/artist/${artist.id}`} className="dz-back">
+              Auction records &amp; insights
+            </Link>
+          </div>
         )}
 
         <p className="about-l" style={{ marginTop: 26 }}>

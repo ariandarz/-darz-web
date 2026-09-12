@@ -52,6 +52,40 @@
 .ad-toolbar select:focus {
   border-color: var(--ink);
 }
+.ad-archived-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+/* unread-reply badge next to a request's status (G-F1-6) — same pill
+   treatment as .ad-chip, sized down for an inline count. */
+.ad-unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 20px;
+  background: var(--ink);
+  color: var(--card);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.ad-archived-chip {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
 
 .ad-card {
   background: var(--card);
@@ -164,4 +198,11 @@
   font-family: var(--font-mono);
   font-size: 10.5px;
   color: var(--ink3);
+}
+
+/* v0.1 — an unseen collector message on the request (the team's inbox signal) */
+.ad-chip.ad-new {
+  margin-left: 6px;
+  background: #e8005c;
+  color: #fff;
 }

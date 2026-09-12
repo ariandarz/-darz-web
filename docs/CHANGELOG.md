@@ -5,6 +5,37 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-11 — v0.1 launch scope (branch `claude/darz-market-v0-1-hpy1xy`)
+
+- **Feature controls** — `src/features/shell/features.ts` (`VITE_FEATURE_SET`): v0.1 shows Market ·
+  Records · Chat · Profile · Settings and Send Inquiry; auctions, bidding, offers, holds, viewings,
+  the questionnaire, AI chat and stories stay in the codebase, hidden; hidden routes redirect.
+- **App shell + nav** — `AppShell` with the old `<nav id="nav">` (bottom bar / desktop top bar),
+  `LayoutController` (the `html.dz-desktop` switch at 900px), desktop two-column artwork detail.
+- **Inquiry loop** — `InquiryAction` / `InquirySheet`; `RequestController` idempotency keys;
+  `ConversationsController` + `ThreadController`; `/chat`, `/chat/:id`; admin feed shows names,
+  the message and a `New` chip.
+- **Profile** (`/profile`) and **Settings** (`/settings`) — Phase 9's first cut, read-only account.
+- **Records** — `RecordsArchiveController` (five houses), Cards / List, artist page with
+  evidence-gated insights (`insights.ts`, tested), full record detail; artist page links to it.
+- **Images** — one fit-not-crop rule on every artwork image (`catalogue.css` `.card .img img`).
+- Schema regenerated from backend Phase 19.3; 17 test files / 98 tests. Details and owner flags:
+  `docs/V0_1_SCOPE.md`.
+
+## 2026-09-11 — API integration: wire Saved/Requests/Admin to the merged backend gaps
+
+New `docs/API_INTEGRATION_GAPS.md` — the live map of what four merged `darzmarket-api` PRs now
+serve and where this frontend uses each one; supersedes `API_GAP_ANALYSIS.md`/
+`FLOW_1_API_GAPS.md`/`PHASE_6_API_GAPS.md`/`PHASE_8_API_GAPS.md` as the current reference (each
+kept as historical record, pointer added). `SavedController` rewritten around `artwork.is_saved`
+(no more full-list walk); `SavedItemsPage` is a real paginated list (`SavedListController`).
+`ActionButtons` filters by `artwork.allowed_actions`; `RequestController` sends `client_req_id`.
+`AdminRequestsPage` shows real collector/artwork names, a live per-kind status vocabulary, and
+per-row `allowed_transitions`. `OptionsMap` widened for the new nested/dynamic option shapes.
+`schema.d.ts` regenerated. 82/82 tests green (rewrote `SavedController.test.ts`,
+`RequestController.test.ts`'s idempotency assertions), typecheck + build clean, verified live
+against the local backend (screenshots + network trace).
+
 ## 2026-09-10 — Phase 8 step 4: auctions — the external auction-house Records archive
 
 Backend `darzmarket-api` `phase-11.4` adds a read-only collector view of `AuctionRecord`:

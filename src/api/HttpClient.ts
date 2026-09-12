@@ -34,6 +34,16 @@ interface SuccessEnvelope<T> {
   timestamp: string;
 }
 
+/** A successful response with the envelope's `message` and the HTTP status
+ * kept — for the one place that needs them: an idempotent create, where the
+ * backend answers 201 for a new row and 200 for a replay of one it already
+ * holds (`POST /api/crm/requests/` with `client_req_id`). */
+export interface Enveloped<T> {
+  data: T;
+  message: string;
+  status: number;
+}
+
 export class HttpClient {
   protected readonly baseUrl: string;
 
@@ -81,6 +91,15 @@ export class HttpClient {
     opts: RequestOptions,
     attempt = 0,
   ): Promise<T> {
+    return (await this.requestEnveloped<T>(method, path, opts, attempt)).data;
+  }
+
+  protected async requestEnveloped<T>(
+    method: string,
+    path: string,
+    opts: RequestOptions,
+    attempt = 0,
+  ): Promise<Enveloped<T>> {
     const url = this.baseUrl + path + this.queryString(opts.query);
 
     const headers = new Headers({ Accept: 'application/json', ...opts.headers });
@@ -100,19 +119,21 @@ export class HttpClient {
     }
 
     if (await this.onResponse(response, attempt)) {
-      return this.request<T>(method, path, opts, attempt + 1);
+      return this.requestEnveloped<T>(method, path, opts, attempt + 1);
     }
 
     return this.unwrap<T>(response);
   }
 
-  private async unwrap<T>(response: Response): Promise<T> {
-    if (response.status === 204) return undefined as T;
+  private async unwrap<T>(response: Response): Promise<Enveloped<T>> {
+    if (response.status === 204) return { data: undefined as T, message: '', status: 204 };
 
     const raw = await response.text();
     const body: unknown = raw ? safeJsonParse(raw) : null;
 
-    if (response.ok && isSuccessEnvelope<T>(body)) return body.data;
+    if (response.ok && isSuccessEnvelope<T>(body)) {
+      return { data: body.data, message: body.message ?? '', status: response.status };
+    }
 
     const { code, message } = readError(body);
     switch (response.status) {

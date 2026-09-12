@@ -14,6 +14,16 @@
   font-size: 9.5px;
   color: var(--accent);
 }
+/* app.html:220-222 */
+.hero.compact {
+  padding: 14px 20px 12px;
+}
+.hero.compact h1 {
+  font-size: calc(var(--f-hero) * 0.68);
+}
+.hero.compact p {
+  display: none;
+}
 .hero h1 {
   font-size: var(--f-hero);
   font-family: var(--font-head);
@@ -152,16 +162,38 @@
 }
 .card .img {
   aspect-ratio: 4 / 5;
-  background: #0a0a0a;
+  background: var(--hair2);
   position: relative;
   overflow: hidden;
   display: block;
 }
+/* v826 fit-not-crop (app.html:1585, :1599-1604; mirrored by the universal
+   card `packages/ui/artwork-card.js`): the image is absolutely fitted to the
+   definite 4/5 box and `object-fit: contain` letterboxes the WHOLE work; the
+   mat + the tall-work cap come from PADDING (a %-padding resolves against
+   width in every engine, a %-height does not on iOS), with more vertical than
+   horizontal padding so tall works shrink to ~76% of the card height while
+   landscape/square works are width-bound. drop-shadow so the soft frame hugs
+   the artwork, not the box. Never crops — the one artwork-display rule this
+   app uses on every surface. */
 .card .img img {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  padding: 15% 8%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 4px 12px rgba(10, 10, 10, 0.26));
   display: block;
+}
+.card .img .cardstat,
+.card-wrap .card-save {
+  z-index: 3;
 }
 .card .img .ph {
   position: absolute;
