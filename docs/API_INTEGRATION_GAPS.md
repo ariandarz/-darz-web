@@ -196,13 +196,20 @@ image-led cards + record detail.
   field or endpoint for, left out rather than faked (each is a code comment at the call site too):
   - **Insights & Stories** nav tab — no editorial model (`TASKLIST.md` Phase 12+). The **Chat** pill
     is superseded by v0.1's Chat nav tab (`features/chat`, merged 2026-09-12).
-  - **Collector questionnaire** card on Profile → Overview (`qbQuestions`) — no backend model.
+  - **Collector questionnaire** card on Profile → Overview (`qbQuestions`) — **stale, corrected
+    2026-09-17: backend Phase 25 merged**, `GET/POST /api/recommendations/questionnaire/` exists.
+    Not a gap any more — build it.
   - **Access key** card on Profile → Account — `GET /api/auth/me/` does not return the key.
   - **Account details** are read-only — no profile-edit endpoint (Phase 9); phone / city / preferred
     language are not on `Me`.
-  - **Chat on WhatsApp** (detail, lot, profile) — needs the gallery's number (`theme.whatsapp`); no
-    theme/settings endpoint. Same for the owner-editable copy the app ships as defaults
-    (`shipNote`, hero copy, About text, social links) and the Terms / Privacy legal text.
+  - **Chat on WhatsApp** (detail, lot, profile) — needs the gallery's number (`theme.whatsapp`) —
+    **stale, corrected 2026-09-17: backend Phase 32 merged**, `GET /api/app-theme/` (public,
+    `AllowAny`) serves a freeform theme JSON object the Market App can read pre-login; store the
+    WhatsApp number under a `theme.whatsapp` key and read it from there. Same fix covers the
+    owner-editable copy the app ships as defaults (`shipNote`, hero copy, About text, social links)
+    and the Terms / Privacy legal text — all can live under `theme.*` keys now. See `darzmarket-api`
+    `docs/TASKLIST.md` Phase 32 / `docs/TASKLIST.md` (this repo) Phase 11b for the admin desk that
+    sets these values.
   - **Auction poster** — `Auction` has no cover image; the first lot's artwork stands in (one
     `per_page=1` lots read per card). A `cover_image_url` on `Auction` would remove that read.
   - **Push to this device** — the VAPID public key is not published by the API.
