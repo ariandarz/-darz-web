@@ -13,6 +13,13 @@ under "Design pass" below. **Open PRs: none.** Merged remote branches, safe to d
 `phase-19-crm-saved-wire`, `phase-19-format-fixes`, `phase-8-auctions-browse`,
 `phase-8-auctions-bidding`, `phase-8-auctions-notifications`, `phase-8-auctions-records`.
 
+**Backend cross-check (2026-09-17, from `darzmarket-api`):** Phases 27-32 (the full old-panel admin
+audit — Collectors, Collector Activity, Dashboard, Memberships, Team, App Design) and Phase 23
+(Projects/Data Health/Import) all merged — see the new **Phase 11b** section below, none of it has
+frontend UI yet. Also corrected two stale `[!]` blockers this pass: backend Phases 24 (curated-set
+catalogue) and 25 (questionnaire) were already merged when this file last said blocked — both are
+real, buildable now.
+
 **What next (2026-09-17, recommended order):**
 
 1. Owner decision on the two unlinked entry points (artist index `/artists`, `/auctions/notifications`)
@@ -406,9 +413,13 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [x] Settings — `/settings` (`SettingsPage`, port of `settingsView` :9827): profile row, Appearance
       (Paper/Black), account links, legal, about, Leave the Room. Notifications / membership / PWA
       rows behind flags.
-- [ ] Questionnaire `[!]` backend Phase 25 (hidden, `features.questionnaire`)
+- [ ] Questionnaire — **unblocked 2026-09-17**: backend Phase 25 merged
+      (`GET/POST /api/recommendations/questionnaire/`); the `[!]` blocker in the Phases 12+ section
+      below is stale. Still hidden behind `features.questionnaire` pending this UI.
 - [ ] Membership display/redemption (backend Phase 13 merged — ready)
-- [ ] PWA install + push opt-in (backend Phase 13 merged — VAPID/web-push ready)
+- [ ] PWA install + push opt-in `[!]` VAPID public key is still not published by the API (checked
+      2026-09-17 — `apps.notifications` has no `GET` for it); push delivery itself is ready
+      (Phase 13), but the frontend can't complete the browser subscribe handshake without the key.
 
 ## Phase 10 — Gallery Update Portal (frontend) ✅ backend ready (Phase 12 A+B merged)
 
@@ -426,22 +437,90 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [ ] Accounting desk UI (4 ledger books + Private Deals) — real Django permission scope replaces
       the old passkey hack; don't rebuild the passkey pattern in the frontend
 
+## Phase 11b — Admin: Owner Panel (Collectors, Memberships, Team, Dashboard, App Design, Activity, Projects, Data Health, Import) ✅ backend ready 2026-09-17
+
+New since the last `TASKLIST.md` pass — the client asked to prioritize finishing "the panel" (the old
+`darz-studio.html` admin app). Backend audited every old panel tab against existing `admin/*` routes
+(`darzmarket-api` `docs/TASKLIST.md` Phases 27-32 + 23) and built every gap found; **none of it has
+any frontend UI yet.** No API gaps were recorded for these — each is a plain admin CRUD/read desk,
+faithfully scoped, real HTTP-verified. Old-panel tab names in parens for continuity with the design
+package/faithful-port research.
+
+- [ ] **Collectors desk** (old panel "Collectors" tab) — list/search/filter (tier, access_status) +
+      create/edit/soft-delete + issue/revoke access keys (plaintext key shown once on issue, never
+      re-fetchable — the UI must warn "copy this now").
+      `GET/POST /api/auth/admin/collectors/`, `GET/PATCH/DELETE .../{id}/`,
+      `GET/POST .../{id}/access-keys/`, `POST /api/auth/admin/access-keys/{id}/revoke/`.
+- [ ] **Collector Activity feed** (old panel "Collector Activity" tab) — read-only, filter by
+      collector/kind/artwork. `GET /api/crm/admin/activity/`.
+- [ ] **Dashboard** (old panel "Dashboard" tab, scoped to V1 essentials — see the backend doc for
+      what didn't port: perf/analytics charts, cloud-sync banners) — requests-needing-attention per
+      kind, today's activity, collector/catalogue/auction totals, pending exhibition reviews.
+      `GET /api/dashboard/admin/summary/`.
+- [ ] **Memberships desk** (old panel "Memberships" tab, owner-only) — issue (auto-generates a
+      `DZ-<plan>-<6 chars>` code or accepts a custom one)/list/edit/renew (+1 month)/remove. Records
+      a WhatsApp contact + private notes for manual outreach — **no payment processing anywhere**,
+      same as the old desk's own on-screen copy. `GET/POST /api/auth/admin/membership-codes/`,
+      `GET/PATCH/DELETE .../{id}/`, `POST .../{id}/renew/`.
+- [ ] **Team logins desk** (old panel "👥 Team logins", owner-only) — issue (generates a password
+      shown once)/list/edit (name/email/role/is_active)/remove. Cannot deactivate/remove your own
+      account (the API 400s it — surface that as a disabled control, not just an error toast).
+      `GET/POST /api/auth/admin/team-users/`, `GET/PATCH/DELETE .../{id}/`.
+- [ ] **App Design** (old panel "App Design" tab) — publish the live theme (freeform JSON — colors,
+      layout, dark mode, stats strip, social links, per-page buttons; no fixed schema, the frontend
+      defines what keys it reads), reset to factory defaults, save/list/activate/delete named
+      version checkpoints. The **public** read (`GET /api/app-theme/`, `AllowAny`) is what the
+      Market App itself should read for its live design — **this closes several "no theme/settings
+      endpoint" gaps already recorded in `docs/API_INTEGRATION_GAPS.md`'s "Still open" section**:
+      the WhatsApp chat number, hero copy, About text, social links, `shipNote`, and Terms/Privacy
+      text can all now live under `theme.*` keys instead of being hardcoded. Update that doc's
+      "Still open" bullet once this lands.
+      `GET/PUT /api/admin/app-theme/`, `POST .../reset/`, `GET/POST .../versions/`,
+      `POST .../versions/{id}/activate/`, `DELETE .../versions/{id}/`.
+- [ ] **Projects desk** (old panel "Projects" — Dashboard/List/Pipeline/Packages/Proposal/Calculator/
+      Partners/Reports sub-tabs) — full pipeline CRUD: create/edit/archive a project, drag/move
+      through 17 stages (auto-derives the status label — don't compute it client-side), partner
+      orgs, service catalog, package templates, checklist templates, file attachments, the
+      dashboard priority-queue tiles, the deliverables-roll-up report. **Not built on the backend**
+      (flagged, not silently dropped): the Proposal Builder's document composition — defer that
+      sub-tab until it's scoped (would reuse `documents.Document` like the gallery portal's
+      exhibition proposals). Endpoints under `/api/projects/admin/` — see `darzmarket-api`
+      `docs/TASKLIST.md` Phase 23 for the full list (projects/partners/service-catalog/packages/
+      checklists, each list+detail; projects also get `/stage/`, `/dashboard/`, `/reports/`,
+      `/attachments/`).
+- [ ] **Data Health** (old panel "Data Health" tab, scoped down — see the backend doc: most of the
+      old desk's checks diagnosed the old app's own client-sync architecture, which doesn't exist
+      here) — three real checks: duplicate images, incomplete records, published-but-hidden works.
+      `GET /api/catalog/admin/data-health/`.
+- [ ] **Import desk** (old panel "Import" tab) — CSV/PDF/paste/image parsing **stays frontend**
+      (client-side, e.g. a CSV-column-mapper and pdf.js page extraction, same as the old app); the
+      backend only stages the parsed rows for review/edit and confirms them into real artworks
+      (reusing the existing artwork-create validation — a row that fails is flagged with its error,
+      never silently dropped, and doesn't block the rest of the batch).
+      `GET/POST /api/catalog/admin/import/batches/`, `GET .../{id}/`, `POST .../{id}/confirm/`,
+      `POST .../{id}/discard/`, `PATCH .../{batch_id}/rows/{id}/`, `POST .../rows/{id}/reject/`.
+
 ## Phases 12+ — Parity-gap surfaces (match backend Phases 20-26) `[!]` each blocked on its backend phase
 
 Old-app surfaces the current backend has no model for (from `DarzStudio/docs/engineering/BACKEND_API_REPO_STATUS.md`;
 owner decision 2026-09-04: scope all seven now). Faithful-port rule applies — read the old app's real
 surface before building each. Ordered by V1 relevance:
 
-- [ ] **Curated-set catalogue (`in_app`)** `[!]` backend Phase 24 — the collector list must show the
-      curated `in_app` set, not a raw published feed; consume the catalogue change-stamp/head-check.
+- [ ] **Curated-set catalogue (`selected`/`private_selection`)** — **unblocked 2026-09-17**: backend
+      Phase 24 merged (`GET /api/catalog/artworks/selections/`, grant-gated, admin
+      `admin/artworks/{id}/selection-grants/`). Old `[!]` blocker on this line is stale.
       **This unblocks the "Partial" half of frontend Phase 4 (flow 2).**
-- [ ] **Collector questionnaire** `[!]` backend Phase 25 — capture + display; feeds recommendations
-      (ties into Phase 9 profile). Don't build until the backend stores answers.
-- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface)
-- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`)
-- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`)
-- [ ] **Projects / Data Health / Import desks** `[!]` backend Phase 23 (admin tooling)
-- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority)
+- [ ] **Collector questionnaire** — **unblocked 2026-09-17**: backend Phase 25 merged (same endpoint
+      as Phase 9's Questionnaire item above — build once, wire both).
+- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — still
+      not built.
+- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — still
+      not built.
+- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — still not built.
+- [ ] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
+      full faithful port. See the new "Phase 11b" section below for the real endpoint list — this
+      bullet stays only as the Phases-12+ cross-reference.
+- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
 
 ## Phase 13 — Testing
 
