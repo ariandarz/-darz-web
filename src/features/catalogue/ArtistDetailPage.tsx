@@ -7,7 +7,10 @@
  * (charcoal) · "A Darz specialist will respond within two days."
  *
  * The enquiry files a `kind=information` request with no artwork (the API
- * allows `artwork` to be null) carrying the artist in `detail`. The auction
+ * allows `artwork` to be null) through `RequestController` — the old
+ * `DZ.artistEnquireSubmit` guard, key and "Enquiry received" confirmation
+ * (app.html:11033-11044); the artist rides in the message text because the
+ * backend keeps only `message` on an information request (G-P5-11). The auction
  * records and market metrics live on the Records tab in v0.1 (the page links
  * to `/records/artist/:id`); the owner-authored profile block (`dz-ap-*`) has
  * no backend field. Flagged, not faked.
@@ -19,6 +22,8 @@ import type { Artwork } from '../../api/types';
 import { Toast } from '../../components';
 import { features } from '../shell/features';
 import { browseSet } from './BrowseSet';
+import { RequestController } from '../requests/RequestController';
+import { useRequests } from '../requests/useRequests';
 import '../requests/requests.css'; // `.dz-sheetcta`
 import './catalogue.css';
 import { formatMoney, primaryImage } from './format';
@@ -79,9 +84,9 @@ function ArtistWorkCard({ w }: { w: Artwork }) {
 
 export function ArtistDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { catalog, crm } = useApi();
+  const { catalog } = useApi();
   const navigate = useNavigate();
-  const [sending, setSending] = useState(false);
+  const { pending, controller: requests } = useRequests();
   const [toast, setToast] = useState<string | null>(null);
 
   const {
@@ -103,24 +108,13 @@ export function ArtistDetailPage() {
   if (status === 'error') return <p className="dz-state err">{error}</p>;
   if (!artist) return null;
 
+  // app.html:11033-11044 — one guarded, idempotent `information` request;
+  // the controller opens the "Enquiry received" confirmation sheet itself.
+  const sending = pending.has(RequestController.artistKey(artist.id));
   const enquire = async () => {
     if (sending) return;
-    setSending(true);
-    try {
-      await crm.createRequest({
-        kind: 'information',
-        detail: {
-          artist: artist.id,
-          message: `Please let me know about available works by ${artist.display_name}.`,
-        },
-        client_req_id: `artist:${artist.id}:${Date.now()}`,
-      });
-      setToast('Request sent.');
-    } catch (e) {
-      setToast((e as Error).message);
-    } finally {
-      setSending(false);
-    }
+    const ok = await requests.enquireAboutArtist(artist);
+    if (!ok) setToast(requests.getSnapshot().error ?? 'Something went wrong.');
   };
 
   return (

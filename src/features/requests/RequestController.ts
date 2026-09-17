@@ -1,44 +1,60 @@
 /**
- * RequestController — the collector's outbound actions on an artwork:
- * Buy now, 24h hold, Request viewing, Make an offer.
+ * RequestController — the collector's outbound requests: Buy now, 48h hold,
+ * Request viewing, Make an offer, Request Price & Availability, Send Inquiry,
+ * and the artist page's "Enquire about works by …".
  *
- * Ports the behaviour of `app.html`'s `DZ.act()` (:10462) and `DZ.offer()` /
- * `DZ.submit()` / `DZ._placeOffer()` (:11074-11106), but **only** the
- * behaviour. The old implementation wrote straight to Supabase (a
+ * Ports the behaviour of `app.html`'s `DZ.act()` (:10462), `DZ.offer()` /
+ * `DZ.submit()` / `DZ._placeOffer()` (:11074-11117), `DZ.reqPriceSubmit()`
+ * (:11049-11064) and `DZ.artistEnquireSubmit()` (:11033-11044), but **only**
+ * the behaviour. The old implementation wrote straight to Supabase (a
  * `darz_place_offer` RPC with a project URL and anon key hardcoded in
  * `app.html` around :11103) — none of that is carried over. Every action here
  * goes through `POST /api/crm/requests/` on the new backend.
  *
  * Old action verb → new `RequestKindEnum`:
- *   buy   → purchase      visit → viewing
- *   hold  → hold          offer → offer
- * (`price` and `information` are wired for the "Request Price" / "Ask about"
- * entry points the old app shows on price-on-request works.)
+ *   buy   → purchase      visit → viewing       price → price
+ *   hold  → hold          offer → offer         inquiry · artist → information
  *
- * Duplicate-submit guard: the old app used `dzGuard('act:'+id+':'+kind)` and
- * `dzGuard('offer:'+id+':'+raw)` (v576, "double-tap / reload guard"). Same idea
- * here, keyed the same way — one in-flight POST per (artwork, kind[, amount]),
- * so a double-tap or a key-repeat cannot file two requests.
+ * Duplicate-submit guard: the old app used `dzGuard('act:'+id+':'+kind)`,
+ * `dzGuard('offer:'+id+':'+raw)`, `dzGuard('inquire:'+id)` and
+ * `dzGuard('artistinq:'+name)` (v576, "double-tap / reload guard"). Same idea
+ * here, keyed the same way — one in-flight POST per key, so a double-tap or a
+ * key-repeat cannot file two requests — plus one `client_req_id` per key that
+ * survives a failed attempt, so a retry replays the row instead of filing a
+ * second one (`docs/API_INTEGRATION_GAPS.md` G-F1-5).
  */
 import type { CrmService } from '../../api/services';
-import type { Artwork, CollectorRequest, RequestDetail, RequestKind } from '../../api/types';
+import type {
+  Artwork,
+  CollectorRequest,
+  RequestDetail,
+  RequestKind,
+  ViewingMode,
+} from '../../api/types';
 import { Observable } from '../shared/Observable';
 
 /** The action verbs the artwork detail renders, as `app.html` names them.
  * `inquiry` is the v0.1 "Send Inquiry" — the one collector→Darz contact CTA
- * (kind `information`, with the collector's message in `detail`). */
+ * (kind `information`, with the collector's message in `detail`). `artist`
+ * is the artist page's enquiry (also `information`, with no artwork). */
 export type ActionVerb =
-  'buy' | 'hold' | 'visit' | 'offer' | 'price' | 'information' | 'inquiry';
+  'buy' | 'hold' | 'visit' | 'offer' | 'price' | 'information' | 'inquiry' | 'artist';
 
-/** app.html:9236 — the default secondary actions and their exact labels. */
+/** app.html:9229 / :9242 — the default action labels. */
 export const ACTION_LABEL: Record<ActionVerb, string> = {
   buy: 'Buy now',
-  hold: '24h hold',
+  // app.html:9229 says "24h hold"; the backend keeps a hold for 48 h
+  // (`Hold.DEFAULT_TTL`, apps/crm/models.py:155). Owner decision D2
+  // (2026-09-17, docs/PHASE_5_PLAN.md): the label follows the API.
+  hold: '48h hold',
   visit: 'Request viewing',
   offer: 'Make an offer',
-  price: 'Request price',
+  // app.html:9242 — `t.reqPriceLabel || 'Request Price & Availability'`, the
+  // one request entry point on a price-hidden work.
+  price: 'Request Price & Availability',
   information: 'Ask about this work',
   inquiry: 'Send Inquiry',
+  artist: 'Enquire about works by',
 };
 
 /** Action verb → the backend's `RequestKindEnum` value. */
@@ -50,9 +66,12 @@ export const ACTION_KIND: Record<ActionVerb, RequestKind> = {
   price: 'price',
   information: 'information',
   inquiry: 'information',
+  artist: 'information',
 };
 
-/** app.html:10464-10468 — the confirmation copy, verbatim, per action. */
+/** The confirmation copy, verbatim, per action: app.html:10464-10468
+ * (`DZ.act`), :11101 (`_placeOffer`), :11064 (`reqPriceSubmit`), :11044
+ * (`artistEnquireSubmit`, `{artist}` filled in at call time). */
 export const CONFIRM_COPY: Record<ActionVerb, { title: string; message: string }> = {
   buy: {
     title: 'Request received',
@@ -69,15 +88,14 @@ export const CONFIRM_COPY: Record<ActionVerb, { title: string; message: string }
     message:
       'Your viewing request has been received. Darz will check the possibility and get back to you shortly.',
   },
-  // app.html:11101 — the offer confirmation is its own wording.
   offer: {
     title: 'Offer received',
     message: 'Thank you — your offer is in. Darz will review it and reply shortly.',
   },
   price: {
-    title: 'Request received',
+    title: 'Enquiry received',
     message:
-      'Thank you. Your request has been received. Darz will review it and get back to you shortly.',
+      'Thank you — your request is in. Darz will review price and availability and reply shortly.',
   },
   information: {
     title: 'Request received',
@@ -91,20 +109,34 @@ export const CONFIRM_COPY: Record<ActionVerb, { title: string; message: string }
     message:
       'Darz has received your inquiry about this work and will reply in your conversation.',
   },
+  artist: {
+    title: 'Enquiry received',
+    message:
+      'Thank you — your request is in. Darz will share available works by {artist} and reply shortly.',
+  },
 };
+
+/** The artist page's enquiry subject — no artwork, only who it is about. */
+export interface ArtistSubject {
+  id: string;
+  display_name: string;
+}
 
 export interface RequestConfirmation {
   verb: ActionVerb;
-  artworkId: string;
+  /** null for the artist enquiry, which is about no single work */
+  artworkId: string | null;
   title: string;
   message: string;
-  /** "Artist — Title", the line `dzActConfirm` shows under the heading */
+  /** "Artist — Title" (or the artist's name), the line `dzActConfirm` shows
+   * under the heading */
   work: string;
   at: number;
 }
 
 export interface RequestSnapshot {
-  /** guard keys with a POST in flight — `act:<id>:<verb>` / `offer:<id>:<amount>` */
+  /** guard keys with a POST in flight — `act:<id>:<verb>` / `offer:<id>:<amount>`
+   * / `artistinq:<artistId>` */
   pending: ReadonlySet<string>;
   /** the request the last successful action created (or replayed) */
   lastFiled: { key: string; request: CollectorRequest; replayed: boolean } | null;
@@ -115,6 +147,13 @@ export interface RequestSnapshot {
   /** every request this session filed, newest first — feeds the detail page's
    * "you already asked about this" state without a refetch */
   filed: CollectorRequest[];
+}
+
+/** What a request is about: the artwork (or none) and the line the
+ * confirmation shows for it. */
+interface Subject {
+  artworkId: string | null;
+  work: string;
 }
 
 const EMPTY: RequestSnapshot = {
@@ -162,32 +201,81 @@ export class RequestController extends Observable<RequestSnapshot> {
   static offerKey(artworkId: string, amount: number): string {
     return `offer:${artworkId}:${amount}`;
   }
+  /** app.html:11033 — `dzGuard('artistinq:'+name)`; keyed by id here. */
+  static artistKey(artistId: string): string {
+    return `artistinq:${artistId}`;
+  }
 
-  /** Buy now / 24h hold / Request viewing / Request price / Ask about. */
-  act(artwork: Artwork, verb: ActionVerb, detail?: RequestDetail): Promise<void> {
-    return this.file(RequestController.actKey(artwork.id, verb), artwork, verb, detail);
+  /** Buy now / 48h hold / Request viewing / Request price / Ask about.
+   * Resolves true once the backend confirmed the request (created, or
+   * replayed on the same `client_req_id`); false on a failure or a refused
+   * double-tap — the caller keeps its sheet open only in that case. */
+  act(artwork: Artwork, verb: ActionVerb, detail?: RequestDetail): Promise<boolean> {
+    return this.file(
+      RequestController.actKey(artwork.id, verb),
+      verb,
+      subjectOf(artwork),
+      detail,
+    );
   }
 
   /** v0.1 Send Inquiry: one `information` request carrying the collector's
-   * message, linked to the artwork. Resolves true when the backend confirmed
-   * it (created or replayed) — the caller shows success only then. */
-  async inquire(artwork: Artwork, message: string): Promise<boolean> {
+   * message, linked to the artwork. */
+  inquire(artwork: Artwork, message: string): Promise<boolean> {
     const text = message.trim();
-    if (!text) return false;
-    await this.file(RequestController.actKey(artwork.id, 'inquiry'), artwork, 'inquiry', {
-      message: text,
-    });
-    const { lastFiled } = this.getSnapshot();
-    return lastFiled?.key === RequestController.actKey(artwork.id, 'inquiry');
+    if (!text) return Promise.resolve(false);
+    return this.file(
+      RequestController.actKey(artwork.id, 'inquiry'),
+      'inquiry',
+      subjectOf(artwork),
+      {
+        message: text,
+      },
+    );
   }
 
   /** Make an offer. `amount` is already validated by the caller (the sheet owns
    * the empty/floor messages so it can put them next to the field). */
-  offer(artwork: Artwork, amount: number, currency: string): Promise<void> {
-    return this.file(RequestController.offerKey(artwork.id, amount), artwork, 'offer', {
-      amount,
-      currency,
-    });
+  offer(artwork: Artwork, amount: number, currency: string): Promise<boolean> {
+    return this.file(
+      RequestController.offerKey(artwork.id, amount),
+      'offer',
+      subjectOf(artwork),
+      {
+        amount,
+        currency,
+      },
+    );
+  }
+
+  /** Request viewing — `preferred_time` (ISO-8601) and `mode`, both required
+   * by the backend's `ViewingDetailSerializer` (apps/crm/serializers.py:29-31). */
+  requestViewing(
+    artwork: Artwork,
+    preferredTime: string,
+    mode: ViewingMode,
+  ): Promise<boolean> {
+    return this.act(artwork, 'visit', { preferred_time: preferredTime, mode });
+  }
+
+  /** Request Price & Availability — the sheet's message (app.html:11049). */
+  requestPrice(artwork: Artwork, message: string): Promise<boolean> {
+    return this.act(artwork, 'price', { message: message.trim() });
+  }
+
+  /** app.html:11033-11044 — "Enquire about works by <artist>": one
+   * `information` request with no artwork. The backend keeps only `message`
+   * on an information request, so the artist rides in the message text
+   * (docs/PHASE_5_API_GAPS.md G-P5-11). */
+  enquireAboutArtist(artist: ArtistSubject): Promise<boolean> {
+    const copy = CONFIRM_COPY.artist;
+    return this.file(
+      RequestController.artistKey(artist.id),
+      'artist',
+      { artworkId: null, work: artist.display_name },
+      { message: `Please let me know about available works by ${artist.display_name}.` },
+      { title: copy.title, message: copy.message.replace('{artist}', artist.display_name) },
+    );
   }
 
   dismissConfirmation(): void {
@@ -199,38 +287,40 @@ export class RequestController extends Observable<RequestSnapshot> {
 
   private async file(
     key: string,
-    artwork: Artwork,
     verb: ActionVerb,
+    subject: Subject,
     detail?: RequestDetail,
-  ): Promise<void> {
+    copy: { title: string; message: string } = CONFIRM_COPY[verb],
+  ): Promise<boolean> {
     const { pending } = this.getSnapshot();
-    if (pending.has(key)) return; // the double-tap guard
+    if (pending.has(key)) return false; // the double-tap guard
     this.patch({ pending: withKey(pending, key), error: null });
 
     try {
       const { row, replayed } = await this.crm.createRequest({
         kind: ACTION_KIND[verb],
-        artwork: artwork.id,
+        artwork: subject.artworkId,
         ...(detail ? { detail } : {}),
         client_req_id: this.clientRequestId(key),
       });
       this.clientIds.delete(key);
-      const copy = CONFIRM_COPY[verb];
       const filed = this.getSnapshot().filed.filter((r) => r.id !== row.id);
       this.patch({
         filed: [row, ...filed],
         lastFiled: { key, request: row, replayed },
         confirmation: {
           verb,
-          artworkId: artwork.id,
+          artworkId: subject.artworkId,
           title: copy.title,
           message: copy.message,
-          work: workLine(artwork),
+          work: subject.work,
           at: Date.now(),
         },
       });
+      return true;
     } catch (err: unknown) {
       this.patch({ error: messageOf(err) });
+      return false;
     } finally {
       this.patch({ pending: withoutKey(this.getSnapshot().pending, key) });
     }
@@ -238,6 +328,10 @@ export class RequestController extends Observable<RequestSnapshot> {
 }
 
 // --- helpers ---------------------------------------------------------------
+
+function subjectOf(artwork: Artwork): Subject {
+  return { artworkId: artwork.id, work: workLine(artwork) };
+}
 
 /** A fresh idempotency key (≤ 64 chars, the backend's `client_req_id` limit). */
 function newClientId(): string {
@@ -262,6 +356,13 @@ export function workLine(artwork: Pick<Artwork, 'artist' | 'title'>): string {
   const artist = artwork.artist?.display_name ?? '';
   const title = artwork.title ?? '';
   return [artist, title].filter(Boolean).join(' — ');
+}
+
+/** app.html:11046 — the request-price sheet's work line adds the year:
+ * "Artist — Title, 2023". */
+export function workLineWithYear(artwork: Pick<Artwork, 'artist' | 'title' | 'year'>): string {
+  const line = workLine(artwork);
+  return artwork.year ? `${line}, ${artwork.year}` : line;
 }
 
 /** Calm and factual — never a stack trace (VOICE_AND_COPY.md). */

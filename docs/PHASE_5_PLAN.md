@@ -1,6 +1,7 @@
 # Phase 5 — Collector: requests + activity — implementation plan
 
-**Status:** PROPOSED — waiting for the owner's confirmation before Step 1 starts (2026-09-17) ·
+**Status:** CONFIRMED by the owner 2026-09-17 (D1-D11 answered — see § Resolved decisions; F1
+open) · Step 1 implemented 2026-09-17, PR open ·
 **Created:** 2026-09-17 · **Slicing proposed:** four frontend steps, no backend work — every API gap
 is documented and the UI is built around it (owner instruction, 2026-09-17: "if any gaps on the API
 side, focus only on the UI design and implement that, then update the API gaps document").
@@ -129,10 +130,14 @@ Found on 2026-09-17, to fix in this phase:
 
 | Step | Frontend branch (this repo, off `development`) | Scope |
 |---|---|---|
-| 1 | `phase-5-request-kinds` | every kind files a valid request: viewing sheet, price sheet, artist enquiry, fixes |
-| 2 | `phase-5-request-list` | status map + Profile › Market: acquisitions rail, list rows, chips, empty state |
-| 3 | `phase-5-request-detail` | request detail (status banner, notes, thread) for every kind, reply notice |
-| 4 | `phase-5-activity` | `ActivityLogger`: login · save · view · search |
+| 1 | `claude/zen-curie-n8ekum` (PR #22, with this plan) | every kind files a valid request: viewing sheet, price sheet, artist enquiry, fixes |
+| 2 | `claude/zen-curie-n8ekum`, restarted from `development` after step 1 merges | status map + Profile › Market: acquisitions rail, list rows, chips, empty state |
+| 3 | same, restarted after step 2 | request detail (status banner, notes, thread) for every kind, reply notice |
+| 4 | same, restarted after step 3 | `ActivityLogger`: login · save · view · search |
+
+All four steps ship from the session branch, one PR per step: the branch is restarted from
+`development` once the previous step's PR has merged (the `phase-5-*` names first proposed here are
+not used).
 
 ## Per-step procedure
 
@@ -160,29 +165,32 @@ Found on 2026-09-17, to fix in this phase:
 
 ---
 
-## Step 1 — Every request kind files correctly (`phase-5-request-kinds`)
+## Step 1 — Every request kind files correctly (`claude/zen-curie-n8ekum`, PR #22)
 
-**Status:** not started.
+**Status:** implemented 2026-09-17 — typecheck · lint (no new warnings) · 104 tests · format ·
+build clean; live verification recorded in the Progress log.
 
-- [ ] **Viewing sheet** (D1). `ViewingSheet` in the offer-sheet chrome (`.dz-offerwrap`, `app.html:11074`):
+- [x] **Viewing sheet** (D1). `ViewingSheet` in the offer-sheet chrome (`.dz-offerwrap`, `app.html:11074`):
       title **Request viewing** + chroma dash · `.si` work line · preferred date & time (native
       `datetime-local` styled as `.sheet input`) · mode `Segment` **In person · Virtual** (labels from
       the backend choices) · hint · `.dz-sheetcta` **Request viewing**. Files `kind=viewing`
       `{preferred_time, mode}`; confirmation unchanged ("Viewing request received" …, `:10465`).
-- [ ] **Request Price & Availability sheet** (D6). `PriceSheet` = the `InquirySheet` chrome with the
+- [x] **Request Price & Availability sheet** (D6). `PriceSheet` = the `InquirySheet` chrome with the
       old sheet's title, note, prefilled message, **Send enquiry**, foot line (`:11046-11048`); files
       `kind=price` `{message}`; confirmation "Enquiry received" / "Thank you — your request is in. Darz
       will review price and availability and reply shortly." (`:11064`). Wired as the primary on a
       price-hidden work (`:9242`) — `full` mode only; v0.1 keeps Send Inquiry.
-- [ ] **Buy now / 24h hold**: unchanged bare POST (`purchase` `{notes:''}`, `hold` `{}`), copy as is;
-      hold label vs 48 h TTL — D2.
-- [ ] **Make an offer**: unchanged; CTA wording — D7.
-- [ ] **Artist enquiry** through `RequestController` (stable guard key `artist:<id>`, one
+- [x] **Buy now / 48h hold**: unchanged bare POST; the hold label now reads **48h hold** — D2
+      (the API's TTL wins).
+- [x] **Make an offer**: CTA stays **Submit offer** (D7). Fixed on the way: the sheet closed on a
+      rejection, so the floor message was never seen — it now stays open with the message inline.
+- [x] **Artist enquiry** through `RequestController` (stable guard key `artist:<id>`, one
       `client_req_id`), confirmation "Enquiry received" / "Thank you — your request is in. Darz will
       share available works by <artist> and reply shortly." (`:11033-11044`) instead of the toast.
-- [ ] **Typed `detail`** per kind (G-P5-1) in `src/api/types.ts`; `RequestController` sends the union.
-- [ ] Tests: viewing detail, price sheet flow, artist enquiry idempotency (+ the 14 existing).
-- [ ] Docs: `docs/PHASE_5_API_GAPS.md` (G-P5-1, 5, 7, 9), `API_INTEGRATION_GAPS.md` drift fixed (finding 9).
+- [x] **Typed `detail`** per kind (G-P5-1) in `src/api/types.ts`; `RequestController` sends the union.
+- [x] Tests: labels, viewing detail, price sheet flow, artist enquiry idempotency, the success /
+      failure result, the time helper (+ the 14 existing).
+- [x] Docs: `docs/PHASE_5_API_GAPS.md` (G-P5-1 … 11), `API_INTEGRATION_GAPS.md` drift fixed (finding 9).
 
 **Step 1 exit criteria:** every kind the old app exposes returns **201** with a valid `detail` against a
 local backend, a retry returns **200**; `03-detail-full`, `04-request-price`, `05-offer` compared in
@@ -330,7 +338,20 @@ Notes are the `dzActStatusNote` strings (`app.html:9433-9477`), verbatim, keyed 
 _Append one entry per step as it merges. Newest last._
 
 - **2026-09-17 — plan written**, waiting for the owner's confirmation and the D1-D11 / F1 answers.
+- **2026-09-17 — owner confirmed** (D1-D11; F1 open). **Step 1 implemented** on
+  `claude/zen-curie-n8ekum` (PR #22): `ViewingSheet` (preferred time + In person / Virtual, the two
+  fields the backend requires), `PriceSheet` (the old Request Price & Availability sheet minus the
+  identity fields), the artist enquiry through `RequestController` (stable key, "Enquiry received"),
+  the hand-typed per-kind `detail` union, "48h hold", "Request Price & Availability" as the
+  price-hidden primary, the offer sheet staying open on a rejection. `docs/PHASE_5_API_GAPS.md`
+  written (G-P5-1 … 11); `API_INTEGRATION_GAPS.md` drift corrected.
 
 ## Resolved decisions
 
-- _(none yet)_
+- **2026-09-17 (owner):** D1 viewing sheet — yes, the recommended option. D2 — **the API side wins:
+  48 hours**, so the label reads "48h hold". D3 — the status map is confirmed as tabled, checked
+  against `apps/crm/lifecycle.py` (every backend status of every kind has a row; unknown values fall
+  back to the `/api/options/` label). D4 — **implement the UI** for Remove / Clear and record the
+  API gap (G-P5-4). D5a, D5b — yes to both. D6 — omit the identity fields. D7 — keep "Submit
+  offer". D8, D9, D10, D11 — the recommendations. F1 — open: the owner asked for an explanation of
+  the design-package situation before deciding.
