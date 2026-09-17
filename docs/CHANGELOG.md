@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-17 — Design pass landed: PR #15 → `development`, `main` brought level
+
+- Merged on the owner's instruction ("land the design pass"); the merge commit's tree is the gated PR
+  head (typecheck · lint 3 pre-existing warnings · 98/98 tests · format · build). Two entry points
+  `development` had are now unlinked (artist index, auction notifications) — owner decision recorded
+  in `docs/TASKLIST.md` § Design pass. Task list refreshed (focus, "What next", Phases 5 / 8 / 14).
+
 ## 2026-09-11 — v0.1 launch scope (branch `claude/darz-market-v0-1-hpy1xy`)
 
 - **Feature controls** — `src/features/shell/features.ts` (`VITE_FEATURE_SET`): v0.1 shows Market ·

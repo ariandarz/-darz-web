@@ -1,6 +1,36 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-11 (v0.1 launch scope) ·
+**Last updated:** 2026-09-17 (design pass landed; `main` and `development` level) ·
+**Current focus:** **closing the v0.1 loop after the design pass** — see "What next" just below.
+The Market App design pass (PR #15, branch `claude/darz-web-frontend-redesign-f686ie`) was merged to
+`development` on 2026-09-17 on the owner's instruction ("land the design pass") and `main` was brought
+level the same day, the way the v0.1 release was (the PR #17 / #18 pattern). Its merge commit's tree is
+the gated PR head: typecheck clean · lint 3 pre-existing warnings · 98/98 tests · format · build. Two
+entry points `development` had are unlinked in the merged result — an **owner decision**, recorded
+under "Design pass" below. **Open PRs: none.** Merged remote branches, safe to delete (not deleted):
+`claude/darz-market-v0-1-hpy1xy`, `claude/darz-web-frontend-redesign-f686ie`,
+`claude/flow-1-requests-offers-admin`, `claude/phase-6-saved-favorites-gy70nd`,
+`phase-19-crm-saved-wire`, `phase-19-format-fixes`, `phase-8-auctions-browse`,
+`phase-8-auctions-bidding`, `phase-8-auctions-notifications`, `phase-8-auctions-records`.
+
+**What next (2026-09-17, recommended order):**
+
+1. Owner decision on the two unlinked entry points (artist index `/artists`, `/auctions/notifications`)
+   — see "Design pass" below; then one small PR either way.
+2. Unblock the deploy (Phase 14): a project-creating Vercel role, or a hand-created empty project
+   linked to the repo; then the real API + WS URLs in `.env.production` once `darzmarket-api` Phase 18
+   exists. Until then the deployed build is visual-only.
+3. Close the v0.1 loop end to end: a team sign-in screen so admins can reply from `/admin/requests`
+   (`docs/V0_1_SCOPE.md` flag 8), Phase 13 E2E over Login → Browse → Save → Send Inquiry → Chat, and
+   backend G-F1-1 (the typed per-kind `detail`).
+4. Backend-ready collector items v0.1 hid: membership redeem (Phase 9), push opt-in once the API
+   publishes the VAPID key, the "Refine" filter panel (backend ready since Phase 19).
+5. Post-v0.1 by readiness: switch on auctions when wanted (built, Phase 8), Phase 7 catalog CRUD +
+   sales, Phase 10 gallery portal, Phase 11 admin desks, FE-R1…FE-R4 records desk.
+6. Phases 12+ wait for their backend phases; the curated `in_app` set (backend Phase 24) goes first.
+
+Previously (2026-09-11, branch `claude/darz-market-v0-1-hpy1xy`, merged 2026-09-12 — PR #16 to
+`development`, PR #17 to `main`, PR #18 back):
 **Current focus:** **v0.1 — the launch scope** (`docs/V0_1_SCOPE.md`): Market → Records → Chat →
 Profile → Settings, one contact CTA (Send Inquiry), everything else preserved behind
 `src/features/shell/features.ts`. Branch `claude/darz-market-v0-1-hpy1xy`. Phase 9's Profile / Chat /
@@ -123,6 +153,34 @@ shape.
 - [x] Prettier config (`.prettierrc.json` + `format`/`format:check` scripts; oxlint stays the
       linter), ADR-light conventions (`src/design/README.md`, `docs/adr/0001-styling-and-oop.md`).
 
+## Design pass — Market App design package ✅ landed 2026-09-17 (PR #15)
+
+Re-skinned every collector screen to the `darzstudio.art` `design/market-app/` handoff package
+(PR #846, build 1229) — the design source of truth since 2026-09-11 (`CLAUDE.md` reference 0). Built
+2026-09-11, merged onto v0.1 2026-09-12, landed on `development` + `main` 2026-09-17.
+
+- [x] Tokens ported verbatim (`src/design/tokens.css`), charcoal as the collector default; the shell
+      (`features/shell`: 430px frame, glass header + Leave the Room, chroma, nav pips, desktop top
+      nav); shared `Dropdown` (`dzSel`) + `Segment` (`.viewseg`); catalogue (view segment, dropdowns
+      wired to `ordering` / `currency`, single view, desktop grid), artwork detail (prev / next within
+      the browse set, View in Room, Share, About the artist, asking-price block, delivery note, more
+      by this artist), artist page (`dzUniCard` tiles, enquiry request), auctions + lot pages, the
+      `#dzGate` login. Screenshot-compared at 390×844 and 1440×900 in both skins. Entry:
+      `docs/CHANGELOG.md` 2026-09-11.
+- [x] Merge policy when v0.1 (PR #16) landed underneath it: **v0.1 owns behaviour** (routes, feature
+      flags, the nav set Market · Records · Chat · Profile · Settings, the Chat / Records / Profile /
+      Settings screens, `LayoutController`, Send Inquiry); **the design pass owns the skin** (tokens,
+      shell chrome, catalogue / detail / artist / auctions / lot / gate styling, Dropdown / Segment).
+      Surfaces not ported (no backend) are listed in `docs/API_INTEGRATION_GAPS.md` § Design-pass flags.
+- [ ] **Owner decision — two entry points `development` had that the merged result lacks** (the
+      routes exist; nothing links to them): (1) the **artist index** `/artists` — the catalogue hero's
+      Saved / Auctions / Artists pills were dropped per the package, and no screen links to the index
+      now (deep-link only, and it is live in v0.1; Saved is reachable from Profile, Auctions has its
+      nav tab when on); (2) **`/auctions/notifications`** — its link lived in the design pass's
+      Profile → Auctions tab, which the merge replaced with v0.1's Profile (matters only with
+      `VITE_FEATURE_SET=full`). Options: restore the pills, add an Artists entry where the package
+      places one, or accept deep-link only. Not changed without a decision (faithful-port rule).
+
 ## Phase 3 — Typed API client + auth ✅ (branch `phase-3-api-client`)
 
 Backend gaps found during this phase → `docs/API_GAP_ANALYSIS.md`. Owner decisions (2026-09-04):
@@ -196,13 +254,13 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[~]` idempotency + offer floor landed 2026-09-11 (`docs/API_INTEGRATION_GAPS.md`); reply-thread UI still blocked
+## Phase 5 — Collector: requests + activity `[~]` creation, idempotency, offer floor, reply thread and Send Inquiry shipped; activity self-logging + the availability / message kinds open
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). Backend Phase 19
 (`darzmarket-api`) shipped the core-loop backend work (reply thread API, offer floor enforcement,
 idempotency, per-artwork `allowed_actions`) 2026-09-11 — see `docs/API_INTEGRATION_GAPS.md` for
-what's wired vs. still open. **Only the reply-thread/"Chat with Darz" *UI* remains blocked** — its
-own follow-up PR (the API is ready).
+what's wired vs. still open. The reply-thread / "Chat with Darz" UI shipped in v0.1 (2026-09-11,
+see Phase 9) — nothing in this phase is backend-blocked any more except the typed `detail` (G-F1-1).
 
 - [~] Request creation UI per kind: **the four the artwork detail fires are built** —
       `purchase` (Buy now), `hold` (24h hold), `viewing` (Request viewing), `offer` (Make an
@@ -214,7 +272,9 @@ own follow-up PR (the API is ready).
       `docs/API_INTEGRATION_GAPS.md` G-F1-1), so `{amount, currency}` is a reading, not a
       typechecked contract. Remaining kinds: availability / message. **Now also filters shown
       actions by `artwork.allowed_actions`** (`ActionButtons.tsx`, G-F1-3).
-- [ ] Collector's own request list/detail (`GET/POST /api/crm/requests/`) — endpoint ready
+- [x] Collector's own request list/detail — v0.1 (2026-09-11): Profile › Market lists the collector's
+      requests with filter chips over `GET /api/crm/requests/`, Overview › Recent activity shows the
+      latest, and each inquiry opens as its thread at `/chat/:id`. No separate detail page is planned.
 - [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
       (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
 - [x] **Reply-thread chat UI** — shipped in v0.1 (2026-09-11) over backend Phase 19.3
@@ -285,7 +345,7 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
 - [ ] Sales CRUD + transition/payment/delivery-status actions
 - [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
 
-## Phase 8 — Collector: auctions `[~]` — 4 steps, front + back together per step (see `docs/PHASE_8_PLAN.md`)
+## Phase 8 — Collector: auctions ✅ all 4 steps merged (hidden in v0.1 behind `features.auctions`) — see `docs/PHASE_8_PLAN.md`
 
 Old app's largest single feature (event pages, live server-authoritative bidding, paddle
 registration, outbid/won/lost/closing notifications, results archive). Backend Phase 11 is merged;
@@ -319,7 +379,10 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       `lotPills`/`notificationPill`/`notificationLine` vocabulary) wired into the lot rows + lot
       detail. "Notifications (N)" link in the auctions hero. Verified: banner shows the newest unread,
       the feed lists with pills + "Lot N", marking one read propagates everywhere.
-- [~] **Step 4 — results archive** — both PRs open, awaiting owner merge. Backend
+- [x] **Step 4 — results archive** — frontend merged 2026-09-10 (PR #12); the backend endpoint is
+      merged too (the v0.1 Records tab reads it — `docs/V0_1_SCOPE.md` § 2). In v0.1 the Phase 8
+      `/records` page was superseded by `features/records` (`RecordsArchiveController`); the design
+      pass's own Records page was dropped in the PR #15 merge. Backend
       `phase-11.4-auctions-records` (BE-6: collector `GET /api/auctions/records/` + `/{id}/` with
       `?search=` / `?ordering=` / `?artist=`, and a computed `artist_display_name`). Frontend
       `phase-8-auctions-records`: `RecordsController extends ListController` (debounced search + sort),
@@ -409,6 +472,9 @@ for visual review now, wire the real API later.
       in it. Unblock by granting it a project-creating role, or by hand-creating an empty project
       linked to the repo to deploy into. Deploying into the existing `darzstudio-art` or
       `koocheh-web` projects was **not** done — that would overwrite unrelated live projects.
+      **Re-checked 2026-09-17:** the team still lists only `darzstudio-art` and `koocheh-web`; no
+      project for this repo exists — still blocked. `.env.production` now also carries
+      `VITE_API_WS_URL=wss://ws.invalid` and `VITE_FEATURE_SET=v0.1` next to the API placeholder.
 - [ ] DNS/hosting cutover plan, coordinated with `darzmarket-api`'s own Phase 18
 
 > **What the deployed build will and won't be, until the API URL is real:** layout, chrome,
