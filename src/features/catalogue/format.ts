@@ -41,3 +41,20 @@ export function sizeLine(artwork: Pick<Artwork, 'dimensions' | 'medium' | 'year'
     .filter(Boolean)
     .join(' · ');
 }
+
+/** "122 x 210cm" / "93 × 120 cm" / "29.7 x 21cm" → width/height in cm, or
+ * null when the string carries no two numbers. Used by View in Room to scale
+ * the work on the wall (app.html `DZ.viewRoom` reads the same free-text
+ * dimension line). */
+export function parseDimensionsCm(dimensions: string | null | undefined): {
+  w: number;
+  h: number;
+} | null {
+  if (!dimensions) return null;
+  const nums = dimensions.match(/\d+(?:[.,]\d+)?/g);
+  if (!nums || nums.length < 2) return null;
+  const w = Number(nums[0].replace(',', '.'));
+  const h = Number(nums[1].replace(',', '.'));
+  if (!(w > 0) || !(h > 0)) return null;
+  return { w, h };
+}

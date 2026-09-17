@@ -6,6 +6,7 @@
  * backend doesn't have yet (see docs/API_GAP_ANALYSIS.md, G9).
  */
 import { useEffect, useState } from 'react';
+import { Dropdown } from '../../components';
 import './catalogue.css';
 import { ArtistCard } from './ArtistCard';
 import { Pager } from './Pager';
@@ -48,14 +49,15 @@ export function ArtistListPage() {
               onChange={(e) => setTerm(e.target.value)}
             />
           </label>
-          <select
-            className="dza-asel"
+          <Dropdown
+            label="Sort artists"
+            options={[
+              { value: 'name', label: 'Name A–Z' },
+              { value: 'works', label: 'Most works' },
+            ]}
             value={state.query.ordering ?? 'name'}
-            onChange={(e) => setQuery({ ordering: e.target.value })}
-          >
-            <option value="name">Name A–Z</option>
-            <option value="works">Most works</option>
-          </select>
+            onChange={(v) => setQuery({ ordering: v })}
+          />
         </div>
 
         {state.status === 'loading' && state.results.length === 0 && (

@@ -11,39 +11,69 @@
    flagged in docs/CHANGELOG.md for a fidelity pass.
    ========================================================================== */
 
-/* ---- the icon control (overlaid on a card image, mirrors `.cardstat`) ---- */
-.dz-save {
-  display: inline-flex;
+/* ---- the icon control — app.html `.save` (COMPONENTS.md § Artwork card:
+   "30px (38px ≤820px) circle · top 9px right 9px · glass rgba(250,248,243,.92)
+   · heart line icon (filled when saved)"); v935 quieter mobile disc. ------- */
+.save {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(250, 248, 243, 0.92);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: none;
+  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  background: rgba(10, 10, 10, 0.62);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  color: #fff;
-  cursor: pointer;
   transition:
-    transform var(--dz-t-fast) ease,
-    background var(--dz-t) ease,
-    color var(--dz-t) ease;
+    opacity 0.5s ease,
+    transform 0.35s ease,
+    background 0.45s ease;
 }
-.dz-save:hover {
-  background: rgba(10, 10, 10, 0.82);
+@media (max-width: 820px) {
+  .save {
+    width: 38px;
+    height: 38px;
+  }
 }
-.dz-save:active {
+html:not(.dz-desktop) .card-wrap .save {
+  width: 30px;
+  height: 30px;
+  background: rgba(250, 248, 243, 0.5);
+}
+html.dz-bw .save {
+  background: rgba(20, 20, 22, 0.7) !important;
+}
+html:not(.dz-desktop).dz-bw .card-wrap .save {
+  background: rgba(20, 20, 22, 0.4) !important;
+}
+.save:active {
   transform: scale(0.94);
 }
-.dz-save.on {
-  color: var(--magenta);
+/* the heart pops when it fills (app.html v456 `.dz-heart`) */
+.dz-heart {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.dz-heart.on {
+  animation: dzHeartPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes dzHeartPop {
+  0% {
+    transform: scale(0.7);
+  }
+  55% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 /* pending: the control is inert and says so, rather than silently swallowing
    a second tap (see SaveButton's duplicate-action guard) */
-.dz-save[disabled],
-.dz-save[aria-busy='true'] {
+.save[disabled],
+.save[aria-busy='true'] {
   opacity: 0.55;
   cursor: progress;
   pointer-events: none;

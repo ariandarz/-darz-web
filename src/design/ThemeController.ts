@@ -1,10 +1,11 @@
 /**
  * ThemeController — owns the *runtime* theme: which `Theme` is active, the
  * `html.dz-bw` class, per-device persistence, and the initial resolve
- * (stored choice → OS `prefers-color-scheme` → Paper).
+ * (stored choice → Black, the collector default).
  *
  * Mirrors app.html's in-app moon toggle: a real dark theme, remembered per
- * device (app.html persists the choice before first paint).
+ * device (app.html persists the choice before first paint). Dark is the
+ * collector default (design package, build 1229).
  *
  * Framework-free on purpose — a `useTheme()` hook can wrap it later without
  * changing this class.
@@ -75,9 +76,10 @@ export class ThemeController {
   private resolveInitial(): ThemeName {
     const stored = this.storage?.getItem(STORAGE_KEY);
     if (stored === 'bw' || stored === 'light') return stored;
-    const prefersDark =
-      typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'bw' : 'light';
+    // The charcoal skin is what every collector opens (design package README:
+    // "Two skins, one default" — the warm-paper skin sits behind an owner
+    // toggle). No OS-preference fallback: the shipped app does not consult it.
+    return 'bw';
   }
 
   private persist(name: ThemeName): void {

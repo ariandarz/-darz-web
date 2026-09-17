@@ -54,6 +54,38 @@
   cursor: progress;
   pointer-events: none;
 }
+/* the green pulsing border on an available work's primary (app.html
+   `.act-primary.dzglow`, 2.4s; the dark skin keeps the border, no pulse) */
+.act-primary.dzglow {
+  position: relative;
+  color: #fff !important;
+  border: 2px solid rgba(31, 122, 77, 0.5) !important;
+  animation: dzGlow 2.4s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+.act-primary.dzglow:active {
+  transform: scale(0.99);
+  animation: none;
+}
+html.dz-bw .act-primary.dzglow {
+  animation: none;
+}
+@keyframes dzGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(31, 122, 77, 0);
+    border-color: rgba(31, 122, 77, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(31, 122, 77, 0.12);
+    border-color: rgba(31, 122, 77, 0.9);
+  }
+}
+@media (max-width: 820px) {
+  .act-primary {
+    padding: 17px 14px;
+  }
+}
 html.dz-bw .act-primary {
   background: #26262e;
   color: #fafafa;
@@ -95,6 +127,10 @@ html.dz-bw .act-primary:hover {
   border-color: rgba(10, 10, 10, 0.32);
   background: #fbfaf7;
 }
+html.dz-bw .act-box:hover {
+  border-color: var(--ink3);
+  background: var(--card);
+}
 .act-box:active {
   transform: scale(0.97);
 }
@@ -112,6 +148,7 @@ html.dz-bw .act-primary:hover {
   height: 18px;
 }
 .act-box .al {
+  font-family: var(--sans);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.01em;
