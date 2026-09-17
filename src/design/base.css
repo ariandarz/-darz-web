@@ -47,8 +47,12 @@ button {
   color: inherit;
 }
 
+/* router links render as <a> where app.html uses <div>/<button> (cards, nav,
+   pills) — they inherit colour and carry no underline; prose links opt back in
+   with their own rule (`.arlink`, `.dz-gate-foot a`). */
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 img,

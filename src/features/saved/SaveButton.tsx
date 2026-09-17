@@ -15,11 +15,9 @@
  * second call for the same id anyway — so neither a double-tap nor a
  * keyboard-repeat can fire two writes.
  *
- * Copy: "Save" / "Saved" — the label the shipped app uses for this control
- * (ported into the Phase 2 showcase as `<Button variant="outline">Save</Button>`,
- * `src/App.tsx`). The heart glyph could NOT be re-checked against
- * `../DarzStudio/app.html` in this session (that repo isn't reachable here) —
- * flagged to the owner rather than presented as verified.
+ * The icon variant is app.html's glass `.save` disc with its `heart()` glyph
+ * (:3485), verified against the design package (COMPONENTS.md § Artwork card)
+ * on 2026-09-11.
  */
 import type { Artwork } from '../../api/types';
 import { Button } from '../../components';
@@ -68,7 +66,7 @@ export function SaveButton({ artwork, variant = 'icon', className }: SaveButtonP
   return (
     <button
       type="button"
-      className={cx('dz-save', saved && 'on', className)}
+      className={cx('save', saved && 'on', className)}
       onClick={(e) => {
         // The card is a link; keep a save from navigating to the detail page.
         e.preventDefault();
@@ -81,14 +79,34 @@ export function SaveButton({ artwork, variant = 'icon', className }: SaveButtonP
       aria-label={description}
       title={description}
     >
-      <Heart filled={saved} size={17} />
+      <Heart filled={saved} size={15} glyph />
     </button>
   );
 }
 
 /** Outline when unsaved, filled when saved — the state is carried by the glyph
- * itself, not by colour alone. */
-function Heart({ filled, size }: { filled: boolean; size: number }) {
+ * itself, not by colour alone. `glyph` renders app.html's `heart()` (:3485):
+ * 15px, #9A9A9A stroke, #C0453E fill + stroke when saved. */
+function Heart({ filled, size, glyph }: { filled: boolean; size: number; glyph?: boolean }) {
+  if (glyph) {
+    return (
+      <svg
+        className={cx('dz-heart', filled && 'on')}
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill={filled ? '#C0453E' : 'none'}
+        stroke={filled ? '#C0453E' : '#9A9A9A'}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    );
+  }
   return (
     <svg
       width={size}

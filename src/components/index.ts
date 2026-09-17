@@ -28,3 +28,8 @@ export type {
 
 export { Toast, Sheet } from './overlays';
 export type { ToastProps, SheetProps } from './overlays';
+
+export { Dropdown } from './Dropdown';
+export type { DropdownProps, DropdownOption } from './Dropdown';
+export { Segment } from './Segment';
+export type { SegmentProps, SegmentOption } from './Segment';

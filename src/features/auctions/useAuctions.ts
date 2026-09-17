@@ -54,6 +54,21 @@ export function useLots(auctionId: string) {
   return useResource(() => auctions.lots(auctionId, { per_page: 100 }), [auctionId]);
 }
 
+/** The poster for an auction: the backend `Auction` carries no image, so the
+ * first lot's primary artwork image stands in (one `per_page=1` lots read per
+ * card). Flagged in docs/PHASE_8_API_GAPS.md — a cover field would remove
+ * this read. */
+export function useAuctionPoster(auctionId: string) {
+  const { auctions } = useApi();
+  return useResource(
+    () =>
+      auctions
+        .lots(auctionId, { per_page: 1 })
+        .then((page) => page.results[0]?.artwork ?? null),
+    [auctionId],
+  );
+}
+
 export function useBidHistory(lotId: string) {
   const { auctions } = useApi();
   return useResource(() => auctions.bidHistory(lotId, { per_page: 50 }), [lotId]);

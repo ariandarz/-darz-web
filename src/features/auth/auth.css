@@ -1,89 +1,267 @@
 /* =============================================================================
-   Auth — the collector sign-in gate.
-   Exact two-step port of app.html's `#dzGate`:
-     1. the landing (`.land`/`.ttl`/`.cline`/`.tag`/`.lbtns`/`.beta`) — plain
-        wordmark, chroma, tagline, one "Enter the Room" button, beta caption;
-     2. the "Private Access" form, opened by that button — reuses the
-        existing `Sheet` component (see CLAUDE.md "Reusing the design
-        system") instead of a second bespoke card.
-   Source: app.html:1953-1998 (CSS), :2590-2591 (landing markup),
-   :2556-2560 (form markup).
-
-   One deliberate adaptation: the old gate is a fixed #0A0A0A overlay because
-   it renders before the app (and its theme) exists. `/login` is a themed
-   route — ThemeController resolves Paper/Black before first paint — so this
-   uses the design tokens instead of a second hard-coded dark skin.
+   Auth — the private-access gate (`#dzGate`).
+   Ported from app.html's `#dzGate` style block (design package COMPONENTS.md
+   § Gate, capture 01-gate): a fixed black world, Barlow, never skinned by the
+   Paper / Black theme. The `Input` component is reused inside the pop-up;
+   the gate re-skins its `.dz-field` to the gate's own #0E0E0E / #2E2E2E box.
    ========================================================================== */
+#dzGate {
+  position: fixed;
+  inset: 0;
+  background: #0a0a0a;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: 'Barlow', sans-serif;
+  padding: 22px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+#dzGate button,
+#dzGate input,
+#dzGate a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+#dzGate button {
+  -webkit-appearance: none;
+  appearance: none;
+}
 
-.dz-gate-land {
+/* ---- landing (app.html `#dzGate .land`) ------------------------------- */
+#dzGate .land {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 22px;
   text-align: center;
+  animation: dzgin 0.4s ease;
 }
-
-/* app.html:1960 — plain wordmark text, not the two-tone Wordmark component:
-   the old markup wraps it in <b> then resets that bold to 400 (.ttl b). */
-.dz-gate-title {
-  font-family: var(--font-head);
-  font-size: clamp(26px, 8.4vw, 40px);
+@keyframes dzgin {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* the shipped gate sets its wordmark in Georgia — listed as drift in the
+   package README; ported as shipped */
+#dzGate .ttl {
+  font-size: 38px;
   font-weight: 400;
   letter-spacing: 0.005em;
-  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
 }
-.dz-gate-land .chroma {
+#dzGate .land .cline {
   width: 64px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--dz-seam);
   margin-top: 14px;
 }
-.dz-gate-land .eyebrow {
+#dzGate .tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
   margin-top: 20px;
 }
-.dz-gate-land .btn {
-  margin-top: 26px;
+#dzGate .lbtns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 236px;
   max-width: 100%;
+  margin-top: 26px;
 }
-.dz-gate-beta {
+#dzGate .btn {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  background: #1a1a1f;
+  color: #f1efe9;
+  border: 1px solid #2e2e2e;
+  border-radius: 11px;
+  padding: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+#dzGate .btn:hover {
+  background: #26262c;
+  border-color: #3a3a42;
+}
+#dzGate .land .beta {
   margin-top: 22px;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--ink3);
-  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.34);
 }
 
-/* ---- the "Private Access" sheet content (app.html:1979-1990) --------- */
-.dz-gate-land .sheet form .dz-field-wrap + .dz-field-wrap {
-  margin-top: 12px;
+/* ---- the sign-in pop-up (app.html `#dzGate .pop` / `.popc`) ------------ */
+#dzGate .pop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 5;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
-/* app.html:1981 — the gate's own field focus ring is the brand accent, not
-   the app-wide ink border. */
-.dz-gate-land .sheet .dz-field:focus {
-  border-color: var(--accent);
+#dzGate .popc {
+  width: 344px;
+  max-width: 100%;
+  background: #141414;
+  border: 1px solid #262626;
+  border-radius: 18px;
+  padding: 26px 24px 22px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  animation: dzpop 0.22s ease;
+  margin: auto 0;
 }
-.dz-gate-sub {
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--ink3);
+@keyframes dzpop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+#dzGate .x {
+  position: absolute;
+  top: 11px;
+  right: 14px;
+  background: none;
+  border: 0;
+  color: #8a8a8a;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+#dzGate .h {
+  font-size: 19px;
+  font-weight: 700;
   text-align: center;
-  margin-bottom: 6px;
 }
-.dz-gate-sub a {
-  color: var(--ink);
+#dzGate .gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+#dzGate .sub {
+  font-size: 12px;
+  color: #9a9a9a;
+  text-align: center;
+  line-height: 1.55;
+  margin-top: -6px;
+}
+#dzGate .sub a {
+  color: #fff;
   font-weight: 600;
 }
-.dz-gate-foot {
-  font-size: 11px;
-  color: var(--ink3);
-  text-align: center;
-  margin-top: 14px;
+/* the `Input` component inside the gate — app.html `#dzGate label` / `input` */
+#dzGate .dz-field-wrap + .dz-field-wrap {
+  margin-top: 0;
 }
-.dz-gate-foot a {
-  color: var(--ink);
+#dzGate .dz-field-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7a7a7a;
+  margin-bottom: 5px;
+}
+#dzGate .dz-field {
+  font: inherit;
+  font-size: 16px;
+  width: 100%;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid #2e2e2e;
+  background: #0e0e0e;
+  color: #fff;
+  outline: none;
+}
+#dzGate .dz-field:focus {
+  border-color: #e11d48;
+}
+#dzGate .dz-field::placeholder {
+  color: #5a5a5a;
+}
+#dzGate .dz-field.code {
+  text-align: center;
+  letter-spacing: 0.45em;
+  font-size: 22px;
+  padding: 14px 44px;
+  font-weight: 600;
+}
+#dzGate .keyeye {
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 6px;
+  cursor: pointer;
+  color: #7a7a7a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 8px;
+}
+#dzGate .keyeye:hover {
+  color: #cfcfcf;
+}
+#dzGate .keyeye svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+#dzGate .btn2 {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  background: #1c1c1c;
+  color: #fafafa;
+  border: 1px solid #2e2e2e;
+  border-radius: 11px;
+  padding: 13px;
+  cursor: pointer;
+}
+#dzGate .btn2:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+#dzGate .e {
+  color: #e8005c;
+  font-size: 12px;
+  min-height: 14px;
+  text-align: center;
+}
+#dzGate .foot {
+  font-size: 11px;
+  color: #8a8a8a;
+  text-align: center;
+  margin-top: -5px;
+}
+#dzGate .foot a {
+  color: #fff;
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline;

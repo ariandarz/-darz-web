@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-17 — Design pass landed: PR #15 → `development`, `main` brought level
+
+- Merged on the owner's instruction ("land the design pass"); the merge commit's tree is the gated PR
+  head (typecheck · lint 3 pre-existing warnings · 98/98 tests · format · build). Two entry points
+  `development` had are now unlinked (artist index, auction notifications) — owner decision recorded
+  in `docs/TASKLIST.md` § Design pass. Task list refreshed (focus, "What next", Phases 5 / 8 / 14).
+
 ## 2026-09-11 — v0.1 launch scope (branch `claude/darz-market-v0-1-hpy1xy`)
 
 - **Feature controls** — `src/features/shell/features.ts` (`VITE_FEATURE_SET`): v0.1 shows Market ·
@@ -21,6 +28,25 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 - **Images** — one fit-not-crop rule on every artwork image (`catalogue.css` `.card .img img`).
 - Schema regenerated from backend Phase 19.3; 17 test files / 98 tests. Details and owner flags:
   `docs/V0_1_SCOPE.md`.
+## 2026-09-11 — Design pass: the Market App shell + every screen re-skinned to the design package
+
+Source of truth is now the Market App design-system handoff package (`darzstudio.art`
+`design/market-app/`, PR #846, build 1229): tokens ported verbatim (`src/design/tokens.css`), the
+charcoal skin is the collector default, and every screen was captured with Playwright at 390×844 and
+1440×900 against the package's own captures (fonts served from the package's `inline.css`). New:
+`features/shell` (`.frame` · glass header + **Leave the Room** · chroma line · bottom nav / desktop
+top nav, `LayoutController` for `html.dz-desktop`), `Dropdown` (`dzSel`) and `Segment` (`.viewseg`)
+components, catalogue single view (`ViewPreference`), previous/next arrows on the detail
+(`BrowseSet`), View in Room, share, the "More works by this artist" card, the artist page's
+`dzUniCard` tiles + enquiry, auction posters (first lot), the event page's countdown/register card/
+lot rows, the records tab (sub-sections · sort · Cards|List · empty state), **Profile** (Overview ·
+Market · Auctions · Account, `ProfileController`), **Settings** (`DevicePreferences`), and the
+`#dzGate` black-world login. Typecheck / lint (3 pre-existing-style warnings) / 82 tests / format /
+build clean. Owner-facing scope flags are listed in `docs/API_INTEGRATION_GAPS.md` § Still open.
+**Merged onto v0.1 (2026-09-12):** v0.1's feature controls, nav order (Market → Records → Chat →
+Profile → Settings), Send Inquiry, Chat, Records archive, Profile and Settings pages are the
+behaviour; the design pass supplies the tokens, the shell chrome (header · chroma · 430px frame), the
+catalogue / detail / artist / auction styling and the `#dzGate` login on top of them.
 
 ## 2026-09-11 — API integration: wire Saved/Requests/Admin to the merged backend gaps
 
