@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-17 — Phase 5 step 1: every request kind files correctly (`docs/PHASE_5_PLAN.md`)
+
+- `ViewingSheet` (preferred time + In person / Virtual — `ViewingDetailSerializer` requires both;
+  the bare POST was rejected 400) · `PriceSheet` (the old Request Price & Availability sheet,
+  `app.html:11046-11064`, without the identity fields) · artist enquiry through `RequestController`
+  (idempotent, "Enquiry received") · per-kind `detail` typed by hand (G-P5-1) · "48h hold" (D2) ·
+  the offer sheet stays open on a rejection. New `docs/PHASE_5_API_GAPS.md` (G-P5-1 … 11);
+  `API_INTEGRATION_GAPS.md` G-F1-5 / G-F1-6 drift corrected. 104 tests.
+
 ## 2026-09-17 — Design pass landed: PR #15 → `development`, `main` brought level
 
 - Merged on the owner's instruction ("land the design pass"); the merge commit's tree is the gated PR

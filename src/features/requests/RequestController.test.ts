@@ -7,7 +7,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Artwork, CollectorRequest, CreatedRequest } from '../../api/types';
 import { caretAfterGrouping, digitsBefore, groupDigits, parseAmount } from './amount';
 import { columnsFor } from './layout';
-import { ACTION_KIND, RequestController, workLine } from './RequestController';
+import { toLocalInputValue } from './viewingTime';
+import { ACTION_KIND, ACTION_LABEL, RequestController, workLine } from './RequestController';
 
 const ARTWORK = {
   id: 'aw1',
@@ -243,6 +244,12 @@ describe('amount helpers (app.html DZ.fmtNum / Lib.num)', () => {
   });
 });
 
+describe('viewing sheet time helper', () => {
+  it('formats a local date as the datetime-local input value', () => {
+    expect(toLocalInputValue(new Date(2026, 8, 20, 9, 5))).toBe('2026-09-20T09:05');
+  });
+});
+
 describe('secondary-action row layout (app.html:9241)', () => {
   it('adapts the column count: 1→1, 2→2, 3→3, 4→2, 5+→3', () => {
     expect(columnsFor(0)).toBe(1);
@@ -252,5 +259,104 @@ describe('secondary-action row layout (app.html:9241)', () => {
     expect(columnsFor(4)).toBe(2);
     expect(columnsFor(5)).toBe(3);
     expect(columnsFor(6)).toBe(3);
+  });
+});
+
+describe('RequestController — Phase 5 step 1: every kind files correctly', () => {
+  it('labels follow the API (48 h hold) and the old app (Request Price & Availability)', () => {
+    expect(ACTION_LABEL.hold).toBe('48h hold');
+    expect(ACTION_LABEL.price).toBe('Request Price & Availability');
+  });
+
+  it('files a viewing with the preferred time and mode the backend requires', async () => {
+    const crm = fakeCrm();
+    const c = make(crm);
+
+    expect(await c.requestViewing(ARTWORK, '2026-09-20T10:00:00.000Z', 'in_person')).toBe(
+      true,
+    );
+
+    expect(crm.createRequest).toHaveBeenCalledWith({
+      kind: 'viewing',
+      artwork: 'aw1',
+      detail: { preferred_time: '2026-09-20T10:00:00.000Z', mode: 'in_person' },
+      client_req_id: expect.any(String),
+    });
+    expect(c.getSnapshot().confirmation?.title).toBe('Viewing request received');
+  });
+
+  it('files Request Price & Availability with the message and the old enquiry copy', async () => {
+    const crm = fakeCrm();
+    const c = make(crm);
+
+    expect(
+      await c.requestPrice(
+        ARTWORK,
+        '  Please let me know the price and availability of this artwork.  ',
+      ),
+    ).toBe(true);
+
+    expect(crm.createRequest).toHaveBeenCalledWith({
+      kind: 'price',
+      artwork: 'aw1',
+      detail: { message: 'Please let me know the price and availability of this artwork.' },
+      client_req_id: expect.any(String),
+    });
+    const { confirmation } = c.getSnapshot();
+    expect(confirmation?.title).toBe('Enquiry received');
+    expect(confirmation?.message).toBe(
+      'Thank you — your request is in. Darz will review price and availability and reply shortly.',
+    );
+  });
+
+  it('files the artist enquiry without an artwork and replays the same key on a retry', async () => {
+    const crm = fakeCrm({
+      createRequest: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Could not reach the server.'))
+        .mockResolvedValueOnce({
+          row: { id: 'r7', kind: 'information' } as unknown as CollectorRequest,
+          replayed: false,
+        }),
+    });
+    const c = make(crm);
+    const artist = { id: 'ar1', display_name: 'Monir Farmanfarmaian' };
+
+    expect(await c.enquireAboutArtist(artist)).toBe(false);
+    expect(c.getSnapshot().error).toBe('Could not reach the server.');
+    expect(c.getSnapshot().confirmation).toBeNull();
+
+    expect(await c.enquireAboutArtist(artist)).toBe(true);
+    const calls = crm.createRequest.mock.calls.map((call) => call[0]);
+    expect(calls[0].client_req_id).toBe(calls[1].client_req_id);
+    expect(calls[1]).toEqual({
+      kind: 'information',
+      artwork: null,
+      detail: { message: 'Please let me know about available works by Monir Farmanfarmaian.' },
+      client_req_id: expect.any(String),
+    });
+    const { confirmation } = c.getSnapshot();
+    expect(confirmation?.title).toBe('Enquiry received');
+    expect(confirmation?.message).toBe(
+      'Thank you — your request is in. Darz will share available works by Monir Farmanfarmaian and reply shortly.',
+    );
+    expect(confirmation?.work).toBe('Monir Farmanfarmaian');
+    expect(c.isPending(RequestController.artistKey('ar1'))).toBe(false);
+  });
+
+  it('resolves false on a failure and true once the backend confirmed', async () => {
+    const crm = fakeCrm({
+      createRequest: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Could not reach the server.'))
+        .mockResolvedValueOnce({
+          row: { id: 'r1' } as unknown as CollectorRequest,
+          replayed: false,
+        }),
+    });
+    const c = make(crm);
+
+    expect(await c.act(ARTWORK, 'buy')).toBe(false);
+    expect(await c.act(ARTWORK, 'buy')).toBe(true);
   });
 });

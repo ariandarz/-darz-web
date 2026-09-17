@@ -9,9 +9,12 @@
  * `--an` custom property.
  *
  * A price-on-request work has no Buy now: the old app collapses to a single
- * request entry point (:9245, "ONE request entry point"), so the primary
- * becomes "Request price" — always shown; `price`/`information` aren't
- * gated by `allowed_actions`, only the four commerce verbs below are.
+ * request entry point (:9242, "ONE request entry point"), so the primary
+ * becomes "Request Price & Availability" and opens the `PriceSheet` — always
+ * shown; `price`/`information` aren't gated by `allowed_actions`, only the
+ * four commerce verbs below are. "Request viewing" opens the `ViewingSheet`
+ * (the backend needs a preferred time + mode — Phase 5 D1); Buy now and the
+ * hold still file straight away, as `DZ.act` did.
  *
  * The old app gated these behind `DZ.otpGate` and a per-artwork allow-list
  * (`DZ._actAllows`, v1131 "gallery chooses which collector actions are
@@ -27,6 +30,7 @@ import type { Artwork, CollectorAction } from '../../api/types';
 import { ActionIcon } from './icons';
 import { columnsFor } from './layout';
 import { OfferSheet } from './OfferSheet';
+import { PriceSheet } from './PriceSheet';
 import {
   ACTION_KIND,
   ACTION_LABEL,
@@ -35,6 +39,10 @@ import {
 } from './RequestController';
 import './requests.css';
 import { useRequests } from './useRequests';
+import { ViewingSheet } from './ViewingSheet';
+
+/** The verbs that open a sheet before anything is filed. */
+type SheetVerb = 'offer' | 'visit' | 'price';
 
 /** The four verbs the gallery's per-artwork `allowed_actions` gates — every
  * other verb (`price`, `information`) is always offered. */
@@ -48,7 +56,7 @@ function isAllowed(artwork: Artwork, verb: ActionVerb): boolean {
 
 export function ActionButtons({ artwork }: { artwork: Artwork }) {
   const { pending, controller } = useRequests();
-  const [offerOpen, setOfferOpen] = useState(false);
+  const [sheet, setSheet] = useState<SheetVerb | null>(null);
 
   // app.html:9245 — a price-on-request work shows no Buy now. "price" is
   // ungated, so it's always available as the fallback primary.
@@ -66,8 +74,8 @@ export function ActionButtons({ artwork }: { artwork: Artwork }) {
   const isBusy = (verb: ActionVerb) => pending.has(RequestController.actKey(artwork.id, verb));
 
   const fire = (verb: ActionVerb) => {
-    if (verb === 'offer') {
-      setOfferOpen(true);
+    if (verb === 'offer' || verb === 'visit' || verb === 'price') {
+      setSheet(verb);
       return;
     }
     if (isBusy(verb)) return; // guarded again in the controller
@@ -127,7 +135,15 @@ export function ActionButtons({ artwork }: { artwork: Artwork }) {
       {/* Mounted only while open: `app.html`'s `openSheet()` rebuilds the sheet
           markup on every call, so a re-open never inherits the previous
           attempt's amount or error. */}
-      {offerOpen && <OfferSheet artwork={artwork} open onClose={() => setOfferOpen(false)} />}
+      {sheet === 'offer' && (
+        <OfferSheet artwork={artwork} open onClose={() => setSheet(null)} />
+      )}
+      {sheet === 'visit' && (
+        <ViewingSheet artwork={artwork} open onClose={() => setSheet(null)} />
+      )}
+      {sheet === 'price' && (
+        <PriceSheet artwork={artwork} open onClose={() => setSheet(null)} />
+      )}
     </>
   );
 }

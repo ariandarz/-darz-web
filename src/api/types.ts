@@ -117,14 +117,39 @@ export interface CreatedRequest {
  * offer→offer, "Request price"→price, "Ask about"→information. */
 export type RequestKind = Schemas['RequestKindEnum'];
 
-/** `RequestCreate.detail` is still `unknown` in the generated schema — the
- * backend publishes a `detail_polymorphic_serializer()` helper
- * (`apps.crm.serializers`) but it isn't yet wired into the create endpoint's
- * `@extend_schema(request=...)`, so the per-kind union never reaches this
- * file. Flagged as a follow-up, not silently worked around: what we send
- * here is still the frontend's best reading, not a typechecked contract. See
- * `docs/API_INTEGRATION_GAPS.md` G-F1-1. */
-export type RequestDetail = Record<string, unknown>;
+/** Per-kind `detail` shapes, typed **by hand** from the backend's
+ * `DETAIL_SERIALIZERS` (`apps/crm/serializers.py:14-51`, `development` @
+ * 3801786) because the OpenAPI document still publishes `detail` as an
+ * opaque object — `detail_polymorphic_serializer()` exists there with no
+ * call site (`docs/PHASE_5_API_GAPS.md` G-P5-1, formerly G-F1-1). Keys
+ * outside a kind's serializer are dropped server-side, and the stored
+ * `detail` is the serializer's own output (an offer's `amount` comes back as
+ * a string). */
+export interface HoldDetail {
+  /** server-set on create: now + 48 h (`Hold.DEFAULT_TTL`); never sent */
+  expires_at?: string;
+}
+export interface OfferDetail {
+  amount: number | string;
+  currency: string;
+  counter_of?: string | null;
+}
+export type ViewingMode = 'in_person' | 'virtual';
+export interface ViewingDetail {
+  /** ISO-8601 — required by the backend */
+  preferred_time: string;
+  /** required by the backend */
+  mode: ViewingMode;
+}
+/** `information` · `price` · `availability` · `message` */
+export interface MessageDetail {
+  message?: string;
+}
+export interface PurchaseDetail {
+  notes?: string;
+}
+export type RequestDetail =
+  HoldDetail | OfferDetail | ViewingDetail | MessageDetail | PurchaseDetail;
 
 /** Collector's own request list params (`GET /api/crm/requests/`). */
 export interface CollectorRequestQuery {

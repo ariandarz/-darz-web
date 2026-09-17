@@ -254,7 +254,7 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[~]` creation, idempotency, offer floor, reply thread and Send Inquiry shipped; activity self-logging + the availability / message kinds open
+## Phase 5 — Collector: requests + activity `[~]` step 1 of 4 done 2026-09-17 (`docs/PHASE_5_PLAN.md`): every kind files; the list, the detail and activity logging follow
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). Backend Phase 19
 (`darzmarket-api`) shipped the core-loop backend work (reply thread API, offer floor enforcement,
@@ -262,16 +262,17 @@ idempotency, per-artwork `allowed_actions`) 2026-09-11 — see `docs/API_INTEGRA
 what's wired vs. still open. The reply-thread / "Chat with Darz" UI shipped in v0.1 (2026-09-11,
 see Phase 9) — nothing in this phase is backend-blocked any more except the typed `detail` (G-F1-1).
 
-- [~] Request creation UI per kind: **the four the artwork detail fires are built** —
-      `purchase` (Buy now), `hold` (24h hold), `viewing` (Request viewing), `offer` (Make an
-      Offer sheet), plus `price` as the primary on a price-on-request work. Ported from
-      `app.html`'s `DZ.act()` (:10462) / `DZ.offer()` (:11074) incl. the exact confirmation copy,
-      the live thousands-grouping amount field, and the `dzGuard` double-tap guard (verified at the
-      server: three synchronous taps → one POST). **The `detail` shape is still unverified** — the
-      backend's `DETAIL_SERIALIZERS` are not yet in the OpenAPI document (a backend follow-up, see
-      `docs/API_INTEGRATION_GAPS.md` G-F1-1), so `{amount, currency}` is a reading, not a
-      typechecked contract. Remaining kinds: availability / message. **Now also filters shown
-      actions by `artwork.allowed_actions`** (`ActionButtons.tsx`, G-F1-3).
+- [x] Request creation UI per kind — **Phase 5 step 1, 2026-09-17** (`docs/PHASE_5_PLAN.md`):
+      `purchase` (Buy now), `hold` (**48h hold** — the API's TTL, owner decision D2), `viewing`
+      (**`ViewingSheet`**: preferred time + In person / Virtual, the two fields
+      `ViewingDetailSerializer` requires — the bare POST v0.1 sent was rejected 400), `offer` (Make
+      an Offer sheet, now staying open on a floor rejection so the message is seen), `price`
+      (**`PriceSheet`** — the old Request Price & Availability sheet, `app.html:11046-11064`, minus
+      the identity fields the backend snapshots itself, D6) as the primary on a price-hidden work,
+      and the artist page's enquiry through `RequestController` (idempotent key, "Enquiry
+      received"). `detail` is typed per kind **by hand** from `apps/crm/serializers.py`
+      (`docs/PHASE_5_API_GAPS.md` G-P5-1); `availability` has no old-app surface (G-P5-7);
+      `message` is the general Chat. Actions still filter by `artwork.allowed_actions` (G-F1-3).
 - [x] Collector's own request list/detail — v0.1 (2026-09-11): Profile › Market lists the collector's
       requests with filter chips over `GET /api/crm/requests/`, Overview › Recent activity shows the
       latest, and each inquiry opens as its thread at `/chat/:id`. No separate detail page is planned.
