@@ -345,6 +345,22 @@ _Append one entry per step as it merges. Newest last._
   the hand-typed per-kind `detail` union, "48h hold", "Request Price & Availability" as the
   price-hidden primary, the offer sheet staying open on a rejection. `docs/PHASE_5_API_GAPS.md`
   written (G-P5-1 … 11); `API_INTEGRATION_GAPS.md` drift corrected.
+- **2026-09-17 — Step 1 verified live** against `darzmarket-api` `development` @ 3801786 run
+  locally (Postgres 16 + Redis started from the container's own binaries — Docker's daemon is not
+  available there — `migrate`, a seeded artist / priced work / price-on-request work / collector
+  key), `VITE_FEATURE_SET=full`, Playwright on the pre-installed Chromium at 390×844 @2× dark and
+  1440×900 dark. Every kind landed as `GET /api/crm/requests/` reads it back: `viewing`
+  `{preferred_time, mode: virtual}` (the path v0.1 broke), `hold` with the server's 48 h
+  `expires_at`, `purchase` `{notes: ""}`, `offer` `{amount: "30000.00", currency: "USD"}`, `price`
+  with the prefilled message, and the artist `information` request with `artwork: null`; each
+  showed its confirmation sheet with the old copy. Captures reviewed: the action stack, the viewing
+  sheet empty / filled / confirmed, the price-hidden detail, the price sheet + confirmation, the
+  artist confirmation, the desktop viewing sheet. One spacing fix followed (the note and the field
+  label sat flush under the work line). Two things noted, not changed: brand fonts do not load in
+  the container (Google Fonts is blocked there), so the captures render the fallback serif and the
+  price sheet's title wraps; and in `full` mode v0.1's **Send Inquiry** primary stacks above **Buy
+  now** because `features.sendInquiry` stays on — a `features.ts` question for the owner, not a
+  Phase 5 change.
 
 ## Resolved decisions
 
