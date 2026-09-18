@@ -261,7 +261,7 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[~]` step 1 of 4 done 2026-09-17 (`docs/PHASE_5_PLAN.md`): every kind files; the list, the detail and activity logging follow
+## Phase 5 — Collector: requests + activity `[~]` steps 1-2 of 4 done (`docs/PHASE_5_PLAN.md`): every kind files and the list reads; the detail and activity logging follow
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). Backend Phase 19
 (`darzmarket-api`) shipped the core-loop backend work (reply thread API, offer floor enforcement,
@@ -280,9 +280,19 @@ see Phase 9) — nothing in this phase is backend-blocked any more except the ty
       received"). `detail` is typed per kind **by hand** from `apps/crm/serializers.py`
       (`docs/PHASE_5_API_GAPS.md` G-P5-1); `availability` has no old-app surface (G-P5-7);
       `message` is the general Chat. Actions still filter by `artwork.allowed_actions` (G-F1-3).
-- [x] Collector's own request list/detail — v0.1 (2026-09-11): Profile › Market lists the collector's
-      requests with filter chips over `GET /api/crm/requests/`, Overview › Recent activity shows the
-      latest, and each inquiry opens as its thread at `/chat/:id`. No separate detail page is planned.
+- [x] Collector's own request list — **Phase 5 step 2, 2026-09-18**: one status module
+      (`features/requests/status.ts`) turns the backend's per-kind workflow tokens into the old
+      app's collector vocabulary (In review · Replied · Accepted · Resolved · Not accepted ·
+      Closed, no pill on a just-filed request), the four-step rail `dzMktStage`/`MKT_RAIL` and the
+      per-kind note `dzActStatusNote` — replacing the three hardcoded status lists this repo had
+      grown, with an unknown status falling back to the `/api/options/` label. Profile › Market now
+      carries **Your acquisitions** (`dzAcqSectionHTML`: purchase / offer / hold with the rail, or
+      one line once ended) over the saved works and the activity list, whose rows are
+      `dzActRowHTML`'s: `ACT_KL` labels, the date with its time, the offer amount, "New reply", the
+      unseen dot. **Clear activity** is built (owner decision D4) as a session-local hide — the
+      backend has no collector archive (`docs/PHASE_5_API_GAPS.md` G-P5-4). Artwork titles come
+      through `ArtworkCache` (G-P5-2). Each row still opens Chat only for a conversation; step 3
+      gives every kind its detail.
 - [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
       (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
 - [x] **Reply-thread chat UI** — shipped in v0.1 (2026-09-11) over backend Phase 19.3

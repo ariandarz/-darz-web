@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 5 step 2: the collector's request list (`docs/PHASE_5_PLAN.md`)
+
+- `features/requests/status.ts` — one collector vocabulary over the backend's per-kind statuses
+  (pill · rail stage · per-kind note), pinned by a test against `apps/crm/lifecycle.py`; replaces
+  three hardcoded lists. Profile › Market: **Your acquisitions** with the four-step rail, activity
+  rows on `ACT_KL` labels with time, amount and "New reply", the D9 empty state, and **Clear
+  activity** as a session-local hide (D4 · G-P5-4). Fixed on the way: Profile's lists were memoized
+  on a value that never changes, so a poll never reached the screen. 111 tests.
+
 ## 2026-09-17 — Phase 5 step 1: every request kind files correctly (`docs/PHASE_5_PLAN.md`)
 
 - `ViewingSheet` (preferred time + In person / Virtual — `ViewingDetailSerializer` requires both;

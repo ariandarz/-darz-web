@@ -43,10 +43,17 @@ export interface ConversationsSnapshot {
   status: ConversationsStatus;
   /** every request the collector has filed, newest first (the API order) */
   requests: CollectorRequest[];
+  /** ids the collector cleared from their activity list — see `clearActivity` */
+  hidden: ReadonlySet<string>;
   error: string | null;
 }
 
-const EMPTY: ConversationsSnapshot = { status: 'idle', requests: [], error: null };
+const EMPTY: ConversationsSnapshot = {
+  status: 'idle',
+  requests: [],
+  hidden: new Set(),
+  error: null,
+};
 
 export class ConversationsController extends Observable<ConversationsSnapshot> {
   private readonly crm: CrmService;
@@ -148,10 +155,12 @@ export class ConversationsController extends Observable<ConversationsSnapshot> {
   }
 
   /** Every request that is not a conversation — the Market activity list
-   * (purchase / hold / offer / viewing / price / availability). */
+   * (purchase / hold / offer / viewing / price / availability), minus
+   * anything the collector cleared. */
   activity(): CollectorRequest[] {
-    return this.getSnapshot().requests.filter(
-      (r) => r.kind !== 'information' && r.kind !== 'message',
+    const { requests, hidden } = this.getSnapshot();
+    return requests.filter(
+      (r) => r.kind !== 'information' && r.kind !== 'message' && !hidden.has(r.id),
     );
   }
 
@@ -162,6 +171,28 @@ export class ConversationsController extends Observable<ConversationsSnapshot> {
   absorb(row: CollectorRequest): void {
     const rest = this.getSnapshot().requests.filter((r) => r.id !== row.id);
     this.patch({ requests: [row, ...rest], status: 'ready' });
+  }
+
+  /** app.html:11355-11373 — "Clear activity": the collector's request and
+   * reply history goes, their saved works and their conversation with Darz
+   * stay. The old app deleted the rows it owned locally and mirrored a
+   * tombstone to the cloud; this backend has **no collector-side delete,
+   * archive or hide** (`docs/PHASE_5_API_GAPS.md` G-P5-4), so the clear is
+   * kept in memory for this session only and the rows return on the next
+   * load. The sheet says so rather than repeating the old app's "This can't
+   * be undone", which would not be true here. Never `localStorage` — offline
+   * is out (owner decision 2026-09-04). */
+  clearActivity(): void {
+    const next = new Set(this.getSnapshot().hidden);
+    for (const r of this.activity()) next.add(r.id);
+    this.patch({ hidden: next });
+  }
+
+  /** One row out of the activity list, same terms as `clearActivity`. */
+  hide(requestId: string): void {
+    const next = new Set(this.getSnapshot().hidden);
+    next.add(requestId);
+    this.patch({ hidden: next });
   }
 
   /** Locally clear a thread's unread count (after `mark-seen`). */

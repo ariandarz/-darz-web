@@ -62,10 +62,14 @@ request. A deep link to a request must find it in the list.
 hide or archive. The old app's **Remove from activity** / **Clear activity** (`app.html:11333-11373`)
 were local-history deletes with a cloud mirror.
 
-- **Frontend (owner decision D4, 2026-09-17: implement the UI):** both controls and their confirm
-  sheets are built faithfully behind `features.activityArchive`; until an endpoint exists the
-  hide is **in-memory for the session** (never `localStorage` — owner decision 2026-09-04) and the
-  gap is stated in a code comment at the call site.
+- **Frontend (owner decision D4, 2026-09-17: implement the UI).** Built in step 2:
+  `ConversationsController.clearActivity()` / `.hide(id)` keep a set of hidden ids in the snapshot
+  and `activity()` filters it, with **Clear activity** in the list header over the old app's confirm
+  sheet (`app.html:11355-11360`). The hide is **in memory for this session only** — never
+  `localStorage` (owner decision 2026-09-04) — so the rows return on the next load. One sentence of
+  the original copy is deliberately not ported: "This can't be undone." would be false here, so the
+  sheet says Darz keeps its own record and the list returns on reload. Stated again in a code
+  comment at the call site. `hide(id)` is wired for step 3's "Remove from activity".
 - **Closes it:** `POST /api/crm/requests/{id}/archive/` (+ `?archived=` on the collector list) or a
   collector-side `hidden` flag; then the controls persist.
 
