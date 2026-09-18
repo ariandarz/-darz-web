@@ -31,6 +31,7 @@ import { AccessRequestsPage } from './features/admin/AccessRequestsPage';
 import { AdminChatPage } from './features/admin/AdminChatPage';
 import { CollectorDetailPage } from './features/admin/CollectorDetailPage';
 import { CollectorsPage } from './features/admin/CollectorsPage';
+import { ClubPage } from './features/admin/ClubPage';
 import { DesignPage } from './features/admin/DesignPage';
 import { DataHealthPage } from './features/admin/DataHealthPage';
 import { ImportBatchPage } from './features/admin/ImportBatchPage';
@@ -278,6 +279,7 @@ export function AppRoutes() {
           }
         />
         <Route path="/admin/collectors/:id" element={<CollectorDetailPage />} />
+        <Route path="/admin/club" element={<ClubPage />} />
         {/* owner-only (`OWNER_ONLY` has `system`): the nav hides the tab from a
             standard admin and RequireOwner answers a typed URL with the old
             panel's own refusal card (:33116) rather than a redirect. */}

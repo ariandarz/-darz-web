@@ -21,6 +21,8 @@
  */
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Segment } from '../../components';
+import { ActivityFeed } from './ActivityFeed';
 import { useApi } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type {
@@ -54,6 +56,12 @@ export function AdminRequestsPage() {
   // as the controller's initial query: after that the controller owns the
   // query, and re-reading it on every render would fight the user's filtering.
   const [params] = useSearchParams();
+  // The tab is the old panel's "Requests & Activity" — one name, two halves.
+  // The segment switches them; ?view=activity (and ?collector=, from a
+  // collector's workspace) opens directly on the log half.
+  const [view, setView] = useState<'requests' | 'activity'>(
+    params.get('view') === 'activity' ? 'activity' : 'requests',
+  );
   const { state, setQuery, setPage, reload } = useListController<
     AdminRequest,
     AdminRequestQuery
@@ -155,9 +163,41 @@ export function AdminRequestsPage() {
     },
   ];
 
+  if (view === 'activity') {
+    return (
+      <DeskPage
+        title="Requests & Activity"
+        action={
+          <Segment<'requests' | 'activity'>
+            label="Requests or activity"
+            options={[
+              { value: 'requests', content: 'Requests' },
+              { value: 'activity', content: 'Activity' },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+        }
+      >
+        <ActivityFeed crm={crm} initialCollector={params.get('collector') ?? undefined} />
+      </DeskPage>
+    );
+  }
+
   return (
     <DeskPage
-      title="Requests"
+      title="Requests & Activity"
+      action={
+        <Segment<'requests' | 'activity'>
+          label="Requests or activity"
+          options={[
+            { value: 'requests', content: 'Requests' },
+            { value: 'activity', content: 'Activity' },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+      }
       toolbar={
         <>
           <SelectFilter

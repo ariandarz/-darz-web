@@ -188,6 +188,18 @@ export interface Choice {
  * guarded state machine. Never hardcode this lookup (CLAUDE.md). */
 export type RequestStatusByKind = Record<string, Choice[]>;
 
+/** A named Collector Club selection (backend Phase 35) — a management layer
+ * over `ArtworkSelectionGrant`: saving one syncs the underlying per-(artwork,
+ * collector) grants, and removing a pair only revokes its grant if no OTHER
+ * selection still wants it (two selections can overlap; verified by a real
+ * backend test). Reads nest `{id,title}` / `{id,display_name}`; writes take
+ * `artwork_ids` / `collector_ids` + `expected_version`. */
+export type CollectorSelection = Schemas['CollectorSelection'];
+
+/** One collector self-logged event (view/save/search/login) — the admin
+ * Collector Activity feed (backend Phase 28), nested like the request feed. */
+export type CollectorActivityAdmin = Schemas['CollectorActivityAdmin'];
+
 /** `GET /api/catalog/admin/data-health/` (backend Phase 23). Item shapes vary
  * per check (`apps/catalog/health.py`), so they stay loose here and the desk
  * reads them defensively. Only 3 of the old desk's ~8 checks exist — the rest
