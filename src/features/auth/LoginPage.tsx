@@ -60,7 +60,12 @@ export function LoginPage() {
   const { isAuthenticated } = useSession();
   const location = useLocation();
   const activity = useActivity();
-  const [open, setOpen] = useState(false);
+  /* The team gate's "← Back to private access" arrives with `state.open`: in
+     the old app that link switched `st.view` inside one already-open pop
+     (app.html:2541), so landing on the closed landing would lose a step the
+     original never had. */
+  const openedFromTeamGate = (location.state as { open?: boolean } | null)?.open === true;
+  const [open, setOpen] = useState(openedFromTeamGate);
   const [view, setView] = useState<'signin' | 'request'>('signin');
   const [firstName, setFirstName] = useState('');
   const [accessKey, setAccessKey] = useState('');

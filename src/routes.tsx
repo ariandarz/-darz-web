@@ -18,11 +18,14 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import App from './App';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { RequireTeam } from './features/auth/RequireTeam';
+import { TeamLoginPage } from './features/auth/TeamLoginPage';
 import { ArtistDetailPage } from './features/catalogue/ArtistDetailPage';
 import { ArtistListPage } from './features/catalogue/ArtistListPage';
 import { ArtworkCacheProvider } from './features/catalogue/ArtworkCacheProvider';
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
+import { AdminLayout } from './features/admin/AdminLayout';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
 import { AuctionEventPage } from './features/auctions/AuctionEventPage';
 import { AuctionListPage } from './features/auctions/AuctionListPage';
@@ -184,10 +187,31 @@ export function AppRoutes() {
             </Gate>
           }
         />
+      </Route>
 
-        {/* Admin desk. `RequireAuth` only proves a session exists — the API's
-            own admin permissions are the real gate, and a collector token gets
-            403s here. A principal-aware guard is Phase 7 proper. */}
+      {/* Admin desk — its own world. Not inside `CollectorLayout`: the desk
+          needs no collector provider (it reads `crm`/`options` only) and must
+          not wear the collector nav. `RequireTeam` is the principal-aware guard
+          the old TODO here asked for — `RequireAuth` proves only that *a*
+          session exists, and a collector token just collects 403s from
+          `/api/crm/admin/...`. */}
+      <Route
+        path="/admin/login"
+        element={
+          /* Gated too, so the whole `/admin` prefix obeys FEATURE_ROUTES: with
+             `adminDesk` off there must be no team gate to find either. */
+          <Gate flag="adminDesk">
+            <TeamLoginPage />
+          </Gate>
+        }
+      />
+      <Route
+        element={
+          <RequireTeam>
+            <AdminLayout />
+          </RequireTeam>
+        }
+      >
         <Route
           path="/admin/requests"
           element={

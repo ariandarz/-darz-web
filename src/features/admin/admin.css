@@ -14,8 +14,17 @@
 
 /* The admin desk is a desktop surface — `.dz-page`'s 480px collector column
    (design/components.css) is deliberately widened here rather than inline. */
+/* `#root` is a centring flex row, so `.dz-page` normally centres by being the
+   one flex item. Under AdminLayout the shell is that item instead, so the page
+   centres itself rather than relying on it. */
+.ad-shell {
+  width: 100%;
+  min-width: 0;
+}
+
 .ad-page {
   max-width: 1040px;
+  margin-inline: auto;
   padding: 24px 20px 40px;
 }
 
@@ -205,4 +214,43 @@
   margin-left: 6px;
   background: #e8005c;
   color: #fff;
+}
+
+/* ---- the team bar (AdminLayout) ---------------------------------------
+   NOT a port. The old admin's chrome is a whole workspace (Phase 11); this is
+   the one line of scaffolding that keeps a signed-in team member from being
+   stranded with no sign-out, because the desk sits outside the collector
+   `AppShell`. Tokens only, so it is correct in Paper and Black alike. When the
+   real admin shell lands, this should be deleted rather than grown. */
+.ad-bar {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 14px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ad-who {
+  font-size: 12px;
+  color: var(--ink3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ad-leave {
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  background: none;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 8px 12px;
+  color: var(--ink);
+  cursor: pointer;
+  flex: none;
+}
+.ad-leave:hover {
+  border-color: var(--ink);
 }

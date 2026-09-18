@@ -1,7 +1,8 @@
 # Phase 5 — Collector: requests + activity — implementation plan
 
-**Status:** COMPLETE — all four steps implemented and merged (steps 1-3) or open as PR #26 (step
-4). Owner-confirmed 2026-09-17 (D1-D11 — see § Resolved decisions; **F1 remains open**) ·
+**Status:** COMPLETE — all four steps implemented, merged, and **released to `main` 2026-09-18**
+(step 4 was PR #26; PR #27 released it, PR #28 brought `development` back level). Owner-confirmed
+2026-09-17 (D1-D11 — see § Resolved decisions; **F1 closed 2026-09-18**, see below) ·
 **Created:** 2026-09-17 · **Slicing proposed:** four frontend steps, no backend work — every API gap
 is documented and the UI is built around it (owner instruction, 2026-09-17: "if any gaps on the API
 side, focus only on the UI design and implement that, then update the API gaps document").
@@ -17,7 +18,10 @@ were checked together on 2026-09-17, as `CLAUDE.md` requires:
 - **The design package** `design/market-app/` (build 1229) — **it is not on `darzstudio.art` `main`.**
   It lives only on the head of `darzstudio.art` PR #846 (`claude/youthful-shannon-8ind4p`, `627eea3`),
   an open **draft** against that repo's `development`. `CLAUDE.md` reference 0 assumes it is in the
-  clone; until #846 merges, fetch that branch to read it (owner flag F1 below). Its captures for this
+  clone. **Resolved 2026-09-18:** #846 was merged on the owner's instruction and released, so the
+  package now sits on that repo's `main` (`b8ee118`) as well as `development` — 172 files, 161 of
+  them screenshots. `CLAUDE.md` reference 0 is true for a fresh clone; no branch fetch is needed any
+  more. Its captures for this
   phase: `03-detail(-full)`, `04-request-price`, `05-offer`, `15-profile-overview`, `16-profile-market`
   (the profile capture shows only the empty state — a fresh device), `23-chat`.
 - **`app.html` @ `main` `e9e4d6d`** (v1232, 2026-09-12) — the shipped behaviour, line-cited below.
@@ -297,7 +301,7 @@ no UI path waits on the call.
 | D9 | Profile empty-state line: old "Save a work, request a price, or make an offer — it all gathers here." vs v0.1's "Save a work or send an inquiry — …" | old line when `commerceActions` is on, v0.1 line otherwise |
 | D10 | Request detail as the `/chat/:id` route (v0.1 pattern) or a sheet (old app) | route |
 | D11 | Show "Held until <expires_at>" on a hold (not in the old app) | show it — the data exists and the old app had no timer only because it had no backend |
-| F1 | `design/market-app/` is only on `darzstudio.art` PR #846's branch | merge #846 (or say where the package should live); until then Claude fetches the branch |
+| F1 | `design/market-app/` is only on `darzstudio.art` PR #846's branch | **CLOSED 2026-09-18** — owner: "merge#846". Merged, then released to that repo's `main` (PR #858) and merged back (PR #859). The package is on `main`: 172 files, 161 screenshots. |
 
 ### D3 — proposed collector status map (backend status → label · pill · rail stage · note)
 
