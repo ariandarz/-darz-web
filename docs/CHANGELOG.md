@@ -5,6 +5,16 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b Step 3: App Design — the owner controls the app
+
+- `/admin/design` (both its old groups) edits the typed FeatureFlags table and publishes it as
+  `theme.features`; the app reads the public `GET /api/app-theme/` on boot, before first paint,
+  merging validated switches over the `VITE_FEATURE_SET` floor (`resolveFeatureFlags`: unknown keys
+  and non-booleans refused, `market` unswitchable; fetch failure applies nothing).
+- Save vs "Save version" kept distinct; versions Activate/Delete; Reset to factory. Live-verified:
+  Records off → collector `/records` clamps to `/`; Reset restores; Activate re-applies. The old
+  desk's fonts/colours/button editors wait for their consumers (D17). 196 tests (+6).
+
 ## 2026-09-18 — Phase 11b Step 2: Collectors + Access Requests
 
 - The Collectors roster (search/tier/access/sort = the server's own filterset), create/edit with the

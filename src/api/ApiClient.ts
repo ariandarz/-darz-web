@@ -24,7 +24,7 @@ export class ApiClient extends HttpClient {
 
   /** Public, authenticated request — used by `ResourceService` subclasses. */
   send<T>(
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,
     opts: RequestOptions = {},
   ) {
@@ -34,7 +34,7 @@ export class ApiClient extends HttpClient {
   /** Same as `send`, keeping the envelope `message` and the HTTP status — for
    * the idempotent create that must tell a fresh 201 from a 200 replay. */
   sendEnveloped<T>(
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     path: string,
     opts: RequestOptions = {},
   ): Promise<Enveloped<T>> {

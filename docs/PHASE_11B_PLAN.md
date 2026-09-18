@@ -376,4 +376,10 @@ _Append one entry per step as it merges. Newest last._
   G-KEY-1 — the roster-wide key desk stays `[!]`). Verified full circle: an issued key signed a
   real collector in at the gate; a standard admin gets the :33116 refusal card and no Access
   Management group. 190 tests.
+- **2026-09-18 — Step 3 done (promoted): App Design, the control half.** The owner's switches are
+  live end to end: desk → `theme.features` → public read on boot → the collector app, with the
+  build-time set as the unremovable floor. Verified by switching Records off and watching the
+  collector's deep link clamp, then Reset and Activate both round-trip. The copy/contact/social
+  keys and the old visual editors follow with their consumers (D17). The live theme was reset to
+  factory after verification, so nothing stays switched off by accident overnight.
 

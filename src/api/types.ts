@@ -188,6 +188,16 @@ export interface Choice {
  * guarded state machine. Never hardcode this lookup (CLAUDE.md). */
 export type RequestStatusByKind = Record<string, Choice[]>;
 
+/** The live app theme (backend Phase 32) — `theme` is a freeform object with
+ * no fixed schema on either side; the Market App decides what the keys mean
+ * (`docs/ADMIN_ARCHITECTURE.md` §4: `features`, `contact`, `copy`, `social`).
+ * Served identically by the public `GET /api/app-theme/` (`AllowAny`) and the
+ * admin read. */
+export type AppTheme = Schemas['AppTheme'];
+/** A named checkpoint — an explicit "Save version", never an automatic
+ * snapshot (the old panel's two distinct buttons). */
+export type AppThemeVersion = Schemas['AppThemeVersion'];
+
 /** Admin Collectors desk (backend Phase 27) — `CollectorAdminSerializer`:
  * every field, admin-only surface. `version` is the optimistic-lock counter;
  * send it back on PATCH or the write 409s. */

@@ -98,9 +98,18 @@ describe('visibleGroups', () => {
     // built tab are what the navbar shows. Fourteen, not fifteen: `ADGROUPS`
     // has fifteen entries but `more` is the folded-group MENU, not a group.
     expect(ADMIN_GROUPS.length).toBe(14);
-    expect(visibleGroups('owner').map((g) => g.key)).toEqual(['collectors', 'system']);
+    expect(visibleGroups('owner').map((g) => g.key)).toEqual([
+      'market',
+      'collectors',
+      'operations',
+      'system',
+    ]);
     // `system` is owner-only, so a standard admin still sees one group
-    expect(visibleGroups('standard_admin').map((g) => g.key)).toEqual(['collectors']);
+    expect(visibleGroups('standard_admin').map((g) => g.key)).toEqual([
+      'market',
+      'collectors',
+      'operations',
+    ]);
   });
 
   it('drops an owner-only group wholesale for a standard admin', () => {
@@ -188,11 +197,19 @@ describe('the map itself — every registered tab is documented', () => {
     }
   });
 
-  it('has no duplicate route among built tabs', () => {
-    const paths = allTabs()
-      .map((t) => t.path)
-      .filter((p): p is string => p !== null);
-    expect(new Set(paths).size).toBe(paths.length);
+  it('has no duplicate route among built tabs — except the same tab twice', () => {
+    // App Design is deliberately in two groups (one screen, two entry points),
+    // so /admin/design appears once per group under the same key. Any OTHER
+    // collision — two different desks on one route — is a wiring mistake.
+    const seen = new Map<string, string>();
+    for (const g of ADMIN_GROUPS) {
+      for (const t of g.tabs) {
+        if (t.path === null) continue;
+        const prior = seen.get(t.path);
+        if (prior !== undefined) expect(prior).toBe(t.key);
+        seen.set(t.path, t.key);
+      }
+    }
   });
 
   it('keeps Dashboard and Chat out of every group — they are :11088/:11099', () => {
@@ -231,8 +248,10 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
     expect(built.map((t) => t.key)).toEqual([
       'dashboard',
       'chat',
+      'design',
       'users',
       'activity',
+      'design',
       'system',
     ]);
   });

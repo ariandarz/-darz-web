@@ -31,6 +31,8 @@ import type {
   CollectorRequest,
   AccessKeyAdmin,
   AccessRequestAdmin,
+  AppTheme,
+  AppThemeVersion,
   CollectorAdmin,
   CollectorAdminQuery,
   CollectorLoginEvent,
@@ -366,6 +368,48 @@ export class AdminAccountsService extends ResourceService {
   }
   declineAccessRequest(id: string) {
     return this.create<AccessRequestAdmin>(`/access-requests/${id}/decline/`);
+  }
+}
+
+/** `/api/app-theme/` + `/api/admin/app-theme/` (backend Phase 32) — the live
+ * theme: a freeform JSON singleton, public-read (pre-login) and admin-write,
+ * with named version checkpoints. The Market App's owner-controlled switches
+ * ride in `theme.features` (`docs/ADMIN_ARCHITECTURE.md` §4). */
+export class ThemeService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '');
+  }
+
+  /** The public read — `AllowAny`, safe before sign-in. */
+  publicTheme() {
+    return this.retrieve<AppTheme>('/app-theme/');
+  }
+  adminTheme() {
+    return this.retrieve<AppTheme>('/admin/app-theme/');
+  }
+  /** "Save" — publishes immediately, overwriting the theme object entirely
+   * (the server's own wording), so callers merge before calling. */
+  publish(theme: Record<string, unknown>) {
+    return this.client.send<AppTheme>('PUT', '/admin/app-theme/', { body: { theme } });
+  }
+  reset() {
+    return this.create<AppTheme>('/admin/app-theme/reset/');
+  }
+  versions(query: { per_page?: number; page?: number } = {}) {
+    return this.list<AppThemeVersion>(
+      '/admin/app-theme/versions/',
+      query as RequestOptions['query'],
+    );
+  }
+  /** "Save version" — the explicit named checkpoint. */
+  saveVersion(name: string) {
+    return this.create<AppThemeVersion>('/admin/app-theme/versions/', { name });
+  }
+  activateVersion(id: string) {
+    return this.create<AppTheme>(`/admin/app-theme/versions/${id}/activate/`);
+  }
+  deleteVersion(id: string) {
+    return this.remove(`/admin/app-theme/versions/${id}/`);
   }
 }
 

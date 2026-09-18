@@ -700,17 +700,20 @@ package/faithful-port research.
       shown once)/list/edit (name/email/role/is_active)/remove. Cannot deactivate/remove your own
       account (the API 400s it — surface that as a disabled control, not just an error toast).
       `GET/POST /api/auth/admin/team-users/`, `GET/PATCH/DELETE .../{id}/`.
-- [ ] **App Design** (old panel "App Design" tab) — publish the live theme (freeform JSON — colors,
-      layout, dark mode, stats strip, social links, per-page buttons; no fixed schema, the frontend
-      defines what keys it reads), reset to factory defaults, save/list/activate/delete named
-      version checkpoints. The **public** read (`GET /api/app-theme/`, `AllowAny`) is what the
-      Market App itself should read for its live design — **this closes several "no theme/settings
-      endpoint" gaps already recorded in `docs/API_INTEGRATION_GAPS.md`'s "Still open" section**:
-      the WhatsApp chat number, hero copy, About text, social links, `shipNote`, and Terms/Privacy
-      text can all now live under `theme.*` keys instead of being hardcoded. Update that doc's
-      "Still open" bullet once this lands.
-      `GET/PUT /api/admin/app-theme/`, `POST .../reset/`, `GET/POST .../versions/`,
-      `POST .../versions/{id}/activate/`, `DELETE .../versions/{id}/`.
+- [~] **App Design** (old panel "App Design" tab) — **the switches half shipped 2026-09-18**: the
+      desk (`/admin/design`, reachable from both its old groups) edits the typed `FeatureFlags`
+      table and publishes it as `theme.features`; the Market App reads the public
+      `GET /api/app-theme/` on boot (alongside `session.resume()`, before first paint) and merges
+      validated switches over the `VITE_FEATURE_SET` floor — a dead endpoint can never dark-screen
+      the app, `market` cannot be switched off, non-boolean/unknown keys are refused
+      (`resolveFeatureFlags`, tested). Save vs "Save version" kept distinct (the old desk's two
+      buttons); versions list/Activate/Delete + Reset. Live-verified: Records off → the collector's
+      `/records` clamps to `/`; Reset restores; Activate re-applies a checkpoint.
+      **Still open** `[ ]`: the `theme.copy`/`contact`/`social` keys (WhatsApp number, hero copy,
+      About, shipNote, Terms/Privacy — the `API_INTEGRATION_GAPS.md` "Still open" items) land with
+      their collector-side consumers, D17's key names from the old `app_theme` payload; and the old
+      desk's fonts/colour/per-page-button editors, deliberately not built until something reads
+      those keys (an editor for keys with no consumer lies about what Save does).
 - [ ] **Projects desk** (old panel "Projects" — Dashboard/List/Pipeline/Packages/Proposal/Calculator/
       Partners/Reports sub-tabs) — full pipeline CRUD: create/edit/archive a project, drag/move
       through 17 stages (auto-derives the status label — don't compute it client-side), partner
