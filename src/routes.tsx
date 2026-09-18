@@ -16,6 +16,7 @@
  */
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import App from './App';
+import { useSession } from './api/hooks';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { RequireTeam } from './features/auth/RequireTeam';
@@ -25,8 +26,9 @@ import { ArtistListPage } from './features/catalogue/ArtistListPage';
 import { ArtworkCacheProvider } from './features/catalogue/ArtworkCacheProvider';
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
-import { AdminLayout } from './features/admin/AdminLayout';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
+import { AdminShell } from './features/admin/AdminShell';
+import { asAdminRole, firstVisiblePath } from './features/admin/adminNav';
 import { AuctionEventPage } from './features/auctions/AuctionEventPage';
 import { AuctionListPage } from './features/auctions/AuctionListPage';
 import { AuctionNotificationsPage } from './features/auctions/AuctionNotificationsPage';
@@ -75,6 +77,19 @@ function CollectorLayout() {
       </SavedProvider>
     </RequireAuth>
   );
+}
+
+/**
+ * `/admin` itself has no desk — it clamps to the first page this role can
+ * actually open, the way the old panel does when the current page is not in the
+ * allowed set (`darz-studio.html:11815`:
+ * `if(!set[page])page=set.dashboard?'dashboard':'database';`). Market is the
+ * fallback for the case that cannot arise today: a team session whose role
+ * unlocks nothing at all.
+ */
+function AdminIndex() {
+  const { me } = useSession();
+  return <Navigate to={firstVisiblePath(asAdminRole(me?.role)) ?? '/'} replace />;
 }
 
 /** Renders `children` only when the feature is on; otherwise Market. */
@@ -194,7 +209,12 @@ export function AppRoutes() {
           not wear the collector nav. `RequireTeam` is the principal-aware guard
           the old TODO here asked for — `RequireAuth` proves only that *a*
           session exists, and a collector token just collects 403s from
-          `/api/crm/admin/...`. */}
+          `/api/crm/admin/...`.
+
+          The desk's own tabs live in `features/admin/adminNav.ts`, ported from
+          the old panel's `ADGROUPS`; `AdminShell` renders them. A route added
+          below must be given a `path` in that table too, or the navbar will not
+          know it exists. */}
       <Route
         path="/admin/login"
         element={
@@ -207,19 +227,23 @@ export function AppRoutes() {
       />
       <Route
         element={
-          <RequireTeam>
-            <AdminLayout />
-          </RequireTeam>
+          /* One gate for the whole prefix rather than one per desk — the
+             children are all `/admin/...`, so `FEATURE_ROUTES`' own
+             `['adminDesk', '/admin']` entry is the rule being enforced. */
+          <Gate flag="adminDesk">
+            <RequireTeam>
+              <AdminShell />
+            </RequireTeam>
+          </Gate>
         }
       >
-        <Route
-          path="/admin/requests"
-          element={
-            <Gate flag="adminDesk">
-              <AdminRequestsPage />
-            </Gate>
-          }
-        />
+        <Route path="/admin" element={<AdminIndex />} />
+        <Route path="/admin/requests" element={<AdminRequestsPage />} />
+        {/* An unknown `/admin/...` clamps to the desk, not to the collector
+            Market the global catch-all would send it to: a team session has no
+            business being dropped into the catalogue, and clamping is what the
+            old panel does with a page it cannot open (:11815). */}
+        <Route path="/admin/*" element={<AdminIndex />} />
       </Route>
       <Route path="/_design" element={<App />} />
       <Route path="*" element={<Navigate to="/" replace />} />

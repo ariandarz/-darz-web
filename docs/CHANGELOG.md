@@ -5,6 +5,17 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b Step 0: the panel shell
+
+- The old panel's two-tier navbar, ported as data (`adminNav.ts` ← darz-studio.html:11721-11803) and
+  rendered by `AdminShell`, which replaces the scaffolding `AdminLayout`/`.ad-bar`. All four of
+  `_dzRenderSubnav`'s rules ported: the More-row prefix, one-tab suppression, the no-group
+  Dashboard, the group eyebrow. `/admin` and unknown `/admin/...` clamp to the first page a role
+  can open (:11815), not to the collector Market.
+- Owner confirmed D9-D16 as recommended; D10 proved unnecessary — `admin.css` already maps the old
+  palette onto tokens, so both skins work from one rule set. Verified live, both roles, both skins.
+  158 tests (+17).
+
 ## 2026-09-18 — Phase 11b plan drafted; entry-point question narrowed to one
 
 - `docs/PHASE_11B_PLAN.md` — Steps 0-7 over backend Phases 23 + 27-35, decisions D9-D16, waiting on
