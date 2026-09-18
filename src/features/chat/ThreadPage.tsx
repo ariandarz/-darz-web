@@ -1,12 +1,18 @@
 /**
- * ThreadPage — `/chat/:id`. One conversation with Darz: the artwork it is
- * about (for an inquiry), the bubbles, and the compose pill. Port of the old
- * chat sheet (`DZ.chatOpen`, app.html:11572-11610) and its bubbles
- * (`dzThreadBubbleHTML`, :7250) over the backend's `RequestMessage` thread.
+ * ThreadPage — `/chat/:id`. One request with Darz, in two shapes over the
+ * same thread (owner decision D10, 2026-09-17: the route, not a sheet):
  *
- * The inquiry's own message lives in `request.detail.message` (not a
+ *   - a **conversation** (the general Chat, or an artwork inquiry) keeps the
+ *     v0.1 chat presentation — the artwork card and the bubbles;
+ *   - every **other kind** (purchase · hold · offer · viewing · price, and an
+ *     enquiry with no artwork) opens the old app's request card instead —
+ *     `RequestDetail`, ported from `DZ.actOpen` (app.html:11265-11318) — over
+ *     the identical thread and composer, so a reply round-trips the same way
+ *     whatever the collector asked for.
+ *
+ * The request's own message lives in `request.detail.message` (not a
  * `RequestMessage`), so it opens the thread as the collector's first bubble
- * at the request's own timestamp — the artwork context is never lost.
+ * at the request's own timestamp — the context is never lost.
  */
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -14,9 +20,12 @@ import type { RequestMessage } from '../../api/types';
 import { formatMoney, primaryImage } from '../catalogue/format';
 import { useArtworks } from '../catalogue/useArtworkCache';
 import { useConversations, useThread } from '../conversations/useConversations';
+import { KIND_LABEL } from '../conversations/rows';
 import { workLine } from '../requests/RequestController';
 import '../catalogue/catalogue.css';
+import '../requests/requests.css'; // `.actsh-btn`
 import './chat.css';
+import { RequestDetail } from './RequestDetail';
 
 function stamp(iso: string): string {
   const d = new Date(iso);
@@ -38,6 +47,7 @@ export function ThreadPage() {
   const lookup = useArtworks([request?.artwork]);
   const artwork = lookup(request?.artwork);
   const [draft, setDraft] = useState('');
+  const [removing, setRemoving] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -71,26 +81,32 @@ export function ThreadPage() {
   if (!request) return <p className="dz-state">This conversation is not available.</p>;
 
   const isInquiry = request.kind === 'information' && !!request.artwork;
+  // the two shapes: a conversation, or the old app's request card
+  const isConversation = request.kind === 'message' || isInquiry;
   const detail = (request.detail ?? {}) as { message?: string };
-  const opening: RequestMessage | null =
-    isInquiry && detail.message
-      ? {
-          id: `opening-${request.id}`,
-          request: request.id,
-          sender: 'collector',
-          body: detail.message,
-          artwork_refs: [],
-          seen_by_collector: true,
-          seen_by_team: true,
-          created_at: request.created_at,
-        }
-      : null;
+  const opening: RequestMessage | null = detail.message
+    ? {
+        id: `opening-${request.id}`,
+        request: request.id,
+        sender: 'collector',
+        body: detail.message,
+        artwork_refs: [],
+        seen_by_collector: true,
+        seen_by_team: true,
+        created_at: request.created_at,
+      }
+    : null;
   const bubbles = opening ? [opening, ...thread.messages] : thread.messages;
+  const hasReply = thread.messages.some((m) => m.sender === 'team');
 
   return (
     <div className="dz-page dz-chatpage" ref={scrollRef}>
       <div className="dz-chathead">
-        <button type="button" className="dz-back" onClick={() => navigate('/chat')}>
+        <button
+          type="button"
+          className="dz-back"
+          onClick={() => navigate(isConversation ? '/chat' : '/profile?tab=market')}
+        >
           <svg
             width="16"
             height="16"
@@ -101,10 +117,21 @@ export function ThreadPage() {
           >
             <path d="M15 6l-6 6 6 6" />
           </svg>
-          <span>Chat</span>
+          <span>{isConversation ? 'Chat' : 'Back'}</span>
         </button>
-        <h3>{isInquiry ? 'Inquiry' : 'Chat with Darz'}</h3>
+        {/* :11274 — a request is headed by its own kind */}
+        <h3>
+          {isConversation
+            ? isInquiry
+              ? 'Inquiry'
+              : 'Chat with Darz'
+            : (KIND_LABEL[request.kind] ?? request.kind)}
+        </h3>
       </div>
+
+      {!isConversation && (
+        <RequestDetail request={request} artwork={artwork} hasReply={hasReply} />
+      )}
 
       {isInquiry &&
         (artwork ? (
@@ -147,16 +174,14 @@ export function ThreadPage() {
               <div className="tm">{stamp(m.created_at)}</div>
             </div>
           ))}
-          {thread.status === 'ready' && bubbles.length === 0 && (
+          {thread.status === 'ready' && bubbles.length === 0 && isConversation && (
             <p className="dz-thread-note">
               {isInquiry ? workLine(artwork ?? { artist: null, title: '' }) : 'Write to Darz.'}
             </p>
           )}
-          {thread.status === 'ready' &&
-            bubbles.length > 0 &&
-            !thread.messages.some((m) => m.sender === 'team') && (
-              <p className="dz-thread-note">Darz will reply here.</p>
-            )}
+          {thread.status === 'ready' && bubbles.length > 0 && !hasReply && isConversation && (
+            <p className="dz-thread-note">Darz will reply here.</p>
+          )}
         </div>
       </div>
 
@@ -199,6 +224,51 @@ export function ThreadPage() {
           {thread.sendError ?? (thread.sending ? 'Sending…' : '')}
         </div>
       </form>
+
+      {!isConversation && (
+        <div className="actsh-act">
+          {removing ? (
+            /* :11333-11340 — the confirm replaces the row in place. The old
+               copy ended "This can't be undone."; the hide is this session's
+               view only (G-P5-4), so it says what actually happens. */
+            <div className="actsh-confirm">
+              <b>Remove this from your activity?</b>
+              <i>
+                It goes from your profile for now. Darz keeps its own record, and it returns
+                when you reload.
+              </i>
+              <button
+                type="button"
+                className="actsh-btn danger"
+                onClick={() => {
+                  conversations.hide(request.id);
+                  navigate('/profile?tab=market');
+                }}
+              >
+                Remove
+              </button>
+              <button type="button" className="actsh-btn" onClick={() => setRemoving(false)}>
+                Keep
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="actsh-btn danger"
+              onClick={() => setRemoving(true)}
+            >
+              Remove from activity
+            </button>
+          )}
+          <button
+            type="button"
+            className="actsh-btn"
+            onClick={() => navigate('/profile?tab=market')}
+          >
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 }

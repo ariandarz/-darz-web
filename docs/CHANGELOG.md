@@ -5,6 +5,42 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 5 step 4: activity self-logging — Phase 5 complete
+
+- `features/activity/ActivityLogger` over `POST /api/crm/activity/`: fire-and-forget (guarded
+  against a rejected promise and a synchronous throw alike), `view` deduped per work per session,
+  `search` per settled term. One `ActivityProvider` above the router, because the first event is
+  `login` on `/login`. Wired at the old app's four points: login, save (inside `SavedController`,
+  saves only), view (D5a) and search (D5b). Verified live: six rows, all four kinds, no second view
+  when a work is reopened. 123 tests. Phase 5's four steps are done.
+
+## 2026-09-18 — Phase 5 step 3: a detail and a thread for every request kind
+
+- `ThreadPage` in two shapes over one thread: a conversation keeps v0.1's chat, every other kind
+  opens `RequestDetail` — the old app's request card (`DZ.actOpen`): the work, the **Current
+  status** banner, Request / Amount / **Held until** / When, and the per-kind note while Darz has
+  not written. Every Profile row opens its detail now. The floating reply notice (`.dz-notif`) is
+  ported over a new `newestUnread()`, and **Remove from activity** shares the session-local hide
+  (G-P5-4). `ConversationsController` gained its first test suite. 117 tests.
+
+## 2026-09-18 — Phase 5 step 2: the collector's request list (`docs/PHASE_5_PLAN.md`)
+
+- `features/requests/status.ts` — one collector vocabulary over the backend's per-kind statuses
+  (pill · rail stage · per-kind note), pinned by a test against `apps/crm/lifecycle.py`; replaces
+  three hardcoded lists. Profile › Market: **Your acquisitions** with the four-step rail, activity
+  rows on `ACT_KL` labels with time, amount and "New reply", the D9 empty state, and **Clear
+  activity** as a session-local hide (D4 · G-P5-4). Fixed on the way: Profile's lists were memoized
+  on a value that never changes, so a poll never reached the screen. 111 tests.
+
+## 2026-09-17 — Phase 5 step 1: every request kind files correctly (`docs/PHASE_5_PLAN.md`)
+
+- `ViewingSheet` (preferred time + In person / Virtual — `ViewingDetailSerializer` requires both;
+  the bare POST was rejected 400) · `PriceSheet` (the old Request Price & Availability sheet,
+  `app.html:11046-11064`, without the identity fields) · artist enquiry through `RequestController`
+  (idempotent, "Enquiry received") · per-kind `detail` typed by hand (G-P5-1) · "48h hold" (D2) ·
+  the offer sheet stays open on a rejection. New `docs/PHASE_5_API_GAPS.md` (G-P5-1 … 11);
+  `API_INTEGRATION_GAPS.md` G-F1-5 / G-F1-6 drift corrected. 104 tests.
+
 ## 2026-09-17 — Design pass landed: PR #15 → `development`, `main` brought level
 
 - Merged on the owner's instruction ("land the design pass"); the merge commit's tree is the gated PR

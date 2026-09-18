@@ -19,6 +19,7 @@ import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import { Wordmark } from '../../components';
+import { ReplyNotice } from '../chat/ReplyNotice';
 import { useConversations } from '../conversations/useConversations';
 import { features } from './features';
 import { layoutController } from './LayoutController';
@@ -162,6 +163,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
       <div className="chroma" />
       <main id="dzMain">{children}</main>
+      {/* app.html:2695 — "Darz has replied to your request." above the nav */}
+      <ReplyNotice />
       <nav id="nav" aria-label="Sections">
         {tabs
           .filter((t) => t.show)

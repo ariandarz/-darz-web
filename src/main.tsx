@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import './design/global.css';
 import { ApiProvider } from './api/ApiProvider';
 import { themeController } from './design';
+import { ActivityProvider } from './features/activity/ActivityProvider';
 import { AppRoutes } from './routes.tsx';
 
 // Resolve + apply the stored / OS theme before first paint (app.html does the
@@ -13,9 +14,12 @@ themeController.start();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ApiProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      {/* above the router: the first activity row is `login`, on /login */}
+      <ActivityProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </ActivityProvider>
     </ApiProvider>
   </StrictMode>,
 );

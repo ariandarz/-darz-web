@@ -350,3 +350,139 @@ html.dz-desktop .pf-row {
 html.dz-desktop .profbody .grid {
   grid-template-columns: repeat(4, 1fr);
 }
+
+/* =============================================================================
+   "Your acquisitions" — the purchase / offer / hold pipeline above the
+   activity list. `dzAcqSectionHTML` (app.html:9685-9703) wrote this card with
+   inline styles; the same markup is carried in classes here. The rail keeps
+   the original's own names and values (app.html:1096-1104).
+   ========================================================================== */
+.acq {
+  display: block;
+  width: calc(100% - 32px);
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 15px;
+  padding: 12px 14px 6px;
+  margin: 0 16px 9px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.acq:hover {
+  border-color: var(--ink3);
+}
+.acq:active {
+  transform: scale(0.992);
+}
+.acq-top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.acq-th {
+  width: 40px;
+  height: 48px;
+  border-radius: 7px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  background: var(--hair2);
+  display: block;
+}
+.acq-th img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.acq-b {
+  flex: 1;
+  min-width: 0;
+}
+.acq-t {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acq-k {
+  display: block;
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+/* an ended request replaces the rail with one quiet line (:9701) */
+.acq-end {
+  display: block;
+  font-size: 11px;
+  color: var(--ink3);
+  padding: 9px 2px 5px;
+}
+
+/* ---- the four-step rail (app.html:1096-1104) --------------------------- */
+.aucrail {
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 2px 8px;
+  gap: 0;
+}
+.aucrail .rstep {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  min-width: 0;
+}
+.aucrail .rstep:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--hair);
+}
+.aucrail .rstep.done::before,
+.aucrail .rstep.now::before {
+  background: var(--pl-donedot);
+}
+.aucrail .rd {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--hair);
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+}
+.aucrail .rstep.done .rd {
+  background: var(--pl-donedot);
+  border-color: var(--pl-donedot);
+}
+.aucrail .rstep.now .rd {
+  background: var(--pl-now);
+  border-color: var(--pl-now);
+  box-shadow: 0 0 0 3px rgba(232, 0, 92, 0.18);
+}
+.aucrail .rl {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  text-align: center;
+  line-height: 1.1;
+}
+.aucrail .rstep.now .rl,
+.aucrail .rstep.done .rl {
+  color: var(--ink);
+}

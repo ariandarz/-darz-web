@@ -57,25 +57,27 @@ next statuses for that specific row.
 ### G-F1-5 — idempotency (`client_req_id`)
 `RequestCreate.client_req_id` (optional) + a partial unique constraint on the backend. A replay
 returns the existing row (200) instead of a duplicate (201).
-- `CrmService.createRequest({..., clientReqId})` (`src/api/services.ts`) sends it as
-  `client_req_id`.
-- `src/features/requests/RequestController.ts` passes the **same double-tap guard key**
-  (`act:<artworkId>:<verb>` / `offer:<artworkId>:<amount>`) as `clientReqId` — a genuine retry of
-  the identical action (same artwork/verb[/amount]) is deduped server-side too, surviving a reload
-  mid-flight; a materially different retry (corrected offer amount) is a fresh key, so still a new
-  request.
+- `CrmService.createRequest({..., client_req_id})` (`src/api/services.ts`) sends it and returns
+  `{row, replayed}` from the 201 / 200 status (`ApiClient.sendEnveloped`).
+- `src/features/requests/RequestController.ts` mints **one uuid per double-tap guard key**
+  (`act:<artworkId>:<verb>` / `offer:<artworkId>:<amount>` / `artistinq:<artistId>`), keeps it
+  across a failed attempt so a retry of the identical action replays server-side, and drops it once
+  the action lands; a materially different retry (corrected offer amount) is a fresh key. (Corrected
+  2026-09-17 — this doc had named a `clientReqId` parameter and the guard key itself, neither of
+  which the code uses.)
 
 ### G-F1-6 — reply thread (`RequestMessage`)
 `GET/POST /api/crm/requests/{id}/messages/` + `/mark-seen/` (collector, own request only); admin
 mirror under `/api/crm/admin/requests/{id}/messages/`. `RequestCollector`/`RequestAdmin` both carry
 `unread_count`.
 - `src/api/types.ts::RequestMessage`, `RequestMessageQuery`.
-- `CrmService.requestMessages/postRequestMessage/markMessagesSeen` +
-  `adminRequestMessages/postAdminRequestMessage/markAdminMessagesSeen` (`src/api/services.ts`).
-- **API-only this round** — no thread UI yet. `AdminRequestsPage.tsx` shows `unread_count` as a
-  small badge next to a row's status so the count is at least visible. The collector-facing
-  request-detail + "Chat with Darz" thread screen is its own follow-up PR (owner-approved scope:
-  faithful port of `app.html`'s `request_thread`, polling delivery).
+- `CrmService.messages/postMessage/markSeen` + `adminMessages/adminPostMessage/adminMarkSeen`
+  (`src/api/services.ts`).
+- **Thread UI shipped in v0.1 (2026-09-11):** `ThreadPage` at `/chat/:id` over `ThreadController`
+  (30 s poll + on focus, auto mark-seen), the general "Chat with Darz" at `/chat`. `AdminRequestsPage`
+  shows `unread_count` as a badge. Phase 5 step 3 extends the thread page to every request kind
+  (`docs/PHASE_5_PLAN.md`). (Corrected 2026-09-17 — this doc had named
+  `requestMessages/postRequestMessage/markMessagesSeen`, which never existed.)
 
 ### G-F1-7 — admin feed nesting
 `RequestAdmin.collector: {id, display_name}`, `RequestAdmin.artwork: {id, title, artist:
@@ -183,21 +185,31 @@ image-led cards + record detail.
   frontend Phase 12+, per the original deferral. The backend is ready.
 - **FE-R1…FE-R4** — admin Records desk, highlight curation, import trigger, collector
   Past/Upcoming/Live/Highlights sub-tabs. Own follow-up PR.
-- **Request-detail thread UI / "Chat with Darz"** (G-F1-6's frontend half) — API is ready
-  (`requestMessages`/`postRequestMessage`/`markMessagesSeen`), UI is a follow-up PR.
 - **G-F1-1** — the typed per-kind `detail` union needs the backend to wire
-  `detail_polymorphic_serializer()` into the create endpoint's `@extend_schema`. Backend follow-up.
+  `detail_polymorphic_serializer()` into the create endpoint's `@extend_schema`. Backend follow-up;
+  the frontend types the union by hand meanwhile (`docs/PHASE_5_API_GAPS.md` G-P5-1).
+- **Phase 5 gaps (2026-09-17)** — `docs/PHASE_5_API_GAPS.md` G-P5-1 … G-P5-11: bare artwork uuid on
+  collector rows, no single-request read, no collector archive / withdraw, hold expiry not applied
+  on read, undeclared pagination params, string `amount`, unpublished viewing `mode` choices, no
+  artist field on an enquiry. Each is built around on the frontend and recorded there.
 - **Design-pass flags (2026-09-11)** — surfaces the design package shows that this backend has no
   field or endpoint for, left out rather than faked (each is a code comment at the call site too):
   - **Insights & Stories** nav tab — no editorial model (`TASKLIST.md` Phase 12+). The **Chat** pill
     is superseded by v0.1's Chat nav tab (`features/chat`, merged 2026-09-12).
-  - **Collector questionnaire** card on Profile → Overview (`qbQuestions`) — no backend model.
+  - **Collector questionnaire** card on Profile → Overview (`qbQuestions`) — **stale, corrected
+    2026-09-17: backend Phase 25 merged**, `GET/POST /api/recommendations/questionnaire/` exists.
+    Not a gap any more — build it.
   - **Access key** card on Profile → Account — `GET /api/auth/me/` does not return the key.
   - **Account details** are read-only — no profile-edit endpoint (Phase 9); phone / city / preferred
     language are not on `Me`.
-  - **Chat on WhatsApp** (detail, lot, profile) — needs the gallery's number (`theme.whatsapp`); no
-    theme/settings endpoint. Same for the owner-editable copy the app ships as defaults
-    (`shipNote`, hero copy, About text, social links) and the Terms / Privacy legal text.
+  - **Chat on WhatsApp** (detail, lot, profile) — needs the gallery's number (`theme.whatsapp`) —
+    **stale, corrected 2026-09-17: backend Phase 32 merged**, `GET /api/app-theme/` (public,
+    `AllowAny`) serves a freeform theme JSON object the Market App can read pre-login; store the
+    WhatsApp number under a `theme.whatsapp` key and read it from there. Same fix covers the
+    owner-editable copy the app ships as defaults (`shipNote`, hero copy, About text, social links)
+    and the Terms / Privacy legal text — all can live under `theme.*` keys now. See `darzmarket-api`
+    `docs/TASKLIST.md` Phase 32 / `docs/TASKLIST.md` (this repo) Phase 11b for the admin desk that
+    sets these values.
   - **Auction poster** — `Auction` has no cover image; the first lot's artwork stands in (one
     `per_page=1` lots read per card). A `cover_image_url` on `Auction` would remove that read.
   - **Push to this device** — the VAPID public key is not published by the API.

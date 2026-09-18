@@ -13,6 +13,13 @@ under "Design pass" below. **Open PRs: none.** Merged remote branches, safe to d
 `phase-19-crm-saved-wire`, `phase-19-format-fixes`, `phase-8-auctions-browse`,
 `phase-8-auctions-bidding`, `phase-8-auctions-notifications`, `phase-8-auctions-records`.
 
+**Backend cross-check (2026-09-17, from `darzmarket-api`):** Phases 27-32 (the full old-panel admin
+audit — Collectors, Collector Activity, Dashboard, Memberships, Team, App Design) and Phase 23
+(Projects/Data Health/Import) all merged — see the new **Phase 11b** section below, none of it has
+frontend UI yet. Also corrected two stale `[!]` blockers this pass: backend Phases 24 (curated-set
+catalogue) and 25 (questionnaire) were already merged when this file last said blocked — both are
+real, buildable now.
+
 **What next (2026-09-17, recommended order):**
 
 1. Owner decision on the two unlinked entry points (artist index `/artists`, `/auctions/notifications`)
@@ -254,7 +261,7 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[~]` creation, idempotency, offer floor, reply thread and Send Inquiry shipped; activity self-logging + the availability / message kinds open
+## Phase 5 — Collector: requests + activity ✅ all four steps done 2026-09-18 (`docs/PHASE_5_PLAN.md`)
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). Backend Phase 19
 (`darzmarket-api`) shipped the core-loop backend work (reply thread API, offer floor enforcement,
@@ -262,21 +269,47 @@ idempotency, per-artwork `allowed_actions`) 2026-09-11 — see `docs/API_INTEGRA
 what's wired vs. still open. The reply-thread / "Chat with Darz" UI shipped in v0.1 (2026-09-11,
 see Phase 9) — nothing in this phase is backend-blocked any more except the typed `detail` (G-F1-1).
 
-- [~] Request creation UI per kind: **the four the artwork detail fires are built** —
-      `purchase` (Buy now), `hold` (24h hold), `viewing` (Request viewing), `offer` (Make an
-      Offer sheet), plus `price` as the primary on a price-on-request work. Ported from
-      `app.html`'s `DZ.act()` (:10462) / `DZ.offer()` (:11074) incl. the exact confirmation copy,
-      the live thousands-grouping amount field, and the `dzGuard` double-tap guard (verified at the
-      server: three synchronous taps → one POST). **The `detail` shape is still unverified** — the
-      backend's `DETAIL_SERIALIZERS` are not yet in the OpenAPI document (a backend follow-up, see
-      `docs/API_INTEGRATION_GAPS.md` G-F1-1), so `{amount, currency}` is a reading, not a
-      typechecked contract. Remaining kinds: availability / message. **Now also filters shown
-      actions by `artwork.allowed_actions`** (`ActionButtons.tsx`, G-F1-3).
-- [x] Collector's own request list/detail — v0.1 (2026-09-11): Profile › Market lists the collector's
-      requests with filter chips over `GET /api/crm/requests/`, Overview › Recent activity shows the
-      latest, and each inquiry opens as its thread at `/chat/:id`. No separate detail page is planned.
-- [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
-      (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
+- [x] Request creation UI per kind — **Phase 5 step 1, 2026-09-17** (`docs/PHASE_5_PLAN.md`):
+      `purchase` (Buy now), `hold` (**48h hold** — the API's TTL, owner decision D2), `viewing`
+      (**`ViewingSheet`**: preferred time + In person / Virtual, the two fields
+      `ViewingDetailSerializer` requires — the bare POST v0.1 sent was rejected 400), `offer` (Make
+      an Offer sheet, now staying open on a floor rejection so the message is seen), `price`
+      (**`PriceSheet`** — the old Request Price & Availability sheet, `app.html:11046-11064`, minus
+      the identity fields the backend snapshots itself, D6) as the primary on a price-hidden work,
+      and the artist page's enquiry through `RequestController` (idempotent key, "Enquiry
+      received"). `detail` is typed per kind **by hand** from `apps/crm/serializers.py`
+      (`docs/PHASE_5_API_GAPS.md` G-P5-1); `availability` has no old-app surface (G-P5-7);
+      `message` is the general Chat. Actions still filter by `artwork.allowed_actions` (G-F1-3).
+- [x] Collector's own request list — **Phase 5 step 2, 2026-09-18**: one status module
+      (`features/requests/status.ts`) turns the backend's per-kind workflow tokens into the old
+      app's collector vocabulary (In review · Replied · Accepted · Resolved · Not accepted ·
+      Closed, no pill on a just-filed request), the four-step rail `dzMktStage`/`MKT_RAIL` and the
+      per-kind note `dzActStatusNote` — replacing the three hardcoded status lists this repo had
+      grown, with an unknown status falling back to the `/api/options/` label. Profile › Market now
+      carries **Your acquisitions** (`dzAcqSectionHTML`: purchase / offer / hold with the rail, or
+      one line once ended) over the saved works and the activity list, whose rows are
+      `dzActRowHTML`'s: `ACT_KL` labels, the date with its time, the offer amount, "New reply", the
+      unseen dot. **Clear activity** is built (owner decision D4) as a session-local hide — the
+      backend has no collector archive (`docs/PHASE_5_API_GAPS.md` G-P5-4). Artwork titles come
+      through `ArtworkCache` (G-P5-2).
+- [x] Collector's own request detail — **Phase 5 step 3, 2026-09-18** (owner decision D10: the
+      `/chat/:id` route, not a sheet): `ThreadPage` keeps v0.1's chat for a conversation and opens
+      the old app's request card (`DZ.actOpen`) for every other kind — heading, the work,
+      **Current status** ("Submitted — awaiting Darz" until Darz moves it), Request / Amount /
+      **Held until** (D11) / When, and the per-kind `dzActStatusNote` line while there is no reply
+      — over the same thread and composer, so a reply round-trips identically. Every Profile row
+      opens its detail; the floating reply notice (`.dz-notif`) is ported; **Remove from activity**
+      shares Clear activity's session-local hide (G-P5-4). Not ported, both flagged in the file:
+      the old separate "headline reply" channel (one thread here) and the WhatsApp CTA (no number
+      is published).
+- [x] Activity self-logging — **Phase 5 step 4, 2026-09-18**: `features/activity/ActivityLogger`
+      over `POST /api/crm/activity/`, fire-and-forget (a failure is swallowed, sync or async — it
+      must never reach a save or a sign-in), `view` deduped per work per session and `search` per
+      settled term. Wired at the four points the old app used: `login` on sign-in
+      (`app.html:2347`), `save` inside `SavedController` (`:2806`, saves only), `view` on the
+      artwork detail (owner decision D5a — the old app logged only curated works, and no curated
+      set exists yet), `search` on the toolbar's settled term (D5b — the old app never logged one).
+      The log is write-only: no endpoint reads it back (`docs/PHASE_5_API_GAPS.md` G-P5-12).
 - [x] **Reply-thread chat UI** — shipped in v0.1 (2026-09-11) over backend Phase 19.3
       (`GET/POST /api/crm/requests/{id}/messages/` + `mark-seen`): `ThreadController`, `ThreadPage`,
       polling + on focus, unread from `unread_count`. See Phase 9.
@@ -405,9 +438,13 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [x] Settings — `/settings` (`SettingsPage`, port of `settingsView` :9827): profile row, Appearance
       (Paper/Black), account links, legal, about, Leave the Room. Notifications / membership / PWA
       rows behind flags.
-- [ ] Questionnaire `[!]` backend Phase 25 (hidden, `features.questionnaire`)
+- [ ] Questionnaire — **unblocked 2026-09-17**: backend Phase 25 merged
+      (`GET/POST /api/recommendations/questionnaire/`); the `[!]` blocker in the Phases 12+ section
+      below is stale. Still hidden behind `features.questionnaire` pending this UI.
 - [ ] Membership display/redemption (backend Phase 13 merged — ready)
-- [ ] PWA install + push opt-in (backend Phase 13 merged — VAPID/web-push ready)
+- [ ] PWA install + push opt-in `[!]` VAPID public key is still not published by the API (checked
+      2026-09-17 — `apps.notifications` has no `GET` for it); push delivery itself is ready
+      (Phase 13), but the frontend can't complete the browser subscribe handshake without the key.
 
 ## Phase 10 — Gallery Update Portal (frontend) ✅ backend ready (Phase 12 A+B merged)
 
@@ -425,22 +462,90 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [ ] Accounting desk UI (4 ledger books + Private Deals) — real Django permission scope replaces
       the old passkey hack; don't rebuild the passkey pattern in the frontend
 
+## Phase 11b — Admin: Owner Panel (Collectors, Memberships, Team, Dashboard, App Design, Activity, Projects, Data Health, Import) ✅ backend ready 2026-09-17
+
+New since the last `TASKLIST.md` pass — the client asked to prioritize finishing "the panel" (the old
+`darz-studio.html` admin app). Backend audited every old panel tab against existing `admin/*` routes
+(`darzmarket-api` `docs/TASKLIST.md` Phases 27-32 + 23) and built every gap found; **none of it has
+any frontend UI yet.** No API gaps were recorded for these — each is a plain admin CRUD/read desk,
+faithfully scoped, real HTTP-verified. Old-panel tab names in parens for continuity with the design
+package/faithful-port research.
+
+- [ ] **Collectors desk** (old panel "Collectors" tab) — list/search/filter (tier, access_status) +
+      create/edit/soft-delete + issue/revoke access keys (plaintext key shown once on issue, never
+      re-fetchable — the UI must warn "copy this now").
+      `GET/POST /api/auth/admin/collectors/`, `GET/PATCH/DELETE .../{id}/`,
+      `GET/POST .../{id}/access-keys/`, `POST /api/auth/admin/access-keys/{id}/revoke/`.
+- [ ] **Collector Activity feed** (old panel "Collector Activity" tab) — read-only, filter by
+      collector/kind/artwork. `GET /api/crm/admin/activity/`.
+- [ ] **Dashboard** (old panel "Dashboard" tab, scoped to V1 essentials — see the backend doc for
+      what didn't port: perf/analytics charts, cloud-sync banners) — requests-needing-attention per
+      kind, today's activity, collector/catalogue/auction totals, pending exhibition reviews.
+      `GET /api/dashboard/admin/summary/`.
+- [ ] **Memberships desk** (old panel "Memberships" tab, owner-only) — issue (auto-generates a
+      `DZ-<plan>-<6 chars>` code or accepts a custom one)/list/edit/renew (+1 month)/remove. Records
+      a WhatsApp contact + private notes for manual outreach — **no payment processing anywhere**,
+      same as the old desk's own on-screen copy. `GET/POST /api/auth/admin/membership-codes/`,
+      `GET/PATCH/DELETE .../{id}/`, `POST .../{id}/renew/`.
+- [ ] **Team logins desk** (old panel "👥 Team logins", owner-only) — issue (generates a password
+      shown once)/list/edit (name/email/role/is_active)/remove. Cannot deactivate/remove your own
+      account (the API 400s it — surface that as a disabled control, not just an error toast).
+      `GET/POST /api/auth/admin/team-users/`, `GET/PATCH/DELETE .../{id}/`.
+- [ ] **App Design** (old panel "App Design" tab) — publish the live theme (freeform JSON — colors,
+      layout, dark mode, stats strip, social links, per-page buttons; no fixed schema, the frontend
+      defines what keys it reads), reset to factory defaults, save/list/activate/delete named
+      version checkpoints. The **public** read (`GET /api/app-theme/`, `AllowAny`) is what the
+      Market App itself should read for its live design — **this closes several "no theme/settings
+      endpoint" gaps already recorded in `docs/API_INTEGRATION_GAPS.md`'s "Still open" section**:
+      the WhatsApp chat number, hero copy, About text, social links, `shipNote`, and Terms/Privacy
+      text can all now live under `theme.*` keys instead of being hardcoded. Update that doc's
+      "Still open" bullet once this lands.
+      `GET/PUT /api/admin/app-theme/`, `POST .../reset/`, `GET/POST .../versions/`,
+      `POST .../versions/{id}/activate/`, `DELETE .../versions/{id}/`.
+- [ ] **Projects desk** (old panel "Projects" — Dashboard/List/Pipeline/Packages/Proposal/Calculator/
+      Partners/Reports sub-tabs) — full pipeline CRUD: create/edit/archive a project, drag/move
+      through 17 stages (auto-derives the status label — don't compute it client-side), partner
+      orgs, service catalog, package templates, checklist templates, file attachments, the
+      dashboard priority-queue tiles, the deliverables-roll-up report. **Not built on the backend**
+      (flagged, not silently dropped): the Proposal Builder's document composition — defer that
+      sub-tab until it's scoped (would reuse `documents.Document` like the gallery portal's
+      exhibition proposals). Endpoints under `/api/projects/admin/` — see `darzmarket-api`
+      `docs/TASKLIST.md` Phase 23 for the full list (projects/partners/service-catalog/packages/
+      checklists, each list+detail; projects also get `/stage/`, `/dashboard/`, `/reports/`,
+      `/attachments/`).
+- [ ] **Data Health** (old panel "Data Health" tab, scoped down — see the backend doc: most of the
+      old desk's checks diagnosed the old app's own client-sync architecture, which doesn't exist
+      here) — three real checks: duplicate images, incomplete records, published-but-hidden works.
+      `GET /api/catalog/admin/data-health/`.
+- [ ] **Import desk** (old panel "Import" tab) — CSV/PDF/paste/image parsing **stays frontend**
+      (client-side, e.g. a CSV-column-mapper and pdf.js page extraction, same as the old app); the
+      backend only stages the parsed rows for review/edit and confirms them into real artworks
+      (reusing the existing artwork-create validation — a row that fails is flagged with its error,
+      never silently dropped, and doesn't block the rest of the batch).
+      `GET/POST /api/catalog/admin/import/batches/`, `GET .../{id}/`, `POST .../{id}/confirm/`,
+      `POST .../{id}/discard/`, `PATCH .../{batch_id}/rows/{id}/`, `POST .../rows/{id}/reject/`.
+
 ## Phases 12+ — Parity-gap surfaces (match backend Phases 20-26) `[!]` each blocked on its backend phase
 
 Old-app surfaces the current backend has no model for (from `DarzStudio/docs/engineering/BACKEND_API_REPO_STATUS.md`;
 owner decision 2026-09-04: scope all seven now). Faithful-port rule applies — read the old app's real
 surface before building each. Ordered by V1 relevance:
 
-- [ ] **Curated-set catalogue (`in_app`)** `[!]` backend Phase 24 — the collector list must show the
-      curated `in_app` set, not a raw published feed; consume the catalogue change-stamp/head-check.
+- [ ] **Curated-set catalogue (`selected`/`private_selection`)** — **unblocked 2026-09-17**: backend
+      Phase 24 merged (`GET /api/catalog/artworks/selections/`, grant-gated, admin
+      `admin/artworks/{id}/selection-grants/`). Old `[!]` blocker on this line is stale.
       **This unblocks the "Partial" half of frontend Phase 4 (flow 2).**
-- [ ] **Collector questionnaire** `[!]` backend Phase 25 — capture + display; feeds recommendations
-      (ties into Phase 9 profile). Don't build until the backend stores answers.
-- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface)
-- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`)
-- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`)
-- [ ] **Projects / Data Health / Import desks** `[!]` backend Phase 23 (admin tooling)
-- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority)
+- [ ] **Collector questionnaire** — **unblocked 2026-09-17**: backend Phase 25 merged (same endpoint
+      as Phase 9's Questionnaire item above — build once, wire both).
+- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — still
+      not built.
+- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — still
+      not built.
+- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — still not built.
+- [ ] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
+      full faithful port. See the new "Phase 11b" section below for the real endpoint list — this
+      bullet stays only as the Phases-12+ cross-reference.
+- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
 
 ## Phase 13 — Testing
 

@@ -79,10 +79,12 @@ export function OfferSheet({
       return;
     }
     setLocalError(null);
-    void controller.offer(artwork, amount, currency).then(() => {
-      // The controller opens the confirmation sheet on success; close this one
-      // either way so the collector is never left looking at a stale form.
-      onClose();
+    void controller.offer(artwork, amount, currency).then((ok) => {
+      // The controller opens the confirmation sheet on success. On a rejection
+      // (the private floor, a network error) its message lands in the error
+      // slot below the field — app.html:11096 `#offErr` — so the sheet stays
+      // open until the collector corrects or closes it.
+      if (ok) onClose();
     });
   };
 

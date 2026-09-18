@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import type { CatalogueQuery } from '../../api/types';
 import { Dropdown, Segment } from '../../components';
+import { useActivity } from '../activity/useActivity';
 import { layoutController } from '../shell/LayoutController';
 import { useLayout } from '../shell/useLayout';
 import type { ViewMode } from './ViewPreference';
@@ -106,12 +107,18 @@ export function CatalogueToolbar({
 }) {
   const [term, setTerm] = useState(query.search ?? '');
   const layout = useLayout();
+  const activity = useActivity();
 
   // Debounce the search box so every keystroke doesn't fire a request — the
   // old app searches on input but this is a network call, not a local filter.
   useEffect(() => {
     const t = setTimeout(() => {
-      if (term !== (query.search ?? '')) onChange({ search: term || undefined });
+      if (term !== (query.search ?? '')) {
+        onChange({ search: term || undefined });
+        // the term has settled — the one moment worth recording (D5b). The
+        // old app never logged a search; the backend has always had the kind.
+        activity.search(term);
+      }
     }, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
