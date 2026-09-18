@@ -29,6 +29,11 @@ import type {
   CatalogueQuery,
   CollectorActivity,
   CollectorRequest,
+  AccessKeyAdmin,
+  AccessRequestAdmin,
+  CollectorAdmin,
+  CollectorAdminQuery,
+  CollectorLoginEvent,
   CollectorRequestQuery,
   DashboardSummary,
   CreatedRequest,
@@ -285,6 +290,84 @@ export class RecommendationService extends ResourceService {
  * `./types` (`RequestStatusByKind`, etc.) rather than assuming every key is
  * a flat list. */
 export type OptionsMap = Record<string, unknown>;
+
+/** `/api/auth/admin/` — the panel's Collectors cluster (backend Phases 27, 33,
+ * 34): collector CRUD, access keys, login events, and the access-request
+ * review queue. Kept apart from `AuthService`, which is the session's own
+ * surface (login/logout/me) — this one is a desk. */
+export class AdminAccountsService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/auth/admin');
+  }
+
+  collectors(query: CollectorAdminQuery = {}) {
+    return this.list<CollectorAdmin>('/collectors/', query as RequestOptions['query']);
+  }
+  collector(id: string) {
+    return this.retrieve<CollectorAdmin>(`/collectors/${id}/`);
+  }
+  createCollector(body: Partial<CollectorAdmin>) {
+    return this.create<CollectorAdmin>('/collectors/', body);
+  }
+  /** PATCH with the row's own `version` — a stale one 409s (Phase 7 rule). */
+  updateCollector(id: string, body: Partial<CollectorAdmin> & { version: number }) {
+    return this.client.send<CollectorAdmin>('PATCH', `${this.basePath}/collectors/${id}/`, {
+      body,
+    });
+  }
+  deleteCollector(id: string) {
+    return this.remove(`/collectors/${id}/`);
+  }
+
+  accessKeys(collectorId: string, query: { per_page?: number; page?: number } = {}) {
+    return this.list<AccessKeyAdmin>(
+      `/collectors/${collectorId}/access-keys/`,
+      query as RequestOptions['query'],
+    );
+  }
+  /** Issue — the response carries `access_key` (the plaintext) exactly once,
+   * never re-exposed by any read (`ShownOnceSecret` is its only home). */
+  issueAccessKey(collectorId: string, expiresAt: string | null = null) {
+    return this.create<AccessKeyAdmin & { access_key: string }>(
+      `/collectors/${collectorId}/access-keys/`,
+      expiresAt ? { expires_at: expiresAt } : {},
+    );
+  }
+  revokeAccessKey(keyId: string) {
+    return this.create<AccessKeyAdmin>(`/access-keys/${keyId}/revoke/`);
+  }
+  /** The old desk's "+1 week" / "+1 month" / "Make permanent" (Phase 33). */
+  extendAccessKey(keyId: string, extend: '1w' | '1m' | 'none') {
+    return this.create<AccessKeyAdmin>(`/access-keys/${keyId}/extend/`, { extend });
+  }
+  loginEvents(collectorId: string, query: { per_page?: number; page?: number } = {}) {
+    return this.list<CollectorLoginEvent>(
+      `/collectors/${collectorId}/login-events/`,
+      query as RequestOptions['query'],
+    );
+  }
+
+  /** The review queue. The server defaults to `status=pending`. */
+  accessRequests(
+    query: { status?: string; search?: string; per_page?: number; page?: number } = {},
+  ) {
+    return this.list<AccessRequestAdmin>(
+      '/access-requests/',
+      query as RequestOptions['query'],
+    );
+  }
+  /** Approve — creates the Collector AND issues its first key in one action;
+   * the plaintext rides back once on `access_key`. */
+  approveAccessRequest(id: string, tier: string | null = null) {
+    return this.create<AccessRequestAdmin & { access_key: string }>(
+      `/access-requests/${id}/approve/`,
+      tier ? { tier } : {},
+    );
+  }
+  declineAccessRequest(id: string) {
+    return this.create<AccessRequestAdmin>(`/access-requests/${id}/decline/`);
+  }
+}
 
 /** `/api/dashboard/` — the admin desk's opening numbers (backend Phase 29). */
 export class DashboardService extends ResourceService {

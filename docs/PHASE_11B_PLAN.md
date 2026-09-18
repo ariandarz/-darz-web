@@ -368,4 +368,12 @@ _Append one entry per step as it merges. Newest last._
   Live-verified end to end: tile → filtered desk (1 counted → 1 listed), thread send lands as a team
   bubble with "Sent to the collector ✓". 185 tests (was 179). The team gate's default landing is now
   `/admin` (the clamp), not a hardcoded desk.
+- **2026-09-18 — Step 2 done: Collectors + Access Requests** (merged under the owner's overnight
+  instruction, as Step 1 was). The roster over the server's own `CollectorFilterSet`; the
+  per-collector workspace (record · keys · sign-ins) carrying the old Access desk's per-key
+  features (shown-once issue, revoke, the three extends, `expCell`); the owner-only review queue
+  with the §2.3 approve deviation and D13's follow-up note. Three gaps recorded (G-COL-1/2,
+  G-KEY-1 — the roster-wide key desk stays `[!]`). Verified full circle: an issued key signed a
+  real collector in at the gate; a standard admin gets the :33116 refusal card and no Access
+  Management group. 190 tests.
 

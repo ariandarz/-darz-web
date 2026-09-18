@@ -79,8 +79,8 @@ describe('visibleTabs — allowed AND built (D9)', () => {
   it('drops an unbuilt tab even from the owner', () => {
     const collectors = ADMIN_GROUPS.find((g) => g.key === 'collectors')!;
     const keys = visibleTabs(collectors, 'owner').map((t) => t.key);
-    // `users` and `club` have no desk yet; `activity` is /admin/requests
-    expect(keys).toEqual(['activity']);
+    // `club` has no desk yet; `users` and `activity` are built
+    expect(keys).toEqual(['users', 'activity']);
   });
 
   it('never returns a tab without a path', () => {
@@ -94,13 +94,13 @@ describe('visibleTabs — allowed AND built (D9)', () => {
 
 describe('visibleGroups', () => {
   it('drops a group with nothing renderable in it', () => {
-    // All fourteen groups are registered as the panel's map, but only the
-    // Collectors group has a built tab today, so an owner — who is allowed
-    // every one of them — still sees only that one in the navbar.
-    // Fourteen, not fifteen: `ADGROUPS` has fifteen entries but `more` is the
-    // folded-group MENU, not a group — `foldedGroups()` derives it.
+    // All fourteen groups are registered as the panel's map; the ones with a
+    // built tab are what the navbar shows. Fourteen, not fifteen: `ADGROUPS`
+    // has fifteen entries but `more` is the folded-group MENU, not a group.
     expect(ADMIN_GROUPS.length).toBe(14);
-    expect(visibleGroups('owner').map((g) => g.key)).toEqual(['collectors']);
+    expect(visibleGroups('owner').map((g) => g.key)).toEqual(['collectors', 'system']);
+    // `system` is owner-only, so a standard admin still sees one group
+    expect(visibleGroups('standard_admin').map((g) => g.key)).toEqual(['collectors']);
   });
 
   it('drops an owner-only group wholesale for a standard admin', () => {
@@ -228,6 +228,12 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
 
   it('counts what is actually built, so progress cannot be overstated', () => {
     const built = allTabs().filter((t) => t.path !== null);
-    expect(built.map((t) => t.key)).toEqual(['dashboard', 'chat', 'activity']);
+    expect(built.map((t) => t.key)).toEqual([
+      'dashboard',
+      'chat',
+      'users',
+      'activity',
+      'system',
+    ]);
   });
 });
