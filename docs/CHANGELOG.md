@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 14: the deploy blocker narrowed to a Vercel role
+
+- Both creation paths fail identically — `create_git_project` (even link-only, `deploy:false`) and
+  `deploy_to_vercel` (inline). The inline 403 carries Vercel's team-members-and-roles doc link, which
+  is how Vercel frames a role problem; reads of projects/deployments/teams all work.
+- Owner action: raise the member's role, or hand-create an empty `darz-web` project to deploy into.
+
 ## 2026-09-18 — "Curated for You" chip (backend Phase 24)
 
 - `query.curated` switches `CatalogueController` between `/artworks/` and `/artworks/selections/` —
