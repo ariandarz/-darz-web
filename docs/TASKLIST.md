@@ -1,17 +1,35 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-17 (design pass landed; `main` and `development` level) ·
-**Current focus:** **closing the v0.1 loop after the design pass** — see "What next" just below.
-The Market App design pass (PR #15, branch `claude/darz-web-frontend-redesign-f686ie`) was merged to
-`development` on 2026-09-17 on the owner's instruction ("land the design pass") and `main` was brought
-level the same day, the way the v0.1 release was (the PR #17 / #18 pattern). Its merge commit's tree is
-the gated PR head: typecheck clean · lint 3 pre-existing warnings · 98/98 tests · format · build. Two
-entry points `development` had are unlinked in the merged result — an **owner decision**, recorded
-under "Design pass" below. **Open PRs: none.** Merged remote branches, safe to delete (not deleted):
+**Last updated:** 2026-09-18 (Phase 5 complete and released; `main` and `development` level) ·
+**Current focus:** **closing the v0.1 loop** — the team sign-in landed 2026-09-18, so a reply can
+now be sent from `/admin/requests` by a real team session. Next is Phase 13 E2E over the whole
+chain. See "What next" just below.
+
+**Phase 5 (collector requests + activity) is done and released** — all four steps, 2026-09-18, each
+merged on the owner's explicit instruction. `docs/PHASE_5_PLAN.md` is the contract it was built to
+(findings, owner decisions D1-D11 / F1, the D3 status map); `docs/PHASE_5_API_GAPS.md` records the
+twelve gaps found on the API side (G-P5-1 … G-P5-12) — **none** was fixed by changing the backend,
+per the owner's instruction to build the UI around the gap and document it instead. `main`
+(`29e9799`) and `development` (`a3793f7`) have identical trees. **Open PRs: none.**
+
+Before that, the Market App design pass (PR #15, branch `claude/darz-web-frontend-redesign-f686ie`)
+was merged to `development` on 2026-09-17 on the owner's instruction ("land the design pass") and
+`main` was brought level the same day, the way the v0.1 release was (the PR #17 / #18 pattern). Its
+merge commit's tree is the gated PR head: typecheck clean · lint 3 pre-existing warnings · 98/98
+tests · format · build. Two entry points `development` had are unlinked in the merged result — an
+**owner decision**, recorded under "Design pass" below.
+
+**Eleven merged remote branches are still present.** Each is `ahead:0` against `development`, so
+every commit on them is already in `development` and deleting the ref loses nothing:
 `claude/darz-market-v0-1-hpy1xy`, `claude/darz-web-frontend-redesign-f686ie`,
 `claude/flow-1-requests-offers-admin`, `claude/phase-6-saved-favorites-gy70nd`,
-`phase-19-crm-saved-wire`, `phase-19-format-fixes`, `phase-8-auctions-browse`,
-`phase-8-auctions-bidding`, `phase-8-auctions-notifications`, `phase-8-auctions-records`.
+`docs-panel-backend-audit-2026-09-17`, `phase-19-crm-saved-wire`, `phase-19-format-fixes`,
+`phase-8-auctions-bidding`, `phase-8-auctions-browse`, `phase-8-auctions-notifications`,
+`phase-8-auctions-records`. **Do not spend another session trying to delete these from Claude:**
+GitHub answers `403` to every ref deletion here (retried 2026-09-18, with and without
+`push.negotiate`; ordinary pushes from the same session succeed, the agent proxy logs no denial of
+its own, and the GitHub MCP server exposes no delete-branch tool). Use the repository's branches
+page or a local clone.
 
 **Backend cross-check (2026-09-17, from `darzmarket-api`):** Phases 27-32 (the full old-panel admin
 audit — Collectors, Collector Activity, Dashboard, Memberships, Team, App Design) and Phase 23
@@ -20,21 +38,34 @@ frontend UI yet. Also corrected two stale `[!]` blockers this pass: backend Phas
 catalogue) and 25 (questionnaire) were already merged when this file last said blocked — both are
 real, buildable now.
 
-**What next (2026-09-17, recommended order):**
+**What next (2026-09-18, recommended order):**
 
-1. Owner decision on the two unlinked entry points (artist index `/artists`, `/auctions/notifications`)
-   — see "Design pass" below; then one small PR either way.
-2. Unblock the deploy (Phase 14): a project-creating Vercel role, or a hand-created empty project
-   linked to the repo; then the real API + WS URLs in `.env.production` once `darzmarket-api` Phase 18
-   exists. Until then the deployed build is visual-only.
-3. Close the v0.1 loop end to end: a team sign-in screen so admins can reply from `/admin/requests`
-   (`docs/V0_1_SCOPE.md` flag 8), Phase 13 E2E over Login → Browse → Save → Send Inquiry → Chat, and
-   backend G-F1-1 (the typed per-kind `detail`).
-4. Backend-ready collector items v0.1 hid: membership redeem (Phase 9), push opt-in once the API
+1. ~~The team sign-in screen~~ — **done 2026-09-18** (`/admin/login`, `TeamLoginPage` +
+   `RequireTeam` + `AdminLayout`). `V0_1_SCOPE.md` flag 8 is closed: a team member signs in with
+   email + password and the desk is a team-principal surface, no longer a page of 403s for a
+   collector token.
+2. **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat — now that the reply half of
+   that chain exists, this is the next real piece. Note this repo has **no CI at all** (no
+   `.github/workflows`), so the gate is whatever a contributor runs by hand; mirroring
+   `darzstudio.art`'s `Quality` workflow would be worth doing alongside it.
+3. Owner decision on the two unlinked entry points (artist index `/artists`,
+   `/auctions/notifications`) — see "Design pass" below; then one small PR either way.
+4. Unblock the deploy (Phase 14) — **still blocked, re-tested 2026-09-18.** There is no `darz-web`
+   project on the Vercel team (it holds only `darzstudio-art` and `koocheh-web`), and creating one
+   returns the same `403 forbidden — "You don't have permission to create the project."` recorded on
+   2026-09-07, now through the Vercel MCP tool as well. The connection reads projects and
+   deployments fine but cannot create them, so this needs a project-creating Vercel role, a
+   re-scoped Vercel connection, **or** an empty project created by hand for Claude to deploy into.
+   The production build itself is verified green (`tsc -b` + `vite build`, 162 modules, 2026-09-18);
+   `.env.production` is a deliberate `.invalid` placeholder, so the first deploy is visual-only
+   until `darzmarket-api` Phase 18 publishes real API + WS URLs.
+5. Backend G-F1-1 (the typed per-kind `detail`) — the one backend ask that would delete hand-written
+   types from this repo; see `docs/PHASE_5_API_GAPS.md` G-P5-1.
+6. Backend-ready collector items v0.1 hid: membership redeem (Phase 9), push opt-in once the API
    publishes the VAPID key, the "Refine" filter panel (backend ready since Phase 19).
-5. Post-v0.1 by readiness: switch on auctions when wanted (built, Phase 8), Phase 7 catalog CRUD +
+7. Post-v0.1 by readiness: switch on auctions when wanted (built, Phase 8), Phase 7 catalog CRUD +
    sales, Phase 10 gallery portal, Phase 11 admin desks, FE-R1…FE-R4 records desk.
-6. Phases 12+ wait for their backend phases; the curated `in_app` set (backend Phase 24) goes first.
+8. Phases 12+ wait for their backend phases; the curated `in_app` set (backend Phase 24) goes first.
 
 Previously (2026-09-11, branch `claude/darz-market-v0-1-hpy1xy`, merged 2026-09-12 — PR #16 to
 `development`, PR #17 to `main`, PR #18 back):
@@ -88,12 +119,18 @@ sets `a { color: inherit }` but no `text-decoration`, so every link in the app (
 the "Artists"/"Saved" pills) renders underlined — flagged rather than changed, since it is a
 cross-cutting visual decision.
 
-**Client V1 API brief (2026-09-04) — build order & blockers.** The client shared a brief (their
-`V1_FRONTEND_API_MAP.md`, PR #832 — we only have the rendered PDF, `~/Downloads/DarzV1FrontendAPIBrief.pdf`).
-Its verified guidance, now folded into the phases below: **build Login → Artwork list → Save/unsave
-first, then STOP** — those 3 collector flows are backend-ready today. **Do NOT jump to Requests /
-Offers / Admin-queue (our Phase 5 / 7): they depend on backend work that doesn't exist yet** (backend
-Phase 19 — reply-thread, offer-floor, idempotency key, legacy-id). Decisions locked with the owner
+**Client V1 API brief (2026-09-04) — build order & blockers.** The client shared a brief, their
+`V1_FRONTEND_API_MAP.md`. **PR #832 was merged 2026-09-18**, so this is no longer a PDF read at
+arm's length: the real document is `docs/V1_FRONTEND_API_MAP.md` on `darzstudio.art` `development`,
+366 lines with `file:line` references throughout. Read that, not
+`~/Downloads/DarzV1FrontendAPIBrief.pdf`. Its four findings — no reply channel in the API, the offer
+floor enforced only in the database, no `client_req_id` counterpart, and no runtime legacy-id → UUID
+mapping — overlap heavily with our own `docs/PHASE_5_API_GAPS.md`; worth reconciling into one list
+rather than tracking the same gaps twice. **Its build-order guidance is superseded, not violated:**
+it said build Login → Artwork list → Save/unsave and then STOP, and **do NOT jump to Requests /
+Offers / Admin-queue**, because in September those depended on backend work that did not exist
+(reply-thread, offer-floor, idempotency key, legacy-id). Backend Phase 19 landed and removed exactly
+those blockers, which is why Phase 5 was built afterwards. Treat the "stop" line as history. Decisions locked with the owner
 2026-09-04: **offline = NO** (online-only; the old app's offline/localStorage model was its main bug —
 don't port `localStorage` as source of truth, nor the `saved`/`deleted` pair or `darz_save_edit`);
 **reply channel = two-way thread, polling** (backend `RequestMessage`); **legacy-id resolution =
@@ -373,8 +410,17 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
       `allowed_transitions` so it can never offer an illegal status. **Now shows a real collector
       name and artist — title** (`RequestAdmin.collector`/`.artwork` are nested objects, not bare
       uuids — gap G-F1-7 closed 2026-09-11) plus an unread-reply badge and an archived chip.
-      No principal-aware route guard yet — `RequireAuth` only proves a session exists, and the API's
-      own admin permission is the real gate.
+      **Principal-aware guard landed 2026-09-18**: `/admin/requests` sits behind `RequireTeam`
+      (not `RequireAuth`) inside its own `AdminLayout`, outside the collector shell and providers —
+      a collector session is sent to `/admin/login` instead of collecting 403s. The API's own admin
+      permission is still the real gate; this just stops the UI pretending otherwise.
+- [x] Team sign-in — **2026-09-18**: `/admin/login` (`TeamLoginPage`) over
+      `POST /api/auth/team/login/` (`{email, password}` -> JWT pair, `principal=team`), a verbatim
+      port of app.html's `st.view==='legacy'` card (app.html:2537-2542) reusing the collector gate's
+      own classes, so it adds no CSS. `RequireTeam` guards the desk; `AdminLayout` carries the one
+      piece of new markup — a bar with the signed-in identity and "LEAVE THE ROOM" — because the
+      desk sits outside the collector `AppShell` and a team member would otherwise have no way out.
+      The real admin shell is Phase 11; that bar should be deleted when it lands, not grown.
 - [ ] Sales CRUD + transition/payment/delivery-status actions
 - [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
 

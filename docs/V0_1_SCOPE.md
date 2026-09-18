@@ -85,5 +85,8 @@ Gates: `tsc -b --noEmit` clean · `oxlint` clean (one pre-existing warning) · `
    sheets (`DZ.legal`); the texts were not ported.
 7. **Underlined link text on cards** — pre-existing (`base.css` sets no `text-decoration`),
    flagged in `TASKLIST.md`, not changed.
-8. **Admin reply UI** — `/admin/requests` shows the inquiry and its unread state; replying from
-   the web admin needs a team sign-in screen (Phase 7). The loop was verified with the admin API.
+8. ~~**Admin reply UI**~~ — **closed 2026-09-18.** `/admin/login` (`TeamLoginPage`, a port of
+   app.html's `st.view==='legacy'` card) signs a team member in against
+   `POST /api/auth/team/login/`, and `RequireTeam` makes the desk a team-principal surface rather
+   than a page a collector token merely collects 403s from. The loop no longer needs the admin API
+   called by hand.
