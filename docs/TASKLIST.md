@@ -261,7 +261,7 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[~]` steps 1-3 of 4 done (`docs/PHASE_5_PLAN.md`): every kind files, lists and opens; activity self-logging is the last step
+## Phase 5 — Collector: requests + activity ✅ all four steps done 2026-09-18 (`docs/PHASE_5_PLAN.md`)
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). Backend Phase 19
 (`darzmarket-api`) shipped the core-loop backend work (reply thread API, offer floor enforcement,
@@ -302,8 +302,14 @@ see Phase 9) — nothing in this phase is backend-blocked any more except the ty
       shares Clear activity's session-local hide (G-P5-4). Not ported, both flagged in the file:
       the old separate "headline reply" channel (one thread here) and the WhatsApp CTA (no number
       is published).
-- [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
-      (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
+- [x] Activity self-logging — **Phase 5 step 4, 2026-09-18**: `features/activity/ActivityLogger`
+      over `POST /api/crm/activity/`, fire-and-forget (a failure is swallowed, sync or async — it
+      must never reach a save or a sign-in), `view` deduped per work per session and `search` per
+      settled term. Wired at the four points the old app used: `login` on sign-in
+      (`app.html:2347`), `save` inside `SavedController` (`:2806`, saves only), `view` on the
+      artwork detail (owner decision D5a — the old app logged only curated works, and no curated
+      set exists yet), `search` on the toolbar's settled term (D5b — the old app never logged one).
+      The log is write-only: no endpoint reads it back (`docs/PHASE_5_API_GAPS.md` G-P5-12).
 - [x] **Reply-thread chat UI** — shipped in v0.1 (2026-09-11) over backend Phase 19.3
       (`GET/POST /api/crm/requests/{id}/messages/` + `mark-seen`): `ThreadController`, `ThreadPage`,
       polling + on focus, unread from `unread_count`. See Phase 9.

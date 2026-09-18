@@ -23,6 +23,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
+import { useActivity } from '../activity/useActivity';
 import { Toast } from '../../components';
 import { ActionButtons } from '../requests/ActionButtons';
 import { InquiryAction } from '../requests/InquiryAction';
@@ -124,6 +125,7 @@ export function ArtworkDetailPage() {
     data: artwork,
     error,
   } = useResource(() => catalog.artwork(id!), [catalog, id]);
+  const activity = useActivity();
   const [roomOpen, setRoomOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -139,6 +141,14 @@ export function ArtworkDetailPage() {
   useEffect(() => {
     document.getElementById('dzMain')?.scrollTo({ top: 0 });
   }, [id]);
+
+  // `dzLogCuratedView` (app.html:9155) logged a view once per work; the old
+  // app limited it to the collector's curated set, which does not exist yet
+  // (backend Phase 24), so every work counts — owner decision D5a. The
+  // logger itself dedupes per session.
+  useEffect(() => {
+    if (artwork?.id) activity.view(artwork.id);
+  }, [activity, artwork?.id]);
 
   const share = useCallback(async () => {
     if (!artwork) return;

@@ -1,7 +1,7 @@
 # Phase 5 — Collector: requests + activity — implementation plan
 
-**Status:** CONFIRMED by the owner 2026-09-17 (D1-D11 answered — see § Resolved decisions; F1
-open) · Step 1 implemented 2026-09-17, PR open ·
+**Status:** COMPLETE — all four steps implemented and merged (steps 1-3) or open as PR #26 (step
+4). Owner-confirmed 2026-09-17 (D1-D11 — see § Resolved decisions; **F1 remains open**) ·
 **Created:** 2026-09-17 · **Slicing proposed:** four frontend steps, no backend work — every API gap
 is documented and the UI is built around it (owner instruction, 2026-09-17: "if any gaps on the API
 side, focus only on the UI design and implement that, then update the API gaps document").
@@ -257,16 +257,24 @@ reply and an admin reply round-trip; the notice appears and clears on read.
 
 ---
 
-## Step 4 — Activity self-logging
+## Step 4 — Activity self-logging (`claude/zen-curie-n8ekum`, PR #26)
 
-**Status:** not started.
+**Status:** implemented 2026-09-18 — typecheck · lint (3 pre-existing warnings, none new) ·
+123 tests · format · build clean; live verification in the Progress log. **Phase 5 complete.**
 
-- [ ] **`ActivityLogger`** (OOP, wraps `CrmService.logActivity`): fire-and-forget, never blocks a
+- [x] **`ActivityLogger`** (OOP, wraps `CrmService.logActivity`): fire-and-forget, never blocks a
       screen, swallows failures, dedupes `view` per artwork per session.
-- [ ] Wire: `login` on collector sign-in (`app.html:2347`) · `save` on save (`:2806`, saves only) ·
-      `view` on artwork detail open (D5a) · `search` when a catalogue search settles (D5b).
-- [ ] Tests: dedupe, wiring, failure isolation.
-- [ ] Docs: TASKLIST Phase 5 → `[x]`, CHANGELOG.
+- [x] Wire: `login` on collector sign-in (`app.html:2347`, in `LoginPage`) · `save` inside
+      `SavedController` where the old app logged it (`:2806`, saves only, never an unsave) ·
+      `view` on artwork detail open (D5a) · `search` on the toolbar's settled term (D5b).
+- [x] Tests: the payload per kind, the view and search dedupes, the reset, and failure isolation
+      for both a rejected promise and a synchronous throw.
+- [x] Docs: TASKLIST Phase 5, CHANGELOG, G-P5-12.
+- Two honest limits, both consequences of decisions already taken: the view dedupe is per
+  page-load (in memory — `localStorage` is out, owner decision 2026-09-04), so a reload logs a
+  fresh view; and because the call is fire-and-forget, a hard navigation in the same instant as
+  sign-in can drop the `login` row. Losing a behavioural row is the accepted cost of never making
+  a collector wait for one.
 
 **Step 4 exit criteria:** rows for all four kinds appear in the backend admin for a seeded collector;
 no UI path waits on the call.
@@ -357,6 +365,18 @@ _Append one entry per step as it merges. Newest last._
   the hand-typed per-kind `detail` union, "48h hold", "Request Price & Availability" as the
   price-hidden primary, the offer sheet staying open on a rejection. `docs/PHASE_5_API_GAPS.md`
   written (G-P5-1 … 11); `API_INTEGRATION_GAPS.md` drift corrected.
+- **2026-09-18 — Step 4 implemented and verified live. Phase 5 is complete.** `ActivityLogger`
+  (fire-and-forget, guarded against both a rejected promise and a synchronous throw, deduping
+  `view` per work per session and `search` per settled term) on one `ActivityProvider` mounted
+  above the router, because the first event is `login` and that happens on `/login`, outside the
+  authenticated tree. `save` is logged from inside `SavedController`, where the old app logged it.
+  Verified against the local backend by driving a real session and reading
+  `crm_collectoractivity` back: `login`, a `view` of one work, its `save`, **no second view when
+  the same work is reopened**, a `view` of a different work, and two `search` rows carrying their
+  terms — six rows, all four kinds. One finding from the first attempt, kept as a note rather than
+  a fix: driving the flow with hard page loads dropped the `login` row, because a full navigation
+  in the same instant aborts the in-flight POST; with the client-side navigation a collector
+  actually performs, it lands.
 - **2026-09-18 — Step 3 implemented and verified live.** `ThreadPage` now has two shapes over one
   thread: a conversation keeps v0.1's chat, every other kind opens `RequestDetail` — the old app's
   request card (heading, work, **Current status** banner, Request / Amount / **Held until** / When,

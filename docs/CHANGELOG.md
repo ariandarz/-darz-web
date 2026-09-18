@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 5 step 4: activity self-logging — Phase 5 complete
+
+- `features/activity/ActivityLogger` over `POST /api/crm/activity/`: fire-and-forget (guarded
+  against a rejected promise and a synchronous throw alike), `view` deduped per work per session,
+  `search` per settled term. One `ActivityProvider` above the router, because the first event is
+  `login` on `/login`. Wired at the old app's four points: login, save (inside `SavedController`,
+  saves only), view (D5a) and search (D5b). Verified live: six rows, all four kinds, no second view
+  when a work is reopened. 123 tests. Phase 5's four steps are done.
+
 ## 2026-09-18 — Phase 5 step 3: a detail and a thread for every request kind
 
 - `ThreadPage` in two shapes over one thread: a conversation keeps v0.1's chat, every other kind
