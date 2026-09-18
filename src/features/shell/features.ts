@@ -128,7 +128,46 @@ export function resolveFeatureSet(raw: unknown): FeatureSet {
 
 /** Which set this build runs — the one place the environment is read. */
 export const FEATURE_SET: FeatureSet = resolveFeatureSet(import.meta.env.VITE_FEATURE_SET);
-export const features: FeatureFlags = FEATURE_SETS[FEATURE_SET];
+export const features: FeatureFlags = { ...FEATURE_SETS[FEATURE_SET] };
+
+/**
+ * The owner's runtime switches — `theme.features` from the public
+ * `GET /api/app-theme/` — merged over the build-time set. Pure, so the merge
+ * rules are testable:
+ *
+ *  - only keys the table already has are read (an unknown key in the stored
+ *    JSON is someone's typo, not a new feature);
+ *  - only literal booleans are honoured (`"false"` the string would otherwise
+ *    switch a feature ON);
+ *  - `market` cannot be switched off — the catalogue is the app, and its type
+ *    is the literal `true` for that reason.
+ */
+export function resolveFeatureFlags(base: FeatureFlags, raw: unknown): FeatureFlags {
+  const next = { ...base };
+  if (raw && typeof raw === 'object') {
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (key === 'market' || !(key in next)) continue;
+      if (typeof value !== 'boolean') continue;
+      (next as unknown as Record<string, boolean>)[key] = value;
+    }
+  }
+  next.market = true;
+  return next;
+}
+
+/**
+ * Apply the owner's switches to the live table, **in place**. `features` is a
+ * const imported by the nav, the route table, the artwork detail and the
+ * profile; mutating its properties once, before first paint (`ApiProvider`
+ * blocks render until the theme fetch settles alongside `session.resume()`),
+ * updates every reader without threading a provider through all of them. A
+ * failed fetch applies nothing, so `VITE_FEATURE_SET` stays the floor — a dead
+ * theme endpoint can never dark-screen the app (`docs/ADMIN_ARCHITECTURE.md`
+ * §4).
+ */
+export function applyRuntimeFeatures(rawThemeFeatures: unknown): void {
+  Object.assign(features, resolveFeatureFlags(features, rawThemeFeatures));
+}
 
 /**
  * The route prefixes a feature owns. A hidden feature's routes redirect to

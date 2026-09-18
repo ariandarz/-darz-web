@@ -178,7 +178,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'design',
         'App Design',
-        null,
+        '/admin/design',
         'ready',
         '11b·5',
         'core app-theme, public read + admin write.',
@@ -295,7 +295,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'Operations',
     folded: true,
     tabs: [
-      tab('design', 'App Design', null, 'ready', '11b·5'),
+      tab('design', 'App Design', '/admin/design', 'ready', '11b·5'),
       tab(
         'logistics',
         'Logistics & Payments',
