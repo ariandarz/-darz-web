@@ -1610,3 +1610,70 @@ html.dz-desktop .dza-enq {
   align-items: center;
   justify-content: center;
 }
+
+/* ---- "Curated for You" chip (app.html:278-289, v669) -------------------
+   A filter that sits with the other filters, never a separate section — the
+   separate "Private selection" homepage section was REMOVED at v669
+   (app.html:8890). Values are the old app's, mapped onto this project's
+   tokens the way the rest of this file is.
+   `.neu` / `.dz-curdot` are deliberately not ported: they flag an unseen new
+   batch, and the API exposes no change signal to key on (G-P24-2). */
+.tbar-cur {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.dz-curchip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink2);
+  border-radius: 11px;
+  padding: 9px 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dz-curchip svg {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+.dz-curchip:hover {
+  border-color: var(--ink3);
+  color: var(--ink);
+}
+.dz-curchip .dz-curn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--soft);
+  color: var(--ink2);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+.dz-curchip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.dz-curchip.on svg {
+  opacity: 1;
+}
+.dz-curchip.on .dz-curn {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--bg);
+}

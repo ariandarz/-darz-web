@@ -5,6 +5,51 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 14: the deploy blocker narrowed to a Vercel role
+
+- Both creation paths fail identically — `create_git_project` (even link-only, `deploy:false`) and
+  `deploy_to_vercel` (inline). The inline 403 carries Vercel's team-members-and-roles doc link, which
+  is how Vercel frames a role problem; reads of projects/deployments/teams all work.
+- Owner action: raise the member's role, or hand-create an empty `darz-web` project to deploy into.
+
+## 2026-09-18 — "Curated for You" chip (backend Phase 24)
+
+- `query.curated` switches `CatalogueController` between `/artworks/` and `/artworks/selections/` —
+  a filter on the same grid, never a separate section (app.html:8890 records v669 removing that).
+  Chip hidden at zero grants; label/count/titles/`.on` inversion ported from :8583-8594 and :278.
+- The notice and the selection name are not ported — no API signal for either (G-P24-1/2). 141 tests.
+
+## 2026-09-18 — "Request access" is a real form (backend Phase 34)
+
+- `LoginPage`'s stub note becomes the old app's form (app.html:2544-2565, verbatim) over
+  `POST /api/auth/access-requests/`. The `@` split, `?ref=` chain and `client_req_id` live in
+  `features/auth/accessRequest.ts` as pure functions. `Input`'s `label` widened to `ReactNode`.
+- Verified live against the backend at `12988db`; both contact paths round-trip. 137 tests (+11).
+  G-P34-1/2 raised with the backend as `darz-backend-api` #28 (owner decision D8).
+
+## 2026-09-18 — Backend Phases 23-35 surveyed; two collector ports planned
+
+- Pulled `darz-backend-api` `development` 24 commits forward (`3801786` → `12988db`): Phases 23, 24,
+  25, 27-35. 191 routes exist; this frontend calls ~20. `docs/PHASE_24_35_PLAN.md` (plan, D1-D8) and
+  `docs/PHASE_24_35_API_GAPS.md` (G-P34-1/2, G-P24-1/2, G-P25-1/2, G-P13-1) written.
+- Nothing implemented — awaiting owner confirmation.
+
+## 2026-09-18 — CI, and a test that was green in CI and red on a desk
+
+- `.github/workflows/quality.yml`: typecheck · lint · format:check · test · build, on every PR and
+  on pushes to `main`/`development`. Verified on a real clean checkout (`npm ci`) before landing,
+  so its first run is green. Until now every recorded "green" was hand-run and unenforced.
+- `resolveFeatureSet` no longer defaults its argument to `import.meta.env` — a JS default fires on
+  an explicit `undefined`, so the "unset" test re-read the ambient env and failed for anyone whose
+  `.env.local` set `full`. Now pure, with a `vi.stubEnv` regression guard. 126 tests.
+
+## 2026-09-18 — Released the team sign-in to `main`
+
+- PR #30 brought `main` level (`77f3655`), PR #31 merged the release commit back (`b4b257e`) — the
+  PR #27 / #28 pattern. Trees identical; `main` is an ancestor of `development` again.
+- Publishes nothing: the Vercel project still does not exist (Phase 14, `403`), so `main` moving
+  has no deploy consequence in this repo yet.
+
 ## 2026-09-18 — Team sign-in: the v0.1 loop closes
 
 - `/admin/login` ports app.html's "Darz team sign-in" card verbatim (:2537-2542) onto

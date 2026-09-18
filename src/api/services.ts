@@ -12,6 +12,8 @@ import type { ApiClient } from './ApiClient';
 import type { AuthSession, Me } from './AuthSession';
 import type { RequestOptions } from './HttpClient';
 import type {
+  AccessRequest,
+  AccessRequestInput,
   AdminRequest,
   AdminRequestQuery,
   Artist,
@@ -71,6 +73,17 @@ export class CatalogService extends ResourceService {
 
   artworks(query: CatalogueQuery = {}) {
     return this.list<Artwork>('/artworks/', query as RequestOptions['query']);
+  }
+  /**
+   * The collector's curated works (backend Phase 24) — the `selected` /
+   * `private_selection` artworks explicitly granted to them. Deliberately a
+   * different endpoint, not a filter on `/artworks/`: the backend guarantees
+   * "a work here never also appears in the main catalogue response"
+   * (`ArtworkService.selection_queryset`), which is the old `club_items`
+   * behaviour. Needs a collector session; a team token gets a 403.
+   */
+  artworkSelections(query: CatalogueQuery = {}) {
+    return this.list<Artwork>('/artworks/selections/', query as RequestOptions['query']);
   }
   artwork(id: string) {
     return this.retrieve<Artwork>(`/artworks/${id}/`);
@@ -319,5 +332,20 @@ export class AuthService extends ResourceService {
       '/membership/redeem/',
       { code },
     );
+  }
+
+  /**
+   * The gate's "Request access" form (backend Phase 34) — public, no session.
+   * Lands in the admin review queue, where a human issues a key or declines;
+   * it mints no credential by itself.
+   *
+   * `client_req_id` is sent because the old app sends one (app.html:2559) and
+   * the day the backend honours it the client already complies. Today it is
+   * **ignored** — `AccessRequestService.create` is a plain `objects.create`
+   * with no uniqueness, so a double-tap still makes two pending rows
+   * (docs/PHASE_24_35_API_GAPS.md G-P34-1, owner decision D3).
+   */
+  requestAccess(body: AccessRequestInput) {
+    return this.create<AccessRequest>('/access-requests/', body);
   }
 }

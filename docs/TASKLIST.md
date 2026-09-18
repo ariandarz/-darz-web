@@ -1,16 +1,30 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-18 (Phase 5 complete and released; `main` and `development` level) ·
-**Current focus:** **closing the v0.1 loop** — the team sign-in landed 2026-09-18, so a reply can
-now be sent from `/admin/requests` by a real team session. Next is Phase 13 E2E over the whole
-chain. See "What next" just below.
+**Last updated:** 2026-09-18 (team sign-in released; `main` and `development` level) ·
+**Current focus:** **Phase 13 E2E over the whole v0.1 chain.** CI landed 2026-09-18
+(`.github/workflows/quality.yml`), so a gate finally exists; the E2E suite is what it still cannot
+see. The v0.1 loop
+itself is closed: the team sign-in shipped 2026-09-18 and a reply can now be sent from
+`/admin/requests` by a real team session. See "What next" just below.
+
+**The v0.1 loop is closed.** `/admin/login` (`TeamLoginPage`) signs a team member in against
+`POST /api/auth/team/login/`; `RequireTeam` makes the admin desk a team-principal surface; the desk
+moved out of the collector shell into `AdminLayout`. Before this, a collector could send an inquiry
+and **nobody could answer it from this app** — the loop had only ever been exercised by calling the
+admin API by hand (`V0_1_SCOPE.md` flag 8, now closed). Shipped via PR #29 → released to `main` by
+PR #30, merged back by PR #31, all on the owner's explicit instruction.
 
 **Phase 5 (collector requests + activity) is done and released** — all four steps, 2026-09-18, each
 merged on the owner's explicit instruction. `docs/PHASE_5_PLAN.md` is the contract it was built to
 (findings, owner decisions D1-D11 / F1, the D3 status map); `docs/PHASE_5_API_GAPS.md` records the
 twelve gaps found on the API side (G-P5-1 … G-P5-12) — **none** was fixed by changing the backend,
-per the owner's instruction to build the UI around the gap and document it instead. `main`
-(`29e9799`) and `development` (`a3793f7`) have identical trees. **Open PRs: none.**
+per the owner's instruction to build the UI around the gap and document it instead.
+
+**Release state (2026-09-18):** `main` (`77f3655`) and `development` (`b4b257e`) have **identical
+trees**, and `main` is an ancestor of `development` (the one-commit lead is the merge-back itself,
+no content). **Open PRs: none.** Nothing is in flight on a feature branch. Note the release
+published nothing — the Vercel project still does not exist (see "What next" item 3), so `main`
+moving has no deploy consequence in this repo today.
 
 Before that, the Market App design pass (PR #15, branch `claude/darz-web-frontend-redesign-f686ie`)
 was merged to `development` on 2026-09-17 on the owner's instruction ("land the design pass") and
@@ -31,31 +45,83 @@ GitHub answers `403` to every ref deletion here (retried 2026-09-18, with and wi
 its own, and the GitHub MCP server exposes no delete-branch tool). Use the repository's branches
 page or a local clone.
 
-**Backend cross-check (2026-09-17, from `darzmarket-api`):** Phases 27-32 (the full old-panel admin
-audit — Collectors, Collector Activity, Dashboard, Memberships, Team, App Design) and Phase 23
-(Projects/Data Health/Import) all merged — see the new **Phase 11b** section below, none of it has
-frontend UI yet. Also corrected two stale `[!]` blockers this pass: backend Phases 24 (curated-set
-catalogue) and 25 (questionnaire) were already merged when this file last said blocked — both are
-real, buildable now.
+**Reference repo state (`../DarzStudio` / `ariandarz/darzstudio.art`, 2026-09-18):** the approved
+design package `design/market-app/` is now on that repo's **`main`** (`b8ee118`, 172 files / 161
+screenshots), released via #846 → #858/#859. `CLAUDE.md` reference 0 is therefore true for a fresh
+clone — the branch-fetch workaround earlier sessions needed is gone (this was Phase 5's owner flag
+F1, now closed). Two things to know if you go looking there: its `development` (`9cc4b57`) carries
+**v1233 unreleased** (`build.json` 1232 on `main`, 1233 on `development`), and v1233 ships a
+**SQL §94 migration that is not applied to production** — its Admin degrades on its own until it is.
+That repo's production deploys from its `main`, so §94 should be applied *before* v1233 is released.
+Neither is this repo's work; it is recorded so nobody reads `main` there and assumes it is current.
+
+**Backend cross-check (2026-09-18, `darz-backend-api` @ `development` `12988db`):** the local
+clone was **24 commits behind**; pulling it brought in backend Phases **23, 24, 25, 27, 28, 29, 30,
+31, 32, 33, 34, 35**. There are now **191 declared routes** and this frontend calls about **20** of
+them — the backend is far ahead, and what to build next is limited by design, not by API. The
+backend's own `docs/TASKLIST.md` is dated 2026-09-11 and describes none of it, so the inventory was
+read from `urls.py`, views and serializers. Full findings and the proposed work:
+**`docs/PHASE_24_35_PLAN.md`**; the gaps found: **`docs/PHASE_24_35_API_GAPS.md`**.
+
+Collector-facing and newly buildable: **Phase 34** public "Request access"
+(`POST /api/auth/access-requests/`) — which `LoginPage` currently stubs with a factual note because
+no endpoint existed, and whose field set matches the old form exactly; and **Phase 24** curated
+selections (`GET /api/catalog/artworks/selections/`) — today a collector holding grants sees **none
+of them**. Phase 25's questionnaire is stored but its *questions* are not published (G-P25-2), so it
+is not faithfully portable yet. Push is **still** blocked: the VAPID public key is not exposed by any
+endpoint (G-P13-1, re-checked 2026-09-18). Everything else added is admin-side — **Phase 11b**
+below, a whole panel's worth of API with no frontend UI.
 
 **What next (2026-09-18, recommended order):**
 
-1. ~~The team sign-in screen~~ — **done 2026-09-18** (`/admin/login`, `TeamLoginPage` +
-   `RequireTeam` + `AdminLayout`). `V0_1_SCOPE.md` flag 8 is closed: a team member signs in with
-   email + password and the desk is a team-principal surface, no longer a page of 403s for a
-   collector token.
-2. **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat — now that the reply half of
-   that chain exists, this is the next real piece. Note this repo has **no CI at all** (no
-   `.github/workflows`), so the gate is whatever a contributor runs by hand; mirroring
-   `darzstudio.art`'s `Quality` workflow would be worth doing alongside it.
+0. **Backend Phases 23-35 catch-up — `docs/PHASE_24_35_PLAN.md`.** **Step 1 (the gate's "Request
+   access" form, backend Phase 34) shipped 2026-09-18** — a real form over
+   `POST /api/auth/access-requests/` in place of the stub note `LoginPage.tsx` used to flag in its
+   own header. **D4 was ruled** by the owner: the credential model stays as it is (collector = first
+   name + access key, team = email + password) and the design package's password-generating sign-up
+   is **not** built, because this backend issues keys through an admin review queue and has no
+   password generation at all — the one place "the package wins" is overridden, and why.
+   **Step 2 (the "Curated for You" chip, backend Phase 24) shipped 2026-09-18** — a collector
+   holding grants used to see **none** of their curated works; the chip now switches the catalogue's
+   base set to `/artworks/selections/`. It is a filter on the same grid, never a separate section:
+   `app.html:3432` still describes a "Private — for you" section, but `:8890` records that v669
+   **removed** it, so porting that would have shipped something the old app deleted. Both plan steps
+   are done; `docs/PHASE_24_35_PLAN.md` has the decisions and what was deliberately left out.
+1. ~~CI~~ — **done 2026-09-18.** `.github/workflows/quality.yml` runs typecheck · lint ·
+   format:check · test · build on every PR and on pushes to `main`/`development`, modelled on
+   `darzstudio.art`'s `Quality`. Verified before landing against a real clean checkout
+   (`git archive` + `npm ci`, no `.env.local`): all five steps pass, so its first run is green
+   rather than red. `lint` exits 0 on the 3 pre-existing warnings, so they do not gate. Every
+   "green" recorded in this file before that date was hand-run and unenforced.
+2. **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat. Unblocked as of 2026-09-18:
+   both halves of that chain now exist (the collector can send, a team member can reply). **This
+   is the real remaining gap** — all 20 test files are logic/controller tests and *nothing* renders
+   a component, so the class of bug caught only by a screenshot this afternoon (the admin bar
+   laid out beside the table instead of above it, because `AdminLayout` returned a fragment under
+   a centring flex `#root`) is still invisible to the suite. Needs one decision: run it against a
+   seeded local backend in CI (heavier, honest) or stub the API at the network layer (lighter,
+   less honest). Suggested: stub for the render/routing assertions, plus a small real-backend
+   smoke set.
 3. Owner decision on the two unlinked entry points (artist index `/artists`,
-   `/auctions/notifications`) — see "Design pass" below; then one small PR either way.
-4. Unblock the deploy (Phase 14) — **still blocked, re-tested 2026-09-18.** There is no `darz-web`
-   project on the Vercel team (it holds only `darzstudio-art` and `koocheh-web`), and creating one
-   returns the same `403 forbidden — "You don't have permission to create the project."` recorded on
-   2026-09-07, now through the Vercel MCP tool as well. The connection reads projects and
-   deployments fine but cannot create them, so this needs a project-creating Vercel role, a
-   re-scoped Vercel connection, **or** an empty project created by hand for Claude to deploy into.
+   `/auctions/notifications`) — see "Design pass" below; then one small PR either way. A third,
+   newer one sits beside them: **the team sign-in has no link either.** `/admin/login` is reachable
+   only by typing the URL or being redirected there from the desk, because `app.html` renders no
+   entry point for its own team card (see Phase 7 below). One line if the owner wants it.
+4. Unblock the deploy (Phase 14) — **still blocked; narrowed to a Vercel team role, 2026-09-18.**
+   There is no `darz-web` project on the team (it holds only `darzstudio-art` and `koocheh-web`).
+   **Both** creation paths were tried and fail identically:
+   `create_git_project` (even with `deploy:false`, i.e. link-only) and `deploy_to_vercel` (inline).
+   The inline path is the informative one — its 403 carries Vercel's own
+   `https://vercel.com/docs/accounts/team-members-and-roles` link, which is how Vercel frames a
+   **role** problem, not a scope or connector one. Reading projects, deployments and teams all work,
+   so the connection itself is healthy; it is specifically *create project* that the authenticated
+   member's role forbids (on a Pro team, Viewer and Billing cannot create projects).
+   Two ways out, and only the owner can take either: **(a)** raise that member's role to
+   Member/Developer on "Darz Market Studio's projects", after which Claude can create and link it;
+   or **(b)** create an empty project named `darz-web` linked to `ariandarz/-darz-web` by hand —
+   deploying *into an existing* project is a different permission from creating one, so that is
+   expected to work, though it has not been proven from here (proving it would mean deploying to a
+   real project, and the only two that exist are live).
    The production build itself is verified green (`tsc -b` + `vite build`, 162 modules, 2026-09-18);
    `.env.production` is a deliberate `.invalid` placeholder, so the first deploy is visual-only
    until `darzmarket-api` Phase 18 publishes real API + WS URLs.

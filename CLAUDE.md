@@ -20,10 +20,13 @@ Two sources are required **together** for every feature — neither alone is eno
 - **This repo**: the new frontend, on GitHub at `ariandarz/-darz-web`. Default branch is `main`;
   `development` is the working line and the two are kept level. Work happens on a task branch, which
   goes to a PR — that part has not changed. What did change: the old "owner pushes/merges, never
-  Claude" rule no longer holds unconditionally. On 2026-09-07 the owner instructed Claude to merge
-  and publish, and PRs #1-#5 were merged by Claude on that instruction. **Merging still needs the
-  owner to ask for it explicitly, per request — it is not a standing permission.** Default remains:
-  open the PR and stop.
+  Claude" rule no longer holds unconditionally. Since 2026-09-07 the owner has instructed Claude to
+  merge on a per-request basis — PRs #1-#5 that day, and since then #15-#18 (design pass + release),
+  #22/#25/#26 (Phase 5 steps), #27/#28 (Phase 5 release + merge-back) and #29/#30/#31 (team sign-in,
+  its release, and the merge-back). Every one of those was a separate instruction.
+  **Merging still needs the owner to ask for it explicitly, per request — it is not a standing
+  permission, and the list above is a record, not a precedent to act on.** Default remains: open the
+  PR and stop.
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full
