@@ -5,6 +5,16 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b Step 4: Memberships + Team logins
+
+- Memberships (owner-only): issue with auto `DZ-<plan>-<6>` codes, wa.me links, the :33318 status
+  cell over `expiryParts`, server-side renew (+1 month from max(expiry, today)), edit/remove. Plans
+  are the collector tiers — the backend's own Phase 30 deviation, flagged. "No payment processing
+  anywhere" kept on screen.
+- Team logins (owner-only): create → password shown once, search/role, edit, remove; self-guards as
+  disabled controls with the reason. The old Workspace suite around it has no backend (G-TEAM-1).
+  Live-verified full circle: the shown-once password signed the new admin in. 196 tests.
+
 ## 2026-09-18 — Phase 11b Step 3: App Design — the owner controls the app
 
 - `/admin/design` (both its old groups) edits the typed FeatureFlags table and publishes it as

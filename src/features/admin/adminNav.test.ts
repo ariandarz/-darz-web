@@ -102,6 +102,7 @@ describe('visibleGroups', () => {
       'market',
       'collectors',
       'operations',
+      'owner',
       'system',
     ]);
     // `system` is owner-only, so a standard admin still sees one group
@@ -252,6 +253,8 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'users',
       'activity',
       'design',
+      'team',
+      'memberships',
       'system',
     ]);
   });

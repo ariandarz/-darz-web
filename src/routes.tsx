@@ -32,6 +32,8 @@ import { AdminChatPage } from './features/admin/AdminChatPage';
 import { CollectorDetailPage } from './features/admin/CollectorDetailPage';
 import { CollectorsPage } from './features/admin/CollectorsPage';
 import { DesignPage } from './features/admin/DesignPage';
+import { MembershipsPage } from './features/admin/MembershipsPage';
+import { TeamPage } from './features/admin/TeamPage';
 import { RequireOwner } from './features/admin/RequireOwner';
 import { AdminShell } from './features/admin/AdminShell';
 import { AdminThreadPage } from './features/admin/AdminThreadPage';
@@ -253,6 +255,22 @@ export function AppRoutes() {
         <Route path="/admin/chat/:id" element={<AdminThreadPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />
         <Route path="/admin/design" element={<DesignPage />} />
+        <Route
+          path="/admin/memberships"
+          element={
+            <RequireOwner title="Memberships">
+              <MembershipsPage />
+            </RequireOwner>
+          }
+        />
+        <Route
+          path="/admin/team"
+          element={
+            <RequireOwner title="Team">
+              <TeamPage />
+            </RequireOwner>
+          }
+        />
         <Route path="/admin/collectors/:id" element={<CollectorDetailPage />} />
         {/* owner-only (`OWNER_ONLY` has `system`): the nav hides the tab from a
             standard admin and RequireOwner answers a typed URL with the old
