@@ -13,6 +13,7 @@ export { DataTable, type Column } from './DataTable';
 export { DeskList } from './DeskList';
 export { SelectFilter, SearchFilter, ToggleFilter, type FilterChoice } from './filters';
 export { ConfirmDialog } from './ConfirmDialog';
+export { FilterChips, type ActiveChip } from './FilterChips';
 export { ShownOnceSecret } from './ShownOnceSecret';
 export { resolveDeskView, deskBanner, type DeskView } from './deskState';
 // The pager is the catalogue's (a faithful port of app.html's .pager); desks

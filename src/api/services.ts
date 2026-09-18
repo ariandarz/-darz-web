@@ -56,6 +56,10 @@ import type {
   RequestMessageQuery,
   SavedArtwork,
   SavedArtworkQuery,
+  ArtworkAdmin,
+  ArtworkAdminQuery,
+  ArtworkImageAdmin,
+  ArtistAdmin,
 } from './types';
 
 export abstract class ResourceService {
@@ -486,8 +490,10 @@ export class AdminAccountsService extends ResourceService {
   }
 }
 
-/** `/api/catalog/admin/` — the catalogue's operations desks (backend Phase
- * 23): the Data Health report and the Import staging queue. */
+/** `/api/catalog/admin/` — the admin catalogue (backend Phase 7 CRUD +
+ * Phase 23 operations): artworks and artists CRUD, the guarded status
+ * machine, publish/unpublish, images, the Data Health report and the Import
+ * staging queue. */
 export class CatalogAdminService extends ResourceService {
   constructor(client: ApiClient) {
     super(client, '/catalog/admin');
@@ -499,12 +505,86 @@ export class CatalogAdminService extends ResourceService {
 
   /** The admin catalogue list — same filterset as the collector one (search
    * over artist/title/medium/dimensions) but visibility-unrestricted, which is
-   * what a selection picker needs (a private work is the point). */
-  artworks(query: { search?: string; per_page?: number; page?: number } = {}) {
-    return this.list<{ id: string; title: string; artist?: { display_name?: string } | null }>(
-      '/artworks/',
-      query as RequestOptions['query'],
+   * what the Database desk and the selection pickers need (a private work is
+   * the point). Rows are the full `ArtworkAdminSerializer`. */
+  artworks(query: ArtworkAdminQuery = {}) {
+    return this.list<ArtworkAdmin>('/artworks/', query as RequestOptions['query']);
+  }
+  artwork(id: string) {
+    return this.retrieve<ArtworkAdmin>(`/artworks/${id}/`);
+  }
+  createArtwork(body: Partial<ArtworkAdmin>) {
+    return this.create<ArtworkAdmin>('/artworks/', body);
+  }
+  /** PATCH — the lock field on this serializer is `expected_version` (the
+   * artwork's own current `version`), like CollectorSelection. */
+  updateArtwork(id: string, body: Partial<ArtworkAdmin> & { expected_version: number }) {
+    return this.client.send<ArtworkAdmin>('PATCH', `${this.basePath}/artworks/${id}/`, {
+      body,
+    });
+  }
+  /** Soft delete — the backend keeps the row (`is_deleted`), audit-logged. */
+  deleteArtwork(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/artworks/${id}/`);
+  }
+  /** Guarded state machine (`apps.catalog.lifecycle.AVAILABILITY_TRANSITIONS`)
+   * — an illegal move is a 400, so the desk only offers legal targets (see
+   * `transitionTargets` in `artworkForm.ts`). */
+  transitionArtwork(id: string, toStatus: string) {
+    return this.create<ArtworkAdmin>(`/artworks/${id}/transition/`, { to_status: toStatus });
+  }
+  /** The per-work Market App membership — what the old desk's toggle wrote. */
+  publishArtwork(id: string) {
+    return this.create<ArtworkAdmin>(`/artworks/${id}/publish/`);
+  }
+  unpublishArtwork(id: string) {
+    return this.create<ArtworkAdmin>(`/artworks/${id}/unpublish/`);
+  }
+
+  /** An artwork's images — a plain array (not paginated). Upload is multipart
+   * (`file` + ordering/is_primary/alt_text); there is no PATCH — to change
+   * the primary you upload the replacement as primary and remove the old
+   * (noted on the desk). Delete is soft; the stored object stays. */
+  artworkImages(artworkId: string) {
+    return this.retrieve<ArtworkImageAdmin[]>(`/artworks/${artworkId}/images/`);
+  }
+  uploadArtworkImage(
+    artworkId: string,
+    file: File,
+    opts: { ordering?: number; isPrimary?: boolean; altText?: string } = {},
+  ) {
+    const form = new FormData();
+    form.append('file', file);
+    if (opts.ordering !== undefined) form.append('ordering', String(opts.ordering));
+    if (opts.isPrimary) form.append('is_primary', 'true');
+    if (opts.altText) form.append('alt_text', opts.altText);
+    return this.client.send<ArtworkImageAdmin>(
+      'POST',
+      `${this.basePath}/artworks/${artworkId}/images/`,
+      { body: form },
     );
+  }
+  deleteArtworkImage(artworkId: string, imageId: string) {
+    return this.client.send<void>(
+      'DELETE',
+      `${this.basePath}/artworks/${artworkId}/images/${imageId}/`,
+    );
+  }
+
+  /** The admin artists roster — the backend list takes NO filters (G-CAT-3:
+   * no search/ordering/works count), only pagination; the desk fetches a page
+   * and searches client-side. */
+  artists(query: { page?: number; per_page?: number } = {}) {
+    return this.list<ArtistAdmin>('/artists/', query as RequestOptions['query']);
+  }
+  createArtist(body: Partial<ArtistAdmin>) {
+    return this.create<ArtistAdmin>('/artists/', body);
+  }
+  updateArtist(id: string, body: Partial<ArtistAdmin> & { expected_version: number }) {
+    return this.client.send<ArtistAdmin>('PATCH', `${this.basePath}/artists/${id}/`, { body });
+  }
+  deleteArtist(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/artists/${id}/`);
   }
 
   importBatches(query: { per_page?: number; page?: number } = {}) {

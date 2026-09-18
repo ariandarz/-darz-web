@@ -751,6 +751,26 @@ package/faithful-port research.
       `[ ]`: the PDF-catalogue and Images tiles (pdf.js + upload wiring) — stated on the desk as
       absent, not shown as dead buttons.
 
+## Phase 12 — The catalogue core (build order §6 step 5: Artworks · Artists · Market App · Sales)
+
+The most-used desks, over backend Phase 7's admin CRUD. `docs/ADMIN_ARCHITECTURE.md` §6-§7 carries
+the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
+
+- [x] **Step 1 — Artworks Database + Artists** ✅ 2026-09-18 (overnight run) — `/admin/artworks`
+      (`databaseView()`, `:26605`: search + filters + the removable-chip row, ✓ APP per-work
+      publish toggle (`dbAppBox`, `:23957`), status pills (`:8791`), Edit/Remove) and
+      `/admin/artworks/:id|new` (`editArt`, `:34065`: guarded transitions from the ported
+      `AVAILABILITY_TRANSITIONS` table, provenance rows with the old storage contract, per-work
+      collector actions on `crm.collector_action`, the multi-image store — multipart upload via a
+      `FormData`-aware `HttpClient`, primary, soft remove) + `/admin/artists` (`artistsView()`,
+      `:33522`: roster, client-side search per G-CAT-3, INLINE intro edit, CRUD with
+      `expected_version`). 212 tests (+11). Verified live end to end — including a real image
+      upload through moto-S3 standing in for MinIO (dl.min.io is egress-blocked; moto serves
+      signed URLs the browser loads).
+- [ ] **Step 2 — Published works tab + Sales desks** — the Market-App tab reads the *collector*
+      list endpoint (exactly the published catalogue, G-CAT-2's resolution) with admin unpublish;
+      Sales over the sales admin routes. Bulk selection (status/publish) returns here.
+
 ## Phases 12+ — Parity-gap surfaces (match backend Phases 20-26) `[!]` each blocked on its backend phase
 
 Old-app surfaces the current backend has no model for (from `DarzStudio/docs/engineering/BACKEND_API_REPO_STATUS.md`;

@@ -27,6 +27,9 @@ import { ArtworkCacheProvider } from './features/catalogue/ArtworkCacheProvider'
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
+import { ArtistsPage } from './features/admin/ArtistsPage';
+import { ArtworkEditorPage } from './features/admin/ArtworkEditorPage';
+import { ArtworksPage } from './features/admin/ArtworksPage';
 import { AccessRequestsPage } from './features/admin/AccessRequestsPage';
 import { AdminChatPage } from './features/admin/AdminChatPage';
 import { CollectorDetailPage } from './features/admin/CollectorDetailPage';
@@ -257,6 +260,10 @@ export function AppRoutes() {
         <Route path="/admin/requests" element={<AdminRequestsPage />} />
         <Route path="/admin/chat" element={<AdminChatPage />} />
         <Route path="/admin/chat/:id" element={<AdminThreadPage />} />
+        <Route path="/admin/artworks" element={<ArtworksPage />} />
+        <Route path="/admin/artworks/new" element={<ArtworkEditorPage />} />
+        <Route path="/admin/artworks/:id" element={<ArtworkEditorPage />} />
+        <Route path="/admin/artists" element={<ArtistsPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />
         <Route path="/admin/design" element={<DesignPage />} />
         <Route path="/admin/data-health" element={<DataHealthPage />} />

@@ -144,7 +144,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'catalog',
     label: 'Artworks',
     tabs: [
-      tab('database', 'Database', null, 'ready', '7', 'catalog admin CRUD, 18 routes.'),
+      tab(
+        'database',
+        'Database',
+        '/admin/artworks',
+        'ready',
+        '12·1',
+        'catalog admin CRUD, 18 routes.',
+      ),
       tab(
         'import',
         'Import',
@@ -158,7 +165,9 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'artists',
     label: 'Artists',
-    tabs: [tab('artists', 'Artists', null, 'ready', '7', 'catalog admin artists.')],
+    tabs: [
+      tab('artists', 'Artists', '/admin/artists', 'ready', '12·1', 'catalog admin artists.'),
+    ],
   },
   {
     key: 'galleries',
