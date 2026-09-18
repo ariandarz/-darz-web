@@ -231,21 +231,26 @@ empty (against the capture); admin transitions from `/admin/requests` change lab
 
 ---
 
-## Step 3 — Request detail and thread for every kind (next)
+## Step 3 — Request detail and thread for every kind (`claude/zen-curie-n8ekum`, PR #25)
 
-**Status:** not started.
+**Status:** implemented 2026-09-18 — typecheck · lint (3 pre-existing warnings, none new) ·
+117 tests · format · build clean; live verification in the Progress log.
 
-- [ ] **Where it opens** — D10. Recommended: generalise `ThreadPage` at `/chat/:id` (the v0.1 thread
+- [x] **Where it opens** — D10. Recommended: generalise `ThreadPage` at `/chat/:id` (the v0.1 thread
       route) with the `DZ.actOpen` blocks for non-inquiry kinds: `<h3>` kind label · `.actsh-art` card ·
       `.actsh-stat` **Current status** ("Submitted — awaiting Darz" until moved) · rows **Request ·
       Amount · When** (+ **Held until** for a hold, D11) · the status note when there is no reply ·
       the existing thread + composer · **View artwork** · **Close**. Alternative: a `RequestSheet`
       over Profile, faithful to the old sheet.
-- [ ] `rowTo` → every kind opens its detail (finding 3); Chat keeps listing inquiries only.
-- [ ] **Reply notice** `.dz-notif` above the nav when a team reply arrives, if v0.1 did not ship it.
-- [ ] `Remove from activity` — D4.
-- [ ] Tests: detail mapping per kind; `ThreadController` unchanged.
-- [ ] Docs: G-P5-3, G-P5-4.
+- [x] `rowTo` → every kind opens its detail (finding 3); Chat keeps listing inquiries only.
+- [x] **Reply notice** `.dz-notif` above the nav — v0.1 had not shipped it (only the auction
+      banner reused the class), so it is ported here over `newestUnread()`, for a request of any
+      kind, dismissible, and cleared by reading the thread.
+- [x] `Remove from activity` — D4, the in-place confirm (`:11333`), over the same session-local
+      hide as Clear activity; the one sentence that would be false here is reworded, as there.
+- [x] Tests: `ConversationsController` gained its first suite — the derived reads, the clear and
+      the hide (nothing reaches the server), and the notice's pick.
+- [x] Docs: G-P5-3, G-P5-4.
 
 **Step 3 exit criteria:** each kind opens from the list, shows status + note + thread; a collector
 reply and an admin reply round-trip; the notice appears and clears on read.
@@ -352,6 +357,20 @@ _Append one entry per step as it merges. Newest last._
   the hand-typed per-kind `detail` union, "48h hold", "Request Price & Availability" as the
   price-hidden primary, the offer sheet staying open on a rejection. `docs/PHASE_5_API_GAPS.md`
   written (G-P5-1 … 11); `API_INTEGRATION_GAPS.md` drift corrected.
+- **2026-09-18 — Step 3 implemented and verified live.** `ThreadPage` now has two shapes over one
+  thread: a conversation keeps v0.1's chat, every other kind opens `RequestDetail` — the old app's
+  request card (heading, work, **Current status** banner, Request / Amount / **Held until** / When,
+  and the per-kind note while Darz has not written). Every row in Profile opens its own detail now;
+  Chat still lists inquiries only. The floating reply notice is ported, and **Remove from activity**
+  sits under the composer with the old in-place confirm. Verified against the local backend: an
+  offer (countered) shows "In review" with its note; a hold (active) shows "Accepted", "Held until
+  19 Sept 2026, 12:34" and its own note; a collector reply round-trips onto the hold's thread; the
+  price request shows Darz's reply as a bubble with the status "Replied"; the notice appears on
+  Profile, points at the unread request, and is gone once the thread is read, with the row's pill
+  moving from "New reply" to "Replied". Captured at 390×844 and 390×1700 in both skins and at
+  1440×1000. Two blocks of the original are deliberately absent, both noted in the file: the
+  separate "headline reply" channel (this backend has one thread, so Darz's reply is a bubble) and
+  the WhatsApp CTA (no number is published).
 - **2026-09-18 — Step 2 implemented and verified live.** `status.ts` (the one collector
   vocabulary, replacing the three hardcoded lists), "Your acquisitions" with the four-step rail,
   the activity rows on `ACT_KL` labels with the time in the date, the offer amount, the "New reply"

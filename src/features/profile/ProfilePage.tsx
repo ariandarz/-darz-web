@@ -489,9 +489,9 @@ function byNewest(a: CollectorRequest, b: CollectorRequest): number {
   return b.created_at.localeCompare(a.created_at);
 }
 
-/** Conversations open in Chat; other requests are read-only rows for now. */
+/** Every request opens its own detail at `/chat/:id` — a conversation as the
+ * chat it is, any other kind as the old app's request card (owner decision
+ * D10). Until step 3 the non-conversation rows led back to this same page. */
 function rowTo(r: CollectorRequest): string {
-  return r.kind === 'information' || r.kind === 'message'
-    ? `/chat/${r.id}`
-    : '/profile?tab=market';
+  return `/chat/${r.id}`;
 }

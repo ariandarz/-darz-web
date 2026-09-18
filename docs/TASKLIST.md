@@ -261,7 +261,7 @@ You" and the "Refine" smart filters are still not backend-supported; not built (
 - Tests: `CatalogueController.test.ts` (6) — no-auto-fetch, query merge/page-reset, stale-response
       dropping, error surfacing, subscriber notification.
 
-## Phase 5 — Collector: requests + activity `[~]` steps 1-2 of 4 done (`docs/PHASE_5_PLAN.md`): every kind files and the list reads; the detail and activity logging follow
+## Phase 5 — Collector: requests + activity `[~]` steps 1-3 of 4 done (`docs/PHASE_5_PLAN.md`): every kind files, lists and opens; activity self-logging is the last step
 
 Matches backend V1's `crm` app (8 request kinds, per-kind `detail` shapes). Backend Phase 19
 (`darzmarket-api`) shipped the core-loop backend work (reply thread API, offer floor enforcement,
@@ -291,8 +291,17 @@ see Phase 9) — nothing in this phase is backend-blocked any more except the ty
       `dzActRowHTML`'s: `ACT_KL` labels, the date with its time, the offer amount, "New reply", the
       unseen dot. **Clear activity** is built (owner decision D4) as a session-local hide — the
       backend has no collector archive (`docs/PHASE_5_API_GAPS.md` G-P5-4). Artwork titles come
-      through `ArtworkCache` (G-P5-2). Each row still opens Chat only for a conversation; step 3
-      gives every kind its detail.
+      through `ArtworkCache` (G-P5-2).
+- [x] Collector's own request detail — **Phase 5 step 3, 2026-09-18** (owner decision D10: the
+      `/chat/:id` route, not a sheet): `ThreadPage` keeps v0.1's chat for a conversation and opens
+      the old app's request card (`DZ.actOpen`) for every other kind — heading, the work,
+      **Current status** ("Submitted — awaiting Darz" until Darz moves it), Request / Amount /
+      **Held until** (D11) / When, and the per-kind `dzActStatusNote` line while there is no reply
+      — over the same thread and composer, so a reply round-trips identically. Every Profile row
+      opens its detail; the floating reply notice (`.dz-notif`) is ported; **Remove from activity**
+      shares Clear activity's session-local hide (G-P5-4). Not ported, both flagged in the file:
+      the old separate "headline reply" channel (one thread here) and the WhatsApp CTA (no number
+      is published).
 - [ ] Activity self-logging (`POST /api/crm/activity/`) — kind is now a closed set
       (`view`/`save`/`search`/`login`, see `ChoiceRegistry['crm.activity_kind']`)
 - [x] **Reply-thread chat UI** — shipped in v0.1 (2026-09-11) over backend Phase 19.3

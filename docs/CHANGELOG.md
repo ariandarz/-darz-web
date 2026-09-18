@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 5 step 3: a detail and a thread for every request kind
+
+- `ThreadPage` in two shapes over one thread: a conversation keeps v0.1's chat, every other kind
+  opens `RequestDetail` — the old app's request card (`DZ.actOpen`): the work, the **Current
+  status** banner, Request / Amount / **Held until** / When, and the per-kind note while Darz has
+  not written. Every Profile row opens its detail now. The floating reply notice (`.dz-notif`) is
+  ported over a new `newestUnread()`, and **Remove from activity** shares the session-local hide
+  (G-P5-4). `ConversationsController` gained its first test suite. 117 tests.
+
 ## 2026-09-18 — Phase 5 step 2: the collector's request list (`docs/PHASE_5_PLAN.md`)
 
 - `features/requests/status.ts` — one collector vocabulary over the backend's per-kind statuses
