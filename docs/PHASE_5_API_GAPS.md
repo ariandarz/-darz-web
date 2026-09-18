@@ -52,8 +52,11 @@ admin tier nests `{id, title, artist}` (G-F1-7). A "my requests" row needs title
 There is no `GET /api/crm/requests/{id}/`; the thread endpoint returns messages only, never the
 request. A deep link to a request must find it in the list.
 
-- **Frontend:** the request detail reads the row from the list store (`ConversationsController`,
-  which loads every kind) and the thread from `…/messages/`; an unknown id loads the list first.
+- **Frontend (built in step 3):** `ThreadPage` reads the row from the list store
+  (`ConversationsController`, which loads every kind) and the thread from `…/messages/`; a deep
+  link to an id the store has not loaded yet waits for the list rather than 404-ing. The cost is
+  that a request detail cannot be opened without the whole list — fine at these sizes, wrong once a
+  collector has thousands.
 - **Closes it:** `GET /api/crm/requests/{id}/` (own request only, `RequestCollectorSerializer`).
 
 ## G-P5-4 — no collector-side remove / archive / clear [step 3]

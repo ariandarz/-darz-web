@@ -154,6 +154,15 @@ export class ConversationsController extends Observable<ConversationsSnapshot> {
     return this.conversations().reduce((n, r) => n + (r.unread_count || 0), 0);
   }
 
+  /** The newest request of ANY kind carrying an unseen team message — what
+   * the floating reply notice points at (`#dzNotif`, app.html:2695). Since
+   * step 3 every kind has a thread, so this is not limited to conversations.
+   * A request the collector cleared from their list is not announced. */
+  newestUnread(): CollectorRequest | null {
+    const { requests, hidden } = this.getSnapshot();
+    return requests.find((r) => (r.unread_count || 0) > 0 && !hidden.has(r.id)) ?? null;
+  }
+
   /** Every request that is not a conversation — the Market activity list
    * (purchase / hold / offer / viewing / price / availability), minus
    * anything the collector cleared. */
