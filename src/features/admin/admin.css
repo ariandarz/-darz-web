@@ -216,20 +216,114 @@
   color: #fff;
 }
 
-/* ---- the team bar (AdminLayout) ---------------------------------------
-   NOT a port. The old admin's chrome is a whole workspace (Phase 11); this is
-   the one line of scaffolding that keeps a signed-in team member from being
-   stranded with no sign-out, because the desk sits outside the collector
-   `AppShell`. Tokens only, so it is correct in Paper and Black alike. When the
-   real admin shell lands, this should be deleted rather than grown. */
-.ad-bar {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 14px 20px 0;
+/* ---- the panel shell: the two-tier navbar (AdminShell) ------------------
+   Ported from `darz-studio.html` — markup :11083-11110, CSS :8176-8218. The
+   old file hard-codes a light palette and layers `html.dz-admindark` over it
+   (:8201-8203, :9189-9213); as everywhere else in this file the values are
+   mapped onto this project's tokens instead, so one rule set stays correct in
+   Paper and Black alike and the panel follows the app's skin with no second
+   toggle of its own (docs/PHASE_11B_PLAN.md D10).
+
+   Palette map, for re-checking against the original:
+     #6B6B6B inactive tab ink   -> var(--ink3)
+     #0A0A0A active tab ink     -> var(--ink)
+     #EBEBEB / #E7E7E9 hairline -> var(--hair)
+     #9A9A9A eyebrow / tag      -> var(--ink3)
+     #9A6A12 owner gold         -> var(--status-res)
+     rgba(0,0,0,.045) hover     -> var(--soft)
+   `--dz-seam` is the same brand gradient in both files.                    */
+
+/* :8176 — the header row */
+.ad-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--hair);
+}
+
+/* :8178-8180 — brand block. The shipped markup holds only the "Admin" tag. */
+.ad-brand {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.ad-brand .tag {
+  color: var(--ink3);
+  font-weight: 500;
+}
+
+/* :8183 — the strip scrolls rather than wraps, and hides its scrollbar */
+.ad-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.ad-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* :8186 (.ad-tabs button) and :8195 (.ad-gtab) are the same box */
+.ad-tab0,
+.ad-gtab {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 9px 13px 11px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--ink3);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  transition:
+    color 0.14s,
+    background 0.14s;
+}
+.ad-tab0:hover,
+.ad-gtab:hover {
+  color: var(--ink);
+  background: var(--soft);
+}
+/* :8187 / :8198 — the active trigger wears the brand seam as its underline */
+.ad-tab0.is-active,
+.ad-gtab.is-active {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--dz-seam) bottom / 100% 2.5px no-repeat;
+}
+/* :8199 — owner groups read gold */
+.ad-gtab--owner {
+  color: var(--status-res);
+}
+
+.ad-spacer {
+  flex: 1 1 auto;
+}
+
+/* the right-hand action cluster (:11104). The old one holds ＋ New, Confirmed
+   & Saved and the dark toggle — none of which this phase has a desk for — so
+   it carries who is signed in and the way out, which is what the scaffolding
+   bar this shell replaces was there for in the first place. */
+.ad-actc {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .ad-who {
   font-size: 12px;
@@ -253,4 +347,109 @@
 }
 .ad-leave:hover {
   border-color: var(--ink);
+}
+
+/* :8211-8218 — tier 2. The original's own note: inactive recedes, the ACTIVE
+   tab clearly advances, so the selected page is never ambiguous. */
+.ad-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 18px 0;
+  background: transparent;
+  border-bottom: 1px solid var(--hair);
+}
+.ad-subeyebrow {
+  flex: 0 0 auto;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0 8px 0 0;
+  align-self: center;
+}
+.ad-subtab {
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink3);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 8px 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  transition: color 0.14s;
+}
+.ad-subtab:hover {
+  color: var(--ink);
+}
+.ad-subtab.on {
+  color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+  font-weight: 800;
+}
+.ad-subtab.on::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: -1px;
+  height: 2.5px;
+  background: var(--dz-seam);
+  border-radius: 2px;
+}
+/* :8212 — the More row that prefixes a folded group's tabs */
+.ad-subtab--more {
+  font-weight: 600;
+  color: var(--ink3);
+}
+.ad-subtab--more.on {
+  font-weight: 700;
+}
+.ad-subsep {
+  width: 1px;
+  height: 16px;
+  background: var(--hair);
+  margin: 0 2px;
+}
+
+/* the owner-only refusal card (`accessView` :33030 / `systemView` :33116) */
+.ad-private {
+  padding: 30px;
+  text-align: center;
+  color: var(--ink3);
+  font-size: 13px;
+}
+
+/* :8369 — the old file's own narrow-screen rule. The panel is a desktop
+   surface (D11); this is the original's behaviour, not a mobile layout. */
+@media (max-width: 820px) {
+  .ad-tab0,
+  .ad-gtab {
+    font-size: 13px;
+  }
+  .ad-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ad-brand {
+    order: 1;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .ad-actc {
+    order: 2;
+  }
+  .ad-tabs {
+    order: 3;
+    width: 100%;
+  }
 }

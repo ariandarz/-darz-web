@@ -1,7 +1,8 @@
 # Plan — Phase 11b: the Owner Panel
 
-**Status:** DRAFT — written 2026-09-18, **waiting on the owner's confirmation and the D9-D16
-answers below. Nothing implemented.** ·
+**Status:** **CONFIRMED 2026-09-18** — the owner answered *"go ahead with all your recommendation
+and start step 0"*, so every D9-D16 recommendation below is the decision. **Step 0 is done**; see the
+progress log. ·
 **Sources read:** `ariandarz/darz-backend-api` @ `development` `12988db` (`urls.py`, views,
 serializers, `docs/TASKLIST.md` Phases 23 + 27-35) · `ariandarz/darzstudio.art` @ `development`
 **`darz-studio.html`** (the old admin panel — *not* `app.html`, which is the collector app) ·
@@ -272,7 +273,17 @@ deliberately did not build.
 
 ---
 
-## 4 · Owner decisions needed before I start
+## 4 · Owner decisions — all taken as recommended (2026-09-18)
+
+> The owner answered every one of these with the recommendation. One turned out
+> to be **unnecessary** once the code was opened: **D10**. `src/features/admin/admin.css`
+> already established, back when the request desk was built, that the old panel's hard-coded
+> light palette is mapped onto **this repo's tokens** rather than ported with its
+> `html.dz-admindark` override layered on top. That gives Paper and Black from one rule set, so
+> there is no "dark pass" to schedule and no second theme toggle in the panel header — verified on
+> screen in both skins at Step 0. The recommendation ("light-only first, dark later") is therefore
+> superseded by a better answer the repo already had.
+
 
 | # | Question | My recommendation |
 |---|---|---|
@@ -317,3 +328,29 @@ _Append one entry per step as it merges. Newest last._
 
 - **2026-09-18 — plan written.** Waiting on the owner's confirmation and the D9-D16 answers.
   Nothing implemented.
+
+- **2026-09-18 — owner confirmed the plan**, taking every D9-D16 recommendation. Recorded in §4,
+  along with the one that turned out to be unnecessary (D10 — `admin.css` had already solved it).
+- **2026-09-18 — Step 0 implemented and verified live.** The panel shell.
+  `src/features/admin/adminNav.ts` is the `ADGROUPS` port (`darz-studio.html:11721-11803`) as data:
+  groups, labels, owner flags, the `OWNER_ONLY` list and the "owner always sees every tab" rule,
+  with the five Phase 11b groups registered and an unbuilt tab carrying `path: null` so nothing
+  renders it (D9). `AdminShell` replaces the scaffolding `AdminLayout`, porting the two-tier navbar
+  and all four of `_dzRenderSubnav`'s easy-to-miss rules (the More row prefix, the one-tab
+  suppression, the no-group Dashboard, the group eyebrow). `RequireOwner` ports the old panel's own
+  refusal card rather than redirecting — it has **no caller yet**, and gets one at Step 2 with the
+  first owner-only desk. `/admin` and any unknown `/admin/...` clamp to the first page the role can
+  open, which is the old panel's own `:11815` behaviour rather than the collector Market the global
+  catch-all would otherwise give a team session.
+  Verified live at 1440×900 against the local backend, as an **owner and a standard admin**, in
+  **both skins**: `/admin` → `/admin/requests`; the two rows render; the More row, its separator and
+  the group eyebrow are all present; the active tab's underline is the real `--dz-seam` gradient by
+  computed style, not a flat colour; `/admin/team`, `/admin/collectors` and `/admin/nonsense` all
+  clamp to the desk rather than to Market; signed out, the whole prefix goes to the team gate.
+  158 tests (was 141), 17 added.
+  One thing the screenshot showed that reading could not: with only one folded group and one tab
+  built, the second row reads **"Collectors | COLLECTORS · Requests & Activity"** — the More-row
+  entry, the group eyebrow and the group's first tab all say the same word. That is what the old
+  panel does too (its More row lists the folded groups, the eyebrow is the group label, and the
+  Collectors group's first tab is "Collectors"); it only looks odd because five-sixths of the row is
+  not built yet. Left faithful rather than "fixed".

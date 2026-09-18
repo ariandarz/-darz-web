@@ -592,7 +592,7 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [ ] Accounting desk UI (4 ledger books + Private Deals) — real Django permission scope replaces
       the old passkey hack; don't rebuild the passkey pattern in the frontend
 
-## Phase 11b — Admin: Owner Panel ✅ backend ready 2026-09-17 · **plan drafted 2026-09-18 → `docs/PHASE_11B_PLAN.md`**
+## Phase 11b — Admin: Owner Panel ✅ backend ready 2026-09-17 · **plan confirmed 2026-09-18 → `docs/PHASE_11B_PLAN.md`** · Step 0 done, Steps 1-7 open
 
 New since the last `TASKLIST.md` pass — the client asked to prioritize finishing "the panel" (the old
 `darz-studio.html` admin app). Backend audited every old panel tab against existing `admin/*` routes
@@ -623,13 +623,15 @@ package/faithful-port research.
 >    which raises rather than lowers the bar on CLAUDE.md rule 5 — there is no reference capture to
 >    compare a panel screen against.
 
-- [ ] **Panel shell** (Step 0 — prerequisite for every desk below) — the old panel's two-tier
-      navbar ported as data (`adminNav.ts` ← `darz-studio.html:11721-11803`: groups, labels, the
-      `OWNER_ONLY` list, and the explicit "THE OWNER ALWAYS SEES EVERY TAB" rule at `:11794`), an
-      `AdminShell` replacing the scaffolding `AdminLayout`/`.ad-bar`, the `/admin` route tree, and a
-      `RequireOwner` beside the existing `RequireTeam` so a standard admin can neither see nor
-      URL-reach Memberships/Team. Only the groups this phase builds are registered — unbuilt ones
-      **absent, not stubbed**.
+- [x] **Panel shell** (Step 0 — prerequisite for every desk below) ✅ 2026-09-18 — the old panel's
+      two-tier navbar ported as data (`adminNav.ts` ← `darz-studio.html:11721-11803`: groups,
+      labels, the `OWNER_ONLY` list, and the explicit "THE OWNER ALWAYS SEES EVERY TAB" rule at
+      `:11794`), an `AdminShell` replacing the scaffolding `AdminLayout`/`.ad-bar`, the `/admin`
+      route tree clamping to the first page a role can open (`:11815`), and a `RequireOwner`
+      rendering the old panel's own refusal card (`:33030`) rather than redirecting. Only the groups
+      this phase builds are registered; an unbuilt tab carries `path: null` so nothing renders it —
+      **absent, not stubbed** (D9). Verified live as both roles in both skins. 158 tests (+17).
+      `RequireOwner` has no caller until Step 2 lands the first owner-only desk.
 - [ ] **Collectors desk** (old panel "Collectors" tab) — list/search/filter (tier, access_status) +
       create/edit/soft-delete + issue/revoke access keys (plaintext key shown once on issue, never
       re-fetchable — the UI must warn "copy this now").
