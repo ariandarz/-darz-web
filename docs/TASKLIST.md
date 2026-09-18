@@ -1,8 +1,9 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
 **Last updated:** 2026-09-18 (Phase 5 complete and released; `main` and `development` level) ·
-**Current focus:** **closing the v0.1 loop** — the team sign-in screen, so a reply can actually be
-sent from `/admin/requests`. See "What next" just below.
+**Current focus:** **closing the v0.1 loop** — the team sign-in landed 2026-09-18, so a reply can
+now be sent from `/admin/requests` by a real team session. Next is Phase 13 E2E over the whole
+chain. See "What next" just below.
 
 **Phase 5 (collector requests + activity) is done and released** — all four steps, 2026-09-18, each
 merged on the owner's explicit instruction. `docs/PHASE_5_PLAN.md` is the contract it was built to
@@ -39,13 +40,14 @@ real, buildable now.
 
 **What next (2026-09-18, recommended order):**
 
-1. **The team sign-in screen** — the one gap that breaks the v0.1 loop. `/admin/requests` shows an
-   inquiry and its unread state, but replying from the web admin needs a team sign-in (Phase 7,
-   `docs/V0_1_SCOPE.md` flag 8); the loop has so far only been verified by calling the admin API
-   directly. A collector can send an inquiry today and nobody can answer it from this app. Backend-
-   ready and self-contained.
-2. Then **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat — only meaningful once
-   the reply half of that chain exists.
+1. ~~The team sign-in screen~~ — **done 2026-09-18** (`/admin/login`, `TeamLoginPage` +
+   `RequireTeam` + `AdminLayout`). `V0_1_SCOPE.md` flag 8 is closed: a team member signs in with
+   email + password and the desk is a team-principal surface, no longer a page of 403s for a
+   collector token.
+2. **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat — now that the reply half of
+   that chain exists, this is the next real piece. Note this repo has **no CI at all** (no
+   `.github/workflows`), so the gate is whatever a contributor runs by hand; mirroring
+   `darzstudio.art`'s `Quality` workflow would be worth doing alongside it.
 3. Owner decision on the two unlinked entry points (artist index `/artists`,
    `/auctions/notifications`) — see "Design pass" below; then one small PR either way.
 4. Unblock the deploy (Phase 14) — **still blocked, re-tested 2026-09-18.** There is no `darz-web`
@@ -408,8 +410,17 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
       `allowed_transitions` so it can never offer an illegal status. **Now shows a real collector
       name and artist — title** (`RequestAdmin.collector`/`.artwork` are nested objects, not bare
       uuids — gap G-F1-7 closed 2026-09-11) plus an unread-reply badge and an archived chip.
-      No principal-aware route guard yet — `RequireAuth` only proves a session exists, and the API's
-      own admin permission is the real gate.
+      **Principal-aware guard landed 2026-09-18**: `/admin/requests` sits behind `RequireTeam`
+      (not `RequireAuth`) inside its own `AdminLayout`, outside the collector shell and providers —
+      a collector session is sent to `/admin/login` instead of collecting 403s. The API's own admin
+      permission is still the real gate; this just stops the UI pretending otherwise.
+- [x] Team sign-in — **2026-09-18**: `/admin/login` (`TeamLoginPage`) over
+      `POST /api/auth/team/login/` (`{email, password}` -> JWT pair, `principal=team`), a verbatim
+      port of app.html's `st.view==='legacy'` card (app.html:2537-2542) reusing the collector gate's
+      own classes, so it adds no CSS. `RequireTeam` guards the desk; `AdminLayout` carries the one
+      piece of new markup — a bar with the signed-in identity and "LEAVE THE ROOM" — because the
+      desk sits outside the collector `AppShell` and a team member would otherwise have no way out.
+      The real admin shell is Phase 11; that bar should be deleted when it lands, not grown.
 - [ ] Sales CRUD + transition/payment/delivery-status actions
 - [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
 

@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Team sign-in: the v0.1 loop closes
+
+- `/admin/login` ports app.html's "Darz team sign-in" card verbatim (:2537-2542) onto
+  `POST /api/auth/team/login/`, reusing the collector gate's classes — no new CSS.
+- `RequireTeam` + `AdminLayout` move the desk out of the collector shell: a collector session is
+  redirected instead of collecting 403s, and a team member finally has a sign-out.
+
 ## 2026-09-18 — Docs: the Phase 5 release, F1 closed, both blockers re-tested
 
 - `TASKLIST.md` header + "What next" rewritten post-Phase-5 (the team sign-in screen, v0.1 flag 8, is

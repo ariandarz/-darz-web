@@ -118,6 +118,47 @@ describe('AuthSession lifecycle', () => {
     expect(headersOf(fetchMock.mock.calls[1]).get('Authorization')).toBe('Bearer a1');
   });
 
+  it('team login posts email + password and lands the team principal', async () => {
+    fetchMock
+      .mockResolvedValueOnce(ok({ access: 'a1', refresh: 'r1' })) // team/login
+      .mockResolvedValueOnce(
+        ok({ principal: 'team', id: 't1', email: 'ops@darz.art', name: 'Ops' }),
+      ); // me
+    const { session, auth, storage } = makeApi();
+
+    const me = await auth.loginTeam('ops@darz.art', 'pw');
+
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api.test/api/auth/team/login/');
+    expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+      email: 'ops@darz.art',
+      password: 'pw',
+    });
+    expect(me.principal).toBe('team');
+    // exactly what RequireTeam reads to let anyone near the admin desk
+    expect(session.getSnapshot().principal).toBe('team');
+    expect(storage.getItem('dz-refresh')).toBe('r1');
+  });
+
+  it('team login surfaces the backend message on a bad password', async () => {
+    // AuthSession speaks HttpClient directly, so the ApiClient 401 ->
+    // refresh -> retry never runs here: the 401 must reach the gate's error
+    // line verbatim rather than being swallowed by a refresh attempt.
+    fetchMock.mockResolvedValueOnce(
+      fail(401, 'authentication_failed', 'Invalid email or password.'),
+    );
+    const { auth, storage } = makeApi();
+
+    await auth.loginTeam('ops@darz.art', 'wrong').then(
+      () => expect.unreachable(),
+      (err) => {
+        expect(err).toBeInstanceOf(UnauthorizedError);
+        expect((err as Error).message).toBe('Invalid email or password.');
+      },
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(storage.getItem('dz-refresh')).toBeNull();
+  });
+
   it('logout blacklists then clears local state', async () => {
     const storage = new MemStorage();
     storage.setItem('dz-refresh', 'r-old');
