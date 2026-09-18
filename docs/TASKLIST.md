@@ -107,12 +107,21 @@ below, a whole panel's worth of API with no frontend UI.
    newer one sits beside them: **the team sign-in has no link either.** `/admin/login` is reachable
    only by typing the URL or being redirected there from the desk, because `app.html` renders no
    entry point for its own team card (see Phase 7 below). One line if the owner wants it.
-4. Unblock the deploy (Phase 14) — **still blocked, re-tested 2026-09-18.** There is no `darz-web`
-   project on the Vercel team (it holds only `darzstudio-art` and `koocheh-web`), and creating one
-   returns the same `403 forbidden — "You don't have permission to create the project."` recorded on
-   2026-09-07, now through the Vercel MCP tool as well. The connection reads projects and
-   deployments fine but cannot create them, so this needs a project-creating Vercel role, a
-   re-scoped Vercel connection, **or** an empty project created by hand for Claude to deploy into.
+4. Unblock the deploy (Phase 14) — **still blocked; narrowed to a Vercel team role, 2026-09-18.**
+   There is no `darz-web` project on the team (it holds only `darzstudio-art` and `koocheh-web`).
+   **Both** creation paths were tried and fail identically:
+   `create_git_project` (even with `deploy:false`, i.e. link-only) and `deploy_to_vercel` (inline).
+   The inline path is the informative one — its 403 carries Vercel's own
+   `https://vercel.com/docs/accounts/team-members-and-roles` link, which is how Vercel frames a
+   **role** problem, not a scope or connector one. Reading projects, deployments and teams all work,
+   so the connection itself is healthy; it is specifically *create project* that the authenticated
+   member's role forbids (on a Pro team, Viewer and Billing cannot create projects).
+   Two ways out, and only the owner can take either: **(a)** raise that member's role to
+   Member/Developer on "Darz Market Studio's projects", after which Claude can create and link it;
+   or **(b)** create an empty project named `darz-web` linked to `ariandarz/-darz-web` by hand —
+   deploying *into an existing* project is a different permission from creating one, so that is
+   expected to work, though it has not been proven from here (proving it would mean deploying to a
+   real project, and the only two that exist are live).
    The production build itself is verified green (`tsc -b` + `vite build`, 162 modules, 2026-09-18);
    `.env.production` is a deliberate `.invalid` placeholder, so the first deploy is visual-only
    until `darzmarket-api` Phase 18 publishes real API + WS URLs.
