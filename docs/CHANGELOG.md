@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Docs: the Phase 5 release, F1 closed, both blockers re-tested
+
+- `TASKLIST.md` header + "What next" rewritten post-Phase-5 (the team sign-in screen, v0.1 flag 8, is
+  item 1); `PHASE_5_PLAN.md` marked released and **F1 closed** — `design/market-app/` is on `main`.
+- Re-tested, still blocked: Vercel project creation and branch deletion, both `403`. Build green.
+
 ## 2026-09-18 — Phase 5 step 4: activity self-logging — Phase 5 complete
 
 - `features/activity/ActivityLogger` over `POST /api/crm/activity/`: fire-and-forget (guarded
