@@ -74,6 +74,17 @@ export class CatalogService extends ResourceService {
   artworks(query: CatalogueQuery = {}) {
     return this.list<Artwork>('/artworks/', query as RequestOptions['query']);
   }
+  /**
+   * The collector's curated works (backend Phase 24) — the `selected` /
+   * `private_selection` artworks explicitly granted to them. Deliberately a
+   * different endpoint, not a filter on `/artworks/`: the backend guarantees
+   * "a work here never also appears in the main catalogue response"
+   * (`ArtworkService.selection_queryset`), which is the old `club_items`
+   * behaviour. Needs a collector session; a team token gets a 403.
+   */
+  artworkSelections(query: CatalogueQuery = {}) {
+    return this.list<Artwork>('/artworks/selections/', query as RequestOptions['query']);
+  }
   artwork(id: string) {
     return this.retrieve<Artwork>(`/artworks/${id}/`);
   }

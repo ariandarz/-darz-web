@@ -21,9 +21,16 @@ function page(results: Artwork[], page = 1): Paginated<Artwork> {
   };
 }
 
-function fakeCatalog(impl: (q: CatalogueQuery) => Promise<Paginated<Artwork>>) {
-  return { artworks: vi.fn(impl) } as unknown as {
+function fakeCatalog(
+  impl: (q: CatalogueQuery) => Promise<Paginated<Artwork>>,
+  selectionsImpl: (q: CatalogueQuery) => Promise<Paginated<Artwork>> = impl,
+) {
+  return {
+    artworks: vi.fn(impl),
+    artworkSelections: vi.fn(selectionsImpl),
+  } as unknown as {
     artworks: (q: CatalogueQuery) => Promise<Paginated<Artwork>>;
+    artworkSelections: (q: CatalogueQuery) => Promise<Paginated<Artwork>>;
   };
 }
 
@@ -107,5 +114,77 @@ describe('CatalogueController', () => {
     await c.reload();
 
     expect(fn).toHaveBeenCalled();
+  });
+
+  describe('the "Curated for You" chip (backend Phase 24)', () => {
+    it('sources from /artworks/ while off and /artworks/selections/ while on', async () => {
+      const catalog = fakeCatalog(async () => page([]));
+      const c = new CatalogueController(catalog as never);
+
+      await c.reload();
+      expect(catalog.artworks).toHaveBeenCalledTimes(1);
+      expect(catalog.artworkSelections).not.toHaveBeenCalled();
+
+      c.setCurated(true);
+      await flush();
+      expect(catalog.artworkSelections).toHaveBeenCalledTimes(1);
+      // still one — the curated read must not also hit the public grid
+      expect(catalog.artworks).toHaveBeenCalledTimes(1);
+      expect(c.isCurated).toBe(true);
+
+      c.setCurated(false);
+      await flush();
+      expect(catalog.artworks).toHaveBeenCalledTimes(2);
+      expect(c.isCurated).toBe(false);
+    });
+
+    it('never sends `curated` as a query param — it is a client-side switch', async () => {
+      const catalog = fakeCatalog(async () => page([]));
+      const c = new CatalogueController(catalog as never, { search: 'ave' });
+
+      c.setCurated(true);
+      await flush();
+      const sentOn = (
+        catalog.artworkSelections as unknown as { mock: { calls: CatalogueQuery[][] } }
+      ).mock.calls[0][0];
+      expect(sentOn).not.toHaveProperty('curated');
+      // the rest of the query rides along, because the chip is a filter on the
+      // same grid, not a separate list
+      expect(sentOn.search).toBe('ave');
+
+      c.setCurated(false);
+      await flush();
+      const sentOff = (
+        catalog.artworks as unknown as { mock: { calls: CatalogueQuery[][] } }
+      ).mock.calls.at(-1)![0];
+      expect(sentOff).not.toHaveProperty('curated');
+    });
+
+    it('resets to page 1 when toggled, like any other filter', async () => {
+      const catalog = fakeCatalog(async () => page([], 3));
+      const c = new CatalogueController(catalog as never);
+
+      c.setPage(3);
+      await flush();
+      expect(c.getSnapshot().query.page).toBe(3);
+
+      c.setCurated(true);
+      await flush();
+      // the old app's apply(): a new filter starts at the top
+      expect(c.getSnapshot().query.page).toBe(1);
+    });
+
+    it('drops the flag entirely when off, rather than carrying curated:false', async () => {
+      const catalog = fakeCatalog(async () => page([]));
+      const c = new CatalogueController(catalog as never);
+
+      c.setCurated(true);
+      await flush();
+      c.setCurated(false);
+      await flush();
+      // `curated: false` would serialise as a param if it ever leaked past the
+      // strip; absent is the honest state
+      expect(c.getSnapshot().query.curated).toBeUndefined();
+    });
   });
 });

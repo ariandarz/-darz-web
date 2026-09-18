@@ -17,6 +17,8 @@ import { Dropdown, Segment } from '../../components';
 import { useActivity } from '../activity/useActivity';
 import { layoutController } from '../shell/LayoutController';
 import { useLayout } from '../shell/useLayout';
+import { CuratedChip } from './CuratedChip';
+import { useCuratedCount } from './useCuratedCount';
 import type { ViewMode } from './ViewPreference';
 
 const SORTS = [
@@ -108,6 +110,9 @@ export function CatalogueToolbar({
   const [term, setTerm] = useState(query.search ?? '');
   const layout = useLayout();
   const activity = useActivity();
+  // null while it loads, 0 when the collector holds no grants — either way the
+  // chip renders nothing, so the toolbar is unchanged for most collectors.
+  const curatedCount = useCuratedCount();
 
   // Debounce the search box so every keystroke doesn't fire a request — the
   // old app searches on input but this is a network call, not a local filter.
@@ -169,6 +174,12 @@ export function CatalogueToolbar({
           options={[{ value: '', label: 'All currencies' }, ...currencies]}
           value={query.currency ?? ''}
           onChange={(v) => onChange({ currency: v || undefined })}
+        />
+        {/* :278 — "compact, refined, sits with the filters" */}
+        <CuratedChip
+          count={curatedCount ?? 0}
+          on={query.curated === true}
+          onToggle={(on) => onChange({ curated: on || undefined })}
         />
       </div>
 

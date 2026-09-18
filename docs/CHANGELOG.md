@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — "Curated for You" chip (backend Phase 24)
+
+- `query.curated` switches `CatalogueController` between `/artworks/` and `/artworks/selections/` —
+  a filter on the same grid, never a separate section (app.html:8890 records v669 removing that).
+  Chip hidden at zero grants; label/count/titles/`.on` inversion ported from :8583-8594 and :278.
+- The notice and the selection name are not ported — no API signal for either (G-P24-1/2). 141 tests.
+
 ## 2026-09-18 — "Request access" is a real form (backend Phase 34)
 
 - `LoginPage`'s stub note becomes the old app's form (app.html:2544-2565, verbatim) over
