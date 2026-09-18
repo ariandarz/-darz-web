@@ -75,7 +75,11 @@ export function Button({
 
 /* ---- Field — labelled text input / textarea ------------------------- */
 interface FieldShared {
-  label?: string;
+  /** `ReactNode`, not `string`, so a label can carry inline markup — the old
+   * gate's optional fields append a dimmed "· optional" inside the label
+   * itself (app.html:2548-2550). Extended rather than bypassed, per CLAUDE.md
+   * "Reusing the design system" rule 2. */
+  label?: ReactNode;
   error?: string;
   /** hint text under the field (calm, honest — see VOICE_AND_COPY.md) */
   hint?: string;

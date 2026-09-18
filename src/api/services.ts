@@ -12,6 +12,8 @@ import type { ApiClient } from './ApiClient';
 import type { AuthSession, Me } from './AuthSession';
 import type { RequestOptions } from './HttpClient';
 import type {
+  AccessRequest,
+  AccessRequestInput,
   AdminRequest,
   AdminRequestQuery,
   Artist,
@@ -319,5 +321,20 @@ export class AuthService extends ResourceService {
       '/membership/redeem/',
       { code },
     );
+  }
+
+  /**
+   * The gate's "Request access" form (backend Phase 34) — public, no session.
+   * Lands in the admin review queue, where a human issues a key or declines;
+   * it mints no credential by itself.
+   *
+   * `client_req_id` is sent because the old app sends one (app.html:2559) and
+   * the day the backend honours it the client already complies. Today it is
+   * **ignored** — `AccessRequestService.create` is a plain `objects.create`
+   * with no uniqueness, so a double-tap still makes two pending rows
+   * (docs/PHASE_24_35_API_GAPS.md G-P34-1, owner decision D3).
+   */
+  requestAccess(body: AccessRequestInput) {
+    return this.create<AccessRequest>('/access-requests/', body);
   }
 }

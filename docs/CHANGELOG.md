@@ -5,6 +5,14 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — "Request access" is a real form (backend Phase 34)
+
+- `LoginPage`'s stub note becomes the old app's form (app.html:2544-2565, verbatim) over
+  `POST /api/auth/access-requests/`. The `@` split, `?ref=` chain and `client_req_id` live in
+  `features/auth/accessRequest.ts` as pure functions. `Input`'s `label` widened to `ReactNode`.
+- Verified live against the backend at `12988db`; both contact paths round-trip. 137 tests (+11).
+  G-P34-1/2 raised with the backend as `darz-backend-api` #28 (owner decision D8).
+
 ## 2026-09-18 — Backend Phases 23-35 surveyed; two collector ports planned
 
 - Pulled `darz-backend-api` `development` 24 commits forward (`3801786` → `12988db`): Phases 23, 24,

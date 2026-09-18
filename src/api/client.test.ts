@@ -159,6 +159,40 @@ describe('AuthSession lifecycle', () => {
     expect(storage.getItem('dz-refresh')).toBeNull();
   });
 
+  it('requestAccess posts the public form and needs no session', async () => {
+    fetchMock.mockResolvedValueOnce(ok({ id: 'ar1', name: 'Jane', status: 'pending' }, 201));
+    const { auth } = makeApi();
+
+    const created = await auth.requestAccess({
+      name: 'Jane',
+      email: 'jane@example.com',
+      phone: '',
+      city: 'Tehran',
+      why: 'Modern works on paper',
+      referral_source: 'A gallery',
+      ref_code: 'gallery-x',
+      client_req_id: 'ar_test',
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api.test/api/auth/access-requests/');
+    const sent = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    // every field the backend's AccessRequestCreateSerializer accepts, plus the
+    // client_req_id it currently ignores (G-P34-1, owner decision D3)
+    expect(sent).toEqual({
+      name: 'Jane',
+      email: 'jane@example.com',
+      phone: '',
+      city: 'Tehran',
+      why: 'Modern works on paper',
+      referral_source: 'A gallery',
+      ref_code: 'gallery-x',
+      client_req_id: 'ar_test',
+    });
+    // public endpoint: no bearer is attached, and none is needed
+    expect(headersOf(fetchMock.mock.calls[0]).get('Authorization')).toBeNull();
+    expect(created.status).toBe('pending');
+  });
+
   it('logout blacklists then clears local state', async () => {
     const storage = new MemStorage();
     storage.setItem('dz-refresh', 'r-old');

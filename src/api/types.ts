@@ -247,3 +247,41 @@ export interface SavedArtworkQuery {
   per_page?: number;
   page?: number;
 }
+
+/**
+ * The gate's "Request access" submission (backend Phase 34,
+ * `POST /api/auth/access-requests/`). Field names are the backend's
+ * `AccessRequestCreateSerializer`; they are also, field for field, what the
+ * old app's `submitRequest` sends (app.html:2554-2566).
+ *
+ * `email` and `phone` are two fields here but **one** input in the UI — the
+ * old gate asks for "Email or phone" and splits on the `@` character
+ * (app.html:2558). Owner decision D2, 2026-09-18: keep the single field.
+ */
+export interface AccessRequestInput {
+  name: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  why?: string;
+  /** "How you heard of Darz" in the UI. */
+  referral_source?: string;
+  /** From `?ref=` or `localStorage.darz_ref` — referral attribution. */
+  ref_code?: string;
+  /** Sent, but ignored by the backend today — see G-P34-1. */
+  client_req_id?: string;
+}
+
+/** What `POST /api/auth/access-requests/` returns (201). */
+export interface AccessRequest {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  why: string;
+  referral_source: string;
+  ref_code: string;
+  status: 'pending' | 'approved' | 'declined';
+  created_at: string;
+}

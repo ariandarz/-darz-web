@@ -1,6 +1,6 @@
 # Plan — backend Phases 23-35: what this frontend can build now
 
-**Status:** AWAITING OWNER CONFIRMATION — nothing in this plan is implemented ·
+**Status:** Step 1 DONE (2026-09-18) · Step 2 awaiting the go-ahead ·
 **Created:** 2026-09-18 ·
 **Sources read:** `ariandarz/darz-backend-api` @ `development` `12988db` ·
 `ariandarz/darzstudio.art` @ `development` (`app.html`, `design/market-app/`) ·
@@ -204,3 +204,21 @@ _Append one entry per step as it merges. Newest last._
 
 - **2026-09-18 — plan written**, waiting on the owner's confirmation and the D1-D8 answers. Nothing
   implemented.
+- **2026-09-18 — owner answered.** D4: keep the credential model as it is — first name + access key
+  for a collector, email + password for the team — and **do not** build the package's
+  password-generating sign-up; `app.html`'s Request access is the target. D2: **keep the single
+  "Email or phone" field** with the old `@` split. D8: **raise the missing rate limit** with the
+  backend. D3, D5, D6, D7 taken as recommended.
+- **2026-09-18 — Step 1 implemented and verified live.** `LoginPage`'s request view is the real
+  form: the five fields with their `· optional` markers, both validation strings, and the "Request
+  received" panel, all verbatim from app.html:2544-2565. `AuthService.requestAccess()` posts to
+  `/auth/access-requests/`; the `@` split, the `?ref=`/`darz_ref` chain and the `client_req_id` live
+  in `features/auth/accessRequest.ts` as pure functions so they are testable without a DOM renderer.
+  `Input`'s `label` widened from `string` to `ReactNode` (the marker is inline markup) — extended,
+  not bypassed, per CLAUDE.md rule 2.
+  Verified against the local backend brought up to `12988db` (10 migrations applied, server
+  restarted — the old process was serving pre-Phase-34 code with `--noreload`): every label,
+  placeholder and string matches at 390×844 and 1440×900; the two validation messages fire in the
+  old order; a submission with an email lands `email` set and `phone` empty, one with a phone number
+  lands the reverse, `?ref=live-check` is captured as `ref_code`, and all three optional fields
+  round-trip. 137 tests (was 126), 11 added.

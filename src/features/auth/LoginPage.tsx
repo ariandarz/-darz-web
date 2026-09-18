@@ -13,17 +13,28 @@
  * Copy is verbatim. `firstName` is captured but **not sent** —
  * `CollectorLoginSerializer` takes only `access_key` (the collector's name
  * lives on the `Collector` record); kept because the owner asked for the
- * exact screen (2026-09-04), flagged in docs/API_GAP_ANALYSIS.md. "Request
- * access" has no endpoint, so it shows a factual note instead of a fake form.
- * The name + email/phone sign-up that generates a password (the old app's
- * second method) is not ported: the API issues keys, it does not generate
- * passwords (flagged).
+ * exact screen (2026-09-04), flagged in docs/API_GAP_ANALYSIS.md.
+ *
+ * **Request access** is real as of 2026-09-18 (backend Phase 34). It used to
+ * show a factual note because no endpoint existed; it now ports the old form
+ * (app.html:2544-2552) onto `POST /api/auth/access-requests/`, which is public
+ * and mints no credential — the submission lands in the admin review queue and
+ * a human issues a key. Copy, field order, the `· optional` markers and both
+ * validation strings are verbatim from `submitRequest` (:2554-2566).
+ *
+ * The name + email/phone sign-up that generates a password (the design
+ * package's `SCREENS.md` §01 second method) is still **not** ported: the API
+ * issues keys through that review queue and has no password generation at all.
+ * Owner ruling D4 (2026-09-18) confirmed `app.html`'s Request access is the
+ * target here, overriding the standing "the package wins" rule for this one
+ * screen, because the package describes something the API cannot do.
  */
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
 import { useActivity } from '../activity/useActivity';
 import { Chroma, Input } from '../../components';
+import { newClientReqId, readRefCode, splitContact } from './accessRequest';
 import './auth.css';
 
 // app.html EYE_SHOW / EYE_HIDE (:2470 area)
@@ -72,6 +83,10 @@ export function LoginPage() {
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // "Request access" — the five fields of app.html:2546-2550, plus the
+  // received panel that replaces the card on success (:2562-2565).
+  const [rq, setRq] = useState({ name: '', contact: '', city: '', why: '', how: '' });
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   if (isAuthenticated) {
     const to = (location.state as { from?: string } | null)?.from ?? '/';
@@ -82,7 +97,45 @@ export function LoginPage() {
     setOpen(false);
     setView('signin');
     setError(null);
+    setSentTo(null);
+    setRq({ name: '', contact: '', city: '', why: '', how: '' });
   };
+
+  /* app.html:2555-2557 — both messages verbatim, checked in the same order,
+     before anything is sent. */
+  const sendRequest = (e: FormEvent) => {
+    e.preventDefault();
+    if (pending) return;
+    const name = rq.name.trim();
+    const contact = rq.contact.trim();
+    if (!name) return setError('Enter your first name.');
+    if (!contact) return setError('Add an email or phone so Darz can reach you.');
+    setPending(true);
+    setError(null);
+    const { email, phone } = splitContact(contact);
+    auth
+      .requestAccess({
+        name,
+        email,
+        phone,
+        city: rq.city.trim(),
+        why: rq.why.trim(),
+        referral_source: rq.how.trim(),
+        ref_code: readRefCode(),
+        client_req_id: newClientReqId(),
+      })
+      // :2563 — the panel greets the first word of what they typed.
+      .then(() => setSentTo(name.split(/\s+/)[0]))
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setPending(false));
+  };
+
+  /* :2548-2550 — the optional fields carry the marker inside the label. */
+  const optional = (text: string): ReactNode => (
+    <>
+      {text} <span className="opt">· optional</span>
+    </>
+  );
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -125,7 +178,11 @@ export function LoginPage() {
             </button>
             <div className="ph">
               <div className="h">
-                {view === 'signin' ? 'Private Access' : 'Request access'}
+                {view === 'signin'
+                  ? 'Private Access'
+                  : sentTo
+                    ? /* :2562 */ 'Request received'
+                    : 'Request access'}
               </div>
             </div>
 
@@ -182,16 +239,73 @@ export function LoginPage() {
                   <a onClick={() => setView('request')}>Request access</a>
                 </div>
               </form>
-            ) : (
+            ) : sentTo ? (
+              /* :2562-2565 — the card is replaced, not appended to. */
               <div className="gate-form">
+                <div className="sub rcv">Thank you, {sentTo}. Darz will be in touch.</div>
+                <button type="button" className="btn2" onClick={close}>
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={sendRequest} className="gate-form">
                 <div className="sub">
-                  darzmarket.art is invitation-only. Ask your gallery for an access key, or
-                  write to <a href="mailto:hello@darzmarket.art">hello@darzmarket.art</a>.
+                  darzmarket.art is a private collector network.
+                  <br />
+                  Tell us a little about you and Darz will be in touch.
+                </div>
+                <Input
+                  label="First name"
+                  name="rqName"
+                  autoComplete="given-name"
+                  autoCapitalize="words"
+                  placeholder="Your first name"
+                  value={rq.name}
+                  onChange={(e) => setRq({ ...rq, name: e.target.value })}
+                  autoFocus
+                />
+                <Input
+                  label="Email or phone"
+                  name="rqContact"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="How Darz can reach you"
+                  value={rq.contact}
+                  onChange={(e) => setRq({ ...rq, contact: e.target.value })}
+                />
+                <Input
+                  label={optional('City')}
+                  name="rqCity"
+                  autoCapitalize="words"
+                  placeholder="Where you are"
+                  value={rq.city}
+                  onChange={(e) => setRq({ ...rq, city: e.target.value })}
+                />
+                <Input
+                  label={optional('What you collect')}
+                  name="rqWhy"
+                  placeholder="A line about how you collect"
+                  value={rq.why}
+                  onChange={(e) => setRq({ ...rq, why: e.target.value })}
+                />
+                <Input
+                  label={optional('How you heard of Darz')}
+                  name="rqHow"
+                  placeholder="A gallery, a friend, Instagram…"
+                  value={rq.how}
+                  onChange={(e) => setRq({ ...rq, how: e.target.value })}
+                />
+                <button type="submit" className="btn2" disabled={pending}>
+                  {pending ? 'Sending…' : 'Send request'}
+                </button>
+                <div className="e" role="alert">
+                  {error ?? ''}
                 </div>
                 <div className="foot">
                   <a onClick={() => setView('signin')}>← Back to private access</a>
                 </div>
-              </div>
+              </form>
             )}
           </div>
         </div>
