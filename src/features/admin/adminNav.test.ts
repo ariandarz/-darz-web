@@ -125,8 +125,11 @@ describe('findTab / isPathAllowed', () => {
     expect(hit?.tab.label).toBe('Requests & Activity');
   });
 
-  it('returns null for a path outside the table', () => {
+  it('returns null for a path outside the groups', () => {
+    // /admin is the Dashboard — a real page, but in NO group (:11832), so the
+    // sub-row must not appear on it and findTab answers null.
     expect(findTab('/admin')).toBeNull();
+    expect(findTab('/admin/chat')).toBeNull();
     expect(findTab('/admin/nope')).toBeNull();
   });
 
@@ -225,6 +228,6 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
 
   it('counts what is actually built, so progress cannot be overstated', () => {
     const built = allTabs().filter((t) => t.path !== null);
-    expect(built.map((t) => t.key)).toEqual(['activity']);
+    expect(built.map((t) => t.key)).toEqual(['dashboard', 'chat', 'activity']);
   });
 });

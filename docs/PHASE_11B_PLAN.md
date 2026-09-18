@@ -354,3 +354,18 @@ _Append one entry per step as it merges. Newest last._
   panel does too (its More row lists the folded groups, the eyebrow is the group label, and the
   Collectors group's first tab is "Collectors"); it only looks odd because five-sixths of the row is
   not built yet. Left faithful rather than "fixed".
+- **2026-09-18 — the map + the desk kit merged (PR #42)**, on the owner's instruction, after the
+  scope grew to the whole panel: `docs/ADMIN_ARCHITECTURE.md` now governs everything outside this
+  phase's 11 tabs, and the kit (DeskPage/DeskList/DataTable/filters/ConfirmDialog/ShownOnceSecret)
+  is the shared vocabulary every desk assembles from.
+- **2026-09-18 — Step 1 done: Dashboard + Chat** (the two group-less tabs). Dashboard over
+  `GET /api/dashboard/admin/summary/` with the old :21349 rule kept — a tile opens exactly the rows
+  it counted, via `?kind=&status=` deep links the requests desk now reads from the URL (G-DASH-1
+  recorded for the initial-status inference). Chat over the crm admin thread endpoints, with the
+  thread machine extracted to `MessageThreadController` and bound twice (collector/admin, seen
+  direction flipped per :40547). The old pane's AI Monitor, mode, assignee, conversation status,
+  Clear and client-side search have no backend — flagged in the page headers and G-CHAT-1/2.
+  Live-verified end to end: tile → filtered desk (1 counted → 1 listed), thread send lands as a team
+  bubble with "Sent to the collector ✓". 185 tests (was 179). The team gate's default landing is now
+  `/admin` (the clamp), not a hardcoded desk.
+

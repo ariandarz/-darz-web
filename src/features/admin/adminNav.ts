@@ -115,7 +115,7 @@ function tab(
 export const ADMIN_HOME: AdminTab = tab(
   'dashboard',
   'Dashboard',
-  null,
+  '/admin',
   'ready',
   '11b·1',
   'GET /api/dashboard/admin/summary/ (backend Phase 29).',
@@ -124,7 +124,7 @@ export const ADMIN_HOME: AdminTab = tab(
 export const ADMIN_CHAT: AdminTab = tab(
   'chat',
   'Chat',
-  null,
+  '/admin/chat',
   'ready',
   '11b·3',
   'The admin end of the collector conversation — crm admin messages, already ' +
@@ -515,10 +515,14 @@ export function findTab(path: string): { group: AdminGroup; tab: AdminTab } | nu
   return null;
 }
 
-/** Whether this role may open this route. A path with no tab (the desk index,
- * an unbuilt desk) is not this function's to allow — the route table handles
- * those — so it answers `false` and the caller redirects. */
+/** Whether this role may open this route. The two group-less tabs count —
+ * `findTab` deliberately does not know them, because it also decides the
+ * sub-row and neither opens one (`:11832`) — and a path with no tab at all (an
+ * unbuilt desk) answers `false` so the caller redirects. */
 export function isPathAllowed(path: string, role: AdminRole): boolean {
+  for (const t of [ADMIN_HOME, ADMIN_CHAT]) {
+    if (t.path !== null && t.path === path) return isTabAllowed(t, role);
+  }
   const hit = findTab(path);
   return hit !== null && isTabAllowed(hit.tab, role);
 }

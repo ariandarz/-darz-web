@@ -643,3 +643,254 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* ---- Dashboard (features/admin/DashboardPage) ---------------------------
+   Tiles over the summary read. The accent state marks a number that means
+   someone is WAITING (a request, a paddle registration, a review), which is
+   the old dashboard's own emphasis; a plain total never lights up.          */
+.ad-dsec {
+  margin: 0 0 22px;
+}
+.ad-dsec-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 9px;
+}
+.ad-dsec-t {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0;
+}
+.ad-dsec-n {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.ad-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.ad-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 14px 15px;
+  color: inherit;
+  text-decoration: none;
+}
+.ad-tile-v {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.ad-tile-l {
+  font-size: 11.5px;
+  color: var(--ink3);
+}
+.ad-tile.is-attn {
+  border-color: var(--magenta);
+}
+.ad-tile.is-attn .ad-tile-v {
+  color: var(--magenta);
+}
+.ad-tile.is-link:hover {
+  border-color: var(--ink);
+}
+
+/* ---- Chat: the conversation list (AdminChatPage) ------------------------
+   Ported row anatomy from _chatDashConvos (darz-studio.html:40448-40453):
+   avatar initial · name · context line · unread badge · date.              */
+.ad-convos {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+.ad-convo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.ad-convo:hover {
+  background: var(--soft);
+}
+.ad-convo + .ad-convo {
+  border-top: 1px solid var(--hair2);
+}
+.ad-cav {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ctl-bg);
+  color: var(--ctl-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ad-cbody {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ad-cname {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-csub {
+  font-size: 12px;
+  color: var(--ink3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-cmeta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ad-cdate {
+  font-size: 11px;
+  color: var(--ink3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Chat: one thread (AdminThreadPage) --------------------------------- */
+.ad-thread {
+  max-width: 760px;
+}
+.ad-thread-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin: 0 0 14px;
+}
+.ad-back {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink2);
+  text-decoration: none;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 7px 11px;
+}
+.ad-back:hover {
+  border-color: var(--ink);
+}
+.ad-thread-who {
+  min-width: 0;
+}
+.ad-thread-name {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-thread-sub {
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.ad-bubbles {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 15px;
+  max-height: 55vh;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+.ad-thread-empty {
+  color: var(--ink3);
+  font-size: 13px;
+  padding: 30px 14px;
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+.ad-bub {
+  max-width: 78%;
+  align-self: flex-start;
+}
+.ad-bub.is-team {
+  align-self: flex-end;
+  text-align: right;
+}
+.ad-bub-b {
+  display: inline-block;
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 13px;
+  padding: 9px 13px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ad-bub.is-team .ad-bub-b {
+  background: var(--ctl-bg);
+  border-color: var(--ctl-border);
+  color: var(--ctl-text);
+}
+.ad-bub-t {
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.ad-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+}
+.ad-composer-in {
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 14px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  resize: none;
+  min-height: 52px;
+  max-height: 150px;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.ad-composer-in:focus {
+  border-color: var(--ink);
+}
+.ad-sent {
+  font-size: 12px;
+  color: var(--status-avail);
+  margin: 8px 2px 0;
+}

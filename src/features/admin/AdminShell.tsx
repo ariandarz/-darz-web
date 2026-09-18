@@ -95,6 +95,9 @@ export function AdminShell() {
           {ADMIN_HOME.path !== null && (
             <NavLink
               to={ADMIN_HOME.path}
+              /* `end` — /admin is every desk's prefix, and Dashboard must not
+                 read active on all of them */
+              end
               className={({ isActive }) => `ad-tab0${isActive ? ' is-active' : ''}`}
             >
               {ADMIN_HOME.label}

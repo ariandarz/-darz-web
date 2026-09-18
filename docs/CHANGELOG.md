@@ -5,6 +5,16 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b Step 1: Dashboard + Chat
+
+- Dashboard over `GET /api/dashboard/admin/summary/`, keeping :21349's rule — a tile opens exactly
+  the rows it counted (`?kind=&status=` deep links; the requests desk reads its opening filter from
+  the URL; G-DASH-1 records the initial-status inference). Chat = the crm admin thread endpoints;
+  the thread machine now lives once in `MessageThreadController`, bound by collector and admin
+  subclasses with the seen direction flipped (:40547).
+- Old-pane AI Monitor/mode/assignee/status/Clear/search have no backend — flagged, G-CHAT-1/2.
+  Live-verified end to end. 185 tests (+6). Team gate lands on `/admin` now, not a hardcoded desk.
+
 ## 2026-09-18 — The admin as one system: the full map + the desk kit
 
 - `docs/ADMIN_ARCHITECTURE.md` — all **14 groups / 55 tabs**, the owner's port-content /

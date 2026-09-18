@@ -15,3 +15,6 @@ export { SelectFilter, SearchFilter, ToggleFilter, type FilterChoice } from './f
 export { ConfirmDialog } from './ConfirmDialog';
 export { ShownOnceSecret } from './ShownOnceSecret';
 export { resolveDeskView, deskBanner, type DeskView } from './deskState';
+// The pager is the catalogue's (a faithful port of app.html's .pager); desks
+// reach it through the kit so no desk imports across features by hand.
+export { Pager } from '../../catalogue/Pager';
