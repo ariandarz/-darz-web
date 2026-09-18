@@ -1,6 +1,6 @@
 # Plan — backend Phases 23-35: what this frontend can build now
 
-**Status:** Step 1 DONE (2026-09-18) · Step 2 awaiting the go-ahead ·
+**Status:** Steps 1 and 2 DONE (2026-09-18) — the plan's proposed work is complete ·
 **Created:** 2026-09-18 ·
 **Sources read:** `ariandarz/darz-backend-api` @ `development` `12988db` ·
 `ariandarz/darzstudio.art` @ `development` (`app.html`, `design/market-app/`) ·
@@ -222,3 +222,18 @@ _Append one entry per step as it merges. Newest last._
   old order; a submission with an email lands `email` set and `phone` empty, one with a phone number
   lands the reverse, `?ref=live-check` is captured as `ref_code`, and all three optional fields
   round-trip. 137 tests (was 126), 11 added.
+- **2026-09-18 — Step 2 implemented and verified live.** The "Curated for You" chip, ported from
+  app.html:8583-8594 (CSS :278-289): star glyph, the label, the count badge, both `title` strings,
+  and the `.on` inversion. It is a **filter on the same grid** — `query.curated` switches
+  `CatalogueController.fetchPage` between `/artworks/` and `/artworks/selections/`, so the base's own
+  rule gives page-reset-on-change for free, and the flag is stripped before the request because it is
+  client-side only. Hidden entirely at zero grants (`useCuratedCount`), matching the original's
+  `if(!ids.length) return ''`. `.neu` / `.dz-curdot` and the selection name are **not** ported
+  (G-P24-2 / G-P24-1, decisions D5 / D6).
+  Verified against the local backend with real data seeded for it — 3 curated works granted to the
+  collector, 2 public: the chip reads 3, off shows the 2 public works, on shows the 3 curated ones,
+  the two sets are disjoint as `selection_queryset` promises, both titles and the `.on` inversion
+  confirmed by computed style (`--card`/`--ink2` → `--ink`/`--bg`), at 390×844 and 1440×900.
+  One thing the seeding caught that reading would not: `selection_queryset` also requires
+  `is_published=True`, so a granted but unpublished work is invisible — worth knowing when a
+  collector reports an empty curated set. 141 tests (was 137).

@@ -81,7 +81,12 @@ below, a whole panel's worth of API with no frontend UI.
    name + access key, team = email + password) and the design package's password-generating sign-up
    is **not** built, because this backend issues keys through an admin review queue and has no
    password generation at all — the one place "the package wins" is overridden, and why.
-   **Step 2 — the "Curated for You" chip (backend Phase 24) — is next and awaits the go-ahead.**
+   **Step 2 (the "Curated for You" chip, backend Phase 24) shipped 2026-09-18** — a collector
+   holding grants used to see **none** of their curated works; the chip now switches the catalogue's
+   base set to `/artworks/selections/`. It is a filter on the same grid, never a separate section:
+   `app.html:3432` still describes a "Private — for you" section, but `:8890` records that v669
+   **removed** it, so porting that would have shipped something the old app deleted. Both plan steps
+   are done; `docs/PHASE_24_35_PLAN.md` has the decisions and what was deliberately left out.
 1. ~~CI~~ — **done 2026-09-18.** `.github/workflows/quality.yml` runs typecheck · lint ·
    format:check · test · build on every PR and on pushes to `main`/`development`, modelled on
    `darzstudio.art`'s `Quality`. Verified before landing against a real clean checkout

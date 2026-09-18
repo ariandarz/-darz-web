@@ -217,6 +217,16 @@ export interface CatalogueQuery {
   search?: string;
   /** `year` | `-year` | `artist` | `-artist` | `price` | `-price`; absent = newest published */
   ordering?: string;
+  /**
+   * **Client-side only — never sent as a query param.** When on, the
+   * catalogue's base set becomes the collector's curated works
+   * (`GET /api/catalog/artworks/selections/`) instead of the public grid.
+   * This is the old app's "Curated for You" chip (app.html:8583-8594,
+   * behaviour :8871) — a *filter on the same grid*, which is why it lives in
+   * the query rather than in a second controller. `CatalogueController`
+   * strips it before the request.
+   */
+  curated?: boolean;
   per_page?: number;
   page?: number;
   /** "Refine" smart-filter dimensions (G7) — `refine_subject`, `refine_colour`,
