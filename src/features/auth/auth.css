@@ -267,3 +267,18 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ---- Request access (app.html:2544-2565) ------------------------------- */
+/* :2548-2550 — the optional fields carry a dimmed marker inside the label:
+   <span style="opacity:.55;font-weight:500">· optional</span> */
+#dzGate .dz-field-label .opt {
+  opacity: 0.55;
+  font-weight: 500;
+}
+/* :2563 — the "Request received" body is its own size/rhythm, not `.sub`'s
+   (13px / 1.6 / margin-top 2px vs 12px / 1.55 / -6px). */
+#dzGate .sub.rcv {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 2px;
+}

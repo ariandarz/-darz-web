@@ -74,13 +74,14 @@ below, a whole panel's worth of API with no frontend UI.
 
 **What next (2026-09-18, recommended order):**
 
-0. **Backend Phases 23-35 catch-up — `docs/PHASE_24_35_PLAN.md`, awaiting owner confirmation.**
-   Two small, fully-specified collector ports are now unblocked: the gate's **"Request access"**
-   form (backend Phase 34 — closes the stub `LoginPage.tsx` flags in its own header) and the
-   **"Curated for You"** chip (backend Phase 24). Eight owner decisions (D1-D8) are listed in that
-   plan; one of them, **D4**, needs a ruling rather than a preference — the design package's §01
-   describes a sign-up that *generates a password*, which this backend cannot do, so "the package
-   wins" points at a screen the API makes impossible.
+0. **Backend Phases 23-35 catch-up — `docs/PHASE_24_35_PLAN.md`.** **Step 1 (the gate's "Request
+   access" form, backend Phase 34) shipped 2026-09-18** — a real form over
+   `POST /api/auth/access-requests/` in place of the stub note `LoginPage.tsx` used to flag in its
+   own header. **D4 was ruled** by the owner: the credential model stays as it is (collector = first
+   name + access key, team = email + password) and the design package's password-generating sign-up
+   is **not** built, because this backend issues keys through an admin review queue and has no
+   password generation at all — the one place "the package wins" is overridden, and why.
+   **Step 2 — the "Curated for You" chip (backend Phase 24) — is next and awaits the go-ahead.**
 1. ~~CI~~ — **done 2026-09-18.** `.github/workflows/quality.yml` runs typecheck · lint ·
    format:check · test · build on every PR and on pushes to `main`/`development`, modelled on
    `darzstudio.art`'s `Quality`. Verified before landing against a real clean checkout
