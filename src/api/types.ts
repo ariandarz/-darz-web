@@ -188,6 +188,36 @@ export interface Choice {
  * guarded state machine. Never hardcode this lookup (CLAUDE.md). */
 export type RequestStatusByKind = Record<string, Choice[]>;
 
+/** Admin Collectors desk (backend Phase 27) — `CollectorAdminSerializer`:
+ * every field, admin-only surface. `version` is the optimistic-lock counter;
+ * send it back on PATCH or the write 409s. */
+export type CollectorAdmin = Schemas['CollectorAdmin'];
+
+/** `GET/POST /api/auth/admin/collectors/` query — `apps/accounts/filters.py::
+ * CollectorFilterSet`: free-text `search` over display_name/full_name/email/
+ * phone, exact `tier`/`access_status`, `ordering` of name|-name|created|-created. */
+export interface CollectorAdminQuery {
+  search?: string;
+  tier?: string;
+  access_status?: string;
+  ordering?: 'name' | '-name' | 'created' | '-created';
+  per_page?: number;
+  page?: number;
+}
+
+/** One issued key, as the admin surface serializes it — the hash never
+ * leaves the server; `access_key` (plaintext) exists ONLY on the issue/approve
+ * responses, exactly once. */
+export type AccessKeyAdmin = Schemas['AccessKeyAdmin'];
+
+/** A collector sign-in event (backend Phase 33) — the real log,
+ * `AccessKey.last_used_at` only keeps the most recent. */
+export type CollectorLoginEvent = Schemas['CollectorLoginEvent'];
+
+/** The review queue's row (backend Phase 34) — `AccessRequestAdminSerializer`.
+ * The list defaults to `status=pending` server-side. */
+export type AccessRequestAdmin = Schemas['AccessRequestAdmin'];
+
 /**
  * `GET /api/dashboard/admin/summary/` (backend Phase 29).
  *

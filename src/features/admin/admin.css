@@ -894,3 +894,243 @@
   color: var(--status-avail);
   margin: 8px 2px 0;
 }
+
+/* ---- Step 2: Collectors + Access Requests ------------------------------- */
+.ad-cellmain {
+  display: block;
+  color: var(--ink);
+}
+.ad-cellsub {
+  display: block;
+  font-size: 11px;
+  color: var(--ink3);
+}
+.ad-rowbtn {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ad-rowbtn:hover {
+  border-color: var(--ink);
+}
+.ad-rowbtn.is-danger {
+  color: var(--danger);
+}
+.ad-ghostbtn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: none;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 8px 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ad-ghostbtn:hover {
+  border-color: var(--ink);
+}
+.ad-ghostbtn.is-danger {
+  color: var(--danger);
+}
+.ad-keyacts {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* the old tier colours (:32612 tierColor) mapped onto tokens where they
+   coincide; vip keeps the old #E11D48 via --danger, active the green */
+.ad-chip.ad-tier-vip {
+  background: var(--pl-attnbg);
+  color: var(--danger);
+}
+.ad-chip.ad-tier-active {
+  background: var(--status-avail-bg);
+  color: var(--status-avail);
+}
+.ad-chip.ad-tier-new {
+  background: var(--pl-waitbg);
+  color: var(--pl-wait);
+}
+.ad-chip.ad-tier-institutional {
+  background: var(--status-res-bg);
+  color: var(--status-res);
+}
+
+/* expCell (:33042) — three tones + date underneath */
+.ad-exp {
+  display: block;
+  font-weight: 700;
+  font-size: 11.5px;
+}
+.ad-exp.is-never {
+  color: var(--ink3);
+  font-weight: 500;
+}
+.ad-exp.is-expired {
+  color: var(--danger);
+}
+.ad-exp.is-soon {
+  color: var(--status-res);
+}
+.ad-exp.is-ok {
+  color: var(--status-avail);
+}
+
+/* the record card + login list on the detail */
+.ad-record,
+.ad-logins {
+  padding: 6px 0;
+  margin-bottom: 20px;
+}
+.ad-recrow {
+  display: flex;
+  gap: 14px;
+  padding: 8px 16px;
+}
+.ad-recrow + .ad-recrow {
+  border-top: 1px solid var(--hair2);
+}
+.ad-reck {
+  flex: 0 0 110px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding-top: 1px;
+}
+.ad-recv {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* the create/edit form */
+.ad-form {
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.ad-form-h {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.ad-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ad-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ad-field--wide {
+  grid-column: 1 / -1;
+}
+.ad-field input,
+.ad-field select,
+.ad-field textarea {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 9px 12px;
+  outline: none;
+}
+.ad-field input:focus,
+.ad-field select:focus,
+.ad-field textarea:focus {
+  border-color: var(--ink);
+}
+.ad-form-a {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+/* the review queue's cards (accReqPanel :33006-33027) */
+.ad-desksub {
+  font-size: 12px;
+  color: var(--ink3);
+  margin: -12px 0 16px;
+  line-height: 1.5;
+}
+.ad-badge-attn {
+  display: inline-block;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 20px;
+  padding: 3px 9px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.ad-reqcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ad-reqcard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 13px 15px;
+}
+.ad-reqbody {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.ad-reqname {
+  font-weight: 700;
+  color: var(--ink);
+}
+.ad-reqname .ad-cellsub {
+  display: inline;
+}
+.ad-reqline {
+  font-size: 12px;
+  color: var(--ink2);
+  margin-top: 2px;
+}
+.ad-reqmeta {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.ad-reqref {
+  font-size: 11px;
+  color: var(--status-avail);
+  font-weight: 600;
+  margin-top: 3px;
+}
+.ad-reqwhy {
+  font-size: 12px;
+  color: var(--ink2);
+  margin-top: 5px;
+  line-height: 1.5;
+}
+.ad-reqacts {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+}

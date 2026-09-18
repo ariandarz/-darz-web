@@ -638,20 +638,30 @@ package/faithful-port research.
       this phase builds are registered; an unbuilt tab carries `path: null` so nothing renders it —
       **absent, not stubbed** (D9). Verified live as both roles in both skins. 158 tests (+17).
       `RequireOwner` has no caller until Step 2 lands the first owner-only desk.
-- [ ] **Collectors desk** (old panel "Collectors" tab) — list/search/filter (tier, access_status) +
-      create/edit/soft-delete + issue/revoke access keys (plaintext key shown once on issue, never
-      re-fetchable — the UI must warn "copy this now").
-      `GET/POST /api/auth/admin/collectors/`, `GET/PATCH/DELETE .../{id}/`,
-      `GET/POST .../{id}/access-keys/`, `POST /api/auth/admin/access-keys/{id}/revoke/`.
+- [x] **Collectors desk** ✅ 2026-09-18 (old panel "Collectors" tab, `users()` :32610) —
+      list/search/filter/sort over the server's own `CollectorFilterSet` + create/edit
+      (optimistic-lock `version`, 409 surfaces) + soft-delete, and a per-collector workspace
+      (`/admin/collectors/:id`) holding the record, the keys (issue → `ShownOnceSecret`, revoke,
+      the three extend buttons, `expCell`'s Never/Expired/today/nd-left cell :33042) and the Phase
+      33 sign-in log. The overview strip and activity/purchase sorts are **not ported** — the
+      roster is paginated and no aggregate/rollup endpoint exists (G-COL-1/2). Live-verified full
+      circle: an issued key signed a real collector in at the gate.
+- [x] **Access Requests desk** ✅ 2026-09-18 (`systemView` :33115, `accReqPanel` :33006) —
+      owner-only (`RequireOwner`'s first caller; a standard admin gets the :33116 refusal card and
+      no Access Management group). Pending cards with the verbatim copy, sub-line, empty state and
+      "{n} pending" badge; approve = tier picker + confirm → the once-shown key (§2.3 deviation);
+      **D13 honoured** — the old composed note is PATCHed onto the new collector. Decline confirm
+      verbatim (:37370). Live-verified: approve created the collector (tier landed), queue shrank,
+      note present.
 - [ ] **Collector Activity feed** (old panel "Collector Activity" tab) — read-only, filter by
       collector/kind/artwork. `GET /api/crm/admin/activity/`.
-- [ ] **Access keys desk** (old panel "Access", owner-only, `darz-studio.html:33029`) — the same
-      `AccessKey` rows the Collectors desk issues, as their own desk: every key with its expiry cell
-      (`expCell`, `:33042` — Never / Expired / Expires today / *n*d left, three colours), type and
-      status filters, the logins-today counter and the expiring-soon review list. Issue is
-      shown-once; extend is +1 week / +1 month / permanent.
-      `POST /api/auth/admin/access-keys/{id}/revoke/`, `POST .../{id}/extend/`,
-      `GET /api/auth/admin/collectors/{id}/login-events/`.
+- [!] **Access keys desk** (old panel "Access", owner-only, `darz-studio.html:33029`) — the
+      roster-wide view (every key across collectors, expiring-soon review list, logins-today
+      counter) is **blocked by G-KEY-1**: keys are only listed per collector
+      (`GET .../collectors/{id}/access-keys/`); no all-keys endpoint exists and paging every
+      collector to build one client-side would not scale. The per-collector half (issue/revoke/
+      extend/expiry cell/sign-ins) shipped inside the Collectors workspace 2026-09-18. Needs a
+      `GET /api/auth/admin/access-keys/` list to build the desk proper.
 - [ ] **Access Requests desk** (old panel "Access Request", owner-only, `:33115`, panel
       `accReqPanel()` `:33006`) — **missing from this list until 2026-09-18**; backend Phase 34
       shipped it after the list was written, so every request submitted through the "Request access"

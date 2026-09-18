@@ -220,7 +220,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'Collectors',
     folded: true,
     tabs: [
-      tab('users', 'Collectors', null, 'ready', '11b·2'),
+      tab('users', 'Collectors', '/admin/collectors', 'ready', '11b·2'),
       tab('activity', 'Requests & Activity', '/admin/requests', 'ready', '11b·3'),
       tab(
         'club',
@@ -452,7 +452,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'system',
         'Access Request',
-        null,
+        '/admin/access-requests',
         'ready',
         '11b·2',
         'The review queue for the public request form.',

@@ -286,6 +286,148 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/app-theme/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the live theme (admin) */
+        get: operations["core_admin_app_theme_get"];
+        /**
+         * Publish the live theme
+         * @description Overwrites the theme object entirely — old panel wording: 'Save', publishes immediately. Does not create a named version; see .../versions/ for that.
+         */
+        put: operations["admin_app_theme_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/app-theme/reset/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset the theme to factory defaults
+         * @description Old panel wording: 'Reset' — clears to an empty object, which the Market App reads as 'use its own built-in defaults'.
+         */
+        post: operations["admin_app_theme_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/app-theme/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List saved theme versions (admin) */
+        get: operations["core_admin_app_theme_versions_list"];
+        put?: never;
+        /**
+         * Save a named theme checkpoint
+         * @description Old panel wording: 'Save version' — snapshots the CURRENT live theme under a name, a separate action from publishing (PUT .../app-theme/).
+         */
+        post: operations["admin_app_theme_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/app-theme/versions/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a saved theme version
+         * @description Old panel wording: 'Version deleted'. Does not affect the live theme.
+         */
+        delete: operations["admin_app_theme_versions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/app-theme/versions/{id}/activate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate a saved theme version
+         * @description Old panel wording: 'This version is now the active Market App design'. Restores the version's theme as the live theme; the version row itself is unchanged and can be activated again later.
+         */
+        post: operations["admin_app_theme_versions_activate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit-log/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the audit log (admin)
+         * @description AuditLog is written by apps.core.audit.record_audit on every privileged mutation and never edited afterwards — this is the read-only API equivalent of the Django admin's read-only AuditLogAdmin.
+         */
+        get: operations["admin_audit_log_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app-theme/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The live Market App theme
+         * @description Public — same as the old panel's public-read app_theme mirror. Nothing on this is confidential; the Market App fetches it pre-login to render.
+         */
+        get: operations["app_theme_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auctions/": {
         parameters: {
             query?: never;
@@ -386,6 +528,30 @@ export interface paths {
         post?: never;
         /** Soft-delete an auction */
         delete: operations["auctions_admin_auctions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auctions/admin/auctions/{id}/invite-only/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an auction's invite list (admin)
+         * @description Old panel's Collector Club tab, per-auction row. Never on the base AuctionSerializer every collector reads — the invite list is other collectors' identities.
+         */
+        get: operations["auctions_admin_auctions_invite_only_retrieve"];
+        put?: never;
+        /**
+         * Set an auction private/public + its invite list
+         * @description Old panel wording: 'Make private…'. invited_collector_ids replaces the list wholesale (omit to leave it unchanged while toggling invite_only alone).
+         */
+        post: operations["auctions_admin_auctions_invite_only_create"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -695,6 +861,316 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/access-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request access (public)
+         * @description No auth, no access key needed — this is how a prospect with neither asks for one. Lands in the admin review queue; an admin issues a key or declines.
+         */
+        post: operations["auth_access_requests_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/access-keys/{id}/extend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extend an access key's expiry
+         * @description Old panel wording: '+1 week' / '+1 month' / 'Make permanent'. Extends from max(now, current expiry) — a lapsed key extends from today, not its stale expiry.
+         */
+        post: operations["auth_admin_access_keys_extend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/access-keys/{id}/revoke/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke an access key
+         * @description Locks the key (old panel wording: 'Revoke'). A locked key is refused at login but stays on record — same as Django admin's manual status change.
+         */
+        post: operations["auth_admin_access_keys_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/access-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List access requests (admin)
+         * @description Defaults to pending only (the old panel's own review-queue framing); pass ?status= to see approved/declined too.
+         */
+        get: operations["auth_admin_access_requests_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/access-requests/{id}/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve an access request — issue a key
+         * @description Old panel wording: 'Issue key'. Creates a real Collector + issues its first AccessKey in one action; the plaintext key is returned exactly once.
+         */
+        post: operations["auth_admin_access_requests_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/access-requests/{id}/decline/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline an access request */
+        post: operations["auth_admin_access_requests_decline_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/collectors/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List collectors (admin) */
+        get: operations["accounts_admin_collectors_list"];
+        put?: never;
+        /** Create a collector */
+        post: operations["auth_admin_collectors_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/collectors/{collector_pk}/access-keys/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a collector's access keys (admin) */
+        get: operations["accounts_admin_access_keys_list"];
+        put?: never;
+        /**
+         * Issue a new access key
+         * @description Returns the plaintext key exactly once — it is never persisted or re-exposed by any other endpoint. Deliver it to the collector now.
+         */
+        post: operations["auth_admin_collectors_access_keys_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/collectors/{collector_pk}/login-events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A collector's login history (admin)
+         * @description Phase 33 — the real login-event log behind Dashboard's 'logins today' count.
+         */
+        get: operations["auth_admin_collectors_login_events_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/collectors/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one collector (admin) */
+        get: operations["auth_admin_collectors_retrieve"];
+        put?: never;
+        post?: never;
+        /** Soft-delete a collector */
+        delete: operations["auth_admin_collectors_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a collector
+         * @description Requires expected_version (optimistic lock).
+         */
+        patch: operations["auth_admin_collectors_partial_update"];
+        trace?: never;
+    };
+    "/api/auth/admin/membership-codes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List membership codes (admin) */
+        get: operations["accounts_admin_membership_codes_list"];
+        put?: never;
+        /**
+         * Issue a membership code
+         * @description A blank `code` auto-generates one (`DZ-<plan letter>-<6 chars>`). No payment processing anywhere — this desk records the plan, code, dates and status only; payment happens over WhatsApp, tracked by the `whatsapp`/`notes` fields.
+         */
+        post: operations["auth_admin_membership_codes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/membership-codes/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one membership code (admin) */
+        get: operations["auth_admin_membership_codes_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove a membership code
+         * @description Soft-delete — old panel wording: 'Remove'. Does not affect a collector who already redeemed it; their tier stays set.
+         */
+        delete: operations["auth_admin_membership_codes_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a membership code
+         * @description Requires expected_version (optimistic lock).
+         */
+        patch: operations["auth_admin_membership_codes_partial_update"];
+        trace?: never;
+    };
+    "/api/auth/admin/membership-codes/{id}/renew/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Renew a membership code
+         * @description Extends expiry by one month from max(expiry, today) and reactivates it — old panel wording: 'Renewed — one month added'.
+         */
+        post: operations["auth_admin_membership_codes_renew_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/team-users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List team users (admin) */
+        get: operations["accounts_admin_team_users_list"];
+        put?: never;
+        /**
+         * Create a team login
+         * @description Generates a random password, returned exactly once — deliver it to the new team member privately; they sign in at the normal team-login gate with their email.
+         */
+        post: operations["auth_admin_team_users_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/team-users/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one team user (admin) */
+        get: operations["auth_admin_team_users_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove a team user
+         * @description Soft-delete — old panel wording: 'Remove'. Refuses to let a team user remove their own account through this endpoint.
+         */
+        delete: operations["auth_admin_team_users_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a team user
+         * @description Requires expected_version (optimistic lock). Refuses to let a team user deactivate their own account through this endpoint.
+         */
+        patch: operations["auth_admin_team_users_partial_update"];
+        trace?: never;
+    };
     "/api/auth/collector/login/": {
         parameters: {
             query?: never;
@@ -914,6 +1390,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/admin/artworks/{artwork_pk}/selection-grants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an artwork's selection grants
+         * @description Which collectors currently have access to this `selected`/`private_selection` artwork.
+         */
+        get: operations["catalog_admin_artworks_selection_grants_retrieve"];
+        put?: never;
+        /**
+         * Grant a collector access
+         * @description Idempotent — granting an already-granted collector is a no-op; re-granting a revoked one restores it.
+         */
+        post: operations["catalog_admin_artworks_selection_grants_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/artworks/{artwork_pk}/selection-grants/{grant_pk}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a collector's selection grant */
+        delete: operations["catalog_admin_artworks_selection_grants_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/admin/artworks/{id}/": {
         parameters: {
             query?: never;
@@ -987,6 +1504,141 @@ export interface paths {
         put?: never;
         /** Unpublish an artwork */
         post: operations["catalog_admin_artworks_unpublish_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/data-health/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catalogue data-health report
+         * @description Three checks that actually apply to this backend's single-database architecture (duplicate images, incomplete records, published-but-hidden) — see apps.catalog.health.DataHealthService's own docstring for what the old panel's other checks were and why they don't port.
+         */
+        get: operations["catalog_admin_data_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/import/batches/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List import batches (admin) */
+        get: operations["catalog_admin_import_batches_list"];
+        put?: never;
+        /**
+         * Stage an import batch
+         * @description Client parses the source file (CSV/PDF/paste/images) and POSTs the resulting rows; nothing touches the catalogue until the batch is confirmed.
+         */
+        post: operations["catalog_admin_import_batches_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/import/batches/{batch_pk}/rows/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a staged import row
+         * @description Corrects resolved_data before confirm — raw_data (the original parse) is untouched.
+         */
+        patch: operations["catalog_admin_import_batches_rows_partial_update"];
+        trace?: never;
+    };
+    "/api/catalog/admin/import/batches/{batch_pk}/rows/{id}/reject/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a staged import row
+         * @description Skipped on confirm — never becomes an Artwork.
+         */
+        post: operations["catalog_admin_import_batches_rows_reject_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/import/batches/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one import batch, with its staged rows (admin) */
+        get: operations["catalog_admin_import_batches_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/import/batches/{id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an import batch
+         * @description Runs every non-rejected row through the same validation/create path as POST admin/artworks/ — a row that fails is marked STATUS_ERROR with its error attached and does not block the rest of the batch.
+         */
+        post: operations["catalog_admin_import_batches_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/import/batches/{id}/discard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discard an import batch */
+        post: operations["catalog_admin_import_batches_discard_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1090,6 +1742,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/artworks/selections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My curated selections
+         * @description `selected`/`private_selection` artworks explicitly granted to the authenticated collector — docs/TASKLIST.md Phase 24. Not part of the public catalogue: a work only appears here once an admin grants this collector access (see `POST /api/catalog/admin/artworks/{id}/selection-grants/`), and it never also appears in `GET /api/catalog/artworks/`.
+         */
+        get: operations["catalog_artworks_selections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/legacy-lookup/": {
         parameters: {
             query?: never;
@@ -1124,6 +1796,26 @@ export interface paths {
          * @description Self-logged by the collector — view/save/search/login (see ChoiceRegistry['crm.activity_kind']).
          */
         post: operations["crm_activity_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/admin/activity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List collector activity (admin)
+         * @description Read-only behavioural-signal feed — view/save/search/login, self-logged by collectors via POST /api/crm/activity/.
+         */
+        get: operations["crm_admin_activity_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1209,6 +1901,52 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/crm/admin/selections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List collector selections (admin) */
+        get: operations["crm_admin_selections_list"];
+        put?: never;
+        /**
+         * Create a named collector selection
+         * @description Old panel wording: 'New private selection'. Syncs the underlying ArtworkSelectionGrant rows (Phase 24) for every (artwork, collector) pair.
+         */
+        post: operations["crm_admin_selections_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/admin/selections/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one collector selection (admin) */
+        get: operations["crm_admin_selections_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a collector selection
+         * @description Revokes any grant this selection uniquely provided — a pair another selection also grants stays granted.
+         */
+        delete: operations["crm_admin_selections_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a collector selection
+         * @description Requires expected_version (optimistic lock). Re-syncs grants for every (artwork, collector) pair added or removed.
+         */
+        patch: operations["crm_admin_selections_partial_update"];
         trace?: never;
     };
     "/api/crm/requests/": {
@@ -1315,6 +2053,26 @@ export interface paths {
          * @description Soft-deletes the collector's saved-artwork row for this artwork, if any.
          */
         delete: operations["crm_saved_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/admin/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin dashboard summary
+         * @description Cross-app counts for the panel's Dashboard tab: requests needing attention per kind, today's activity, collector/catalogue/auction totals, pending exhibition reviews. See apps.dashboard.services.DashboardService for the exact definitions.
+         */
+        get: operations["dashboard_admin_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2209,6 +2967,289 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/admin/checklists/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List checklist templates (admin) */
+        get: operations["projects_admin_checklists_list"];
+        put?: never;
+        /** Create a checklist template */
+        post: operations["projects_admin_checklists_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/checklists/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one checklist template (admin) */
+        get: operations["projects_admin_checklists_retrieve"];
+        put?: never;
+        post?: never;
+        /** Delete a checklist template */
+        delete: operations["projects_admin_checklists_destroy"];
+        options?: never;
+        head?: never;
+        /** Update a checklist template */
+        patch: operations["projects_admin_checklists_partial_update"];
+        trace?: never;
+    };
+    "/api/projects/admin/packages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List package templates (admin) */
+        get: operations["projects_admin_packages_list"];
+        put?: never;
+        /** Create a package template */
+        post: operations["projects_admin_packages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/packages/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one package template (admin) */
+        get: operations["projects_admin_packages_retrieve"];
+        put?: never;
+        post?: never;
+        /** Delete a package template */
+        delete: operations["projects_admin_packages_destroy"];
+        options?: never;
+        head?: never;
+        /** Update a package template */
+        patch: operations["projects_admin_packages_partial_update"];
+        trace?: never;
+    };
+    "/api/projects/admin/partners/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List partner orgs (admin) */
+        get: operations["projects_admin_partners_list"];
+        put?: never;
+        /** Create a partner org */
+        post: operations["projects_admin_partners_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/partners/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one partner org (admin) */
+        get: operations["projects_admin_partners_retrieve"];
+        put?: never;
+        post?: never;
+        /** Delete a partner org */
+        delete: operations["projects_admin_partners_destroy"];
+        options?: never;
+        head?: never;
+        /** Update a partner org */
+        patch: operations["projects_admin_partners_partial_update"];
+        trace?: never;
+    };
+    "/api/projects/admin/projects/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List projects (admin) */
+        get: operations["projects_admin_projects_list"];
+        put?: never;
+        /** Create a project */
+        post: operations["projects_admin_projects_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one project (admin) */
+        get: operations["projects_admin_projects_retrieve"];
+        put?: never;
+        post?: never;
+        /** Soft-delete a project */
+        delete: operations["projects_admin_projects_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a project
+         * @description Requires expected_version (optimistic lock).
+         */
+        patch: operations["projects_admin_projects_partial_update"];
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{id}/stage/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a project to a pipeline stage
+         * @description Also auto-derives the matching status label (Project.STAGE_STATUS_MAP) — the old panel's own pipeline-drag rule.
+         */
+        post: operations["projects_admin_projects_stage_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{project_pk}/attachments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a project's attachments (admin) */
+        get: operations["projects_admin_project_attachments_list"];
+        put?: never;
+        /** Upload a project attachment */
+        post: operations["projects_admin_projects_attachments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{project_pk}/attachments/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a project attachment */
+        delete: operations["projects_admin_projects_attachments_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/dashboard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Projects dashboard — priority queue
+         * @description Active/delayed/awaiting-approval/unpaid counts, next-7-days deliverables, and responsibility-by-team-member — old panel's Projects Dashboard tab.
+         */
+        get: operations["projects_admin_projects_dashboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/reports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Projects reports — deliverables roll-up
+         * @description Every deliverable across active projects, soonest-due first — old panel's Projects Reports tab.
+         */
+        get: operations["projects_admin_projects_reports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/service-catalog/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List service catalog items (admin) */
+        get: operations["projects_admin_service_catalog_list"];
+        put?: never;
+        /** Create a service catalog item */
+        post: operations["projects_admin_service_catalog_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/service-catalog/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one service catalog item (admin) */
+        get: operations["projects_admin_service_catalog_retrieve"];
+        put?: never;
+        post?: never;
+        /** Delete a service catalog item */
+        delete: operations["projects_admin_service_catalog_destroy"];
+        options?: never;
+        head?: never;
+        /** Update a service catalog item */
+        patch: operations["projects_admin_service_catalog_partial_update"];
+        trace?: never;
+    };
     "/api/recommendations/admin/artworks/{artwork_pk}/tags/": {
         parameters: {
             query?: never;
@@ -2496,6 +3537,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recommendations/questionnaire/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My questionnaire answers
+         * @description 404 if this collector has never submitted one.
+         */
+        get: operations["recommendations_questionnaire_retrieve"];
+        put?: never;
+        /**
+         * Submit/update my questionnaire
+         * @description Full-replace — a resubmission overwrites the collector's prior answers (docs/TASKLIST.md Phase 25). Persisted so CollectorProfileService.build() (and therefore recommendation generation) can use it without the caller resupplying the raw answers.
+         */
+        post: operations["recommendations_questionnaire_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sales/admin/sales/": {
         parameters: {
             query?: never;
@@ -2604,6 +3669,171 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description Read/output shape only — ``key_hash`` is never serialized, the same
+         *     discipline as Django admin's ``readonly_fields`` on this model.
+         */
+        AccessKeyAdmin: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly collector: string;
+            readonly status: components["schemas"]["AccessKeyStatusEnum"];
+            /** Format: date-time */
+            readonly issued_at: string;
+            /** Format: date-time */
+            readonly expires_at: string | null;
+            /** Format: date-time */
+            readonly last_used_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        AccessKeyExtend: {
+            extend: components["schemas"]["ExtendEnum"];
+        };
+        AccessKeyIssue: {
+            /** Format: date-time */
+            expires_at?: string | null;
+        };
+        /**
+         * @description ``access_key`` (the plaintext) is returned exactly once, on issue —
+         *     never persisted, never re-exposed by any other endpoint. Same discipline
+         *     as ``AccessKeyManager.issue``'s own docstring.
+         */
+        AccessKeyIssueResponse: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly collector: string;
+            readonly status: components["schemas"]["AccessKeyStatusEnum"];
+            /** Format: date-time */
+            readonly issued_at: string;
+            /** Format: date-time */
+            readonly expires_at: string | null;
+            /** Format: date-time */
+            readonly last_used_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            access_key: string;
+        };
+        /**
+         * @description * `active` - Active
+         *     * `locked` - Locked
+         *     * `expired` - Expired
+         * @enum {string}
+         */
+        AccessKeyStatusEnum: "active" | "locked" | "expired";
+        AccessRequestAdmin: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly name: string;
+            /** Format: email */
+            readonly email: string;
+            readonly phone: string;
+            readonly city: string;
+            /** @description Why they want access — free text. */
+            readonly why: string;
+            readonly referral_source: string;
+            /**
+             * Referral code
+             * @description Freeform — a collector referral code or 'gallery:<id>'.
+             */
+            readonly ref_code: string;
+            readonly status: components["schemas"]["AccessRequestStatusEnum"];
+            readonly reviewed_by: components["schemas"]["_AccessRequestReviewer"] | null;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            /**
+             * Format: uuid
+             * @description Set when approved — the Collector this request became.
+             */
+            readonly resulting_collector: string | null;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        AccessRequestApprove: {
+            tier?: (components["schemas"]["CollectorTierEnum"] | components["schemas"]["NullEnum"]) | null;
+        };
+        /**
+         * @description ``access_key`` (the plaintext) is returned exactly once, on approve —
+         *     never persisted, never re-exposed. Same discipline as every other issue
+         *     path in this project.
+         */
+        AccessRequestApproveResponse: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly name: string;
+            /** Format: email */
+            readonly email: string;
+            readonly phone: string;
+            readonly city: string;
+            /** @description Why they want access — free text. */
+            readonly why: string;
+            readonly referral_source: string;
+            /**
+             * Referral code
+             * @description Freeform — a collector referral code or 'gallery:<id>'.
+             */
+            readonly ref_code: string;
+            readonly status: components["schemas"]["AccessRequestStatusEnum"];
+            readonly reviewed_by: components["schemas"]["_AccessRequestReviewer"] | null;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            /**
+             * Format: uuid
+             * @description Set when approved — the Collector this request became.
+             */
+            readonly resulting_collector: string | null;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            access_key: string;
+        };
+        /** @description Public — no auth, no access key needed yet (that's the point). */
+        AccessRequestCreate: {
+            name: string;
+            /**
+             * Format: email
+             * @default
+             */
+            email: string;
+            /** @default  */
+            phone: string;
+            /** @default  */
+            city: string;
+            /** @default  */
+            why: string;
+            /** @default  */
+            referral_source: string;
+            /** @default  */
+            ref_code: string;
+        };
+        AccessRequestCreateResponse: {
+            data: components["schemas"]["AccessRequestAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `approved` - Approved
+         *     * `declined` - Declined
+         * @enum {string}
+         */
+        AccessRequestStatusEnum: "pending" | "approved" | "declined";
+        /**
+         * @description * `invited` - Invited
+         *     * `active` - Active
+         *     * `locked` - Locked
+         *     * `expired` - Expired
+         * @enum {string}
+         */
+        AccessStatusEnum: "invited" | "active" | "locked" | "expired";
+        /**
          * @description * `draft` - Draft
          *     * `reviewed` - Reviewed
          *     * `confirmed` - Confirmed
@@ -2628,6 +3858,166 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        AdminAccessKeyExtendResponse: {
+            data: components["schemas"]["AccessKeyAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessKeyIssueResponse: {
+            data: components["schemas"]["AccessKeyIssueResponse"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessKeyListResponse: {
+            data: components["schemas"]["AdminAccessKeyListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessKeyListResponseData: {
+            pagination: components["schemas"]["AdminAccessKeyListResponsePagination"];
+            results: components["schemas"]["AccessKeyAdmin"][];
+        };
+        AdminAccessKeyListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminAccessKeyRevokeResponse: {
+            data: components["schemas"]["AccessKeyAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessRequestApproveResponse: {
+            data: components["schemas"]["AccessRequestApproveResponse"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessRequestDeclineResponse: {
+            data: components["schemas"]["AccessRequestAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessRequestListResponse: {
+            data: components["schemas"]["AdminAccessRequestListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessRequestListResponseData: {
+            pagination: components["schemas"]["AdminAccessRequestListResponsePagination"];
+            results: components["schemas"]["AccessRequestAdmin"][];
+        };
+        AdminAccessRequestListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminActivityListResponse: {
+            data: components["schemas"]["AdminActivityListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminActivityListResponseData: {
+            pagination: components["schemas"]["AdminActivityListResponsePagination"];
+            results: components["schemas"]["CollectorActivityAdmin"][];
+        };
+        AdminActivityListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminAppThemeResetResponse: {
+            data: components["schemas"]["AppTheme"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAppThemeResponse: {
+            data: components["schemas"]["AppTheme"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAppThemeUpdateResponse: {
+            data: components["schemas"]["AppTheme"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAppThemeVersionActivateResponse: {
+            data: components["schemas"]["AppTheme"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAppThemeVersionCreateResponse: {
+            data: components["schemas"]["AppThemeVersion"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAppThemeVersionListResponse: {
+            data: components["schemas"]["AdminAppThemeVersionListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAppThemeVersionListResponseData: {
+            pagination: components["schemas"]["AdminAppThemeVersionListResponsePagination"];
+            results: components["schemas"]["AppThemeVersion"][];
+        };
+        AdminAppThemeVersionListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
         };
         AdminArianDuplicatesResponse: {
             data: components["schemas"]["AdminArianDuplicatesResponseData"];
@@ -2785,6 +4175,22 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminAuctionInviteOnlyResponse: {
+            data: components["schemas"]["AuctionInviteOnly"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAuctionInviteOnlySetResponse: {
+            data: components["schemas"]["AuctionInviteOnly"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminAuctionListResponse: {
             data: components["schemas"]["AdminAuctionListResponseData"];
             /** @default true */
@@ -2848,6 +4254,26 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        AdminAuditLogListResponse: {
+            data: components["schemas"]["AdminAuditLogListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAuditLogListResponseData: {
+            pagination: components["schemas"]["AdminAuditLogListResponsePagination"];
+            results: components["schemas"]["AuditLog"][];
+        };
+        AdminAuditLogListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
         };
         AdminCampaignAnalyticsCreateResponse: {
             data: components["schemas"]["CampaignAnalytics"];
@@ -2915,6 +4341,178 @@ export interface components {
         };
         AdminCampaignUpdateResponse: {
             data: components["schemas"]["MarketingCampaign"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminChecklistCreateResponse: {
+            data: components["schemas"]["ChecklistTemplate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminChecklistDetailResponse: {
+            data: components["schemas"]["ChecklistTemplate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminChecklistListResponse: {
+            data: components["schemas"]["AdminChecklistListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminChecklistListResponseData: {
+            pagination: components["schemas"]["AdminChecklistListResponsePagination"];
+            results: components["schemas"]["ChecklistTemplate"][];
+        };
+        AdminChecklistListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminChecklistUpdateResponse: {
+            data: components["schemas"]["ChecklistTemplate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorCreateResponse: {
+            data: components["schemas"]["CollectorAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorDetailResponse: {
+            data: components["schemas"]["CollectorAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorListResponse: {
+            data: components["schemas"]["AdminCollectorListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorListResponseData: {
+            pagination: components["schemas"]["AdminCollectorListResponsePagination"];
+            results: components["schemas"]["CollectorAdmin"][];
+        };
+        AdminCollectorListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminCollectorLoginEventListResponse: {
+            data: components["schemas"]["AdminCollectorLoginEventListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorLoginEventListResponseData: {
+            pagination: components["schemas"]["AdminCollectorLoginEventListResponsePagination"];
+            results: components["schemas"]["CollectorLoginEvent"][];
+        };
+        AdminCollectorLoginEventListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminCollectorSelectionCreateResponse: {
+            data: components["schemas"]["CollectorSelection"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorSelectionDetailResponse: {
+            data: components["schemas"]["CollectorSelection"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorSelectionListResponse: {
+            data: components["schemas"]["AdminCollectorSelectionListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorSelectionListResponseData: {
+            pagination: components["schemas"]["AdminCollectorSelectionListResponsePagination"];
+            results: components["schemas"]["CollectorSelection"][];
+        };
+        AdminCollectorSelectionListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminCollectorSelectionUpdateResponse: {
+            data: components["schemas"]["CollectorSelection"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminCollectorUpdateResponse: {
+            data: components["schemas"]["CollectorAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminDashboardSummaryResponse: {
+            data?: {
+                [key: string]: unknown;
+            };
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminDataHealthResponse: {
+            data?: {
+                [key: string]: unknown;
+            };
             /** @default true */
             success: boolean;
             message: string;
@@ -3211,6 +4809,74 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminImportBatchConfirmResponse: {
+            data: components["schemas"]["ArtworkImportBatch"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminImportBatchCreateResponse: {
+            data: components["schemas"]["ArtworkImportBatch"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminImportBatchDetailResponse: {
+            data: components["schemas"]["ArtworkImportBatch"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminImportBatchDiscardResponse: {
+            data: components["schemas"]["ArtworkImportBatch"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminImportBatchListResponse: {
+            data: components["schemas"]["AdminImportBatchListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminImportBatchListResponseData: {
+            pagination: components["schemas"]["AdminImportBatchListResponsePagination"];
+            results: components["schemas"]["ArtworkImportBatchList"][];
+        };
+        AdminImportBatchListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminImportRowRejectResponse: {
+            data: components["schemas"]["ArtworkImportRow"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminImportRowUpdateResponse: {
+            data: components["schemas"]["ArtworkImportRow"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminLedgerAttachmentCreateResponse: {
             data: components["schemas"]["LedgerAttachment"];
             /** @default true */
@@ -3491,6 +5157,244 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminMembershipCodeCreateResponse: {
+            data: components["schemas"]["MembershipCodeAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminMembershipCodeDetailResponse: {
+            data: components["schemas"]["MembershipCodeAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminMembershipCodeListResponse: {
+            data: components["schemas"]["AdminMembershipCodeListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminMembershipCodeListResponseData: {
+            pagination: components["schemas"]["AdminMembershipCodeListResponsePagination"];
+            results: components["schemas"]["MembershipCodeAdmin"][];
+        };
+        AdminMembershipCodeListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminMembershipCodeRenewResponse: {
+            data: components["schemas"]["MembershipCodeAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminMembershipCodeUpdateResponse: {
+            data: components["schemas"]["MembershipCodeAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPackageCreateResponse: {
+            data: components["schemas"]["PackageTemplate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPackageDetailResponse: {
+            data: components["schemas"]["PackageTemplate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPackageListResponse: {
+            data: components["schemas"]["AdminPackageListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPackageListResponseData: {
+            pagination: components["schemas"]["AdminPackageListResponsePagination"];
+            results: components["schemas"]["PackageTemplate"][];
+        };
+        AdminPackageListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminPackageUpdateResponse: {
+            data: components["schemas"]["PackageTemplate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPartnerOrgCreateResponse: {
+            data: components["schemas"]["PartnerOrg"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPartnerOrgDetailResponse: {
+            data: components["schemas"]["PartnerOrg"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPartnerOrgListResponse: {
+            data: components["schemas"]["AdminPartnerOrgListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminPartnerOrgListResponseData: {
+            pagination: components["schemas"]["AdminPartnerOrgListResponsePagination"];
+            results: components["schemas"]["PartnerOrg"][];
+        };
+        AdminPartnerOrgListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminPartnerOrgUpdateResponse: {
+            data: components["schemas"]["PartnerOrg"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectAttachmentListResponse: {
+            data: components["schemas"]["AdminProjectAttachmentListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectAttachmentListResponseData: {
+            pagination: components["schemas"]["AdminProjectAttachmentListResponsePagination"];
+            results: components["schemas"]["ProjectAttachment"][];
+        };
+        AdminProjectAttachmentListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminProjectAttachmentUploadResponse: {
+            data: components["schemas"]["ProjectAttachment"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectCreateResponse: {
+            data: components["schemas"]["Project"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectDashboardResponse: {
+            data: components["schemas"]["ProjectDashboardSummary"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectDetailResponse: {
+            data: components["schemas"]["Project"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectListResponse: {
+            data: components["schemas"]["AdminProjectListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectListResponseData: {
+            pagination: components["schemas"]["AdminProjectListResponsePagination"];
+            results: components["schemas"]["Project"][];
+        };
+        AdminProjectListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminProjectReportsResponse: {
+            data?: {
+                [key: string]: unknown;
+            };
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectStageResponse: {
+            data: components["schemas"]["Project"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectUpdateResponse: {
+            data: components["schemas"]["Project"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminRegistrationListResponse: {
             data: components["schemas"]["AdminRegistrationListResponseData"];
             /** @default true */
@@ -3635,6 +5539,50 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminServiceCatalogCreateResponse: {
+            data: components["schemas"]["ServiceCatalogItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminServiceCatalogDetailResponse: {
+            data: components["schemas"]["ServiceCatalogItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminServiceCatalogListResponse: {
+            data: components["schemas"]["AdminServiceCatalogListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminServiceCatalogListResponseData: {
+            pagination: components["schemas"]["AdminServiceCatalogListResponsePagination"];
+            results: components["schemas"]["ServiceCatalogItem"][];
+        };
+        AdminServiceCatalogListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminServiceCatalogUpdateResponse: {
+            data: components["schemas"]["ServiceCatalogItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminSettlementResponse: {
             data: components["schemas"]["SettlementWorksheet"];
             /** @default true */
@@ -3671,6 +5619,50 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        AdminTeamUserCreateResponse: {
+            data: components["schemas"]["TeamUserCreateResponse"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminTeamUserDetailResponse: {
+            data: components["schemas"]["TeamUserAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminTeamUserListResponse: {
+            data: components["schemas"]["AdminTeamUserListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminTeamUserListResponseData: {
+            pagination: components["schemas"]["AdminTeamUserListResponsePagination"];
+            results: components["schemas"]["TeamUserAdmin"][];
+        };
+        AdminTeamUserListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminTeamUserUpdateResponse: {
+            data: components["schemas"]["TeamUserAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminUpdateApproveResponse: {
             data: components["schemas"]["GalleryUpdate"];
             /** @default true */
@@ -3706,6 +5698,48 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /**
+         * @description Also served, as-is, from the public endpoint (``AllowAny``) — see
+         *     ``apps.core.models.AppTheme``'s docstring on the old panel's identical
+         *     public-read/admin-write split. Nothing on this model is confidential.
+         */
+        AppTheme: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly slug: string;
+            readonly theme: unknown;
+            readonly updated_by: components["schemas"]["_TeamUserActor"] | null;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        AppThemeResponse: {
+            data: components["schemas"]["AppTheme"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AppThemeUpdate: {
+            theme: unknown;
+        };
+        AppThemeVersion: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly name: string;
+            readonly theme: unknown;
+            readonly created_by: components["schemas"]["_TeamUserActor"] | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        AppThemeVersionCreate: {
+            /** @default  */
+            name: string;
         };
         ArianReceiptReview: {
             /** Payment purpose */
@@ -3960,6 +5994,81 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        ArtworkImportBatch: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly source: components["schemas"]["ArtworkImportBatchSourceEnum"];
+            readonly status: components["schemas"]["ArtworkImportBatchStatusEnum"];
+            /** Format: uuid */
+            readonly created_by: string | null;
+            readonly rows: components["schemas"]["ArtworkImportRow"][];
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        ArtworkImportBatchCreate: {
+            source: components["schemas"]["ArtworkImportBatchSourceEnum"];
+            rows: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * @description List view omits the (potentially large) nested rows — see
+         *     ArtworkImportBatchSerializer for the detail shape.
+         */
+        ArtworkImportBatchList: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly source: components["schemas"]["ArtworkImportBatchSourceEnum"];
+            readonly status: components["schemas"]["ArtworkImportBatchStatusEnum"];
+            /** Format: uuid */
+            readonly created_by: string | null;
+            readonly row_count: number;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `csv` - CSV file
+         *     * `pdf` - PDF catalogue
+         *     * `paste` - Paste data
+         *     * `images` - Images
+         * @enum {string}
+         */
+        ArtworkImportBatchSourceEnum: "csv" | "pdf" | "paste" | "images";
+        /**
+         * @description * `pending` - Pending review
+         *     * `confirmed` - Confirmed
+         *     * `discarded` - Discarded
+         * @enum {string}
+         */
+        ArtworkImportBatchStatusEnum: "pending" | "confirmed" | "discarded";
+        ArtworkImportRow: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly raw_data: unknown;
+            resolved_data?: unknown;
+            readonly status: components["schemas"]["ArtworkImportRowStatusEnum"];
+            readonly error: string;
+            /** Format: uuid */
+            readonly created_artwork: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `pending` - Pending review
+         *     * `confirmed` - Confirmed
+         *     * `rejected` - Rejected
+         *     * `error` - Failed validation
+         * @enum {string}
+         */
+        ArtworkImportRowStatusEnum: "pending" | "confirmed" | "rejected" | "error";
         ArtworkListResponse: {
             data: components["schemas"]["ArtworkListResponseData"];
             /** @default true */
@@ -3973,6 +6082,101 @@ export interface components {
             results: components["schemas"]["ArtworkCollector"][];
         };
         ArtworkListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        /**
+         * @description Only for the collector "my selections" endpoint (docs/TASKLIST.md
+         *     Phase 24) — every row there is already gated to a grant the requesting
+         *     collector holds, so exposing which gate (`selected`/`private_selection`)
+         *     it came through is safe here. The base ArtworkCollectorSerializer still
+         *     omits `visibility` everywhere else per the field-tier rule.
+         */
+        ArtworkSelection: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly artist: components["schemas"]["ArtistCollector"];
+            readonly title: string;
+            readonly year: number | null;
+            readonly medium: string;
+            readonly material: string;
+            readonly dimensions: string;
+            readonly edition: string;
+            readonly city: string;
+            /** Format: decimal */
+            readonly price_amount: string | null;
+            readonly currency: (components["schemas"]["CurrencyEnum"] | components["schemas"]["NullEnum"]) | null;
+            readonly price_type: components["schemas"]["PriceTypeEnum"];
+            readonly availability_status: components["schemas"]["ArtworkAvailabilityStatusEnum"];
+            readonly public_description: string;
+            readonly tags: unknown;
+            readonly images: components["schemas"]["ArtworkImage"][];
+            readonly allowed_actions: string[];
+            readonly is_saved: boolean;
+            /** Format: date-time */
+            readonly saved_at: string | null;
+            readonly refine_tags: {
+                [key: string]: string[];
+            };
+            readonly visibility: components["schemas"]["ArtworkVisibilityEnum"];
+        };
+        /**
+         * @description Admin sub-resource output — grant id + which collector, not the full
+         *     artwork (the caller already knows the artwork from the URL).
+         */
+        ArtworkSelectionGrant: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly collector: string;
+            readonly collector_display_name: string;
+            readonly note: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Input for granting a collector access — admin picks the collector by
+         *     id; the artwork comes from the URL.
+         */
+        ArtworkSelectionGrantCreate: {
+            /** Format: uuid */
+            collector: string;
+            /** @default  */
+            note: string;
+        };
+        ArtworkSelectionGrantCreateResponse: {
+            data: components["schemas"]["ArtworkSelectionGrant"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ArtworkSelectionGrantListResponse: {
+            data: components["schemas"]["ArtworkSelectionGrant"][];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ArtworkSelectionListResponse: {
+            data: components["schemas"]["ArtworkSelectionListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ArtworkSelectionListResponseData: {
+            pagination: components["schemas"]["ArtworkSelectionListResponsePagination"];
+            results: components["schemas"]["ArtworkSelection"][];
+        };
+        ArtworkSelectionListResponsePagination: {
             page: number;
             per_page: number;
             total_pages: number;
@@ -4086,6 +6290,7 @@ export interface components {
              * @description When true, a collector must accept the Conditions of Sale to register a paddle.
              */
             readonly terms_required: boolean;
+            readonly invite_only: boolean;
             readonly lots_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
@@ -4111,6 +6316,23 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /**
+         * @description Admin-only view of an auction's invite list (Phase 35) — never on the
+         *     base ``AuctionSerializer``, which every collector viewer reads: showing
+         *     every other collector's identity there would be a real privacy leak.
+         */
+        AuctionInviteOnly: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly invite_only: boolean;
+            readonly invited_collectors: components["schemas"]["_AuctionInvitedCollector"][];
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+        };
+        AuctionInviteOnlyUpdate: {
+            invite_only: boolean;
+            invited_collector_ids?: string[];
         };
         AuctionListResponse: {
             data: components["schemas"]["AuctionListResponseData"];
@@ -4276,6 +6498,22 @@ export interface components {
          * @enum {string}
          */
         AuctionStatusEnum: "draft" | "scheduled" | "live" | "closed" | "cancelled";
+        /**
+         * @description Phase 33 — read-only, matches ``AuditLogAdmin``'s own discipline
+         *     (never editable via any surface, Django admin or API).
+         */
+        AuditLog: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly actor: components["schemas"]["_TeamUserActor"] | null;
+            readonly action: string;
+            readonly entity_type: string;
+            /** Format: uuid */
+            readonly entity_id: string;
+            readonly changes: unknown;
+            /** Format: date-time */
+            readonly at: string;
+        };
         BatchPublishResponse: {
             data: components["schemas"]["RecommendationBatch"];
             /** @default true */
@@ -4435,6 +6673,19 @@ export interface components {
          * @enum {string}
          */
         ChannelEnum: "instagram" | "telegram" | "whatsapp" | "email" | "event" | "art_fair" | "referral" | "press" | "paid_ads" | "website" | "other";
+        ChecklistTemplate: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            stage?: string;
+            items?: unknown;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         CollectorActivity: {
             /** Format: uuid */
             readonly id: string;
@@ -4445,8 +6696,56 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description Admin Collector Activity feed (the old panel's Collector Activity
+         *     tab) — nests collector/artwork like RequestAdminSerializer (G-F1-7),
+         *     reusing the same nested shapes rather than bare ids. Requires the view
+         *     to select_related("collector", "artwork__artist").
+         */
+        CollectorActivityAdmin: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly collector: components["schemas"]["_RequestAdminCollector"];
+            readonly kind: components["schemas"]["ActivityKindEnum"];
+            readonly artwork: components["schemas"]["_RequestAdminArtwork"] | null;
+            readonly metadata: unknown;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description All fields — this is an admin-only surface (matches the old panel's
+         *     Collectors tab), no collector-tier equivalent exists or is needed.
+         */
+        CollectorAdmin: {
+            /** Format: uuid */
+            readonly id: string;
+            display_name: string;
+            full_name?: string;
+            /** Format: email */
+            email?: string;
+            phone?: string;
+            city?: string;
+            tier?: (components["schemas"]["CollectorTierEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            access_status?: components["schemas"]["AccessStatusEnum"];
+            preferences?: unknown;
+            notes?: string;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         CollectorLogin: {
             access_key: string;
+        };
+        CollectorLoginEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly access_key: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
         };
         CollectorLoginResponse: {
             data: components["schemas"]["_TokenPair"];
@@ -4533,6 +6832,43 @@ export interface components {
          * @enum {string}
          */
         CollectorPublishedRecommendationStatusEnum: "published" | "archived" | "dismissed";
+        CollectorQuestionnaire: {
+            answers?: unknown;
+            /** Format: date-time */
+            readonly submitted_at: string;
+        };
+        CollectorSelection: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            /** @description Shown to the invited collector. */
+            note?: string;
+            readonly artworks: components["schemas"]["_CollectorSelectionArtwork"][];
+            readonly collectors: components["schemas"]["_CollectorSelectionCollector"][];
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        CollectorSelectionCreate: {
+            name: string;
+            /** @default  */
+            note: string;
+            artwork_ids?: string[];
+            collector_ids?: string[];
+        };
+        /**
+         * @description * `vip` - VIP
+         *     * `active` - Active
+         *     * `new` - New
+         *     * `institutional` - Institutional
+         * @enum {string}
+         */
+        CollectorTierEnum: "vip" | "active" | "new" | "institutional";
         /**
          * @description * `pct` - Percentage
          *     * `fixed` - Fixed amount
@@ -4827,6 +7163,13 @@ export interface components {
         ExhibitionSubmit: {
             service_keys: string[];
         };
+        /**
+         * @description * `1w` - 1w
+         *     * `1m` - 1m
+         *     * `none` - none
+         * @enum {string}
+         */
+        ExtendEnum: "1w" | "1m" | "none";
         FeatureSettings: {
             /** Format: uuid */
             readonly id: string;
@@ -5551,6 +7894,66 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /**
+         * @description Nests issued_by/redeemed_by (id + name) instead of bare ids, matching
+         *     the G-F1-7 admin-feed convention used elsewhere. Requires the view to
+         *     select_related("issued_by", "redeemed_by").
+         */
+        MembershipCodeAdmin: {
+            /** Format: uuid */
+            readonly id: string;
+            code: string;
+            name?: string;
+            plan: components["schemas"]["CollectorTierEnum"];
+            status?: components["schemas"]["MembershipCodeStatusEnum"];
+            /** Format: date */
+            expiry?: string | null;
+            /** @description Manual-outreach contact — payment/renewal happens over WhatsApp, never in-app. */
+            whatsapp?: string;
+            /**
+             * Admin notes
+             * @description Private — never surfaced to the collector.
+             */
+            notes?: string;
+            readonly issued_by: components["schemas"]["_MembershipIssuedBy"] | null;
+            readonly redeemed_by: components["schemas"]["_MembershipRedeemedBy"] | null;
+            /** Format: date-time */
+            readonly redeemed_at: string | null;
+            readonly is_expired: boolean;
+            readonly is_redeemed: boolean;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description ``code`` is optional — a blank value auto-generates one
+         *     (``MembershipCodeAdminService._generate_code``), matching the old desk's
+         *     "Generate" button behaviour while still allowing an admin-chosen code.
+         */
+        MembershipCodeCreate: {
+            /** @default  */
+            code: string;
+            /** @default  */
+            name: string;
+            plan: components["schemas"]["CollectorTierEnum"];
+            /** @default active */
+            status: components["schemas"]["MembershipCodeStatusEnum"];
+            /** Format: date */
+            expiry?: string | null;
+            /** @default  */
+            whatsapp: string;
+            /** @default  */
+            notes: string;
+        };
+        /**
+         * @description * `active` - Active
+         *     * `inactive` - Inactive
+         * @enum {string}
+         */
+        MembershipCodeStatusEnum: "active" | "inactive";
         MembershipRedeem: {
             code: string;
         };
@@ -5666,6 +8069,62 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        PackageTemplate: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            purpose?: string;
+            /** @description Service catalog item ids + quantities. */
+            lines?: unknown;
+            counts?: unknown;
+            onsite?: boolean;
+            team?: unknown;
+            suppliers?: unknown;
+            /** Client responsibilities */
+            client_resp?: string;
+            materials?: string;
+            /** Production timeline */
+            prod_timeline?: string;
+            /** Publication timeline */
+            pub_timeline?: string;
+            revisions?: number;
+            approval?: string;
+            usage_rights?: string;
+            archive_duration?: string;
+            addons?: unknown;
+            /**
+             * Internal pricing
+             * @description internalCost/externalCost/minFee/recFee/targetMargin — internal only, never client-facing.
+             */
+            internal?: unknown;
+            /** Deposit % */
+            deposit_pct?: number;
+            payment_stages?: unknown;
+            /** Cancellation policy */
+            cancellation?: string;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        PartnerOrg: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            kind?: string;
+            contact?: string;
+            city?: string;
+            country?: string;
+            notes?: string;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         /** @description Adds the optimistic-lock input required on every update. */
         PatchedArtistUpdate: {
             /** Format: uuid */
@@ -5683,6 +8142,9 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
             expected_version?: number;
+        };
+        PatchedArtworkImportRowUpdate: {
+            resolved_data?: unknown;
         };
         /**
          * @description Adds the optimistic-lock input required on every update.
@@ -5810,6 +8272,49 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
         };
+        PatchedChecklistTemplateUpdate: {
+            /** Format: uuid */
+            readonly id?: string;
+            name?: string;
+            stage?: string;
+            items?: unknown;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+            expected_version?: number;
+        };
+        PatchedCollectorSelectionUpdate: {
+            name?: string;
+            note?: string;
+            artwork_ids?: string[];
+            collector_ids?: string[];
+            expected_version?: number;
+        };
+        /** @description Adds the optimistic-lock input required on every update. */
+        PatchedCollectorUpdate: {
+            /** Format: uuid */
+            readonly id?: string;
+            display_name?: string;
+            full_name?: string;
+            /** Format: email */
+            email?: string;
+            phone?: string;
+            city?: string;
+            tier?: (components["schemas"]["CollectorTierEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            access_status?: components["schemas"]["AccessStatusEnum"];
+            preferences?: unknown;
+            notes?: string;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+            expected_version?: number;
+        };
         PatchedDocumentUpdate: {
             title?: string;
             ref?: string;
@@ -5901,6 +8406,76 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
+        };
+        /** @description All fields optional (partial update) + the optimistic-lock input. */
+        PatchedMembershipCodeUpdate: {
+            code?: string;
+            name?: string;
+            plan?: components["schemas"]["CollectorTierEnum"];
+            status?: components["schemas"]["MembershipCodeStatusEnum"];
+            /** Format: date */
+            expiry?: string | null;
+            whatsapp?: string;
+            notes?: string;
+            expected_version?: number;
+        };
+        PatchedPackageTemplateUpdate: {
+            /** Format: uuid */
+            readonly id?: string;
+            name?: string;
+            purpose?: string;
+            /** @description Service catalog item ids + quantities. */
+            lines?: unknown;
+            counts?: unknown;
+            onsite?: boolean;
+            team?: unknown;
+            suppliers?: unknown;
+            /** Client responsibilities */
+            client_resp?: string;
+            materials?: string;
+            /** Production timeline */
+            prod_timeline?: string;
+            /** Publication timeline */
+            pub_timeline?: string;
+            revisions?: number;
+            approval?: string;
+            usage_rights?: string;
+            archive_duration?: string;
+            addons?: unknown;
+            /**
+             * Internal pricing
+             * @description internalCost/externalCost/minFee/recFee/targetMargin — internal only, never client-facing.
+             */
+            internal?: unknown;
+            /** Deposit % */
+            deposit_pct?: number;
+            payment_stages?: unknown;
+            /** Cancellation policy */
+            cancellation?: string;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+            expected_version?: number;
+        };
+        PatchedPartnerOrgUpdate: {
+            /** Format: uuid */
+            readonly id?: string;
+            name?: string;
+            kind?: string;
+            contact?: string;
+            city?: string;
+            country?: string;
+            notes?: string;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+            expected_version?: number;
         };
         PatchedPrivateDealWrite: {
             /** Deal title */
@@ -6006,6 +8581,49 @@ export interface components {
             cost_other_currency?: string;
             amount_received_currency?: string;
         };
+        PatchedProjectUpdate: {
+            name?: string;
+            /** Format: uuid */
+            client_partner_org?: string | null;
+            client_name?: string;
+            /** Main contact */
+            contact?: string;
+            partner_org_ids?: string[];
+            /** @description {partner_org_id: role} */
+            partner_roles?: unknown;
+            category?: components["schemas"]["ProjectCategoryEnum"];
+            /** Venue / show */
+            venue?: string;
+            city?: string;
+            country?: string;
+            /** Format: date */
+            start_date?: string | null;
+            /** Format: date */
+            end_date?: string | null;
+            scope?: string;
+            /** Darz responsibilities */
+            darz_resp?: string;
+            /** Partner responsibilities */
+            partner_resp?: string;
+            timeline?: string;
+            internal_deadlines?: string;
+            client_deadlines?: string;
+            team?: unknown;
+            suppliers?: unknown;
+            /** Format: uuid */
+            applied_package?: string | null;
+            /** @description [{id, text, due, owner, done, depId}] */
+            deliverables?: unknown;
+            /** @description internalCost/externalCost/fee/clientPrice (each {amount, currency}), payments[], invoiceStatus. */
+            money?: unknown;
+            links?: unknown;
+            media_links?: unknown;
+            results?: string;
+            report?: string;
+            internal_notes?: string;
+            archived?: boolean;
+            expected_version?: number;
+        };
         PatchedRecommendation: {
             /** Format: uuid */
             readonly id?: string;
@@ -6066,6 +8684,34 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
+            expected_version?: number;
+        };
+        PatchedServiceCatalogItemUpdate: {
+            /** Format: uuid */
+            readonly id?: string;
+            name?: string;
+            category?: components["schemas"]["ProjectServiceCategoryEnum"];
+            unit?: string;
+            /** Format: decimal */
+            internal_cost?: string;
+            /** Format: decimal */
+            price?: string;
+            currency?: components["schemas"]["CurrencyEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+            expected_version?: number;
+        };
+        /** @description All fields optional (partial update) + the optimistic-lock input. */
+        PatchedTeamUserUpdate: {
+            /** Format: email */
+            email?: string;
+            name?: string;
+            role?: components["schemas"]["RoleEnum"];
+            is_active?: boolean;
             expected_version?: number;
         };
         /**
@@ -6485,6 +9131,174 @@ export interface components {
             cost_other_currency?: string;
             amount_received_currency?: string;
         };
+        /** @description All fields — admin-only surface, nothing confidential to split by tier. */
+        Project: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Number */
+            readonly no: string;
+            name: string;
+            readonly client_partner_org: components["schemas"]["_ProjectPartnerOrg"] | null;
+            client_name?: string;
+            /** Main contact */
+            contact?: string;
+            readonly partner_orgs: components["schemas"]["_ProjectPartnerOrg"][];
+            /** @description {partner_org_id: role} */
+            partner_roles?: unknown;
+            category?: components["schemas"]["ProjectCategoryEnum"];
+            /** Venue / show */
+            venue?: string;
+            city?: string;
+            country?: string;
+            /** Format: date */
+            start_date?: string | null;
+            /** Format: date */
+            end_date?: string | null;
+            scope?: string;
+            /** Darz responsibilities */
+            darz_resp?: string;
+            /** Partner responsibilities */
+            partner_resp?: string;
+            /** @description [{id, text, due, owner, done, depId}] */
+            deliverables?: unknown;
+            timeline?: string;
+            internal_deadlines?: string;
+            client_deadlines?: string;
+            team?: unknown;
+            suppliers?: unknown;
+            /** @description internalCost/externalCost/fee/clientPrice (each {amount, currency}), payments[], invoiceStatus. */
+            money?: unknown;
+            status?: components["schemas"]["ProjectStatusEnum"];
+            stage?: components["schemas"]["StageEnum"];
+            /**
+             * Stage sub-state
+             * @description {stage_key: {owner, start, due, deps, files, checklist, intApproved, cliApproved, notes, doneTs}}
+             */
+            stages?: unknown;
+            /** Format: uuid */
+            applied_package?: string | null;
+            links?: unknown;
+            media_links?: unknown;
+            results?: string;
+            report?: string;
+            internal_notes?: string;
+            archived?: boolean;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        ProjectAttachment: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly object_key: string;
+            /** Format: uri */
+            readonly url: string;
+            readonly label: string;
+            readonly original_name: string;
+            /** Format: uuid */
+            readonly uploaded_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ProjectAttachmentUpload: {
+            /** Format: uri */
+            file: string;
+            /** @default  */
+            label: string;
+        };
+        /**
+         * @description * `media` - Media partnership
+         *     * `exhibition` - Exhibition coverage
+         *     * `curatorial` - Curatorial
+         *     * `documentation` - Documentation
+         *     * `mixed` - Mixed
+         * @enum {string}
+         */
+        ProjectCategoryEnum: "media" | "exhibition" | "curatorial" | "documentation" | "mixed";
+        ProjectCreate: {
+            name: string;
+            /** Format: uuid */
+            client_partner_org?: string | null;
+            client_name?: string;
+            /** Main contact */
+            contact?: string;
+            partner_org_ids?: string[];
+            /** @description {partner_org_id: role} */
+            partner_roles?: unknown;
+            category?: components["schemas"]["ProjectCategoryEnum"];
+            /** Venue / show */
+            venue?: string;
+            city?: string;
+            country?: string;
+            /** Format: date */
+            start_date?: string | null;
+            /** Format: date */
+            end_date?: string | null;
+            scope?: string;
+            /** Darz responsibilities */
+            darz_resp?: string;
+            /** Partner responsibilities */
+            partner_resp?: string;
+            timeline?: string;
+            internal_deadlines?: string;
+            client_deadlines?: string;
+            team?: unknown;
+            suppliers?: unknown;
+            /** Format: uuid */
+            applied_package?: string | null;
+        };
+        ProjectDashboardSummary: {
+            active_count: number;
+            delayed_count: number;
+            awaiting_approval_count: number;
+            unpaid_count: number;
+            next_deliverables_count: number;
+            next_deliverables: {
+                [key: string]: unknown;
+            }[];
+            responsibility_by_member: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * @description * `media` - Media
+         *     * `production` - Production
+         *     * `curatorial` - Curatorial
+         *     * `other` - Other
+         * @enum {string}
+         */
+        ProjectServiceCategoryEnum: "media" | "production" | "curatorial" | "other";
+        ProjectStageUpdate: {
+            stage: components["schemas"]["StageEnum"];
+            expected_version: number;
+        };
+        /**
+         * @description * `New Lead` - New Lead
+         *     * `Under Review` - Under Review
+         *     * `Qualified` - Qualified
+         *     * `Proposal in Preparation` - Proposal in Preparation
+         *     * `Proposal Sent` - Proposal Sent
+         *     * `Negotiation` - Negotiation
+         *     * `Approved` - Approved
+         *     * `Awaiting Contract` - Awaiting Contract
+         *     * `Awaiting Deposit` - Awaiting Deposit
+         *     * `In Research` - In Research
+         *     * `In Production` - In Production
+         *     * `Internal Review` - Internal Review
+         *     * `Client Review` - Client Review
+         *     * `Scheduled` - Scheduled
+         *     * `Published` - Published
+         *     * `Reporting` - Reporting
+         *     * `Awaiting Final Payment` - Awaiting Final Payment
+         *     * `Completed` - Completed
+         *     * `Archived` - Archived
+         *     * `Cancelled` - Cancelled
+         * @enum {string}
+         */
+        ProjectStatusEnum: "New Lead" | "Under Review" | "Qualified" | "Proposal in Preparation" | "Proposal Sent" | "Negotiation" | "Approved" | "Awaiting Contract" | "Awaiting Deposit" | "In Research" | "In Production" | "Internal Review" | "Client Review" | "Scheduled" | "Published" | "Reporting" | "Awaiting Final Payment" | "Completed" | "Archived" | "Cancelled";
         PublicDocumentResponse: {
             data: components["schemas"]["Document"];
             /** @default true */
@@ -6567,11 +9381,39 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /**
+         * @description One {q, a} pair — kept as a plain Serializer (not a model) since
+         *     CollectorQuestionnaireResponse.answers is a JSONField, matching
+         *     CollectorProfileService.build()'s existing expected shape exactly.
+         */
+        QuestionnaireAnswer: {
+            q: string;
+            a: string;
+        };
+        QuestionnaireGetResponse: {
+            data: components["schemas"]["CollectorQuestionnaire"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        QuestionnaireSubmit: {
+            answers: components["schemas"]["QuestionnaireAnswer"][];
+        };
+        QuestionnaireSubmitResponse: {
+            data: components["schemas"]["CollectorQuestionnaire"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         RebuildPreferences: {
-            /** @description [{'q': question text, 'a': answer text}, ...] from the collector questionnaire. */
+            /** @description [{'q': question text, 'a': answer text}, ...] to rebuild from — omit/null to use the collector's own stored questionnaire (docs/TASKLIST.md Phase 25) instead of resupplying it. */
             answers?: {
                 [key: string]: string;
-            }[];
+            }[] | null;
         };
         RebuildPreferencesResponse: {
             data: components["schemas"]["CollectorPreference"][];
@@ -6903,6 +9745,12 @@ export interface components {
             /** @default  */
             note: string;
         };
+        /**
+         * @description * `owner` - Owner
+         *     * `standard_admin` - Standard admin
+         * @enum {string}
+         */
+        RoleEnum: "owner" | "standard_admin";
         SaleAdmin: {
             /** Format: uuid */
             readonly id: string;
@@ -7043,6 +9891,24 @@ export interface components {
          * @enum {string}
          */
         SellerPayStatusEnum: "unpaid" | "partial" | "paid";
+        ServiceCatalogItem: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            category?: components["schemas"]["ProjectServiceCategoryEnum"];
+            unit?: string;
+            /** Format: decimal */
+            internal_cost?: string;
+            /** Format: decimal */
+            price?: string;
+            currency?: components["schemas"]["CurrencyEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         SettlementWorksheet: {
             /** Format: uuid */
             readonly id: string;
@@ -7086,6 +9952,27 @@ export interface components {
          */
         SlotEnum: "image" | "invoice" | "certificate" | "agreement" | "receipt" | "shipping" | "other";
         /**
+         * @description * `lead` - Lead
+         *     * `qualification` - Qualification
+         *     * `brief` - Initial Brief
+         *     * `proposal` - Proposal
+         *     * `scopeApproval` - Scope Approval
+         *     * `contract` - Contract
+         *     * `deposit` - Deposit
+         *     * `research` - Research
+         *     * `planning` - Content Planning
+         *     * `production` - Production
+         *     * `internalReview` - Internal Review
+         *     * `clientReview` - Client Review
+         *     * `finalApproval` - Final Approval
+         *     * `publication` - Publication
+         *     * `reporting` - Reporting
+         *     * `finalPayment` - Final Payment
+         *     * `archive` - Archive
+         * @enum {string}
+         */
+        StageEnum: "lead" | "qualification" | "brief" | "proposal" | "scopeApproval" | "contract" | "deposit" | "research" | "planning" | "production" | "internalReview" | "clientReview" | "finalApproval" | "publication" | "reporting" | "finalPayment" | "archive";
+        /**
          * @description * `style` - style
          *     * `subject` - subject
          *     * `color` - color
@@ -7114,6 +10001,53 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /**
+         * @description Password is never serialized — the same discipline as
+         *     ``AccessKeyAdminSerializer``/``MembershipCodeAdminSerializer``.
+         */
+        TeamUserAdmin: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            email: string;
+            name?: string;
+            role?: components["schemas"]["RoleEnum"];
+            is_active?: boolean;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        TeamUserCreate: {
+            /** Format: email */
+            email: string;
+            /** @default  */
+            name: string;
+            role?: components["schemas"]["RoleEnum"];
+        };
+        /**
+         * @description ``password`` is returned exactly once, on creation — never persisted
+         *     in plaintext, never re-exposed by any other endpoint. Same discipline as
+         *     ``AccessKeyIssueResponseSerializer``.
+         */
+        TeamUserCreateResponse: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            email: string;
+            name?: string;
+            role?: components["schemas"]["RoleEnum"];
+            is_active?: boolean;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            password: string;
+        };
         TokenRefreshInput: {
             refresh: string;
         };
@@ -7125,9 +10059,44 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        _AccessRequestReviewer: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        _AuctionInvitedCollector: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+        };
+        _CollectorSelectionArtwork: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+        };
+        _CollectorSelectionCollector: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+        };
         _HealthData: {
             status: string;
             service: string;
+        };
+        _MembershipIssuedBy: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        _MembershipRedeemedBy: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+        };
+        _ProjectPartnerOrg: {
+            /** Format: uuid */
+            id: string;
+            name: string;
         };
         _RequestAdminArtist: {
             /** Format: uuid */
@@ -7148,6 +10117,16 @@ export interface components {
             /** Format: uuid */
             id: string;
             display_name: string;
+        };
+        /**
+         * @description Matches this project's established nested-actor shape (e.g.
+         *     ``apps.accounts.serializers._RequestAdminCollectorSerializer``) —
+         *     ``settings.AUTH_USER_MODEL`` (TeamUser) has ``name``, not ``display_name``.
+         */
+        _TeamUserActor: {
+            /** Format: uuid */
+            id: string;
+            name: string;
         };
         _TokenPair: {
             access: string;
@@ -7872,6 +10851,221 @@ export interface operations {
             };
         };
     };
+    core_admin_app_theme_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppThemeResponse"];
+                };
+            };
+        };
+    };
+    admin_app_theme_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppThemeUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["AppThemeUpdate"];
+                "multipart/form-data": components["schemas"]["AppThemeUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppThemeUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_app_theme_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppThemeResetResponse"];
+                };
+            };
+        };
+    };
+    core_admin_app_theme_versions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppThemeVersionListResponse"];
+                };
+            };
+        };
+    };
+    admin_app_theme_versions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AppThemeVersionCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["AppThemeVersionCreate"];
+                "multipart/form-data": components["schemas"]["AppThemeVersionCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppThemeVersionCreateResponse"];
+                };
+            };
+        };
+    };
+    admin_app_theme_versions_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_app_theme_versions_activate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppThemeVersionActivateResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    admin_audit_log_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact action (e.g. create/update/delete). */
+                action?: string;
+                /** @description Filter by exact entity_type (e.g. catalog.Artwork). */
+                entity_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuditLogListResponse"];
+                };
+            };
+        };
+    };
+    app_theme_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppThemeResponse"];
+                };
+            };
+        };
+    };
     auctions_list: {
         parameters: {
             query?: never;
@@ -8095,6 +11289,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_admin_auctions_invite_only_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuctionInviteOnlyResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_admin_auctions_invite_only_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuctionInviteOnlyUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["AuctionInviteOnlyUpdate"];
+                "multipart/form-data": components["schemas"]["AuctionInviteOnlyUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuctionInviteOnlySetResponse"];
+                };
             };
             404: {
                 headers: {
@@ -8735,6 +11993,836 @@ export interface operations {
             };
         };
     };
+    auth_access_requests_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessRequestCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["AccessRequestCreate"];
+                "multipart/form-data": components["schemas"]["AccessRequestCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessRequestCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_access_keys_extend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessKeyExtend"];
+                "application/x-www-form-urlencoded": components["schemas"]["AccessKeyExtend"];
+                "multipart/form-data": components["schemas"]["AccessKeyExtend"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessKeyExtendResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_access_keys_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessKeyRevokeResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_access_requests_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact status (default: pending). */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessRequestListResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_access_requests_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AccessRequestApprove"];
+                "application/x-www-form-urlencoded": components["schemas"]["AccessRequestApprove"];
+                "multipart/form-data": components["schemas"]["AccessRequestApprove"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessRequestApproveResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_access_requests_decline_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessRequestDeclineResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    accounts_admin_collectors_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact access_status. */
+                access_status?: string;
+                /** @description name | -name | created | -created (default: -created). */
+                ordering?: string;
+                /** @description Case-insensitive match on display_name/full_name/email/phone. */
+                search?: string;
+                /** @description Filter by exact tier. */
+                tier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorListResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_collectors_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectorAdmin"];
+                "application/x-www-form-urlencoded": components["schemas"]["CollectorAdmin"];
+                "multipart/form-data": components["schemas"]["CollectorAdmin"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    accounts_admin_access_keys_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collector_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessKeyListResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_collectors_access_keys_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collector_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AccessKeyIssue"];
+                "application/x-www-form-urlencoded": components["schemas"]["AccessKeyIssue"];
+                "multipart/form-data": components["schemas"]["AccessKeyIssue"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessKeyIssueResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_collectors_login_events_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collector_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorLoginEventListResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_collectors_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_collectors_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_collectors_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCollectorUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCollectorUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedCollectorUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    accounts_admin_membership_codes_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact plan. */
+                plan?: string;
+                /** @description Case-insensitive match on code/name/whatsapp. */
+                search?: string;
+                /** @description Filter by exact status. */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMembershipCodeListResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_membership_codes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipCodeCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["MembershipCodeCreate"];
+                "multipart/form-data": components["schemas"]["MembershipCodeCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMembershipCodeCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_membership_codes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMembershipCodeDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_membership_codes_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_membership_codes_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedMembershipCodeUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedMembershipCodeUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedMembershipCodeUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMembershipCodeUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_membership_codes_renew_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMembershipCodeRenewResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    accounts_admin_team_users_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact role. */
+                role?: string;
+                /** @description Case-insensitive match on name/email. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTeamUserListResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_team_users_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamUserCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["TeamUserCreate"];
+                "multipart/form-data": components["schemas"]["TeamUserCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTeamUserCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_team_users_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTeamUserDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_team_users_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_admin_team_users_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTeamUserUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTeamUserUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedTeamUserUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTeamUserUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     auth_collector_login_create: {
         parameters: {
             query?: never;
@@ -9254,6 +13342,107 @@ export interface operations {
             };
         };
     };
+    catalog_admin_artworks_selection_grants_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artwork_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtworkSelectionGrantListResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_artworks_selection_grants_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artwork_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArtworkSelectionGrantCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ArtworkSelectionGrantCreate"];
+                "multipart/form-data": components["schemas"]["ArtworkSelectionGrantCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtworkSelectionGrantCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_artworks_selection_grants_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artwork_pk: string;
+                grant_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     catalog_admin_artworks_retrieve: {
         parameters: {
             query?: never;
@@ -9463,6 +13652,230 @@ export interface operations {
             };
         };
     };
+    catalog_admin_data_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDataHealthResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_import_batches_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImportBatchListResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_import_batches_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArtworkImportBatchCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ArtworkImportBatchCreate"];
+                "multipart/form-data": components["schemas"]["ArtworkImportBatchCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImportBatchCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_import_batches_rows_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_pk: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedArtworkImportRowUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedArtworkImportRowUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedArtworkImportRowUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImportRowUpdateResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_import_batches_rows_reject_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_pk: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImportRowRejectResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_import_batches_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImportBatchDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_import_batches_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImportBatchConfirmResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_import_batches_discard_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImportBatchDiscardResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     catalog_artists_list: {
         parameters: {
             query?: {
@@ -9629,6 +14042,25 @@ export interface operations {
             };
         };
     };
+    catalog_artworks_selections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtworkSelectionListResponse"];
+                };
+            };
+        };
+    };
     catalog_legacy_lookup: {
         parameters: {
             query: {
@@ -9687,6 +14119,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_activity_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by artwork id. */
+                artwork?: string;
+                /** @description Filter by collector id. */
+                collector?: string;
+                /** @description Filter by exact kind. */
+                kind?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminActivityListResponse"];
                 };
             };
         };
@@ -9854,6 +14312,166 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_selections_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorSelectionListResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_selections_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectorSelectionCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["CollectorSelectionCreate"];
+                "multipart/form-data": components["schemas"]["CollectorSelectionCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorSelectionCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_selections_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorSelectionDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_selections_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_admin_selections_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCollectorSelectionUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCollectorSelectionUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedCollectorSelectionUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorSelectionUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10114,6 +14732,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    dashboard_admin_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDashboardSummaryResponse"];
                 };
             };
         };
@@ -12445,6 +17082,1008 @@ export interface operations {
             };
         };
     };
+    projects_admin_checklists_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminChecklistListResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_checklists_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChecklistTemplate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChecklistTemplate"];
+                "multipart/form-data": components["schemas"]["ChecklistTemplate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminChecklistCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_checklists_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminChecklistDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_checklists_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_checklists_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedChecklistTemplateUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedChecklistTemplateUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedChecklistTemplateUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminChecklistUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_packages_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageListResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_packages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PackageTemplate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PackageTemplate"];
+                "multipart/form-data": components["schemas"]["PackageTemplate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_packages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_packages_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_packages_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPackageTemplateUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPackageTemplateUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedPackageTemplateUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_partners_list: {
+        parameters: {
+            query?: {
+                /** @description Match on name/kind/city/country. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPartnerOrgListResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_partners_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartnerOrg"];
+                "application/x-www-form-urlencoded": components["schemas"]["PartnerOrg"];
+                "multipart/form-data": components["schemas"]["PartnerOrg"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPartnerOrgCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_partners_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPartnerOrgDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_partners_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_partners_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPartnerOrgUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPartnerOrgUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedPartnerOrgUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPartnerOrgUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact archived (true/false). */
+                archived?: string;
+                /** @description Filter by exact category. */
+                category?: string;
+                /** @description created | -created | name | -name (default: -created). */
+                ordering?: string;
+                /** @description Match on name/no/client_name/venue. */
+                search?: string;
+                /** @description Filter by exact stage. */
+                stage?: string;
+                /** @description Filter by exact status. */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectListResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProjectCreate"];
+                "multipart/form-data": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedProjectUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProjectUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedProjectUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_stage_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectStageUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProjectStageUpdate"];
+                "multipart/form-data": components["schemas"]["ProjectStageUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectStageResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_project_attachments_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectAttachmentListResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_attachments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ProjectAttachmentUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProjectAttachmentUpload"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectAttachmentUploadResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_attachments_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_dashboard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectDashboardResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_reports_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectReportsResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_service_catalog_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact category. */
+                category?: string;
+                /** @description Match on name. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceCatalogListResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_service_catalog_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceCatalogItem"];
+                "application/x-www-form-urlencoded": components["schemas"]["ServiceCatalogItem"];
+                "multipart/form-data": components["schemas"]["ServiceCatalogItem"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceCatalogCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_service_catalog_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceCatalogDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_service_catalog_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_service_catalog_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedServiceCatalogItemUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedServiceCatalogItemUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedServiceCatalogItemUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceCatalogUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     recommendations_admin_artworks_tags_retrieve: {
         parameters: {
             query?: never;
@@ -12947,6 +18586,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_questionnaire_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionnaireGetResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_questionnaire_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionnaireSubmit"];
+                "application/x-www-form-urlencoded": components["schemas"]["QuestionnaireSubmit"];
+                "multipart/form-data": components["schemas"]["QuestionnaireSubmit"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionnaireSubmitResponse"];
                 };
             };
         };

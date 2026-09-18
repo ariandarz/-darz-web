@@ -8,6 +8,7 @@
 import { ApiClient } from './ApiClient';
 import { AuthSession } from './AuthSession';
 import {
+  AdminAccountsService,
   AuctionService,
   AuthService,
   CatalogService,
@@ -52,6 +53,7 @@ export class DarzApi {
   readonly crm: CrmService;
   readonly auctions: AuctionService;
   readonly recommendations: RecommendationService;
+  readonly adminAccounts: AdminAccountsService;
   readonly dashboard: DashboardService;
   readonly options: OptionsService;
 
@@ -63,6 +65,7 @@ export class DarzApi {
     this.crm = new CrmService(this.client);
     this.auctions = new AuctionService(this.client);
     this.recommendations = new RecommendationService(this.client);
+    this.adminAccounts = new AdminAccountsService(this.client);
     this.dashboard = new DashboardService(this.client);
     this.options = new OptionsService(this.client);
   }

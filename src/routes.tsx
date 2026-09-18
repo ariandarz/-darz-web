@@ -27,7 +27,11 @@ import { ArtworkCacheProvider } from './features/catalogue/ArtworkCacheProvider'
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
+import { AccessRequestsPage } from './features/admin/AccessRequestsPage';
 import { AdminChatPage } from './features/admin/AdminChatPage';
+import { CollectorDetailPage } from './features/admin/CollectorDetailPage';
+import { CollectorsPage } from './features/admin/CollectorsPage';
+import { RequireOwner } from './features/admin/RequireOwner';
 import { AdminShell } from './features/admin/AdminShell';
 import { AdminThreadPage } from './features/admin/AdminThreadPage';
 import { DashboardPage } from './features/admin/DashboardPage';
@@ -246,6 +250,19 @@ export function AppRoutes() {
         <Route path="/admin/requests" element={<AdminRequestsPage />} />
         <Route path="/admin/chat" element={<AdminChatPage />} />
         <Route path="/admin/chat/:id" element={<AdminThreadPage />} />
+        <Route path="/admin/collectors" element={<CollectorsPage />} />
+        <Route path="/admin/collectors/:id" element={<CollectorDetailPage />} />
+        {/* owner-only (`OWNER_ONLY` has `system`): the nav hides the tab from a
+            standard admin and RequireOwner answers a typed URL with the old
+            panel's own refusal card (:33116) rather than a redirect. */}
+        <Route
+          path="/admin/access-requests"
+          element={
+            <RequireOwner title="Access Requests">
+              <AccessRequestsPage />
+            </RequireOwner>
+          }
+        />
         {/* An unknown `/admin/...` clamps to the desk, not to the collector
             Market the global catch-all would send it to: a team session has no
             business being dropped into the catalogue, and clamping is what the

@@ -5,6 +5,18 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b Step 2: Collectors + Access Requests
+
+- The Collectors roster (search/tier/access/sort = the server's own filterset), create/edit with the
+  version lock, and a per-collector workspace: record, keys (issue → shown-once, revoke, the three
+  extend buttons, expCell :33042 as a tested pure module) and the Phase 33 sign-in log. Overview
+  strip and activity sorts not ported — no aggregates served (G-COL-1/2); the owner Access desk is
+  blocked on a roster-wide key list (G-KEY-1).
+- The Access Requests review queue, owner-only (RequireOwner's first caller): verbatim cards/copy,
+  approve → tier + confirm → once-shown key, D13's note PATCHed onto the new collector, verbatim
+  decline confirm. Schema regenerated from the live backend (13,246 → 18,937 lines).
+  Live-verified full circle: an issued key signed a collector in. 190 tests (+5).
+
 ## 2026-09-18 — Phase 11b Step 1: Dashboard + Chat
 
 - Dashboard over `GET /api/dashboard/admin/summary/`, keeping :21349's rule — a tile opens exactly
