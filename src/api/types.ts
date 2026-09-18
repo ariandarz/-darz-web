@@ -188,6 +188,17 @@ export interface Choice {
  * guarded state machine. Never hardcode this lookup (CLAUDE.md). */
 export type RequestStatusByKind = Record<string, Choice[]>;
 
+/** The owner Memberships desk's row (backend Phase 30). `plan` is constrained
+ * to the COLLECTOR tiers — the backend's own deviation from the old desk's
+ * Basic/Premium/Free-Invite `MEMB_PLANS` (`darz-studio.html:33131`), made so a
+ * redeemed code sets a real `Collector.tier`. No payment processing anywhere,
+ * by design. */
+export type MembershipCodeAdmin = Schemas['MembershipCodeAdmin'];
+
+/** The owner "Team logins" desk's row (backend Phase 31). The password exists
+ * only on the create response, exactly once. */
+export type TeamUserAdmin = Schemas['TeamUserAdmin'];
+
 /** The live app theme (backend Phase 32) — `theme` is a freeform object with
  * no fixed schema on either side; the Market App decides what the keys mean
  * (`docs/ADMIN_ARCHITECTURE.md` §4: `features`, `contact`, `copy`, `social`).

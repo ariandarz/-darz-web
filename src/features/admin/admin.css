@@ -1178,3 +1178,33 @@
 .ad-verin:focus {
   border-color: var(--ink);
 }
+
+/* ---- Step 4: Memberships + Team ----------------------------------------- */
+.ad-wa {
+  color: var(--status-avail);
+  text-decoration: none;
+  font-weight: 600;
+}
+.ad-wa:hover {
+  text-decoration: underline;
+}
+.ad-code {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.ad-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+.ad-dot.is-ok {
+  background: var(--status-avail);
+}
+.ad-dot.is-expired {
+  background: var(--danger);
+}
+.ad-dot.is-never {
+  background: var(--ink3);
+}

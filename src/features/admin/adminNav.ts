@@ -376,7 +376,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '11b·2',
         'AccessKey issue/revoke/extend + login events.',
       ),
-      tab('team', 'Team', null, 'ready', '11b·4'),
+      tab('team', 'Team', '/admin/team', 'ready', '11b·4'),
       tab(
         'strategy',
         'Strategy',
@@ -444,7 +444,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'memberships',
         'Memberships',
-        null,
+        '/admin/memberships',
         'ready',
         '11b·4',
         'No payment processing anywhere, by design.',

@@ -691,15 +691,21 @@ package/faithful-port research.
       "Write a message to {name}…", "Sent to the collector ✓". AI Monitor / mode / assignee /
       conversation-status / Clear / client-side search **not ported — no backend** (G-CHAT-1/2
       recorded). Live-verified: send lands as a team bubble, seen marks on open.
-- [ ] **Memberships desk** (old panel "Memberships" tab, owner-only) — issue (auto-generates a
-      `DZ-<plan>-<6 chars>` code or accepts a custom one)/list/edit/renew (+1 month)/remove. Records
-      a WhatsApp contact + private notes for manual outreach — **no payment processing anywhere**,
-      same as the old desk's own on-screen copy. `GET/POST /api/auth/admin/membership-codes/`,
-      `GET/PATCH/DELETE .../{id}/`, `POST .../{id}/renew/`.
-- [ ] **Team logins desk** (old panel "👥 Team logins", owner-only) — issue (generates a password
-      shown once)/list/edit (name/email/role/is_active)/remove. Cannot deactivate/remove your own
-      account (the API 400s it — surface that as a disabled control, not just an error toast).
-      `GET/POST /api/auth/admin/team-users/`, `GET/PATCH/DELETE .../{id}/`.
+- [x] **Memberships desk** ✅ 2026-09-18 (old panel "Memberships" tab, owner-only,
+      `membershipsView` :33306) — issue (blank code auto-generates `DZ-<plan>-<6>`), search/plan/
+      status filters (the server's own filterset), edit (version lock), renew (+1 month from
+      max(expiry, today), server-side `membRenew`), remove behind a confirm; the wa.me WhatsApp
+      link (:33322), monospace code cell, and the dot + Active/Expired/Inactive + days status cell
+      (:33318, over `expiryParts`). "No payment processing anywhere" kept on screen. Plans are the
+      collector tiers — the backend's own Phase 30 deviation from `MEMB_PLANS`, flagged in the page
+      header. Live-verified: issue → auto code + wa.me link; renew → "29d left".
+- [x] **Team logins desk** ✅ 2026-09-18 (old panel "👥 Team logins", owner-only) — issue
+      (password shown once → `ShownOnceSecret`), search/role filter, edit name/email/role/active,
+      remove; self-deactivate/self-remove surfaced as **disabled controls with the reason**, as this
+      list asked. The old `teamView`'s surrounding Workspace suite (tasks · notes · time · contacts,
+      :19420) is client-local in the old app with no backend here — G-TEAM-1, stated on the desk.
+      Live-verified full circle: the shown-once password signed the new standard admin in, who
+      lands on /admin with no gold groups.
 - [~] **App Design** (old panel "App Design" tab) — **the switches half shipped 2026-09-18**: the
       desk (`/admin/design`, reachable from both its old groups) edits the typed `FeatureFlags`
       table and publishes it as `theme.features`; the Market App reads the public

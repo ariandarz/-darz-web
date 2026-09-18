@@ -382,4 +382,9 @@ _Append one entry per step as it merges. Newest last._
   collector's deep link clamp, then Reset and Activate both round-trip. The copy/contact/social
   keys and the old visual editors follow with their consumers (D17). The live theme was reset to
   factory after verification, so nothing stays switched off by accident overnight.
+- **2026-09-18 — Step 4 done: Memberships + Team logins**, the two owner-only CRUD desks, both
+  shown-once shaped. The membership plan set is the collector tiers (the backend's Phase 30 call);
+  the Team desk is the logins, with the old Workspace suite recorded as G-TEAM-1 rather than faked.
+  Verified: auto-generated code + wa.me link + renew math on screen; a freshly issued team password
+  signed its owner in as a standard admin with no gold groups.
 

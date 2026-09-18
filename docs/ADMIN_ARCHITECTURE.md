@@ -100,6 +100,7 @@ Everything else is waiting on UI only — **141 admin routes exist and this fron
 | **G-COL-1** | **No roster aggregates** — the old Collectors overview strip (Collectors · VIP · Active 30d · Engaged, `:32634`) was computed client-side from the full in-memory roster; the roster here is paginated and nothing serves those numbers. | The strip is not ported; the Dashboard's Collectors section carries the total/active that Phase 29 chose to serve. |
 | **G-COL-2** | **No activity/purchase rollups on the collector list** — the old "Recently active" / "Most purchases" sorts ranked by rollups the list endpoint does not carry; `ordering` serves name/created only. | The two sorts are absent, not faked. |
 | **G-KEY-1** | **No roster-wide access-key list** — keys are served per collector only, so the old owner "Access" desk (every key, expiring-soon review, logins today, `:33029`) cannot be built faithfully. | The per-collector half lives in the Collectors workspace; the standalone desk waits on a `GET /admin/access-keys/` list. |
+| **G-TEAM-1** | **The old Team tab's Workspace suite has no backend** — `teamView` (`:19420`) wraps the logins in a whole My-workspace / Team-workflow / Contacts desk (tasks, notes, time tracking, approvals), all client-local in the old app. | The Team desk is the logins and says so on screen. The suite joins Strategy/Automations in the deliberately-unscoped family until the backend owner decides. |
 | **G-DOC-1** | *(see §5)* no document ref on `RequestMessage`. | Share by link. |
 
 ---

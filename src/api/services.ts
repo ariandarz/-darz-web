@@ -37,6 +37,8 @@ import type {
   CollectorAdminQuery,
   CollectorLoginEvent,
   CollectorRequestQuery,
+  MembershipCodeAdmin,
+  TeamUserAdmin,
   DashboardSummary,
   CreatedRequest,
   Lot,
@@ -347,6 +349,58 @@ export class AdminAccountsService extends ResourceService {
       `/collectors/${collectorId}/login-events/`,
       query as RequestOptions['query'],
     );
+  }
+
+  // --- Memberships (owner-only, backend Phase 30) --------------------------
+  membershipCodes(
+    query: {
+      search?: string;
+      plan?: string;
+      status?: string;
+      per_page?: number;
+      page?: number;
+    } = {},
+  ) {
+    return this.list<MembershipCodeAdmin>(
+      '/membership-codes/',
+      query as RequestOptions['query'],
+    );
+  }
+  /** Blank `code` auto-generates `DZ-<plan letter>-<6 unambiguous chars>`. */
+  createMembershipCode(body: Partial<MembershipCodeAdmin>) {
+    return this.create<MembershipCodeAdmin>('/membership-codes/', body);
+  }
+  updateMembershipCode(id: string, body: Partial<MembershipCodeAdmin> & { version: number }) {
+    return this.client.send<MembershipCodeAdmin>(
+      'PATCH',
+      `${this.basePath}/membership-codes/${id}/`,
+      { body },
+    );
+  }
+  /** The old desk's `membRenew` rule, server-side: +1 month from
+   * max(expiry, today), and reactivates. */
+  renewMembershipCode(id: string) {
+    return this.create<MembershipCodeAdmin>(`/membership-codes/${id}/renew/`);
+  }
+  deleteMembershipCode(id: string) {
+    return this.remove(`/membership-codes/${id}/`);
+  }
+
+  // --- Team logins (owner-only, backend Phase 31) ---------------------------
+  teamUsers(query: { search?: string; role?: string; per_page?: number; page?: number } = {}) {
+    return this.list<TeamUserAdmin>('/team-users/', query as RequestOptions['query']);
+  }
+  /** The generated password rides back exactly once. */
+  createTeamUser(body: { email: string; name?: string; role?: string }) {
+    return this.create<TeamUserAdmin & { password: string }>('/team-users/', body);
+  }
+  updateTeamUser(id: string, body: Partial<TeamUserAdmin> & { version: number }) {
+    return this.client.send<TeamUserAdmin>('PATCH', `${this.basePath}/team-users/${id}/`, {
+      body,
+    });
+  }
+  deleteTeamUser(id: string) {
+    return this.remove(`/team-users/${id}/`);
   }
 
   /** The review queue. The server defaults to `status=pending`. */
