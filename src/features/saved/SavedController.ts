@@ -72,10 +72,15 @@ const EMPTY: SavedSnapshot = {
 
 export class SavedController extends Observable<SavedSnapshot> {
   private readonly crm: CrmService;
+  /** the behavioural log — the old app wrote its `save` row from inside
+   * `toggleSave` (app.html:2806), so it belongs here rather than in a view.
+   * Optional: a test constructs this controller without one. */
+  private readonly activity: { save(artworkId: string): void } | null;
 
-  constructor(crm: CrmService) {
+  constructor(crm: CrmService, activity?: { save(artworkId: string): void }) {
     super(EMPTY);
     this.crm = crm;
+    this.activity = activity ?? null;
   }
 
   // --- reads ---------------------------------------------------------------
@@ -108,6 +113,8 @@ export class SavedController extends Observable<SavedSnapshot> {
       const row = await this.crm.save(artworkId);
       this.setOverride(artworkId, true);
       this.patch({ lastAction: result(artworkId, 'save', row.created) });
+      // app.html:2806 — a save is logged, an unsave is not.
+      this.activity?.save(artworkId);
     } catch (err: unknown) {
       this.patch({ actionError: failure(artworkId, 'save', false, messageOf(err)) });
     } finally {

@@ -22,6 +22,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
+import { useActivity } from '../activity/useActivity';
 import { Chroma, Input } from '../../components';
 import './auth.css';
 
@@ -58,6 +59,7 @@ export function LoginPage() {
   const { auth } = useApi();
   const { isAuthenticated } = useSession();
   const location = useLocation();
+  const activity = useActivity();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'signin' | 'request'>('signin');
   const [firstName, setFirstName] = useState('');
@@ -84,6 +86,9 @@ export function LoginPage() {
     setError(null);
     auth
       .loginCollector(accessKey)
+      // app.html:2347 — "Signed in · Collector NNN". Fire-and-forget: the
+      // gate never waits on it and never fails because of it.
+      .then(() => activity.login())
       .catch((err: Error) => setError(err.message))
       .finally(() => setPending(false));
   };

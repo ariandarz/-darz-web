@@ -12,6 +12,7 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { useApi, useSession } from '../../api/hooks';
+import { useActivity } from '../activity/useActivity';
 import { SavedContext } from './savedContext';
 import { SavedController } from './SavedController';
 import { SavedToast } from './SavedToast';
@@ -19,7 +20,8 @@ import { SavedToast } from './SavedToast';
 export function SavedProvider({ children }: { children: ReactNode }) {
   const { crm } = useApi();
   const { isAuthenticated, me } = useSession();
-  const [controller] = useState(() => new SavedController(crm));
+  const activity = useActivity();
+  const [controller] = useState(() => new SavedController(crm, activity));
 
   // `me` is null until `/auth/me/` resolves; key on the id once we have it so a
   // second collector in the same tab never inherits the first one's overrides.

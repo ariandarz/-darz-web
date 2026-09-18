@@ -127,6 +127,17 @@ status carries no counter amount.
   citation — the one hardcoded choice list in this phase.
 - **Closes it:** `ChoiceRegistry.register("crm.viewing_mode", …)` in `apps/crm/apps.py`.
 
+## G-P5-12 — activity is write-only [step 4]
+
+`POST /api/crm/activity/` is the whole surface (`apps/crm/urls.py:16`): there is no `GET`, for the
+collector or for an admin, and no endpoint exposes the rows back. They are read internally only —
+the gallery funnel (`apps/gallery/funnel.py:94`) and the taste profile
+(`apps/recommendations/profile.py:153`).
+
+- **Frontend:** `ActivityLogger` writes and never reads. Nothing in the UI can show a collector
+  what was recorded about them, which is worth knowing if that is ever asked for.
+- **Closes it:** `GET /api/crm/activity/` on the collector tier, if a surface ever needs it.
+
 ## G-P5-11 — an artist enquiry has no artist field [step 1]
 
 An information request keeps only `message` (`SimpleDetailSerializer`); `artwork` is the only
