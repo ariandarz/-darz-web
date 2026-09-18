@@ -55,15 +55,32 @@ F1, now closed). Two things to know if you go looking there: its `development` (
 That repo's production deploys from its `main`, so §94 should be applied *before* v1233 is released.
 Neither is this repo's work; it is recorded so nobody reads `main` there and assumes it is current.
 
-**Backend cross-check (2026-09-17, from `darzmarket-api`):** Phases 27-32 (the full old-panel admin
-audit — Collectors, Collector Activity, Dashboard, Memberships, Team, App Design) and Phase 23
-(Projects/Data Health/Import) all merged — see the new **Phase 11b** section below, none of it has
-frontend UI yet. Also corrected two stale `[!]` blockers this pass: backend Phases 24 (curated-set
-catalogue) and 25 (questionnaire) were already merged when this file last said blocked — both are
-real, buildable now.
+**Backend cross-check (2026-09-18, `darz-backend-api` @ `development` `12988db`):** the local
+clone was **24 commits behind**; pulling it brought in backend Phases **23, 24, 25, 27, 28, 29, 30,
+31, 32, 33, 34, 35**. There are now **191 declared routes** and this frontend calls about **20** of
+them — the backend is far ahead, and what to build next is limited by design, not by API. The
+backend's own `docs/TASKLIST.md` is dated 2026-09-11 and describes none of it, so the inventory was
+read from `urls.py`, views and serializers. Full findings and the proposed work:
+**`docs/PHASE_24_35_PLAN.md`**; the gaps found: **`docs/PHASE_24_35_API_GAPS.md`**.
+
+Collector-facing and newly buildable: **Phase 34** public "Request access"
+(`POST /api/auth/access-requests/`) — which `LoginPage` currently stubs with a factual note because
+no endpoint existed, and whose field set matches the old form exactly; and **Phase 24** curated
+selections (`GET /api/catalog/artworks/selections/`) — today a collector holding grants sees **none
+of them**. Phase 25's questionnaire is stored but its *questions* are not published (G-P25-2), so it
+is not faithfully portable yet. Push is **still** blocked: the VAPID public key is not exposed by any
+endpoint (G-P13-1, re-checked 2026-09-18). Everything else added is admin-side — **Phase 11b**
+below, a whole panel's worth of API with no frontend UI.
 
 **What next (2026-09-18, recommended order):**
 
+0. **Backend Phases 23-35 catch-up — `docs/PHASE_24_35_PLAN.md`, awaiting owner confirmation.**
+   Two small, fully-specified collector ports are now unblocked: the gate's **"Request access"**
+   form (backend Phase 34 — closes the stub `LoginPage.tsx` flags in its own header) and the
+   **"Curated for You"** chip (backend Phase 24). Eight owner decisions (D1-D8) are listed in that
+   plan; one of them, **D4**, needs a ruling rather than a preference — the design package's §01
+   describes a sign-up that *generates a password*, which this backend cannot do, so "the package
+   wins" points at a screen the API makes impossible.
 1. ~~CI~~ — **done 2026-09-18.** `.github/workflows/quality.yml` runs typecheck · lint ·
    format:check · test · build on every PR and on pushes to `main`/`development`, modelled on
    `darzstudio.art`'s `Quality`. Verified before landing against a real clean checkout

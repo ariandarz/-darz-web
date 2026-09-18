@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Backend Phases 23-35 surveyed; two collector ports planned
+
+- Pulled `darz-backend-api` `development` 24 commits forward (`3801786` → `12988db`): Phases 23, 24,
+  25, 27-35. 191 routes exist; this frontend calls ~20. `docs/PHASE_24_35_PLAN.md` (plan, D1-D8) and
+  `docs/PHASE_24_35_API_GAPS.md` (G-P34-1/2, G-P24-1/2, G-P25-1/2, G-P13-1) written.
+- Nothing implemented — awaiting owner confirmation.
+
 ## 2026-09-18 — CI, and a test that was green in CI and red on a desk
 
 - `.github/workflows/quality.yml`: typecheck · lint · format:check · test · build, on every PR and
