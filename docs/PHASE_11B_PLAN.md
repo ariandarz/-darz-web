@@ -387,4 +387,8 @@ _Append one entry per step as it merges. Newest last._
   the Team desk is the logins, with the old Workspace suite recorded as G-TEAM-1 rather than faked.
   Verified: auto-generated code + wa.me link + renew math on screen; a freshly issued team password
   signed its owner in as a standard admin with no gold groups.
+- **2026-09-18 — Step 5 (plan Step 6) done: Data Health + Import (CSV + Paste per D15).** The
+  Artworks group joins the navbar. The import loop was verified whole: paste → guessed mapping →
+  staged batch → confirm → two real artworks created through the real path with no errors. PDF and
+  Images intakes remain, stated on the desk.
 

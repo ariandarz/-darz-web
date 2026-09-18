@@ -99,6 +99,7 @@ describe('visibleGroups', () => {
     // has fifteen entries but `more` is the folded-group MENU, not a group.
     expect(ADMIN_GROUPS.length).toBe(14);
     expect(visibleGroups('owner').map((g) => g.key)).toEqual([
+      'catalog',
       'market',
       'collectors',
       'operations',
@@ -107,6 +108,7 @@ describe('visibleGroups', () => {
     ]);
     // `system` is owner-only, so a standard admin still sees one group
     expect(visibleGroups('standard_admin').map((g) => g.key)).toEqual([
+      'catalog',
       'market',
       'collectors',
       'operations',
@@ -249,10 +251,12 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
     expect(built.map((t) => t.key)).toEqual([
       'dashboard',
       'chat',
+      'import',
       'design',
       'users',
       'activity',
       'design',
+      'health',
       'team',
       'memberships',
       'system',

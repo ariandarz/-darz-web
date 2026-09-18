@@ -148,7 +148,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'import',
         'Import',
-        null,
+        '/admin/import',
         'ready',
         '11b·6',
         'Staging queue is served; CSV/PDF PARSING is frontend work (D15: CSV + paste first).',
@@ -315,7 +315,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'health',
         'Data Health',
-        null,
+        '/admin/data-health',
         'partial',
         '11b·6',
         'Three of the old desk’s ~8 checks port; the rest diagnosed the old ' +

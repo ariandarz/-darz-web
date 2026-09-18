@@ -33,6 +33,10 @@ import type {
   AccessRequestAdmin,
   AppTheme,
   AppThemeVersion,
+  ArtworkImportBatch,
+  ArtworkImportBatchList,
+  ArtworkImportRow,
+  DataHealthReport,
   CollectorAdmin,
   CollectorAdminQuery,
   CollectorLoginEvent,
@@ -422,6 +426,52 @@ export class AdminAccountsService extends ResourceService {
   }
   declineAccessRequest(id: string) {
     return this.create<AccessRequestAdmin>(`/access-requests/${id}/decline/`);
+  }
+}
+
+/** `/api/catalog/admin/` — the catalogue's operations desks (backend Phase
+ * 23): the Data Health report and the Import staging queue. */
+export class CatalogAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/catalog/admin');
+  }
+
+  dataHealth() {
+    return this.retrieve<DataHealthReport>('/data-health/');
+  }
+
+  importBatches(query: { per_page?: number; page?: number } = {}) {
+    return this.list<ArtworkImportBatchList>(
+      '/import/batches/',
+      query as RequestOptions['query'],
+    );
+  }
+  importBatch(id: string) {
+    return this.retrieve<ArtworkImportBatch>(`/import/batches/${id}/`);
+  }
+  /** The client parses the source (CSV/paste/…) and stages structured rows —
+   * the backend's own division of labour. */
+  stageImportBatch(source: string, rows: Array<Record<string, unknown>>) {
+    return this.create<ArtworkImportBatch>('/import/batches/', { source, rows });
+  }
+  /** Runs every non-rejected row through the real artwork-create path; a row
+   * that fails is marked `error` with the detail attached and does not block
+   * the rest — per-row review, never all-or-nothing. */
+  confirmImportBatch(id: string) {
+    return this.create<ArtworkImportBatch>(`/import/batches/${id}/confirm/`);
+  }
+  discardImportBatch(id: string) {
+    return this.create<ArtworkImportBatch>(`/import/batches/${id}/discard/`);
+  }
+  updateImportRow(batchId: string, rowId: string, resolvedData: Record<string, unknown>) {
+    return this.client.send<ArtworkImportRow>(
+      'PATCH',
+      `${this.basePath}/import/batches/${batchId}/rows/${rowId}/`,
+      { body: { resolved_data: resolvedData } },
+    );
+  }
+  rejectImportRow(batchId: string, rowId: string) {
+    return this.create<ArtworkImportRow>(`/import/batches/${batchId}/rows/${rowId}/reject/`);
   }
 }
 

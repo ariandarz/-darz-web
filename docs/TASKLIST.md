@@ -731,17 +731,18 @@ package/faithful-port research.
       `docs/TASKLIST.md` Phase 23 for the full list (projects/partners/service-catalog/packages/
       checklists, each list+detail; projects also get `/stage/`, `/dashboard/`, `/reports/`,
       `/attachments/`).
-- [ ] **Data Health** (old panel "Data Health" tab, scoped down — see the backend doc: most of the
-      old desk's checks diagnosed the old app's own client-sync architecture, which doesn't exist
-      here) — three real checks: duplicate images, incomplete records, published-but-hidden works.
-      `GET /api/catalog/admin/data-health/`.
-- [ ] **Import desk** (old panel "Import" tab) — CSV/PDF/paste/image parsing **stays frontend**
-      (client-side, e.g. a CSV-column-mapper and pdf.js page extraction, same as the old app); the
-      backend only stages the parsed rows for review/edit and confirms them into real artworks
-      (reusing the existing artwork-create validation — a row that fails is flagged with its error,
-      never silently dropped, and doesn't block the rest of the batch).
-      `GET/POST /api/catalog/admin/import/batches/`, `GET .../{id}/`, `POST .../{id}/confirm/`,
-      `POST .../{id}/discard/`, `PATCH .../{batch_id}/rows/{id}/`, `POST .../rows/{id}/reject/`.
+- [x] **Data Health** ✅ 2026-09-18 (old panel "Data Health" tab, `healthView` :26360, scoped
+      down) — the three surviving checks rendered with counts, first-50 items and an explicit
+      "…and n more"; the desk says on screen why the other five did not port (they diagnosed the
+      old client-sync architecture). Live-verified against the dev DB's real findings.
+- [~] **Import desk** (old panel "Import" tab, `importView` :29703) — **CSV + Paste shipped
+      2026-09-18** (owner decision D15): a tested RFC-4180 reader + column-mapper guessing headers
+      onto `ArtworkAdminSerializer`'s own field names (`artist_name_raw` carries the artist as
+      text), the verbatim "Imports land in Review first…" rule on screen, the staged-batch review
+      (edit rows as JSON, reject, confirm, discard), per-row errors surfaced. Live-verified: a
+      pasted CSV staged 2 rows and Confirm created 2 real artworks with zero errors. **Still open**
+      `[ ]`: the PDF-catalogue and Images tiles (pdf.js + upload wiring) — stated on the desk as
+      absent, not shown as dead buttons.
 
 ## Phases 12+ — Parity-gap surfaces (match backend Phases 20-26) `[!]` each blocked on its backend phase
 

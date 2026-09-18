@@ -10,6 +10,7 @@ import { AuthSession } from './AuthSession';
 import {
   AdminAccountsService,
   AuctionService,
+  CatalogAdminService,
   AuthService,
   CatalogService,
   CrmService,
@@ -58,6 +59,7 @@ export class DarzApi {
   readonly dashboard: DashboardService;
   readonly options: OptionsService;
   readonly theme: ThemeService;
+  readonly catalogAdmin: CatalogAdminService;
 
   constructor(baseUrl: string = resolveBaseUrl(), storage?: Storage | null) {
     this.session = new AuthSession(baseUrl, storage);
@@ -71,6 +73,7 @@ export class DarzApi {
     this.dashboard = new DashboardService(this.client);
     this.options = new OptionsService(this.client);
     this.theme = new ThemeService(this.client);
+    this.catalogAdmin = new CatalogAdminService(this.client);
   }
 }
 

@@ -188,6 +188,23 @@ export interface Choice {
  * guarded state machine. Never hardcode this lookup (CLAUDE.md). */
 export type RequestStatusByKind = Record<string, Choice[]>;
 
+/** `GET /api/catalog/admin/data-health/` (backend Phase 23). Item shapes vary
+ * per check (`apps/catalog/health.py`), so they stay loose here and the desk
+ * reads them defensively. Only 3 of the old desk's ~8 checks exist — the rest
+ * diagnosed the old client-sync architecture. */
+export interface DataHealthReport {
+  duplicate_images: { count: number; items: Array<Record<string, unknown>> };
+  incomplete_records: { count: number; items: Array<Record<string, unknown>> };
+  published_but_hidden: { count: number; items: Array<Record<string, unknown>> };
+  healthy: boolean;
+}
+
+/** The Import desk's staging queue (backend Phase 23) — "nothing touches the
+ * catalogue until confirmed", the old desk's own rule. */
+export type ArtworkImportBatch = Schemas['ArtworkImportBatch'];
+export type ArtworkImportBatchList = Schemas['ArtworkImportBatchList'];
+export type ArtworkImportRow = Schemas['ArtworkImportRow'];
+
 /** The owner Memberships desk's row (backend Phase 30). `plan` is constrained
  * to the COLLECTOR tiers — the backend's own deviation from the old desk's
  * Basic/Premium/Free-Invite `MEMB_PLANS` (`darz-studio.html:33131`), made so a
