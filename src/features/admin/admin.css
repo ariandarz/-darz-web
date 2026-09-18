@@ -1208,3 +1208,67 @@
 .ad-dot.is-never {
   background: var(--ink3);
 }
+
+/* ---- Step 5: Import + Data Health --------------------------------------- */
+.ad-imptiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ad-imptile {
+  font: inherit;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 14px 15px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ad-imptile:hover {
+  border-color: var(--ink);
+}
+.ad-pastebox {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 10px 12px;
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.ad-pastebox:focus {
+  border-color: var(--ink);
+}
+.ad-maprows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.ad-chip.ad-imp-pending {
+  background: var(--status-res-bg);
+  color: var(--status-res);
+}
+.ad-chip.ad-imp-confirmed,
+.ad-chip.ad-imp-created {
+  background: var(--status-avail-bg);
+  color: var(--status-avail);
+}
+.ad-chip.ad-imp-discarded,
+.ad-chip.ad-imp-rejected,
+.ad-chip.ad-imp-error {
+  background: var(--pl-blockbg);
+  color: var(--danger);
+}
+.ad-imp-err {
+  color: var(--danger);
+  max-width: 360px;
+  white-space: normal;
+}

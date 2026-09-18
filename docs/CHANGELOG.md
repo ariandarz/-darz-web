@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b Step 5: Data Health + Import (CSV + Paste)
+
+- Data Health: the three surviving checks with counts and first-50 items; the desk states why the
+  other five did not port. Import: a tested RFC-4180 reader + column mapper onto the serializer's
+  own fields, the verbatim Review-first rule, staged batches with JSON row edit / reject / confirm /
+  discard and per-row errors. PDF/Images tiles stated as absent (D15), not dead buttons.
+- Live-verified end to end: paste → mapper guessed all four columns → staged 2 rows → Confirm
+  created 2 real artworks through the real create path, zero errors. 201 tests (+5).
+
 ## 2026-09-18 — Phase 11b Step 4: Memberships + Team logins
 
 - Memberships (owner-only): issue with auto `DZ-<plan>-<6>` codes, wa.me links, the :33318 status

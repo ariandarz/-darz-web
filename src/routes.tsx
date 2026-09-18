@@ -32,6 +32,9 @@ import { AdminChatPage } from './features/admin/AdminChatPage';
 import { CollectorDetailPage } from './features/admin/CollectorDetailPage';
 import { CollectorsPage } from './features/admin/CollectorsPage';
 import { DesignPage } from './features/admin/DesignPage';
+import { DataHealthPage } from './features/admin/DataHealthPage';
+import { ImportBatchPage } from './features/admin/ImportBatchPage';
+import { ImportPage } from './features/admin/ImportPage';
 import { MembershipsPage } from './features/admin/MembershipsPage';
 import { TeamPage } from './features/admin/TeamPage';
 import { RequireOwner } from './features/admin/RequireOwner';
@@ -255,6 +258,9 @@ export function AppRoutes() {
         <Route path="/admin/chat/:id" element={<AdminThreadPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />
         <Route path="/admin/design" element={<DesignPage />} />
+        <Route path="/admin/data-health" element={<DataHealthPage />} />
+        <Route path="/admin/import" element={<ImportPage />} />
+        <Route path="/admin/import/:id" element={<ImportBatchPage />} />
         <Route
           path="/admin/memberships"
           element={
