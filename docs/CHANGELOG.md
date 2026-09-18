@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b plan drafted; entry-point question narrowed to one
+
+- `docs/PHASE_11B_PLAN.md` — Steps 0-7 over backend Phases 23 + 27-35, decisions D9-D16, waiting on
+  the owner. Read from `darz-studio.html`: the desks are **not** siblings (a two-tier navbar with
+  sixteen groups, so a panel shell is Step 0), two desks were missing from the task list (Access
+  Requests, Collector Club), and there is no approved design package for the panel.
+- `/auctions/notifications` and `/admin/login` closed as no-change; `/artists` is the one open
+  decision, and the old app's own artist list is orphaned the same way. G-P24-1 narrowed.
+
 ## 2026-09-18 — Phase 14: the deploy blocker narrowed to a Vercel role
 
 - Both creation paths fail identically — `create_git_project` (even link-only, `deploy:false`) and
