@@ -1,8 +1,9 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
 **Last updated:** 2026-09-18 (team sign-in released; `main` and `development` level) ·
-**Current focus:** **Phase 13 E2E over the whole v0.1 chain**, paired with a CI workflow — this
-repo has none, so every "green" so far is a contributor running the checks by hand. The v0.1 loop
+**Current focus:** **Phase 13 E2E over the whole v0.1 chain.** CI landed 2026-09-18
+(`.github/workflows/quality.yml`), so a gate finally exists; the E2E suite is what it still cannot
+see. The v0.1 loop
 itself is closed: the team sign-in shipped 2026-09-18 and a reply can now be sent from
 `/admin/requests` by a real team session. See "What next" just below.
 
@@ -63,13 +64,21 @@ real, buildable now.
 
 **What next (2026-09-18, recommended order):**
 
-1. **CI, then Phase 13 E2E.** This repo has **no CI at all** — no `.github/workflows` — so every
-   gate result recorded in this file is a contributor (or Claude) running `typecheck` / `lint` /
-   `format:check` / `test` / `build` by hand, and a PR here can never go green because nothing
-   runs. `darzstudio.art`'s `Quality` workflow is a working model to mirror. Do this **before** the
-   E2E suite, so the suite has somewhere to run.
+1. ~~CI~~ — **done 2026-09-18.** `.github/workflows/quality.yml` runs typecheck · lint ·
+   format:check · test · build on every PR and on pushes to `main`/`development`, modelled on
+   `darzstudio.art`'s `Quality`. Verified before landing against a real clean checkout
+   (`git archive` + `npm ci`, no `.env.local`): all five steps pass, so its first run is green
+   rather than red. `lint` exits 0 on the 3 pre-existing warnings, so they do not gate. Every
+   "green" recorded in this file before that date was hand-run and unenforced.
 2. **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat. Unblocked as of 2026-09-18:
-   both halves of that chain now exist (the collector can send, a team member can reply).
+   both halves of that chain now exist (the collector can send, a team member can reply). **This
+   is the real remaining gap** — all 20 test files are logic/controller tests and *nothing* renders
+   a component, so the class of bug caught only by a screenshot this afternoon (the admin bar
+   laid out beside the table instead of above it, because `AdminLayout` returned a fragment under
+   a centring flex `#root`) is still invisible to the suite. Needs one decision: run it against a
+   seeded local backend in CI (heavier, honest) or stub the API at the network layer (lighter,
+   less honest). Suggested: stub for the render/routing assertions, plus a small real-backend
+   smoke set.
 3. Owner decision on the two unlinked entry points (artist index `/artists`,
    `/auctions/notifications`) — see "Design pass" below; then one small PR either way. A third,
    newer one sits beside them: **the team sign-in has no link either.** `/admin/login` is reachable

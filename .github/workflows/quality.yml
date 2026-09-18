@@ -1,0 +1,53 @@
+# The gate for this repo.
+#
+# Modelled on `darzstudio.art`'s own `Quality` workflow, reduced to the checks
+# this project actually has: that repo additionally runs `perf:budget` (byte
+# ceilings on its static HTML) and installs Chromium for its Playwright
+# characterization suite. Neither applies here yet — there is no byte budget,
+# and every test in `src/**/*.test.ts` is a pure logic test that needs no
+# browser. When the Phase 13 E2E suite lands it will need a Chromium step and
+# probably a backend service; add them then rather than carrying dead setup now.
+#
+# Until this existed, every "green" recorded in docs/TASKLIST.md was a
+# contributor running these five commands by hand, and no pull request could
+# fail. That is the whole point of the file.
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main, development]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Same five commands a contributor runs locally, in the same order, so a
+      # green run here means exactly what a green run on a desk means.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Tests
+        run: npm test
+
+      # `vite build` reads `.env.production`, which is committed and holds
+      # deliberate `.invalid` placeholders (see the file's own header). No
+      # secret is needed, and none should be added here: a real API URL belongs
+      # to the deploy, not to the gate.
+      - name: Production build
+        run: npm run build
