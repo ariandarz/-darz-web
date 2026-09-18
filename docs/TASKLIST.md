@@ -653,8 +653,12 @@ package/faithful-port research.
       **D13 honoured** — the old composed note is PATCHed onto the new collector. Decline confirm
       verbatim (:37370). Live-verified: approve created the collector (tier landed), queue shrank,
       note present.
-- [ ] **Collector Activity feed** (old panel "Collector Activity" tab) — read-only, filter by
-      collector/kind/artwork. `GET /api/crm/admin/activity/`.
+- [x] **Collector Activity feed** ✅ 2026-09-18 (old panel "Collector Activity" tab) — read-only
+      view/save/search/login log over `GET /api/crm/admin/activity/`, as the second half of the
+      "Requests & Activity" tab (a segment switches the halves — the old `activity()` page mixed
+      them in one scroll; same content, one modern surface). Kind filter from `crm.activity_kind`;
+      a collector's workspace deep-links into their own slice (`?view=activity&collector=`).
+      Live-verified: 10 real rows including the session's own logins.
 - [!] **Access keys desk** (old panel "Access", owner-only, `darz-studio.html:33029`) — the
       roster-wide view (every key across collectors, expiring-soon review list, logins-today
       counter) is **blocked by G-KEY-1**: keys are only listed per collector
@@ -671,12 +675,15 @@ package/faithful-port research.
       editable key modal pre-filled from the request; the API's approve takes one optional `tier`,
       derives the collector and returns the plaintext key once.
       `GET /api/auth/admin/access-requests/`, `POST .../{id}/approve/`, `POST .../{id}/decline/`.
-- [ ] **Collector Club desk** (old panel "Collector Club", `:33740`) — **missing from this list
-      until 2026-09-18**; backend Phase 35 shipped `crm.CollectorSelection` after it was written.
-      Named selections: name, note, the artwork picker and the invited-collector list. Mind Phase
-      35's overlap rule — removing a (work, collector) pair only revokes its grant if no *other*
-      selection still wants it, so the UI must not imply a selection owns its grants exclusively.
-      `GET/POST /api/crm/admin/selections/`, `GET/PATCH/DELETE .../{id}/`.
+- [x] **Collector Club desk** ✅ 2026-09-18 (old panel "Collector Club", `clubView` :33740) —
+      selection cards with the PRIVATE badge, works count, invited badges ("no collectors yet"),
+      note and created date (:33743-33759); the editor is name · note · search-backed work and
+      collector pickers (the old in-memory tile wall does not survive a paginated catalogue). The
+      Phase 35 overlap rule is stated in the delete confirm — a grant only lifts when no other
+      selection still wants the pair. G-CLUB-1: the nested serializer carries no image, so the card
+      cover is the old fallback gradient, always. Live-verified: a created selection granted an
+      imported work to a collector (sync confirmed; the work stays off the chip only because it is
+      unpublished — the recorded `is_published` rule).
 - [x] **Dashboard** ✅ 2026-09-18 (old panel "Dashboard" tab, scoped to V1 essentials — perf/
       analytics charts and cloud-sync banners didn't port, per backend Phase 29) — requests-needing-
       attention per kind (each tile opens **exactly the rows it counted**, :21349's rule; the

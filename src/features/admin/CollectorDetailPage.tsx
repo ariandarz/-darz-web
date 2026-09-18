@@ -96,6 +96,12 @@ export function CollectorDetailPage() {
         <div className="ad-spacer" />
         {collector && !editing && (
           <>
+            <Link
+              to={`/admin/requests?view=activity&collector=${collector.id}`}
+              className="ad-ghostbtn"
+            >
+              Activity
+            </Link>
             <button type="button" className="ad-ghostbtn" onClick={() => setEditing(true)}>
               Edit
             </button>

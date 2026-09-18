@@ -225,7 +225,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'club',
         'Collector Club',
-        null,
+        '/admin/club',
         'ready',
         '11b·3',
         'crm.CollectorSelection (backend Phase 35).',

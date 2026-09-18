@@ -1,8 +1,8 @@
 # Plan — Phase 11b: the Owner Panel
 
-**Status:** **CONFIRMED 2026-09-18** — the owner answered *"go ahead with all your recommendation
-and start step 0"*, so every D9-D16 recommendation below is the decision. **Step 0 is done**; see the
-progress log. ·
+**Status:** **BUILT 2026-09-18**, overnight on the owner's standing instruction — every desk in
+this phase is live except the G-KEY-1-blocked standalone Access desk (`[!]`) and the marked
+halves (App Design's copy keys, Import's PDF/Images). See the progress log. ·
 **Sources read:** `ariandarz/darz-backend-api` @ `development` `12988db` (`urls.py`, views,
 serializers, `docs/TASKLIST.md` Phases 23 + 27-35) · `ariandarz/darzstudio.art` @ `development`
 **`darz-studio.html`** (the old admin panel — *not* `app.html`, which is the collector app) ·
@@ -391,4 +391,12 @@ _Append one entry per step as it merges. Newest last._
   Artworks group joins the navbar. The import loop was verified whole: paste → guessed mapping →
   staged batch → confirm → two real artworks created through the real path with no errors. PDF and
   Images intakes remain, stated on the desk.
+- **2026-09-18 — Step 6 done: the Activity feed and the Collector Club — and with them, every desk
+  this phase set out to build** except the Access desk that G-KEY-1 blocks. The panel now runs:
+  Dashboard · Chat · Artworks(Import) · Market App(App Design) · Collectors(Collectors · Requests &
+  Activity · Collector Club) · Operations(App Design · Data Health) · Owner(Team) · Access
+  Management(Memberships · Access Request). Verified throughout by driving the real backend: keys
+  that sign collectors in, a password that signs an admin in, an import that created real works, a
+  selection whose grant reached the app, and switches that turn collector features off and on
+  without a deploy.
 

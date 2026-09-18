@@ -37,8 +37,10 @@ import type {
   ArtworkImportBatchList,
   ArtworkImportRow,
   DataHealthReport,
+  CollectorActivityAdmin,
   CollectorAdmin,
   CollectorAdminQuery,
+  CollectorSelection,
   CollectorLoginEvent,
   CollectorRequestQuery,
   MembershipCodeAdmin,
@@ -185,6 +187,61 @@ export class CrmService extends ResourceService {
       `/admin/requests/${requestId}/messages/mark-seen/`,
     );
   }
+  /** Admin: the collector self-logged activity feed (backend Phase 28) —
+   * view / save / search / login events, nested collector/artwork. */
+  adminActivity(
+    query: {
+      collector?: string;
+      kind?: string;
+      artwork?: string;
+      per_page?: number;
+      page?: number;
+    } = {},
+  ) {
+    return this.list<CollectorActivityAdmin>(
+      '/admin/activity/',
+      query as RequestOptions['query'],
+    );
+  }
+  /** Admin: the named Collector Club selections (backend Phase 35). */
+  adminSelections(query: { per_page?: number; page?: number } = {}) {
+    return this.list<CollectorSelection>(
+      '/admin/selections/',
+      query as RequestOptions['query'],
+    );
+  }
+  createSelection(body: {
+    name: string;
+    note?: string;
+    artwork_ids?: string[];
+    collector_ids?: string[];
+  }) {
+    return this.create<CollectorSelection>('/admin/selections/', body);
+  }
+  /** Saving syncs the underlying grants; the lock field is `expected_version`
+   * here, not `version` — the serializer's own naming. */
+  updateSelection(
+    id: string,
+    body: {
+      name?: string;
+      note?: string;
+      artwork_ids?: string[];
+      collector_ids?: string[];
+      expected_version: number;
+    },
+  ) {
+    return this.client.send<CollectorSelection>(
+      'PATCH',
+      `${this.basePath}/admin/selections/${id}/`,
+      {
+        body,
+      },
+    );
+  }
+  deleteSelection(id: string) {
+    return this.remove(`/admin/selections/${id}/`);
+  }
+
   /** Admin: move one request to another status (`POST .../transition/`). */
   transitionRequest(id: string, toStatus: string, note = '') {
     return this.create<AdminRequest>(`/admin/requests/${id}/transition/`, {
@@ -438,6 +495,16 @@ export class CatalogAdminService extends ResourceService {
 
   dataHealth() {
     return this.retrieve<DataHealthReport>('/data-health/');
+  }
+
+  /** The admin catalogue list — same filterset as the collector one (search
+   * over artist/title/medium/dimensions) but visibility-unrestricted, which is
+   * what a selection picker needs (a private work is the point). */
+  artworks(query: { search?: string; per_page?: number; page?: number } = {}) {
+    return this.list<{ id: string; title: string; artist?: { display_name?: string } | null }>(
+      '/artworks/',
+      query as RequestOptions['query'],
+    );
   }
 
   importBatches(query: { per_page?: number; page?: number } = {}) {

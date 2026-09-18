@@ -1272,3 +1272,163 @@
   max-width: 360px;
   white-space: normal;
 }
+
+/* ---- Step 6: Activity feed + Collector Club ------------------------------ */
+.ad-chip.ad-act-view {
+  background: var(--soft);
+  color: var(--ink2);
+}
+.ad-chip.ad-act-save {
+  background: var(--status-avail-bg);
+  color: var(--status-avail);
+}
+.ad-chip.ad-act-search {
+  background: var(--status-res-bg);
+  color: var(--status-res);
+}
+.ad-chip.ad-act-login {
+  background: var(--pl-waitbg);
+  color: var(--pl-wait);
+}
+
+.ad-clubgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.ad-clubcard {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 13px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* :33747's fallback — always, see G-CLUB-1 */
+.ad-clubtop {
+  position: relative;
+  min-height: 96px;
+  background: linear-gradient(135deg, #2b2620, #6b6b6b);
+  color: #fff;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.ad-clubbadge {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #d9d5cc;
+}
+.ad-clubcnt {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 10.5px;
+  color: #d9d5cc;
+}
+.ad-clubtitle {
+  font-weight: 700;
+  font-size: 15px;
+}
+.ad-clubbody {
+  padding: 11px 14px;
+  font-size: 12px;
+  color: var(--ink2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ad-clubwho {
+  display: inline-block;
+  background: var(--soft);
+  color: var(--ink2);
+  border-radius: 7px;
+  padding: 2px 7px;
+  margin: 1px 3px 1px 0;
+  font-size: 11px;
+}
+.ad-clubnote {
+  color: var(--ink2);
+}
+.ad-clubacts {
+  display: flex;
+  gap: 7px;
+  padding: 0 14px 12px;
+}
+
+.ad-picker {
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.ad-pickchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ad-pickchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.ad-pickchip button {
+  font: inherit;
+  border: 0;
+  background: none;
+  color: var(--ink3);
+  cursor: pointer;
+  padding: 0 2px;
+}
+.ad-pickchip button:hover {
+  color: var(--danger);
+}
+.ad-pickin {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 9px 12px;
+  outline: none;
+}
+.ad-pickin:focus {
+  border-color: var(--ink);
+}
+.ad-pickhits {
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+.ad-pickhit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  background: none;
+  border: 0;
+  padding: 9px 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ad-pickhit:hover {
+  background: var(--soft);
+}
+.ad-pickhit + .ad-pickhit {
+  border-top: 1px solid var(--hair2);
+}

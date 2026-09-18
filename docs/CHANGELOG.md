@@ -5,6 +5,17 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 11b Step 6: Activity feed + Collector Club — the phase's desks complete
+
+- The "Requests & Activity" tab gains its second half: the read-only view/save/search/login log
+  (Phase 28) behind a segment, kind-filtered from options, deep-linkable from a collector's
+  workspace. The Collector Club (Phase 35): selection cards with the ported anatomy, search-backed
+  work/collector pickers, and the grant-overlap rule stated in the delete confirm. G-CLUB-1
+  recorded (no image on the nested serializer → the old fallback gradient, always).
+- Live-verified: 10 real activity rows; a created selection granted an imported work (sync
+  confirmed end to end). Every Phase 11b desk is now built except the G-KEY-1-blocked standalone
+  Access desk; App Design's copy keys and Import's PDF/Images remain as marked halves. 201 tests.
+
 ## 2026-09-18 — Phase 11b Step 5: Data Health + Import (CSV + Paste)
 
 - Data Health: the three surviving checks with counts and first-50 items; the desk states why the

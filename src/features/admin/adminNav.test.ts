@@ -76,11 +76,11 @@ describe('isTabAllowed — the owner always sees every tab', () => {
 });
 
 describe('visibleTabs — allowed AND built (D9)', () => {
-  it('drops an unbuilt tab even from the owner', () => {
+  it('lists exactly the built tabs of a group', () => {
     const collectors = ADMIN_GROUPS.find((g) => g.key === 'collectors')!;
     const keys = visibleTabs(collectors, 'owner').map((t) => t.key);
-    // `club` has no desk yet; `users` and `activity` are built
-    expect(keys).toEqual(['users', 'activity']);
+    // the whole Collectors group is built now
+    expect(keys).toEqual(['users', 'activity', 'club']);
   });
 
   it('never returns a tab without a path', () => {
@@ -255,6 +255,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'design',
       'users',
       'activity',
+      'club',
       'design',
       'health',
       'team',
