@@ -788,7 +788,19 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       query-aware (three tabs, one pathname) without regressing filtered desks. History and the
       Builder stay marked with reasons (G-DOC-2, D18). Verified live: the full lifecycle
       draft→PDF→confirm→sign, fields persistence, kind tabs lighting right, versions rendering.
-- [ ] **Step 4 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+- [x] **Step 4 — Galleries & Sources: partners + the Source Updates queue** ✅ 2026-09-18
+      (overnight run) — `/admin/sources` (`sourcesView()`, `darz-studio.html:27288`; the Galleries
+      tab opens the gallery slice): the partner roster with the `source_type` axis, issue → the
+      ONE-TIME token+PIN reveal (the serializer's own contract, ShownOnceSecret ×2), the ported
+      reminder banner ("n source updates awaiting your review → Review them"), and the queue as
+      the desk's second half (segment) — approve/reject with the note, the confirm naming what
+      approval DOES per kind (availability/price/correction apply to the artwork; the rest record
+      intent). `/admin/sources/:id`: record + enable/disable, the Phase-12 funnel switches (the
+      model's "never a collector identity" promise kept on the copy), and the snapshot works list
+      — assign via the kit Picker, remove, per-work funnel-stage override. Verified live end to
+      end INCLUDING the portal side: a real `POST /portal/{token}/updates/` with the issued
+      token+PIN (201) → banner → queue → approve; disable → the portal answers 401.
+- [ ] **Step 5 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 

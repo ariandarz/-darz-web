@@ -173,8 +173,15 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'galleries',
     label: 'Galleries',
     tabs: [
-      tab('galleries', 'Galleries', null, 'ready', '10', 'gallery admin, 22 routes.'),
-      tab('sources', 'Sources & Partners', null, 'ready', '10'),
+      tab(
+        'galleries',
+        'Galleries',
+        '/admin/sources?type=gallery',
+        'ready',
+        '12·4',
+        'the gallery slice of Sources & Partners; the per-gallery workspace rides the portal step.',
+      ),
+      tab('sources', 'Sources & Partners', '/admin/sources', 'ready', '12·4'),
     ],
   },
   {

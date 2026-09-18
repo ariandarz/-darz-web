@@ -101,6 +101,7 @@ describe('visibleGroups', () => {
     expect(visibleGroups('owner').map((g) => g.key)).toEqual([
       'catalog',
       'artists',
+      'galleries',
       'market',
       'documents',
       'collectors',
@@ -113,6 +114,7 @@ describe('visibleGroups', () => {
     expect(visibleGroups('standard_admin').map((g) => g.key)).toEqual([
       'catalog',
       'artists',
+      'galleries',
       'market',
       'documents',
       'collectors',
@@ -260,6 +262,8 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'database',
       'import',
       'artists',
+      'galleries',
+      'sources',
       'market',
       'design',
       'docProposals',

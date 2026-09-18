@@ -482,3 +482,20 @@ export interface DocumentQuery {
   page?: number;
   per_page?: number;
 }
+
+/** A source link — `GalleryLinkSerializer` (backend Phase 10/12): one
+ * gallery / dealer / artist / collector who shares works with Darz, plus
+ * their no-login portal (token + PIN, revealed ONCE at issue — the same
+ * shown-once contract as access keys). `feat_funnel` /
+ * `feat_funnel_activity` are the per-link sales-funnel display toggles. */
+export type GalleryLinkAdmin = Schemas['GalleryLink'];
+
+/** One assigned work on a link — the portal reads this SNAPSHOT, never the
+ * live artwork (a later edit must not retroactively change what a source
+ * saw). `funnel_status` is the Darz-set override; blank derives live. */
+export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
+
+/** A portal submission in the review queue — approving an availability /
+ * price / correction update applies it to the artwork through the real
+ * catalog services; the other kinds record intent only. */
+export type GalleryUpdateAdmin = Schemas['GalleryUpdate'];

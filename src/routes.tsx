@@ -32,6 +32,8 @@ import { DocumentDetailPage } from './features/admin/DocumentDetailPage';
 import { DocumentsPage } from './features/admin/DocumentsPage';
 import { PublishedPage } from './features/admin/PublishedPage';
 import { SaleDetailPage } from './features/admin/SaleDetailPage';
+import { SourceDetailPage } from './features/admin/SourceDetailPage';
+import { SourcesPage } from './features/admin/SourcesPage';
 import { SalesPage } from './features/admin/SalesPage';
 import { ArtworkEditorPage } from './features/admin/ArtworkEditorPage';
 import { ArtworksPage } from './features/admin/ArtworksPage';
@@ -272,6 +274,8 @@ export function AppRoutes() {
         <Route path="/admin/documents" element={<DocumentsPage />} />
         <Route path="/admin/documents/:id" element={<DocumentDetailPage />} />
         <Route path="/admin/published" element={<PublishedPage />} />
+        <Route path="/admin/sources" element={<SourcesPage />} />
+        <Route path="/admin/sources/:id" element={<SourceDetailPage />} />
         <Route path="/admin/sales" element={<SalesPage />} />
         <Route path="/admin/sales/:id" element={<SaleDetailPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />

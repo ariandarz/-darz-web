@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 12 Step 4: Galleries & Sources — partners + Source Updates
+
+- `/admin/sources` (+detail): the partner roster, issue with the one-time token+PIN reveal,
+  enable/disable, funnel switches, the snapshot works list with assign/remove/stage override,
+  and the Source Updates queue (approve applies availability/price/correction to the artwork).
+  Verified live including a real portal-side submission with the issued credentials.
+
 ## 2026-09-18 — Phase 13: the E2E harness (stub tier in CI)
 
 - `e2e/`: a Playwright smoke over the production build against a canned envelope stub
