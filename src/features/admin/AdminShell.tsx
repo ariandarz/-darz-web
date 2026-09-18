@@ -58,7 +58,7 @@ export function AdminShell() {
   const { auth } = useApi();
   const { me } = useSession();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
 
   const role = asAdminRole(me?.role);
   const here = findTab(pathname);
@@ -173,7 +173,12 @@ export function AdminShell() {
             <NavLink
               key={t.key}
               to={t.path!}
-              className={({ isActive }) => `ad-subtab${isActive ? ' on' : ''}`}
+              /* query-aware: the Documents group's tabs share one pathname
+                 and differ in `?kind=` (the old sticky sub-tab, :11732), so
+                 NavLink's pathname-only isActive would light all of them */
+              className={({ isActive }) =>
+                `ad-subtab${subtabOn(t.path!, tabs, pathname, search, isActive) ? ' on' : ''}`
+              }
             >
               {t.label}
             </NavLink>
@@ -184,4 +189,21 @@ export function AdminShell() {
       <Outlet />
     </div>
   );
+}
+
+/** A sub-tab is on when its full path (query included) matches the location.
+ * A query-less tab keeps NavLink's own answer — filters and deep links on a
+ * desk must not un-light its tab — EXCEPT when a sibling tab claims this
+ * exact location (the Documents pattern: three tabs, one pathname, `?kind=`
+ * apart). */
+function subtabOn(
+  tabPath: string,
+  siblings: ReadonlyArray<{ path: string | null }>,
+  pathname: string,
+  search: string,
+  isActive: boolean,
+): boolean {
+  if (tabPath.includes('?')) return tabPath === pathname + search;
+  if (!isActive) return false;
+  return !siblings.some((o) => o.path !== tabPath && o.path === pathname + search);
 }

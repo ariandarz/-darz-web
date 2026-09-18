@@ -207,10 +207,17 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     tabs: [
       // The first four are one page with a sticky sub-tab in the old panel
       // (`docsTab(...)`, :11732-11735); here they are four routes.
-      tab('docProposals', 'Proposals', null, 'ready', '11'),
-      tab('docInvoices', 'Invoices', null, 'ready', '11'),
-      tab('docFiles', 'Library', null, 'ready', '11'),
-      tab('docHistory', 'History', null, 'ready', '11'),
+      tab('docProposals', 'Proposals', '/admin/documents?kind=proposal', 'ready', '12·3'),
+      tab('docInvoices', 'Invoices', '/admin/documents?kind=invoice', 'ready', '12·3'),
+      tab('docFiles', 'Library', '/admin/documents', 'ready', '12·3'),
+      tab(
+        'docHistory',
+        'History',
+        null,
+        'partial',
+        '12+',
+        'its issued half IS the Library list; the activity half waits on an audit feed (G-DOC-2).',
+      ),
       tab(
         'library',
         'Pricelists & saved items',
@@ -219,7 +226,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '12+',
         'Backend Phase 21 (two builders + savedItems) is not built.',
       ),
-      tab('archive', 'Document Builder', null, 'ready', '11', 'documents admin, 7 routes.'),
+      tab(
+        'archive',
+        'Document Builder',
+        null,
+        'ready',
+        '12+',
+        'the Studio — waits on D18 (the client-side PDF renderer); uploads already work.',
+      ),
     ],
   },
   {
