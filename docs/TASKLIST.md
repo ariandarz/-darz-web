@@ -816,6 +816,14 @@ surface before building each. Ordered by V1 relevance:
 
 ## Phase 13 — Testing
 
+- [x] **The E2E harness — stub tier in CI, real-backend tier local** ✅ 2026-09-18 (overnight
+      run) — `e2e/smoke.spec.ts` (@playwright/test) walks gate → team sign-in → panel → a desk
+      against `e2e/stub-server.mjs` (the envelope + canned boot routes + empty lists, so every
+      desk must survive an empty backend); a second `e2e` job in `quality.yml` runs it with its
+      own Chromium. The real-backend tier is deliberately local-only — `e2e/README.md` states the
+      two tiers' claims and the rule of thumb (a new desk gets its real-backend walk before it
+      ships; the smoke only grows with the boot/shell contract).
+
 - [ ] Component tests for shared/base components
 - [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
 

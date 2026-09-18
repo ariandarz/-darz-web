@@ -5,8 +5,9 @@
 # ceilings on its static HTML) and installs Chromium for its Playwright
 # characterization suite. Neither applies here yet — there is no byte budget,
 # and every test in `src/**/*.test.ts` is a pure logic test that needs no
-# browser. When the Phase 13 E2E suite lands it will need a Chromium step and
-# probably a backend service; add them then rather than carrying dead setup now.
+# browser. The Phase 13 E2E stub tier landed as the `e2e` job below: it runs
+# the smoke spec against `e2e/stub-server.mjs` (no backend service — the
+# real-backend tier is local-only by design, see e2e/README.md).
 #
 # Until this existed, every "green" recorded in docs/TASKLIST.md was a
 # contributor running these five commands by hand, and no pull request could
@@ -51,3 +52,24 @@ jobs:
       # to the deploy, not to the gate.
       - name: Production build
         run: npm run build
+
+  # Phase 13 — the stub-tier smoke: boots the built app against the canned
+  # stub API and walks gate → team sign-in → panel → a desk. Separate job so
+  # the five-command gate above stays exactly what a contributor runs by hand.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: E2E smoke (stub tier)
+        run: npm run e2e

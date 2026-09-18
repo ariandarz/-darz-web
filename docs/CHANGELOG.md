@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 13: the E2E harness (stub tier in CI)
+
+- `e2e/`: a Playwright smoke over the production build against a canned envelope stub
+  (boot → gate → team sign-in → panel → a desk; empty lists everywhere else), plus a second
+  CI job with its own Chromium. The real-backend tier stays local by design (`e2e/README.md`).
+
 ## 2026-09-18 — Phase 12 Step 3: Documents — Library/Proposals/Invoices + lifecycle
 
 - `/admin/documents` (+`?kind=` tabs) and the record page: create, draft-only edit with a JSON
