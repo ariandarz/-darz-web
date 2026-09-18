@@ -1,8 +1,14 @@
 /**
- * Phase 13 E2E — the stub tier's runner. Two webServers: the stub API
- * (e2e/stub-server.mjs) and a production build served by `vite preview`,
- * built against the stub's origin (VITE_API_BASE_URL is a build-time value —
- * see src/api/index.ts::resolveBaseUrl).
+ * Phase 13 E2E — the stub tier's runner.
+ *
+ * The app is BUILT FIRST (`npm run e2e:build` — the `e2e` script chains it),
+ * against the stub's origin (VITE_API_BASE_URL is a build-time value — see
+ * src/api/index.ts::resolveBaseUrl). The two webServers then only SERVE:
+ * the stub API and `vite preview` over the finished build. The first CI run
+ * had the build inside the webServer command — the port opened before the
+ * chain was truly ready and the tests hit a dead server; serving-only
+ * webServers with a URL health check (a real 200, not a TCP connect) and
+ * piped output make the failure mode impossible and visible.
  *
  * Locally, the environment's pre-installed Chromium may not match this
  * @playwright/test's pinned revision — point PW_CHROMIUM at it
@@ -23,15 +29,18 @@ export default defineConfig({
   webServer: [
     {
       command: 'node e2e/stub-server.mjs',
-      port: 8787,
+      url: 'http://127.0.0.1:8787/api/app-theme/',
       reuseExistingServer: false,
+      stdout: 'pipe',
+      stderr: 'pipe',
     },
     {
-      command:
-        'VITE_API_BASE_URL=http://127.0.0.1:8787/api VITE_FEATURE_SET=full npx vite build --outDir dist-e2e --logLevel error && npx vite preview --outDir dist-e2e --port 4173 --strictPort',
-      port: 4173,
+      command: 'npx vite preview --outDir dist-e2e --port 4173 --strictPort',
+      url: 'http://127.0.0.1:4173/',
       reuseExistingServer: false,
-      timeout: 120_000,
+      timeout: 60_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
     },
   ],
 });

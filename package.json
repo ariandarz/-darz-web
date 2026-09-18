@@ -13,7 +13,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{ts,json,html}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"*.{ts,json,html}\"",
     "preview": "vite preview",
-    "e2e": "playwright test"
+    "e2e": "npm run e2e:build && playwright test",
+    "e2e:build": "VITE_API_BASE_URL=http://127.0.0.1:8787/api VITE_FEATURE_SET=full vite build --outDir dist-e2e --logLevel error"
   },
   "dependencies": {
     "react": "^19.2.8",

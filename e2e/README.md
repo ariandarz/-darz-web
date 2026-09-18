@@ -4,7 +4,8 @@ Two tiers, deliberately different in what they claim:
 
 ## 1 · The stub tier (`smoke.spec.ts`) — runs in CI
 
-`npm run e2e`. Playwright boots the **production build** against
+`npm run e2e` (builds first — `e2e:build` — then tests). Playwright boots
+the **production build** against
 `stub-server.mjs` — a no-state node server speaking the backend's one
 envelope for exactly the routes the walk needs (boot theme, team sign-in,
 options, the Dashboard summary) and an **empty paginated list for anything
