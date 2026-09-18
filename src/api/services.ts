@@ -62,6 +62,9 @@ import type {
   ArtistAdmin,
   SaleAdmin,
   SaleQuery,
+  DocumentAdmin,
+  DocumentQuery,
+  DocumentVersionAdmin,
 } from './types';
 
 export abstract class ResourceService {
@@ -664,6 +667,78 @@ export class SalesAdminService extends ResourceService {
     return this.create<SaleAdmin>(`/sales/${id}/delivery-status/`, {
       delivery_status: deliveryStatus,
     });
+  }
+}
+
+/** `/api/documents/admin/` — the documents desk (backend Phase 11): CRUD on
+ * the freeform-kind records, the client-renders-server-stores PDF contract,
+ * and the draft → confirm (locks, needs a PDF) → sign lifecycle. */
+export class DocumentsAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/documents/admin');
+  }
+
+  documents(query: DocumentQuery = {}) {
+    return this.list<DocumentAdmin>('/documents/', query as RequestOptions['query']);
+  }
+  document(id: string) {
+    return this.retrieve<DocumentAdmin>(`/documents/${id}/`);
+  }
+  createDocument(body: {
+    kind: string;
+    title: string;
+    ref?: string;
+    fields?: Record<string, unknown>;
+    visibility?: string;
+    owner_lock?: boolean;
+  }) {
+    return this.create<DocumentAdmin>('/documents/', body);
+  }
+  /** Draft-only ("Only a draft document can be edited") — no lock counter on
+   * this serializer, the status machine is the lock. */
+  updateDocument(
+    id: string,
+    body: {
+      title?: string;
+      ref?: string;
+      fields?: Record<string, unknown>;
+      visibility?: string;
+    },
+  ) {
+    return this.client.send<DocumentAdmin>('PATCH', `${this.basePath}/documents/${id}/`, {
+      body,
+    });
+  }
+  deleteDocument(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/documents/${id}/`);
+  }
+  /** The rendered PDF, client-made — multipart. Snapshots the prior state
+   * into a DocumentVersion server-side. */
+  uploadPdf(id: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.client.send<DocumentAdmin>(
+      'POST',
+      `${this.basePath}/documents/${id}/upload/`,
+      {
+        body: form,
+      },
+    );
+  }
+  confirmDocument(id: string) {
+    return this.create<DocumentAdmin>(`/documents/${id}/confirm/`);
+  }
+  signDocument(id: string) {
+    return this.create<DocumentAdmin>(`/documents/${id}/sign/`);
+  }
+  archiveDocument(id: string) {
+    return this.create<DocumentAdmin>(`/documents/${id}/archive/`);
+  }
+  versions(id: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<DocumentVersionAdmin>(
+      `/documents/${id}/versions/`,
+      query as RequestOptions['query'],
+    );
   }
 }
 

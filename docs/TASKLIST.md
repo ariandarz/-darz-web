@@ -778,7 +778,17 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       tested; `useSaleRefs` resolves the row's bare uuids (G-SALE-3). Gaps G-SALE-1…5 + G-CAT-9
       recorded. 215 tests (+3). Verified live end to end (18 checks) — publish/unpublish full
       circle across the two desks, deal create→confirm→lock, payment setter, list resolution.
-- [ ] **Step 3 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+- [x] **Step 3 — Documents: Library · Proposals · Invoices + the record's lifecycle** ✅
+      2026-09-18 (overnight run) — `/admin/documents` (+`?kind=` — the old sticky sub-tab as
+      routes, `documentsView()`, `workspaces-runtime.js:507`) and `/admin/documents/:id`: create
+      (freeform kind + ref + visibility + owner-lock), draft-only editing with a validated JSON
+      fields editor, **PDF upload on the backend's own client-renders-server-stores contract**
+      (multipart; a version snapshot per upload), confirm (needs a PDF, locks) → sign → archive,
+      and **Copy link** sharing (D19's share-by-link, live). The shell's sub-tabs became
+      query-aware (three tabs, one pathname) without regressing filtered desks. History and the
+      Builder stay marked with reasons (G-DOC-2, D18). Verified live: the full lifecycle
+      draft→PDF→confirm→sign, fields persistence, kind tabs lighting right, versions rendering.
+- [ ] **Step 4 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 

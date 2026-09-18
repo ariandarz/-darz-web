@@ -464,3 +464,21 @@ export interface SaleQuery {
   page?: number;
   per_page?: number;
 }
+
+/** A document — `DocumentSerializer` (backend Phase 11 documents admin).
+ * `fields` is the document's own freeform content (shape depends on `kind`,
+ * which is deliberately freeform — the old taxonomy's ~28 kinds grew
+ * continuously). `pdf_url` is the stored rendering: the backend NEVER
+ * generates document visuals — the client renders and `upload`s (that
+ * contract is the Studio's D18 half). Lifecycle: draft (editable) →
+ * confirm (needs an uploaded PDF, locks) → sign; archive any time.
+ * `owner_lock` restricts confirm/sign/edit to the owner role. */
+export type DocumentAdmin = Schemas['Document'];
+export type DocumentVersionAdmin = Schemas['DocumentVersion'];
+
+/** The documents list takes exactly one filter: exact `kind`. */
+export interface DocumentQuery {
+  kind?: string;
+  page?: number;
+  per_page?: number;
+}

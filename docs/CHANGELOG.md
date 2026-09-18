@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 12 Step 3: Documents — Library/Proposals/Invoices + lifecycle
+
+- `/admin/documents` (+`?kind=` tabs) and the record page: create, draft-only edit with a JSON
+  fields editor, PDF upload (client-renders-server-stores; versioned), confirm→sign→archive,
+  Copy-link sharing (D19 live). Query-aware sub-tabs. G-DOC-2 recorded; the Builder waits on D18.
+
 ## 2026-09-18 — Phase 12 Step 2: Published works + Market Sales
 
 - `/admin/published`: the Market App tab — the public catalogue slice with images, search,
