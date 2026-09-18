@@ -11,6 +11,7 @@ import {
   AdminAccountsService,
   AuctionService,
   CatalogAdminService,
+  SalesAdminService,
   AuthService,
   CatalogService,
   CrmService,
@@ -60,6 +61,7 @@ export class DarzApi {
   readonly options: OptionsService;
   readonly theme: ThemeService;
   readonly catalogAdmin: CatalogAdminService;
+  readonly salesAdmin: SalesAdminService;
 
   constructor(baseUrl: string = resolveBaseUrl(), storage?: Storage | null) {
     this.session = new AuthSession(baseUrl, storage);
@@ -74,6 +76,7 @@ export class DarzApi {
     this.options = new OptionsService(this.client);
     this.theme = new ThemeService(this.client);
     this.catalogAdmin = new CatalogAdminService(this.client);
+    this.salesAdmin = new SalesAdminService(this.client);
   }
 }
 
