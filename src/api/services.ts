@@ -30,6 +30,7 @@ import type {
   CollectorActivity,
   CollectorRequest,
   CollectorRequestQuery,
+  DashboardSummary,
   CreatedRequest,
   Lot,
   Paginated,
@@ -284,6 +285,20 @@ export class RecommendationService extends ResourceService {
  * `./types` (`RequestStatusByKind`, etc.) rather than assuming every key is
  * a flat list. */
 export type OptionsMap = Record<string, unknown>;
+
+/** `/api/dashboard/` — the admin desk's opening numbers (backend Phase 29). */
+export class DashboardService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/dashboard');
+  }
+
+  /** One read, no writes. Every number is computed server-side from the same
+   * querysets the desks list from, which is what lets a tile link straight to
+   * the desk that shows its rows (see `DashboardPage`). */
+  summary() {
+    return this.retrieve<DashboardSummary>('/admin/summary/');
+  }
+}
 
 /** `GET /api/options/` — every choice field as `{value, label}` (or, for a
  * few dynamic keys, a differently-shaped live value — see `OptionsMap`).

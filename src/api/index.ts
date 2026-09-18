@@ -12,6 +12,7 @@ import {
   AuthService,
   CatalogService,
   CrmService,
+  DashboardService,
   OptionsService,
   RecommendationService,
 } from './services';
@@ -51,6 +52,7 @@ export class DarzApi {
   readonly crm: CrmService;
   readonly auctions: AuctionService;
   readonly recommendations: RecommendationService;
+  readonly dashboard: DashboardService;
   readonly options: OptionsService;
 
   constructor(baseUrl: string = resolveBaseUrl(), storage?: Storage | null) {
@@ -61,6 +63,7 @@ export class DarzApi {
     this.crm = new CrmService(this.client);
     this.auctions = new AuctionService(this.client);
     this.recommendations = new RecommendationService(this.client);
+    this.dashboard = new DashboardService(this.client);
     this.options = new OptionsService(this.client);
   }
 }

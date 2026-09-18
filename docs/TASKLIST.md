@@ -667,10 +667,20 @@ package/faithful-port research.
       35's overlap rule — removing a (work, collector) pair only revokes its grant if no *other*
       selection still wants it, so the UI must not imply a selection owns its grants exclusively.
       `GET/POST /api/crm/admin/selections/`, `GET/PATCH/DELETE .../{id}/`.
-- [ ] **Dashboard** (old panel "Dashboard" tab, scoped to V1 essentials — see the backend doc for
-      what didn't port: perf/analytics charts, cloud-sync banners) — requests-needing-attention per
-      kind, today's activity, collector/catalogue/auction totals, pending exhibition reviews.
-      `GET /api/dashboard/admin/summary/`.
+- [x] **Dashboard** ✅ 2026-09-18 (old panel "Dashboard" tab, scoped to V1 essentials — perf/
+      analytics charts and cloud-sync banners didn't port, per backend Phase 29) — requests-needing-
+      attention per kind (each tile opens **exactly the rows it counted**, :21349's rule; the
+      initial-status link leans on G-DASH-1, recorded), today's activity, collector/catalogue/
+      auction totals, pending exhibition reviews. `GET /api/dashboard/admin/summary/`. Live-verified
+      tile → filtered desk (1 counted → 1 listed).
+- [x] **Chat desk** ✅ 2026-09-18 (old panel's Chat Dashboard, `darz-studio.html:40528`; its own
+      top-row tab beside Dashboard, :11099) — conversation list (avatar initial · name · context ·
+      unread · date, :40448) + thread with composer over the shared `MessageThreadController`
+      (collector's `ThreadController` and admin's `AdminThreadController` are two bindings of one
+      machine; seen-marking flipped per :40547). Copy verbatim: "← All", "No messages yet…",
+      "Write a message to {name}…", "Sent to the collector ✓". AI Monitor / mode / assignee /
+      conversation-status / Clear / client-side search **not ported — no backend** (G-CHAT-1/2
+      recorded). Live-verified: send lands as a team bubble, seen marks on open.
 - [ ] **Memberships desk** (old panel "Memberships" tab, owner-only) — issue (auto-generates a
       `DZ-<plan>-<6 chars>` code or accepts a custom one)/list/edit/renew (+1 month)/remove. Records
       a WhatsApp contact + private notes for manual outreach — **no payment processing anywhere**,

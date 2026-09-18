@@ -46,7 +46,9 @@ export function TeamLoginPage() {
   // Already a team session: straight on to wherever RequireTeam turned them
   // away from, else the desk. Same shape as LoginPage's own redirect.
   if (isAuthenticated && principal === 'team') {
-    const to = (location.state as { from?: string } | null)?.from ?? '/admin/requests';
+    // Default to the desk index, which clamps to the first page this role can
+    // open (the Dashboard now that it exists) — not a hardcoded desk.
+    const to = (location.state as { from?: string } | null)?.from ?? '/admin';
     return <Navigate to={to} replace />;
   }
 

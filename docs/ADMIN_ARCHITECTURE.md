@@ -90,6 +90,15 @@ Everything else is waiting on UI only — **141 admin routes exist and this fron
 | Instagram · Content Calendar · AI Settings · Strategy · Automations | **deliberately unscoped** by the backend, awaiting an owner decision there |
 | Projects › Proposal | Proposal Builder composition unbuilt on both sides |
 
+### Gaps found while building (the frontend designs around these; none blocks a desk)
+
+| Id | Gap | What the frontend does |
+|---|---|---|
+| **G-CHAT-1** | **No `GET /api/crm/admin/requests/{id}/`** — the unified list is the only admin read of a request, and its query takes no id. A conversation opened by URL alone has nothing to name the collector with. | The Chat list passes its row as router state; on a pasted link the thread header says "Conversation" and the thread itself is complete. Worth a detail endpoint when the backend next touches crm. |
+| **G-CHAT-2** | **No text search on the admin request list** — the old Chat's search box was client-side over its in-memory store; this list is paginated server-side. | No search box (a fake one that only searched the loaded page would lie). Raise `?q=` with the backend when Chat gets heavy use. |
+| **G-DASH-1** | **`KIND_INITIAL_STATUS` is not published.** The Dashboard's per-kind counts are taken at each kind's "just arrived" status, but `/api/options/` serves only the full per-kind vocabulary — nothing marks which status is the initial one, so the tile → filtered-list link (":21349"'s counter-equals-list rule) has no served value to filter by. | The first entry of `crm.request_status_by_kind[kind]` is used — the builder lists source states in definition order and every machine is written initial-first, so it is right today, and a future reorder mis-filters **visibly** rather than silently. Publish `KIND_INITIAL_STATUS` (or put the status in the summary payload) to close it. |
+| **G-DOC-1** | *(see §5)* no document ref on `RequestMessage`. | Share by link. |
+
 ---
 
 ## 3 · The desk kit — why a new desk is assembly, not invention

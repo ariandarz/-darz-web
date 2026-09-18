@@ -20,6 +20,7 @@
  * ever offers a legal next status.
  */
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type {
@@ -47,10 +48,22 @@ const KINDS = [
 
 export function AdminRequestsPage() {
   const { crm, options } = useApi();
+  // The opening filter comes from the URL so a Dashboard tile lands on exactly
+  // the rows it counted — the old panel's own rule (`darz-studio.html:21349`,
+  // "a counter ALWAYS equals the list that opens when it is tapped"). Read once,
+  // as the controller's initial query: after that the controller owns the
+  // query, and re-reading it on every render would fight the user's filtering.
+  const [params] = useSearchParams();
   const { state, setQuery, setPage, reload } = useListController<
     AdminRequest,
     AdminRequestQuery
-  >(() => new AdminRequestsController(crm));
+  >(
+    () =>
+      new AdminRequestsController(crm, {
+        kind: params.get('kind') ?? undefined,
+        status: params.get('status') ?? undefined,
+      }),
+  );
   const [choices, setChoices] = useState<OptionsMap | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);

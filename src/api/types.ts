@@ -188,6 +188,43 @@ export interface Choice {
  * guarded state machine. Never hardcode this lookup (CLAUDE.md). */
 export type RequestStatusByKind = Record<string, Choice[]>;
 
+/**
+ * `GET /api/dashboard/admin/summary/` (backend Phase 29).
+ *
+ * Declared by hand rather than taken from `schema.d.ts`: the backend returns a
+ * plain dict assembled in `DashboardService.summary()`, so drf-spectacular has
+ * no serializer to describe it and the generated type is `unknown`. The shape
+ * below is that function, read directly — keep the two in step.
+ *
+ * `new_by_kind` is keyed by request kind, each counted at **that kind's own
+ * "just arrived" status** (`apps.crm.lifecycle.KIND_INITIAL_STATUS`), not at a
+ * universal "new" — this codebase has a per-kind status vocabulary and the old
+ * panel's single "new" tile does not survive it.
+ */
+export interface DashboardSummary {
+  requests: {
+    new_by_kind: Record<string, number>;
+    new_total: number;
+    resolved_total: number;
+  };
+  today: {
+    requests_created: number;
+    collectors_created: number;
+    bids_placed: number;
+    collector_logins: number;
+  };
+  collectors: { total: number; active: number };
+  catalogue: {
+    total: number;
+    available: number;
+    on_hold: number;
+    reserved: number;
+    sold: number;
+  };
+  auctions: { live_now: number; scheduled: number; registrations_pending: number };
+  exhibitions: { pending_review: number };
+}
+
 /** The `data` block of every paginated list endpoint (see
  * `apps.core.pagination.CustomPagination`). */
 export interface Paginated<T> {

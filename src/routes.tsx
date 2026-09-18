@@ -27,7 +27,10 @@ import { ArtworkCacheProvider } from './features/catalogue/ArtworkCacheProvider'
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
+import { AdminChatPage } from './features/admin/AdminChatPage';
 import { AdminShell } from './features/admin/AdminShell';
+import { AdminThreadPage } from './features/admin/AdminThreadPage';
+import { DashboardPage } from './features/admin/DashboardPage';
 import { asAdminRole, firstVisiblePath } from './features/admin/adminNav';
 import { AuctionEventPage } from './features/auctions/AuctionEventPage';
 import { AuctionListPage } from './features/auctions/AuctionListPage';
@@ -237,8 +240,12 @@ export function AppRoutes() {
           </Gate>
         }
       >
-        <Route path="/admin" element={<AdminIndex />} />
+        {/* the Dashboard is the desk an admin starts on (:11815's clamp
+            lands here now that it exists) */}
+        <Route path="/admin" element={<DashboardPage />} />
         <Route path="/admin/requests" element={<AdminRequestsPage />} />
+        <Route path="/admin/chat" element={<AdminChatPage />} />
+        <Route path="/admin/chat/:id" element={<AdminThreadPage />} />
         {/* An unknown `/admin/...` clamps to the desk, not to the collector
             Market the global catch-all would send it to: a team session has no
             business being dropped into the catalogue, and clamping is what the
