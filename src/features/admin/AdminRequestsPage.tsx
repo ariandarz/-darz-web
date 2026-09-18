@@ -4,8 +4,12 @@
  * arrives here, filterable by kind, status and archived, with a per-row
  * status transition. This is the "Admin receives the action" end of flow 1.
  *
- * Chrome ported from `darzstudio.art` `darz-studio.html`: `.ad-h`, `.ad-toolbar`,
- * `.ad-card` + `.ad-tbl` (see admin.css for the per-block line citations).
+ * Assembled from the desk kit (`./kit`) rather than hand-built chrome: the
+ * page shell, the filter controls, the four-way loading/error/empty/rows body,
+ * the table and the pager all come from there. What is left here is what is
+ * actually this desk's — its columns, its filters' vocabulary, and the
+ * transition action. That is the shape every other desk in the panel takes;
+ * see `docs/ADMIN_ARCHITECTURE.md`.
  *
  * `collector`/`artwork` are nested objects now, not bare uuids
  * (`docs/FLOW_1_API_GAPS.md` G-F1-7) — the feed shows a real name and work
@@ -24,9 +28,9 @@ import type {
   Choice,
   RequestStatusByKind,
 } from '../../api/types';
-import { Pager } from '../catalogue/Pager';
 import { useListController } from '../shared/useListController';
 import { AdminRequestsController } from './AdminRequestsController';
+import { DeskList, DeskPage, SelectFilter, ToggleFilter, type Column } from './kit';
 import './admin.css';
 
 /** The kinds the collector flow can produce, plus the rest of the closed set. */
@@ -83,115 +87,102 @@ export function AdminRequestsPage() {
     }
   };
 
+  const columns: ReadonlyArray<Column<AdminRequest>> = [
+    {
+      key: 'when',
+      header: 'When',
+      className: 'ad-when',
+      cell: (r) => whenLabel(r.created_at),
+    },
+    {
+      key: 'kind',
+      header: 'Kind',
+      cell: (r) => <span className={`ad-chip ${r.kind}`}>{titleCase(r.kind)}</span>,
+    },
+    {
+      key: 'collector',
+      header: 'Collector',
+      cell: (r) => r.collector?.display_name ?? shortId(String(r.collector)),
+    },
+    { key: 'artwork', header: 'Artwork', cell: (r) => artworkLabel(r.artwork) },
+    { key: 'detail', header: 'Detail', cell: (r) => detailLine(r.detail) },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (r) => (
+        <>
+          {titleCase(r.status)}
+          {r.unread_count > 0 && (
+            <span className="ad-unread" title={`${r.unread_count} unread reply`}>
+              {r.unread_count}
+            </span>
+          )}
+          {r.admin_archived && <span className="ad-archived-chip">Archived</span>}
+        </>
+      ),
+    },
+    {
+      key: 'move',
+      header: 'Move to',
+      cell: (r) => (
+        <select
+          value=""
+          onChange={(e) => void transition(r.id, e.target.value)}
+          aria-label={`Move request ${shortId(r.id)} to another status`}
+          disabled={r.allowed_transitions.length === 0}
+        >
+          <option value="">Move to…</option>
+          {r.allowed_transitions.map((value) => (
+            <option key={value} value={value}>
+              {statusLabel(statusByKind, r.kind, value)}
+            </option>
+          ))}
+        </select>
+      ),
+    },
+  ];
+
   return (
-    <div className="dz-page ad-page">
-      <h1 className="ad-h">Requests</h1>
-
-      <div className="ad-toolbar">
-        <select
-          value={state.query.kind ?? ''}
-          onChange={(e) => setQuery({ kind: e.target.value || undefined })}
-          aria-label="Filter by kind"
-        >
-          <option value="">All kinds</option>
-          {KINDS.map((k) => (
-            <option key={k} value={k}>
-              {titleCase(k)}
-            </option>
-          ))}
-        </select>
-        <select
-          value={state.query.status ?? ''}
-          onChange={(e) => setQuery({ status: e.target.value || undefined })}
-          aria-label="Filter by status"
-        >
-          <option value="">All statuses</option>
-          {filterStatuses.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <label className="ad-archived-toggle">
-          <input
-            type="checkbox"
-            checked={state.query.archived ?? false}
-            onChange={(e) => setQuery({ archived: e.target.checked || undefined })}
+    <DeskPage
+      title="Requests"
+      toolbar={
+        <>
+          <SelectFilter
+            label="Kind"
+            anyLabel="All kinds"
+            value={state.query.kind}
+            onChange={(kind) => setQuery({ kind })}
+            choices={KINDS.map((k) => ({ value: k, label: titleCase(k) }))}
           />
-          Archived only
-        </label>
-      </div>
-
-      {state.status === 'loading' && state.results.length === 0 && (
-        <p className="dz-state">Loading…</p>
-      )}
-      {state.status === 'error' && <p className="dz-state err">{state.error}</p>}
-      {actionError && <p className="dz-state err">{actionError}</p>}
-      {state.status !== 'loading' &&
-        state.status !== 'error' &&
-        state.results.length === 0 && (
-          <p className="dz-state">No requests match these filters.</p>
-        )}
-
-      {state.results.length > 0 && (
-        <div className="ad-card">
-          <div className="ad-scroll">
-            <table className="ad-tbl">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Kind</th>
-                  <th>Collector</th>
-                  <th>Artwork</th>
-                  <th>Detail</th>
-                  <th>Status</th>
-                  <th>Move to</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.results.map((r) => (
-                  <tr key={r.id}>
-                    <td className="ad-when">{whenLabel(r.created_at)}</td>
-                    <td>
-                      <span className={`ad-chip ${r.kind}`}>{titleCase(r.kind)}</span>
-                    </td>
-                    <td>{r.collector?.display_name ?? shortId(String(r.collector))}</td>
-                    <td>{artworkLabel(r.artwork)}</td>
-                    <td>{detailLine(r.detail)}</td>
-                    <td>
-                      {titleCase(r.status)}
-                      {r.unread_count > 0 && (
-                        <span className="ad-unread" title={`${r.unread_count} unread reply`}>
-                          {r.unread_count}
-                        </span>
-                      )}
-                      {r.admin_archived && <span className="ad-archived-chip">Archived</span>}
-                    </td>
-                    <td aria-busy={busyId === r.id || undefined}>
-                      <select
-                        value=""
-                        onChange={(e) => void transition(r.id, e.target.value)}
-                        aria-label={`Move request ${shortId(r.id)} to another status`}
-                        disabled={r.allowed_transitions.length === 0}
-                      >
-                        <option value="">Move to…</option>
-                        {r.allowed_transitions.map((value) => (
-                          <option key={value} value={value}>
-                            {statusLabel(statusByKind, r.kind, value)}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {state.pagination && <Pager pagination={state.pagination} onPage={setPage} />}
-    </div>
+          <SelectFilter
+            label="Status"
+            anyLabel="All statuses"
+            value={state.query.status}
+            onChange={(status) => setQuery({ status })}
+            choices={filterStatuses}
+          />
+          <ToggleFilter
+            label="Archived only"
+            checked={state.query.archived ?? false}
+            onChange={(on) => setQuery({ archived: on || undefined })}
+          />
+        </>
+      }
+    >
+      <DeskList
+        label="Requests"
+        status={state.status}
+        error={state.error}
+        actionError={actionError}
+        rows={state.results}
+        pagination={state.pagination}
+        onPage={setPage}
+        columns={columns}
+        rowKey={(r) => r.id}
+        busyKey={busyId}
+        empty="No requests match these filters."
+      />
+    </DeskPage>
   );
 }
 

@@ -37,6 +37,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
 import {
+  ADMIN_CHAT,
   ADMIN_HOME,
   asAdminRole,
   findTab,
@@ -89,13 +90,23 @@ export function AdminShell() {
         </div>
 
         <nav className="ad-tabs" aria-label="Admin sections">
-          {/* :11088 — `.ad-tab0`, the fixed first button, in no group */}
+          {/* :11088 / :11099 — the two `.ad-tab0` buttons that belong to no
+              group, which is why neither opens a second row (:11832). */}
           {ADMIN_HOME.path !== null && (
             <NavLink
               to={ADMIN_HOME.path}
               className={({ isActive }) => `ad-tab0${isActive ? ' is-active' : ''}`}
             >
               {ADMIN_HOME.label}
+            </NavLink>
+          )}
+          {ADMIN_CHAT.path !== null && (
+            <NavLink
+              to={ADMIN_CHAT.path}
+              className={({ isActive }) => `ad-tab0 ad-chattab${isActive ? ' is-active' : ''}`}
+              title="Chat — your conversations with collectors"
+            >
+              {ADMIN_CHAT.label}
             </NavLink>
           )}
 

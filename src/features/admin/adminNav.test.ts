@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ADMIN_GROUPS,
   OWNER_ONLY,
+  allTabs,
   asAdminRole,
   findTab,
   firstVisiblePath,
@@ -47,8 +48,21 @@ describe('OWNER_ONLY — the old panel’s list, :11800', () => {
 });
 
 describe('isTabAllowed — the owner always sees every tab', () => {
-  const ownerTab = { key: 'team', label: 'Team', path: '/x', ownerOnly: true };
-  const openTab = { key: 'design', label: 'App Design', path: '/y' };
+  const ownerTab = {
+    key: 'team',
+    label: 'Team',
+    path: '/x',
+    ownerOnly: true,
+    api: 'ready' as const,
+    phase: 'test',
+  };
+  const openTab = {
+    key: 'design',
+    label: 'App Design',
+    path: '/y',
+    api: 'ready' as const,
+    phase: 'test',
+  };
 
   it('gives the owner everything, owner-only included', () => {
     expect(isTabAllowed(ownerTab, 'owner')).toBe(true);
@@ -80,8 +94,12 @@ describe('visibleTabs — allowed AND built (D9)', () => {
 
 describe('visibleGroups', () => {
   it('drops a group with nothing renderable in it', () => {
-    // Every group but Collectors is entirely unbuilt today, so an owner — who
-    // is allowed all of them — still sees only the one.
+    // All fourteen groups are registered as the panel's map, but only the
+    // Collectors group has a built tab today, so an owner — who is allowed
+    // every one of them — still sees only that one in the navbar.
+    // Fourteen, not fifteen: `ADGROUPS` has fifteen entries but `more` is the
+    // folded-group MENU, not a group — `foldedGroups()` derives it.
+    expect(ADMIN_GROUPS.length).toBe(14);
     expect(visibleGroups('owner').map((g) => g.key)).toEqual(['collectors']);
   });
 
@@ -143,5 +161,70 @@ describe('asAdminRole — anything but the literal "owner" is a standard admin',
     expect(asAdminRole(undefined)).toBe('standard_admin');
     expect(asAdminRole('Owner')).toBe('standard_admin');
     expect(asAdminRole('')).toBe('standard_admin');
+  });
+});
+
+describe('the map itself — every registered tab is documented', () => {
+  it('gives every tab an api state and an owning phase', () => {
+    for (const t of allTabs()) {
+      expect(['ready', 'partial', 'none']).toContain(t.api);
+      expect(t.phase).toBeTruthy();
+    }
+  });
+
+  it('explains every tab whose API is not ready', () => {
+    // A `none`/`partial` with no note is a trap for whoever builds it next.
+    for (const t of allTabs()) {
+      if (t.api !== 'ready') expect(t.note, `${t.key} has no note`).toBeTruthy();
+    }
+  });
+
+  it('never registers a built desk against a missing API', () => {
+    for (const t of allTabs()) {
+      if (t.path !== null) expect(t.api, `${t.key} is built`).not.toBe('none');
+    }
+  });
+
+  it('has no duplicate route among built tabs', () => {
+    const paths = allTabs()
+      .map((t) => t.path)
+      .filter((p): p is string => p !== null);
+    expect(new Set(paths).size).toBe(paths.length);
+  });
+
+  it('keeps Dashboard and Chat out of every group — they are :11088/:11099', () => {
+    const grouped = ADMIN_GROUPS.flatMap((g) => g.tabs).map((t) => t.key);
+    expect(grouped).not.toContain('dashboard');
+    expect(grouped).not.toContain('chat');
+  });
+
+  it('folds exactly the five groups AD_FOLDED names (:11781)', () => {
+    const folded = ADMIN_GROUPS.filter((g) => g.folded).map((g) => g.key);
+    expect(folded).toEqual(['collectors', 'sales', 'projects', 'intelligence', 'operations']);
+  });
+
+  it('marks exactly the three owner groups gold', () => {
+    const owner = ADMIN_GROUPS.filter((g) => g.owner).map((g) => g.key);
+    expect(owner).toEqual(['social', 'owner', 'system']);
+  });
+
+  it('carries App Design in two groups — one screen, two entry points', () => {
+    const groups = ADMIN_GROUPS.filter((g) => g.tabs.some((t) => t.key === 'design'));
+    expect(groups.map((g) => g.key)).toEqual(['market', 'operations']);
+  });
+});
+
+describe('the map’s size, stated so a partial port cannot pass quietly', () => {
+  it('registers 14 groups and 55 tabs', () => {
+    // 14 groups: ADGROUPS' fifteen entries minus `more`, which is the
+    // folded-group menu rather than a group of its own.
+    expect(ADMIN_GROUPS.length).toBe(14);
+    // 53 group tabs + Dashboard + Chat, the two that belong to no group.
+    expect(allTabs().length).toBe(55);
+  });
+
+  it('counts what is actually built, so progress cannot be overstated', () => {
+    const built = allTabs().filter((t) => t.path !== null);
+    expect(built.map((t) => t.key)).toEqual(['activity']);
   });
 });
