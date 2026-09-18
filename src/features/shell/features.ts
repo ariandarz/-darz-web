@@ -102,14 +102,26 @@ const FULL: FeatureFlags = {
 
 export const FEATURE_SETS: Record<FeatureSet, FeatureFlags> = { 'v0.1': V0_1, full: FULL };
 
-/** Which set the build runs. Unset / unknown → `v0.1` (the launch scope). */
-export function resolveFeatureSet(
-  raw: unknown = import.meta.env.VITE_FEATURE_SET,
-): FeatureSet {
+/**
+ * Normalise a raw `VITE_FEATURE_SET` value. Unset / unknown → `v0.1` (the
+ * launch scope).
+ *
+ * `raw` is **required**, and deliberately so: this used to default to
+ * `import.meta.env.VITE_FEATURE_SET`, which made the function impure and its
+ * own "unset" test meaningless — a JS default parameter fires on an explicit
+ * `undefined`, so `resolveFeatureSet(undefined)` re-read the ambient env
+ * instead of testing the unset case. On a machine whose `.env.local` sets
+ * `VITE_FEATURE_SET=full` the test failed; in CI, where there is no
+ * `.env.local`, it passed — green on the runner, red on a developer's desk,
+ * which is the worst way for a test to be wrong. Reading the environment is
+ * now the single call site below.
+ */
+export function resolveFeatureSet(raw: unknown): FeatureSet {
   return raw === 'full' ? 'full' : 'v0.1';
 }
 
-export const FEATURE_SET: FeatureSet = resolveFeatureSet();
+/** Which set this build runs — the one place the environment is read. */
+export const FEATURE_SET: FeatureSet = resolveFeatureSet(import.meta.env.VITE_FEATURE_SET);
 export const features: FeatureFlags = FEATURE_SETS[FEATURE_SET];
 
 /**

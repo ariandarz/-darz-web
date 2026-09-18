@@ -2,10 +2,12 @@
  * The v0.1 feature table — what is visible, what is preserved-but-hidden, and
  * that a hidden feature's deep links are refused.
  */
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FEATURE_SETS, isHiddenPath, resolveFeatureSet } from './features';
 
 describe('feature sets', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it('v0.1 shows Market · Records · Chat · Profile · Settings and Send Inquiry only', () => {
     const f = FEATURE_SETS['v0.1'];
     expect([f.market, f.records, f.chat, f.profile, f.settings]).toEqual([
@@ -38,6 +40,19 @@ describe('feature sets', () => {
     expect(resolveFeatureSet(undefined)).toBe('v0.1');
     expect(resolveFeatureSet('')).toBe('v0.1');
     expect(resolveFeatureSet('beta')).toBe('v0.1');
+    expect(resolveFeatureSet('full')).toBe('full');
+  });
+
+  it('ignores the ambient env — the raw value is the only input', () => {
+    /* Regression guard. `resolveFeatureSet` used to default its parameter to
+       `import.meta.env.VITE_FEATURE_SET`, and a JS default fires on an explicit
+       `undefined`, so the "unset" assertion above silently re-read the
+       environment. A developer whose .env.local says `full` got a red test; CI,
+       with no .env.local, got green. Pin it: even with the env set to `full`,
+       an unset raw value must still resolve to v0.1. */
+    vi.stubEnv('VITE_FEATURE_SET', 'full');
+    expect(resolveFeatureSet(undefined)).toBe('v0.1');
+    expect(resolveFeatureSet('')).toBe('v0.1');
     expect(resolveFeatureSet('full')).toBe('full');
   });
 

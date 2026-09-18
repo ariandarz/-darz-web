@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — CI, and a test that was green in CI and red on a desk
+
+- `.github/workflows/quality.yml`: typecheck · lint · format:check · test · build, on every PR and
+  on pushes to `main`/`development`. Verified on a real clean checkout (`npm ci`) before landing,
+  so its first run is green. Until now every recorded "green" was hand-run and unenforced.
+- `resolveFeatureSet` no longer defaults its argument to `import.meta.env` — a JS default fires on
+  an explicit `undefined`, so the "unset" test re-read the ambient env and failed for anyone whose
+  `.env.local` set `full`. Now pure, with a `vi.stubEnv` regression guard. 126 tests.
+
 ## 2026-09-18 — Released the team sign-in to `main`
 
 - PR #30 brought `main` level (`77f3655`), PR #31 merged the release commit back (`b4b257e`) — the
