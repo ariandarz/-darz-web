@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — The admin as one system: the full map + the desk kit
+
+- `docs/ADMIN_ARCHITECTURE.md` — all **14 groups / 55 tabs**, the owner's port-content /
+  modernise-mechanics rule, the desk kit contract, owner-controlled feature flags via `app-theme`
+  (§4), the one-Document-Studio answer (§5), and the build order. `adminNav.ts` now carries the
+  whole map with each tab's API state and owning phase, so doc and navbar cannot drift.
+- `features/admin/kit/` — DeskPage · DeskList · DataTable · filters · ConfirmDialog ·
+  ShownOnceSecret. `AdminRequestsPage` refactored onto it as the worked example. 179 tests (+21).
+
 ## 2026-09-18 — Phase 11b Step 0: the panel shell
 
 - The old panel's two-tier navbar, ported as data (`adminNav.ts` ← darz-studio.html:11721-11803) and

@@ -592,7 +592,13 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [ ] Accounting desk UI (4 ledger books + Private Deals) — real Django permission scope replaces
       the old passkey hack; don't rebuild the passkey pattern in the frontend
 
-## Phase 11b — Admin: Owner Panel ✅ backend ready 2026-09-17 · **plan confirmed 2026-09-18 → `docs/PHASE_11B_PLAN.md`** · Step 0 done, Steps 1-7 open
+## Phase 11b — Admin: Owner Panel ✅ backend ready 2026-09-17 · **plan confirmed 2026-09-18 → `docs/PHASE_11B_PLAN.md`** · Step 0 + the desk kit done
+
+> **The panel is bigger than this phase.** `docs/ADMIN_ARCHITECTURE.md` (2026-09-18) is the whole
+> admin as one system — **14 groups, 55 tabs**, of which Phase 11b is 11. It carries the
+> port-vs-modernise rule the owner set, the desk kit's contract, the owner-controlled feature-flag
+> architecture (§4), the Document Studio (§5), and the build order for everything else. Read it
+> before starting any admin work outside this phase.
 
 New since the last `TASKLIST.md` pass — the client asked to prioritize finishing "the panel" (the old
 `darz-studio.html` admin app). Backend audited every old panel tab against existing `admin/*` routes

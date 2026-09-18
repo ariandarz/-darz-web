@@ -453,3 +453,193 @@
     width: 100%;
   }
 }
+
+/* ---- the desk kit (features/admin/kit) ----------------------------------
+   The shared vocabulary every desk assembles from. Same rule as the rest of
+   this file: the old panel's values mapped onto this project's tokens, so one
+   rule set is correct in Paper and Black. See docs/ADMIN_ARCHITECTURE.md.   */
+
+/* DeskPage — heading row. `.ad-h` is the old class (:9104); the row around it
+   is new, because the old panel's primary action lives in the global header
+   (＋ New, :11106) and a per-route app gives the desk its own. */
+.ad-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.ad-action {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--ctl-bg);
+  color: var(--ctl-text);
+  border: 1px solid var(--ctl-border);
+  border-radius: 9px;
+  padding: 8px 15px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+.ad-action:hover:not(:disabled) {
+  background: var(--ctl-hover);
+}
+.ad-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* filters — a visible label above each control, which the old bare selects
+   lacked (see filters.tsx for why that is the one mechanics change here) */
+.ad-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+}
+.ad-filter--grow {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.ad-filter-l {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.ad-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink2);
+  align-self: flex-end;
+  padding-bottom: 10px;
+  white-space: nowrap;
+}
+
+/* ShownOnceSecret — the four-endpoint credential panel */
+.ad-secret {
+  border: 1px solid var(--status-res);
+  background: var(--status-res-bg);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.ad-secret-h {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.ad-secret-hint {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink2);
+}
+.ad-secret-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+  flex-wrap: wrap;
+}
+.ad-secret-v {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 9px 13px;
+  user-select: all;
+  word-break: break-all;
+}
+.ad-secret-copy,
+.ad-secret-done {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 9px 13px;
+  color: var(--ink);
+  cursor: pointer;
+  flex: none;
+}
+.ad-secret-copy:hover,
+.ad-secret-done:hover {
+  border-color: var(--ink);
+}
+.ad-secret-warn {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--status-res);
+}
+.ad-secret-done {
+  margin-top: 12px;
+}
+
+/* ConfirmDialog — the old panel's dzConfirm, as a component */
+.ad-confirm-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 10, 10, 0.44);
+}
+.ad-confirm {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  padding: 22px 24px;
+  max-width: 420px;
+  width: 100%;
+}
+.ad-confirm-m {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.ad-confirm-a {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+}
+.ad-confirm-no,
+.ad-confirm-ok {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 9px;
+  padding: 9px 16px;
+  cursor: pointer;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+}
+.ad-confirm-ok {
+  background: var(--ctl-bg);
+  border-color: var(--ctl-border);
+  color: var(--ctl-text);
+}
+.ad-confirm-ok.is-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.ad-confirm-no:disabled,
+.ad-confirm-ok:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

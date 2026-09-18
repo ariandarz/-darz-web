@@ -10,9 +10,15 @@
  * `theme.chatAI` / `theme.storiesShow` for the rest — but as ONE typed table
  * read by the nav, the route table, the artwork detail and the profile.
  *
- * Only the code reads this. There is no runtime/owner toggle yet (the old
- * app's is Admin → Owner Settings; the new backend has no equivalent), which is
- * why the set is chosen by a build-time env var rather than an API call.
+ * Only the code reads this **today**, and the set is chosen by a build-time env
+ * var. That is about to change, and the note that used to sit here — "the new
+ * backend has no equivalent" — is no longer true: backend Phase 32's
+ * `core.AppTheme` is a freeform JSON singleton with a public `GET /api/app-theme/`
+ * (`AllowAny`, readable before sign-in), named version checkpoints, and no fixed
+ * schema on either side. That is the same shape the old app's owner settings
+ * had, so this table moves to `theme.features`, read at boot, with
+ * `VITE_FEATURE_SET` kept as the fallback when the fetch fails — a dead theme
+ * endpoint must never dark-screen the app. See `docs/ADMIN_ARCHITECTURE.md` §4.
  *
  * `VITE_FEATURE_SET` — `v0.1` (default when unset) or `full`. See `.env.example`.
  */

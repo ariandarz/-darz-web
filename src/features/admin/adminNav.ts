@@ -1,32 +1,32 @@
 /**
- * The admin panel's navigation, ported as **data** from the old panel's own
- * `ADGROUPS` table (`darzstudio.art` `darz-studio.html:11721-11779`), its
- * `AD_FOLDED` map (`:11781`) and `_dzAllowedTabs` (`:11794-11803`).
+ * The admin panel's navigation and its build map, ported as **data** from the
+ * old panel's own `ADGROUPS` table (`darzstudio.art` `darz-studio.html:11721-11779`),
+ * its `AD_FOLDED` map (`:11781`) and `_dzAllowedTabs` (`:11794-11803`).
  *
  * Why a table and not markup: the old panel's navbar is generated from exactly
  * this structure, and every rule that matters — which group a page belongs to,
  * which tabs a role may see, which groups fold under More — is a lookup against
- * it. Porting the structure keeps those rules in one place; porting the
- * rendered markup instead would scatter them (docs/PHASE_11B_PLAN.md §2).
+ * it. Porting the structure keeps those rules in one place.
  *
- * **The shape is not obvious from the backend's tab names, so read §2 of the
- * plan before adding to this file.** The old panel is a two-tier navbar with
- * sixteen groups; Phase 11b's desks are scattered across five of them. Import
- * sits beside Database under *Artworks*, Data Health under *Operations*, and
- * App Design appears in **two** groups at once.
+ * **This file is the whole admin's map, not just the built part.** All fourteen
+ * groups and 55 tabs are here, so `docs/ADMIN_ARCHITECTURE.md` and the navbar
+ * can never disagree about what the panel is. (Fourteen, not fifteen: `ADGROUPS`
+ * has fifteen entries, but `more` is the folded-group *menu* rather than a
+ * group — `foldedGroups()` derives it. Plus Dashboard and Chat, which belong to
+ * no group.) Three fields carry the state of each tab:
  *
- * ## What is registered here
+ *  - `path`   — this app's route, or `null` while the desk is unbuilt.
+ *               **`path` alone decides what renders**: `visibleTabs()` drops a
+ *               `null`, so an unbuilt desk is absent from the navbar rather
+ *               than stubbed (owner decision D9). Building a desk is then: add
+ *               the route, give the tab its path.
+ *  - `api`    — whether the backend this desk needs exists today. Documentation
+ *               that lives beside the thing it describes, so it cannot drift
+ *               into a stale table in a doc. It does **not** affect rendering.
+ *  - `phase`  — which frontend phase owns it, for the same reason.
  *
- * Only Phase 11b's own groups and tabs — the five the plan builds. The other
- * eleven groups (Artists, Galleries, Auctions, Documents, Sales, Intelligence,
- * Social, …) belong to other phases and are deliberately absent rather than
- * stubbed (owner decision D9).
- *
- * A tab whose desk is not built yet carries `path: null`. It stays in the table
- * so the port is complete and the owner-gating rules can be tested against the
- * real key set, but **nothing renders it** — `visibleTabs()` drops it. Building
- * a desk is then: add its route, give the tab its `path`. That is the same
- * "absent, not stubbed" result D9 asked for, without a half-ported table.
+ * The old panel's own page key (`ap`) is kept as `key` so any tab can be
+ * grepped back to its source in `darz-studio.html`.
  */
 
 /** The two real roles this system has (`apps/core/permissions.py:24-25`). The
@@ -35,16 +35,25 @@
  * no third source of truth to consult. */
 export type AdminRole = 'owner' | 'standard_admin';
 
+/** Whether the API a desk needs is there. `partial` means some of the desk's
+ * tabs/actions are served and some are not — the desk is buildable, with the
+ * unserved parts flagged on screen rather than silently missing. */
+export type ApiState = 'ready' | 'partial' | 'none';
+
 export interface AdminTab {
-  /** The old panel's own page key (its `ap`), kept verbatim so a reader can
-   * grep `darz-studio.html` for the desk this tab opens. */
+  /** The old panel's own page key (its `ap`), verbatim. */
   key: string;
   label: string;
-  /** This app's route, or `null` while the desk is unbuilt. */
+  /** This app's route, or `null` while the desk is unbuilt. Decides rendering. */
   path: string | null;
-  /** In the old panel's `OWNER_ONLY` list (`:11800`). Derived below rather
-   * than hand-set, so the two can never drift. */
+  /** In the old panel's `OWNER_ONLY` list (`:11800`). Derived, never hand-set. */
   ownerOnly?: boolean;
+  /** Backend readiness. Documentation only — never affects rendering. */
+  api: ApiState;
+  /** Which frontend phase owns this desk. Documentation only. */
+  phase: string;
+  /** Why `api` is not `ready`, or anything a builder needs to know first. */
+  note?: string;
 }
 
 export interface AdminGroup {
@@ -82,79 +91,380 @@ export const OWNER_ONLY: readonly string[] = [
   'portal',
 ];
 
-/** Tag a tab from `OWNER_ONLY` so the list stays the single source. */
-function tab(key: string, label: string, path: string | null): AdminTab {
-  const t: AdminTab = { key, label, path };
+/** Build a tab, tagging `ownerOnly` from `OWNER_ONLY` so that list stays the
+ * single source of the rule. */
+function tab(
+  key: string,
+  label: string,
+  path: string | null,
+  api: ApiState,
+  phase: string,
+  note?: string,
+): AdminTab {
+  const t: AdminTab = { key, label, path, api, phase };
   if (OWNER_ONLY.includes(key)) t.ownerOnly = true;
+  if (note) t.note = note;
   return t;
 }
 
 /**
- * The Dashboard button — `.ad-tab0` in the old markup (`:11088`), a fixed first
- * entry that belongs to no group, which is why `_dzPageGroup('dashboard')`
- * returns `''` and the sub-row stays hidden on it.
+ * The two fixed top-row buttons that belong to **no group** — `.ad-tab0`
+ * (`:11088`) and `.ad-tab0.ad-chattab` (`:11099`). `_dzPageGroup` returns `''`
+ * for both, which is why the sub-row stays hidden on them (`:11832`).
  */
-export const ADMIN_HOME: AdminTab = tab('dashboard', 'Dashboard', null);
+export const ADMIN_HOME: AdminTab = tab(
+  'dashboard',
+  'Dashboard',
+  null,
+  'ready',
+  '11b·1',
+  'GET /api/dashboard/admin/summary/ (backend Phase 29).',
+);
+
+export const ADMIN_CHAT: AdminTab = tab(
+  'chat',
+  'Chat',
+  null,
+  'ready',
+  '11b·3',
+  'The admin end of the collector conversation — crm admin messages, already ' +
+    'consumed by the collector side. Its own top-row button, not a group tab.',
+);
 
 /**
- * Phase 11b's slice of `ADGROUPS` (`:11721-11779`), in the old file's own
- * order. Labels are verbatim.
+ * Every group in `ADGROUPS` (`:11721-11779`), in the old file's own order.
+ *
+ * `more` is not registered: it is the folded-group menu, which `foldedGroups()`
+ * derives from the `folded` flag rather than storing twice. The `artist` and
+ * `gallery` workspace pages are not here either — the old panel reaches them
+ * from a list, not from the navbar (`:11743`, `:11727`).
  */
 export const ADMIN_GROUPS: readonly AdminGroup[] = [
-  // :11721 — {k:'catalog',label:'Artworks',tabs:[{ap:'database'},{ap:'import'}]}
-  // `database` is Phase 7's desk, not this phase's, so only Import is listed.
   {
     key: 'catalog',
     label: 'Artworks',
-    tabs: [tab('import', 'Import', null)],
+    tabs: [
+      tab('database', 'Database', null, 'ready', '7', 'catalog admin CRUD, 18 routes.'),
+      tab(
+        'import',
+        'Import',
+        null,
+        'ready',
+        '11b·6',
+        'Staging queue is served; CSV/PDF PARSING is frontend work (D15: CSV + paste first).',
+      ),
+    ],
   },
-  // :11729 — {k:'market',label:'Market App',tabs:[{ap:'market'},{ap:'design'}]}
-  // `market` (Published works) is Phase 7's; App Design is this phase's.
+  {
+    key: 'artists',
+    label: 'Artists',
+    tabs: [tab('artists', 'Artists', null, 'ready', '7', 'catalog admin artists.')],
+  },
+  {
+    key: 'galleries',
+    label: 'Galleries',
+    tabs: [
+      tab('galleries', 'Galleries', null, 'ready', '10', 'gallery admin, 22 routes.'),
+      tab('sources', 'Sources & Partners', null, 'ready', '10'),
+    ],
+  },
   {
     key: 'market',
     label: 'Market App',
-    tabs: [tab('design', 'App Design', null)],
+    tabs: [
+      tab('market', 'Published works', null, 'ready', '7'),
+      // App Design is in this group AND under Operations — one screen, two
+      // entry points (:11730 and :11764). A fact to port, not a bug to fix.
+      tab(
+        'design',
+        'App Design',
+        null,
+        'ready',
+        '11b·5',
+        'core app-theme, public read + admin write.',
+      ),
+    ],
   },
-  // :11746 — the Collectors group, folded under More.
-  // The old middle tab routes through `goReq('all')` rather than a plain page
-  // switch, because page:'activity' is shared with the Auctions group's
-  // "Register to Bid" and the two must not inherit each other's scope
-  // (:11747-11751). Here they are separate routes, so the collision is gone.
+  {
+    key: 'documents',
+    label: 'Documents',
+    tabs: [
+      // The first four are one page with a sticky sub-tab in the old panel
+      // (`docsTab(...)`, :11732-11735); here they are four routes.
+      tab('docProposals', 'Proposals', null, 'ready', '11'),
+      tab('docInvoices', 'Invoices', null, 'ready', '11'),
+      tab('docFiles', 'Library', null, 'ready', '11'),
+      tab('docHistory', 'History', null, 'ready', '11'),
+      tab(
+        'library',
+        'Pricelists & saved items',
+        null,
+        'none',
+        '12+',
+        'Backend Phase 21 (two builders + savedItems) is not built.',
+      ),
+      tab('archive', 'Document Builder', null, 'ready', '11', 'documents admin, 7 routes.'),
+    ],
+  },
+  {
+    key: 'auctions',
+    label: 'Auctions',
+    tabs: [
+      tab('auctions', 'Live Auctions', null, 'ready', '7', 'auctions admin, 12 routes.'),
+      tab('records', 'Auction Records', null, 'ready', '7'),
+      tab('aucReg', 'Register to Bid', null, 'ready', '7', 'Paddle registrations queue.'),
+    ],
+  },
   {
     key: 'collectors',
     label: 'Collectors',
     folded: true,
     tabs: [
-      tab('users', 'Collectors', null),
-      tab('activity', 'Requests & Activity', '/admin/requests'),
-      tab('club', 'Collector Club', null),
+      tab('users', 'Collectors', null, 'ready', '11b·2'),
+      tab('activity', 'Requests & Activity', '/admin/requests', 'ready', '11b·3'),
+      tab(
+        'club',
+        'Collector Club',
+        null,
+        'ready',
+        '11b·3',
+        'crm.CollectorSelection (backend Phase 35).',
+      ),
     ],
   },
-  // :11763 — {k:'operations',...,tabs:[{ap:'design'},{ap:'logistics'},{ap:'analytics'},{ap:'health'}]}
-  // App Design appears here AND under Market App — one screen, two entry
-  // points. Not a bug to fix: a fact to port (plan §2, finding 1).
-  // `logistics` and `analytics` are other phases'.
+  {
+    key: 'sales',
+    label: 'Sales',
+    folded: true,
+    tabs: [
+      tab('marketSales', 'Market Sales', null, 'ready', '7', 'sales admin, 5 routes.'),
+      tab('auctionSales', 'Auction Sales', null, 'ready', '7'),
+    ],
+  },
+  {
+    key: 'projects',
+    label: 'Projects',
+    folded: true,
+    tabs: [
+      tab('projDash', 'Dashboard', null, 'ready', '11c'),
+      tab('projList', 'Projects', null, 'ready', '11c'),
+      tab(
+        'projPipeline',
+        'Pipeline',
+        null,
+        'ready',
+        '11c',
+        '17 stages; the status label is derived server-side.',
+      ),
+      tab('projPackages', 'Packages', null, 'ready', '11c'),
+      tab(
+        'projProposal',
+        'Proposal',
+        null,
+        'none',
+        '11c',
+        'Proposal Builder composition is NOT built on the backend either — it ' +
+          'would reuse documents.Document once scoped.',
+      ),
+      tab('projCalc', 'Calculator', null, 'ready', '11c'),
+      tab('projPartners', 'Partners', null, 'ready', '11c'),
+      tab('projReports', 'Reports', null, 'ready', '11c'),
+    ],
+  },
+  {
+    key: 'intelligence',
+    label: 'Intelligence',
+    folded: true,
+    tabs: [
+      tab(
+        'recoOverview',
+        'Overview',
+        null,
+        'ready',
+        '11',
+        'recommendations admin, 14 routes.',
+      ),
+      tab('recoTag', 'Tagging & Review', null, 'ready', '11'),
+      tab('recoFilters', 'Smart Filters', null, 'ready', '11'),
+      tab('recoReco', 'Recommendations', null, 'ready', '11'),
+      tab('recoHistory', 'History', null, 'ready', '11'),
+    ],
+  },
   {
     key: 'operations',
     label: 'Operations',
     folded: true,
-    tabs: [tab('design', 'App Design', null), tab('health', 'Data Health', null)],
+    tabs: [
+      tab('design', 'App Design', null, 'ready', '11b·5'),
+      tab(
+        'logistics',
+        'Logistics & Payments',
+        null,
+        'none',
+        '12+',
+        'Backend Phase 20 (DARZ_LOGI_SCHEMA, large surface) is not built.',
+      ),
+      tab(
+        'analytics',
+        'Analytics',
+        null,
+        'none',
+        '12+',
+        'No analytics API. The Dashboard summary is the only aggregate served.',
+      ),
+      tab(
+        'health',
+        'Data Health',
+        null,
+        'partial',
+        '11b·6',
+        'Three of the old desk’s ~8 checks port; the rest diagnosed the old ' +
+          'client-sync architecture, which does not exist here.',
+      ),
+    ],
   },
-  // :11774 — the Owner group. Only Access and Team are this phase's.
+  {
+    key: 'social',
+    label: 'Social',
+    owner: true,
+    tabs: [
+      tab(
+        'igStudio',
+        'Instagram',
+        null,
+        'none',
+        '12+',
+        'Deliberately unscoped by the backend (their Phase 23 intro) — awaiting an owner decision there.',
+      ),
+      tab(
+        'stories',
+        'Insights & Stories',
+        null,
+        'none',
+        '12+',
+        'Backend Phase 22 (storiesView) is not built. **This is what "news" means here** — ' +
+          'the old panel has no news desk.',
+      ),
+      tab(
+        'socialCal',
+        'Content Calendar',
+        null,
+        'none',
+        '12+',
+        'Deliberately unscoped by the backend.',
+      ),
+      tab(
+        'socialAi',
+        'AI Settings',
+        null,
+        'none',
+        '12+',
+        'Deliberately unscoped by the backend.',
+      ),
+    ],
+  },
   {
     key: 'owner',
     label: 'Owner',
     owner: true,
-    tabs: [tab('access', 'Access', null), tab('team', 'Team', null)],
+    tabs: [
+      tab(
+        'access',
+        'Access',
+        null,
+        'ready',
+        '11b·2',
+        'AccessKey issue/revoke/extend + login events.',
+      ),
+      tab('team', 'Team', null, 'ready', '11b·4'),
+      tab(
+        'strategy',
+        'Strategy',
+        null,
+        'none',
+        '12+',
+        'Deliberately unscoped by the backend.',
+      ),
+      tab(
+        'marketing',
+        'Marketing',
+        null,
+        'ready',
+        '11',
+        'marketing admin, 5 routes incl. campaign copy.',
+      ),
+      tab(
+        'accounting',
+        'Accounting',
+        null,
+        'ready',
+        '11',
+        'accounting admin, 15 routes (4 ledgers + Private Deals).',
+      ),
+      tab(
+        'automations',
+        'Automations',
+        null,
+        'none',
+        '12+',
+        'Deliberately unscoped by the backend.',
+      ),
+      tab(
+        'settings',
+        'Settings',
+        null,
+        'partial',
+        '11',
+        'Audit log (GET /api/admin/audit-log/, IsOwner) is served; the rest of ' +
+          'the old Settings tab is owner preferences with no API.',
+      ),
+      tab(
+        'languages',
+        'Languages',
+        null,
+        'none',
+        '12+',
+        'Backend Phase 26 (i18n + white-label) is not built.',
+      ),
+      tab(
+        'portal',
+        'Market Portal',
+        null,
+        'ready',
+        '10',
+        'gallery portal admin — links, review/approve.',
+      ),
+    ],
   },
-  // :11776 — Access Management, both tabs this phase's.
   {
     key: 'system',
     label: 'Access Management',
     owner: true,
-    tabs: [tab('memberships', 'Memberships', null), tab('system', 'Access Request', null)],
+    tabs: [
+      tab(
+        'memberships',
+        'Memberships',
+        null,
+        'ready',
+        '11b·4',
+        'No payment processing anywhere, by design.',
+      ),
+      tab(
+        'system',
+        'Access Request',
+        null,
+        'ready',
+        '11b·2',
+        'The review queue for the public request form.',
+      ),
+    ],
   },
 ];
+
+/** Every registered tab, groups flattened, plus the two group-less buttons. */
+export function allTabs(): AdminTab[] {
+  return [ADMIN_HOME, ADMIN_CHAT, ...ADMIN_GROUPS.flatMap((g) => g.tabs)];
+}
 
 /**
  * `_dzAllowedTabs` (`:11794`), whose opening comment is the rule and is worth
@@ -179,8 +489,8 @@ export function visibleGroups(role: AdminRole): AdminGroup[] {
   );
 }
 
-/** The top row: Dashboard, then the unfolded groups, then More (when any
- * folded group is visible), then the owner groups — `:11092-11102`'s order. */
+/** The top row: the unfolded groups, in `ADGROUPS` order. Dashboard, Chat and
+ * More are rendered around these by `AdminShell` (`:11088-11102`). */
 export function topRowGroups(role: AdminRole): AdminGroup[] {
   return visibleGroups(role).filter((g) => !g.folded);
 }
@@ -191,7 +501,7 @@ export function foldedGroups(role: AdminRole): AdminGroup[] {
 }
 
 /** Which group owns a route, and which tab. `null` for a path outside the
- * panel, and for the Dashboard, which belongs to no group.
+ * panel, and for Dashboard and Chat, which belong to no group.
  *
  * App Design is in two groups, so a first match is all that can be returned —
  * the same ambiguity `_dzPageGroup` has, which the old panel resolves with
