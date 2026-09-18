@@ -10,14 +10,15 @@
  *              "Darz replied to you" banner, recent activity. The
  *              questionnaire ("Get to know you") and "Curated for you" cards
  *              are behind `features.questionnaire` / `.recommendations`.
- *   Market   — Saved works + "Requests & activity" with filter chips
+ *   Market   — "Your acquisitions" (`dzAcqSectionHTML`, :9685) over Saved
+ *              works and "Requests & activity" with filter chips
  *              (`profMarketHTML`, :9704). Buy / Offers chips only appear
  *              when such requests exist (as the old app did).
  *   Account  — account details, access key, "Leave the Room"
  *              (`profAccountHTML`, :9738). Read-only: the backend has no
  *              profile-update endpoint yet (flagged in docs/V0_1_SCOPE.md).
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
 import type { CollectorRequest, SavedArtwork, SavedArtworkQuery } from '../../api/types';
@@ -26,6 +27,8 @@ import { useArtworks } from '../catalogue/useArtworkCache';
 import '../catalogue/catalogue.css';
 import { ConversationRow } from '../conversations/ConversationRow';
 import { useConversations } from '../conversations/useConversations';
+import { Sheet } from '../../components';
+import { Acquisitions } from './Acquisitions';
 import { SavedListController } from '../saved/SavedListController';
 import { useSaved } from '../saved/useSaved';
 import { useListController } from '../shared/useListController';
@@ -137,10 +140,12 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
   const saved = useSavedList();
   const acts = controller.activity();
   const unseen = controller.unreadTotal();
-  const recent = useMemo(
-    () => [...controller.conversations(), ...acts].sort(byNewest).slice(0, 3),
-    [controller, acts],
-  );
+  // Derived on every render, deliberately: these lists are a handful of rows,
+  // and a `useMemo` keyed on the controller (which never changes) would never
+  // recompute — a poll landing while Profile is open would not reach the list.
+  const recent = [...controller.conversations(), ...controller.activity()]
+    .sort(byNewest)
+    .slice(0, 3);
   const lookup = useArtworks(recent.map((r) => r.artwork));
   const sv = saved.state.pagination?.total_count ?? saved.state.results.length;
 
@@ -219,10 +224,9 @@ function Market() {
   const { controller } = useConversations();
   const saved = useSavedList();
   const [filter, setFilter] = useState<Filter>('all');
-  const all = useMemo(
-    () => [...controller.conversations(), ...controller.activity()].sort(byNewest),
-    [controller],
-  );
+  const [clearing, setClearing] = useState(false);
+  // derived per render — see the note in Overview
+  const all = [...controller.conversations(), ...controller.activity()].sort(byNewest);
   const counts = Object.fromEntries(
     FILTERS.map(([f]) => [f, all.filter((r) => filterMatch(r, f)).length]),
   ) as Record<Filter, number>;
@@ -253,7 +257,13 @@ function Market() {
           </svg>
         </div>
         <div className="pe-t">Nothing here yet</div>
-        <div className="pe-s">Save a work or send an inquiry — it all gathers here.</div>
+        {/* app.html:9733 when the commerce actions are on, the v0.1 line when
+            Send Inquiry is the only CTA there is (owner decision D9). */}
+        <div className="pe-s">
+          {features.commerceActions
+            ? 'Save a work, request a price, or make an offer — it all gathers here.'
+            : 'Save a work or send an inquiry — it all gathers here.'}
+        </div>
         <div className="pe-b">
           <Link to="/" className="btn primary">
             Browse the collection →
@@ -265,6 +275,7 @@ function Market() {
 
   return (
     <>
+      <Acquisitions requests={all} lookup={lookup} to={rowTo} />
       {items.length > 0 && (
         <>
           <div className="prof-sech">
@@ -307,6 +318,11 @@ function Market() {
             <span className="c">
               {shown.length} {shown.length === 1 ? 'item' : 'items'}
             </span>
+            {controller.activity().length > 0 && (
+              <button type="button" className="clr" onClick={() => setClearing(true)}>
+                Clear activity
+              </button>
+            )}
           </div>
           <div className="actlist">
             {shown.map((r) => (
@@ -320,7 +336,53 @@ function Market() {
           </div>
         </>
       )}
+      {clearing && (
+        <ClearActivitySheet
+          onClose={() => setClearing(false)}
+          onClear={() => {
+            controller.clearActivity();
+            setClearing(false);
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * `DZ.actClearAsk` (app.html:11355-11360) — the title, the line, and the two
+ * `.actsh-btn` buttons (danger + quiet) in the original's own chrome.
+ *
+ * One sentence is deliberately not ported. The old app closed with "This
+ * can't be undone."; here the clear is this session's view only, because the
+ * backend has no collector-side delete, archive or hide
+ * (`docs/PHASE_5_API_GAPS.md` G-P5-4), so that line would be false. It says
+ * what actually happens instead. Owner decision D4 (2026-09-17): build the
+ * control, record the gap.
+ */
+function ClearActivitySheet({
+  onClose,
+  onClear,
+}: {
+  onClose: () => void;
+  onClear: () => void;
+}) {
+  return (
+    <Sheet open onClose={onClose} title="Clear activity">
+      <div className="dz-clear">
+        <p>
+          This clears your artwork request &amp; reply history. Your saved works and your
+          conversation with Darz are kept. Darz keeps its own record, and the list returns when
+          you reload.
+        </p>
+        <button type="button" className="actsh-btn danger" onClick={onClear}>
+          Clear all activity
+        </button>
+        <button type="button" className="actsh-btn" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    </Sheet>
   );
 }
 

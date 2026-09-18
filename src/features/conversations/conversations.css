@@ -270,3 +270,43 @@ html.dz-desktop .acthd,
 html.dz-desktop .prof-empty {
   max-width: var(--dz-read);
 }
+
+/* ---- the status pill's remaining colours (app.html:879-882) ------------- */
+.actli-stat.s-rev {
+  color: var(--pl-attn);
+  border-color: rgba(232, 0, 92, 0.34);
+}
+.actli-stat.s-no {
+  color: var(--pl-block);
+  border-color: rgba(225, 29, 72, 0.38);
+}
+/* the offer amount beside the pill (app.html:873, :9491) */
+.actli-amt {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.actli-amt span {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  margin-left: 4px;
+}
+/* "Clear activity" in the list header (app.html:856-857, :9728) */
+.acthd .clr {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink3);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 2px;
+  letter-spacing: 0.01em;
+  font-family: inherit;
+}
+.acthd .clr:hover {
+  color: var(--ink);
+}

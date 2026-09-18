@@ -198,33 +198,40 @@ both skins; v0.1 unchanged.
 
 ---
 
-## Step 2 — The collector's request list (`phase-5-request-list`)
+## Step 2 — The collector's request list (`claude/zen-curie-n8ekum`, PR #24)
 
-**Status:** not started.
+**Status:** implemented 2026-09-18 — typecheck · lint (3 pre-existing warnings, none new) ·
+111 tests · format · build clean; live verification in the Progress log.
 
-- [ ] **`src/features/requests/status.ts`** — one domain module: `statusMeta(kind, status, detail)` →
+- [x] **`src/features/requests/status.ts`** — one domain module: `statusMeta(kind, status, detail)` →
       `{label, pill, stage, note}` porting `dzStatusMeta` (`:9421`), `dzMktStage` / `MKT_RAIL` (`:9670-
       9678`) and `dzActStatusNote` (`:9433-9477`) verbatim, over the backend vocabulary (table D3).
       Unknown statuses fall back to the `crm.request_status_by_kind` label. Replaces the three
       hardcoded lists (finding 6).
-- [ ] **Your acquisitions** (`:9685-9703`): purchase / offer / hold rows — thumb · `{artist} — {title}` ·
+- [x] **Your acquisitions** (`:9685-9703`): purchase / offer / hold rows — thumb · `{artist} — {title}` ·
       sub-label `Purchase request · Offer · Hold request` · status pill (default **In review**) · stage
       rail `.aucrail` Requested · In review · Accepted · Complete, or the single closed line; max 10.
-- [ ] **Requests & activity** rows to `dzActRowHTML` (`:9482-9499`): `ACT_KL` labels (D8), date with
+- [x] **Requests & activity** rows to `dzActRowHTML` (`:9482-9499`): `ACT_KL` labels (D8), date with
       time, right side `New reply` / status pill + amount / `Replied` / amount, unseen dot vs chevron.
       Count header; `Clear activity` — D4.
-- [ ] **Empty state** copy — D9.
-- [ ] Artwork data through `ArtworkCache` (G-P5-2); the store stays `ConversationsController` (one poll
-      of all kinds) — extend it, do not add a second store.
-- [ ] Tests: status map (every kind × status), chips, acquisitions selection + rail stage.
-- [ ] Docs: G-P5-2, G-P5-6, G-P5-8.
+- [x] **Empty state** copy — D9.
+- [x] Artwork data through `ArtworkCache` (G-P5-2); the store stayed `ConversationsController`,
+      extended with the session-local hide behind `clearActivity()` / `hide()` (D4, G-P5-4).
+- [x] Tests: the status map against the backend's own vocabulary (every kind × every status), the
+      six words and their pill colours, the per-kind notes, the options fallback, the elapsed-hold
+      override, the offer amount.
+- [x] Docs: G-P5-2, G-P5-4, G-P5-6, G-P5-8, G-P5-9.
+- Fixed on the way, not in the original scope: Profile derived its lists inside a `useMemo` keyed on
+  the controller, which never changes — a poll landing while Profile was open never reached the
+  screen, and the new clear would not have repainted. The derivation is per render now (a handful of
+  rows).
 
 **Step 2 exit criteria:** `16-profile-market` compared populated (against the `app.html` reading) and
 empty (against the capture); admin transitions from `/admin/requests` change labels, rails and notes.
 
 ---
 
-## Step 3 — Request detail and thread for every kind (`phase-5-request-detail`)
+## Step 3 — Request detail and thread for every kind (next)
 
 **Status:** not started.
 
@@ -245,7 +252,7 @@ reply and an admin reply round-trip; the notice appears and clears on read.
 
 ---
 
-## Step 4 — Activity self-logging (`phase-5-activity`)
+## Step 4 — Activity self-logging
 
 **Status:** not started.
 
@@ -345,6 +352,21 @@ _Append one entry per step as it merges. Newest last._
   the hand-typed per-kind `detail` union, "48h hold", "Request Price & Availability" as the
   price-hidden primary, the offer sheet staying open on a rejection. `docs/PHASE_5_API_GAPS.md`
   written (G-P5-1 … 11); `API_INTEGRATION_GAPS.md` drift corrected.
+- **2026-09-18 — Step 2 implemented and verified live.** `status.ts` (the one collector
+  vocabulary, replacing the three hardcoded lists), "Your acquisitions" with the four-step rail,
+  the activity rows on `ACT_KL` labels with the time in the date, the offer amount, the "New reply"
+  state, the D9 empty state, and Clear activity (D4) as a session-local hide with the gap recorded.
+  Verified against the local backend with the Step 1 data moved through real lifecycles
+  (`purchase→qualified`, `hold→active`, `viewing→scheduled`, `offer→countered`, a second
+  `offer→declined`, `price→answered` with an unread team reply, `information→assigned`): four
+  acquisition cards with the right pill and rail stage, seven activity rows, the chips and their
+  counts, the clear sheet and the cleared list — captured at 390×844 in both skins (the Paper skin
+  is an app preference, not the OS one, so it is switched in Settings) and at 1440×1300. Three
+  fixes followed the captures: the clear sheet's buttons were near-invisible (`.btn.destructive` is
+  transparent ink in this skin) and now use the old app's own `.actsh-btn` / `.danger`; a request
+  with no artwork showed the literal word "Artwork" and now shows only its message; and the stale
+  `useMemo` above. Seeded works carry no image, so the thumbnails are the empty well — seed data,
+  not the port.
 - **2026-09-17 — Step 1 verified live** against `darzmarket-api` `development` @ 3801786 run
   locally (Postgres 16 + Redis started from the container's own binaries — Docker's daemon is not
   available there — `migrate`, a seeded artist / priced work / price-on-request work / collector
@@ -364,6 +386,12 @@ _Append one entry per step as it merges. Newest last._
 
 ## Resolved decisions
 
+- **2026-09-18 (Claude, on the owner's D3 delegation):** the map is confirmed against
+  `apps/crm/lifecycle.py` — every status of every kind has a row, pinned by a test that transcribes
+  the backend's own table. One correction to the tabled draft: a resolved request's **pill** reads
+  **Resolved** (`dzStatusMeta`'s own six words), while **Complete** stays the name of the rail's
+  fourth step (`MKT_RAIL`); the draft had used "Complete" as a hold's pill, which belongs to neither
+  vocabulary.
 - **2026-09-17 (owner):** D1 viewing sheet — yes, the recommended option. D2 — **the API side wins:
   48 hours**, so the label reads "48h hold". D3 — the status map is confirmed as tabled, checked
   against `apps/crm/lifecycle.py` (every backend status of every kind has a row; unknown values fall
