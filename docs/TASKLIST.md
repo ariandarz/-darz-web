@@ -1,16 +1,29 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-18 (Phase 5 complete and released; `main` and `development` level) ·
-**Current focus:** **closing the v0.1 loop** — the team sign-in landed 2026-09-18, so a reply can
-now be sent from `/admin/requests` by a real team session. Next is Phase 13 E2E over the whole
-chain. See "What next" just below.
+**Last updated:** 2026-09-18 (team sign-in released; `main` and `development` level) ·
+**Current focus:** **Phase 13 E2E over the whole v0.1 chain**, paired with a CI workflow — this
+repo has none, so every "green" so far is a contributor running the checks by hand. The v0.1 loop
+itself is closed: the team sign-in shipped 2026-09-18 and a reply can now be sent from
+`/admin/requests` by a real team session. See "What next" just below.
+
+**The v0.1 loop is closed.** `/admin/login` (`TeamLoginPage`) signs a team member in against
+`POST /api/auth/team/login/`; `RequireTeam` makes the admin desk a team-principal surface; the desk
+moved out of the collector shell into `AdminLayout`. Before this, a collector could send an inquiry
+and **nobody could answer it from this app** — the loop had only ever been exercised by calling the
+admin API by hand (`V0_1_SCOPE.md` flag 8, now closed). Shipped via PR #29 → released to `main` by
+PR #30, merged back by PR #31, all on the owner's explicit instruction.
 
 **Phase 5 (collector requests + activity) is done and released** — all four steps, 2026-09-18, each
 merged on the owner's explicit instruction. `docs/PHASE_5_PLAN.md` is the contract it was built to
 (findings, owner decisions D1-D11 / F1, the D3 status map); `docs/PHASE_5_API_GAPS.md` records the
 twelve gaps found on the API side (G-P5-1 … G-P5-12) — **none** was fixed by changing the backend,
-per the owner's instruction to build the UI around the gap and document it instead. `main`
-(`29e9799`) and `development` (`a3793f7`) have identical trees. **Open PRs: none.**
+per the owner's instruction to build the UI around the gap and document it instead.
+
+**Release state (2026-09-18):** `main` (`77f3655`) and `development` (`b4b257e`) have **identical
+trees**, and `main` is an ancestor of `development` (the one-commit lead is the merge-back itself,
+no content). **Open PRs: none.** Nothing is in flight on a feature branch. Note the release
+published nothing — the Vercel project still does not exist (see "What next" item 3), so `main`
+moving has no deploy consequence in this repo today.
 
 Before that, the Market App design pass (PR #15, branch `claude/darz-web-frontend-redesign-f686ie`)
 was merged to `development` on 2026-09-17 on the owner's instruction ("land the design pass") and
@@ -31,6 +44,16 @@ GitHub answers `403` to every ref deletion here (retried 2026-09-18, with and wi
 its own, and the GitHub MCP server exposes no delete-branch tool). Use the repository's branches
 page or a local clone.
 
+**Reference repo state (`../DarzStudio` / `ariandarz/darzstudio.art`, 2026-09-18):** the approved
+design package `design/market-app/` is now on that repo's **`main`** (`b8ee118`, 172 files / 161
+screenshots), released via #846 → #858/#859. `CLAUDE.md` reference 0 is therefore true for a fresh
+clone — the branch-fetch workaround earlier sessions needed is gone (this was Phase 5's owner flag
+F1, now closed). Two things to know if you go looking there: its `development` (`9cc4b57`) carries
+**v1233 unreleased** (`build.json` 1232 on `main`, 1233 on `development`), and v1233 ships a
+**SQL §94 migration that is not applied to production** — its Admin degrades on its own until it is.
+That repo's production deploys from its `main`, so §94 should be applied *before* v1233 is released.
+Neither is this repo's work; it is recorded so nobody reads `main` there and assumes it is current.
+
 **Backend cross-check (2026-09-17, from `darzmarket-api`):** Phases 27-32 (the full old-panel admin
 audit — Collectors, Collector Activity, Dashboard, Memberships, Team, App Design) and Phase 23
 (Projects/Data Health/Import) all merged — see the new **Phase 11b** section below, none of it has
@@ -40,16 +63,18 @@ real, buildable now.
 
 **What next (2026-09-18, recommended order):**
 
-1. ~~The team sign-in screen~~ — **done 2026-09-18** (`/admin/login`, `TeamLoginPage` +
-   `RequireTeam` + `AdminLayout`). `V0_1_SCOPE.md` flag 8 is closed: a team member signs in with
-   email + password and the desk is a team-principal surface, no longer a page of 403s for a
-   collector token.
-2. **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat — now that the reply half of
-   that chain exists, this is the next real piece. Note this repo has **no CI at all** (no
-   `.github/workflows`), so the gate is whatever a contributor runs by hand; mirroring
-   `darzstudio.art`'s `Quality` workflow would be worth doing alongside it.
+1. **CI, then Phase 13 E2E.** This repo has **no CI at all** — no `.github/workflows` — so every
+   gate result recorded in this file is a contributor (or Claude) running `typecheck` / `lint` /
+   `format:check` / `test` / `build` by hand, and a PR here can never go green because nothing
+   runs. `darzstudio.art`'s `Quality` workflow is a working model to mirror. Do this **before** the
+   E2E suite, so the suite has somewhere to run.
+2. **Phase 13 E2E** over Login → Browse → Save → Send Inquiry → Chat. Unblocked as of 2026-09-18:
+   both halves of that chain now exist (the collector can send, a team member can reply).
 3. Owner decision on the two unlinked entry points (artist index `/artists`,
-   `/auctions/notifications`) — see "Design pass" below; then one small PR either way.
+   `/auctions/notifications`) — see "Design pass" below; then one small PR either way. A third,
+   newer one sits beside them: **the team sign-in has no link either.** `/admin/login` is reachable
+   only by typing the URL or being redirected there from the desk, because `app.html` renders no
+   entry point for its own team card (see Phase 7 below). One line if the owner wants it.
 4. Unblock the deploy (Phase 14) — **still blocked, re-tested 2026-09-18.** There is no `darz-web`
    project on the Vercel team (it holds only `darzstudio-art` and `koocheh-web`), and creating one
    returns the same `403 forbidden — "You don't have permission to create the project."` recorded on

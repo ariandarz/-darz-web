@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Released the team sign-in to `main`
+
+- PR #30 brought `main` level (`77f3655`), PR #31 merged the release commit back (`b4b257e`) — the
+  PR #27 / #28 pattern. Trees identical; `main` is an ancestor of `development` again.
+- Publishes nothing: the Vercel project still does not exist (Phase 14, `403`), so `main` moving
+  has no deploy consequence in this repo yet.
+
 ## 2026-09-18 — Team sign-in: the v0.1 loop closes
 
 - `/admin/login` ports app.html's "Darz team sign-in" card verbatim (:2537-2542) onto
