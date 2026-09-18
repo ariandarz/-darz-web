@@ -448,3 +448,19 @@ export interface ArtworkAdminQuery {
   page?: number;
   per_page?: number;
 }
+
+/** A sale — `SaleAdminSerializer` (backend Phase 7 sales admin). `artwork` /
+ * `collector` / `responsible` / `source_request` are bare uuids (G-SALE-3);
+ * the desk resolves them. The commercial snapshot (price/commission/discount/
+ * fees) is draft-only editable — locked once confirmed (R7); `status` moves
+ * only through `/transition/` on the linear chain, `payment_status` /
+ * `delivery_status` through their own setters. */
+export type SaleAdmin = Schemas['SaleAdmin'];
+
+/** The sales list takes exactly one filter: `status`. No search, no payment/
+ * delivery filter, no aggregates (G-SALE-1/2). */
+export interface SaleQuery {
+  status?: string;
+  page?: number;
+  per_page?: number;
+}

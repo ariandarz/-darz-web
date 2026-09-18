@@ -767,9 +767,20 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       `expected_version`). 212 tests (+11). Verified live end to end — including a real image
       upload through moto-S3 standing in for MinIO (dl.min.io is egress-blocked; moto serves
       signed URLs the browser loads).
-- [ ] **Step 2 — Published works tab + Sales desks** — the Market-App tab reads the *collector*
-      list endpoint (exactly the published catalogue, G-CAT-2's resolution) with admin unpublish;
-      Sales over the sales admin routes. Bulk selection (status/publish) returns here.
+- [x] **Step 2 — Published works + Market Sales** ✅ 2026-09-18 (overnight run) —
+      `/admin/published` (`marketView()`, `workspaces-runtime.js:533`: the public catalogue slice
+      with images, search, "Remove from Market App", the hidden-by-a-gap tile from Data Health;
+      found live that the collector list serves `visible_all` only — the tile says "in the public
+      catalogue" and the private layer points at the Club) and `/admin/sales` + `/admin/sales/:id`
+      (`DZSales`, `darz-studio.html:12517`: per-status stat tiles from pagination totals, ＋ New
+      deal with kit `Picker`s — promoted from the Club editor — the guarded linear chain, the two
+      setters, and the R7 draft-only terms lock, said on the card). `SALE_TRANSITIONS` ported +
+      tested; `useSaleRefs` resolves the row's bare uuids (G-SALE-3). Gaps G-SALE-1…5 + G-CAT-9
+      recorded. 215 tests (+3). Verified live end to end (18 checks) — publish/unpublish full
+      circle across the two desks, deal create→confirm→lock, payment setter, list resolution.
+- [ ] **Step 3 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+      is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
+      returns in a later pass.
 
 ## Phases 12+ — Parity-gap surfaces (match backend Phases 20-26) `[!]` each blocked on its backend phase
 

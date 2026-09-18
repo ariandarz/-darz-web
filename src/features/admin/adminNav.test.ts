@@ -103,6 +103,7 @@ describe('visibleGroups', () => {
       'artists',
       'market',
       'collectors',
+      'sales',
       'operations',
       'owner',
       'system',
@@ -113,6 +114,7 @@ describe('visibleGroups', () => {
       'artists',
       'market',
       'collectors',
+      'sales',
       'operations',
     ]);
   });
@@ -256,10 +258,12 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'database',
       'import',
       'artists',
+      'market',
       'design',
       'users',
       'activity',
       'club',
+      'marketSales',
       'design',
       'health',
       'team',

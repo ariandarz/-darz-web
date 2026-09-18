@@ -28,6 +28,9 @@ import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
 import { ArtistsPage } from './features/admin/ArtistsPage';
+import { PublishedPage } from './features/admin/PublishedPage';
+import { SaleDetailPage } from './features/admin/SaleDetailPage';
+import { SalesPage } from './features/admin/SalesPage';
 import { ArtworkEditorPage } from './features/admin/ArtworkEditorPage';
 import { ArtworksPage } from './features/admin/ArtworksPage';
 import { AccessRequestsPage } from './features/admin/AccessRequestsPage';
@@ -264,6 +267,9 @@ export function AppRoutes() {
         <Route path="/admin/artworks/new" element={<ArtworkEditorPage />} />
         <Route path="/admin/artworks/:id" element={<ArtworkEditorPage />} />
         <Route path="/admin/artists" element={<ArtistsPage />} />
+        <Route path="/admin/published" element={<PublishedPage />} />
+        <Route path="/admin/sales" element={<SalesPage />} />
+        <Route path="/admin/sales/:id" element={<SaleDetailPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />
         <Route path="/admin/design" element={<DesignPage />} />
         <Route path="/admin/data-health" element={<DataHealthPage />} />

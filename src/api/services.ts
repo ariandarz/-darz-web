@@ -60,6 +60,8 @@ import type {
   ArtworkAdminQuery,
   ArtworkImageAdmin,
   ArtistAdmin,
+  SaleAdmin,
+  SaleQuery,
 } from './types';
 
 export abstract class ResourceService {
@@ -619,6 +621,49 @@ export class CatalogAdminService extends ResourceService {
   }
   rejectImportRow(batchId: string, rowId: string) {
     return this.create<ArtworkImportRow>(`/import/batches/${batchId}/rows/${rowId}/reject/`);
+  }
+}
+
+/** `/api/sales/admin/` — the deals ledger (backend Phase 7): CRUD with the
+ * R7 draft-only commercial lock, the linear status chain via `/transition/`,
+ * and the two plain setters. */
+export class SalesAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/sales/admin');
+  }
+
+  sales(query: SaleQuery = {}) {
+    return this.list<SaleAdmin>('/sales/', query as RequestOptions['query']);
+  }
+  sale(id: string) {
+    return this.retrieve<SaleAdmin>(`/sales/${id}/`);
+  }
+  /** `responsible` is required by the serializer — a standard admin (who
+   * cannot list team users, that endpoint is owner-only) records the deal
+   * under their own principal id. */
+  createSale(body: Partial<SaleAdmin>) {
+    return this.create<SaleAdmin>('/sales/', body);
+  }
+  /** Draft-only (R7) — the service refuses once confirmed; the desk disables
+   * the form first. */
+  updateSale(id: string, body: Partial<SaleAdmin> & { expected_version: number }) {
+    return this.client.send<SaleAdmin>('PATCH', `${this.basePath}/sales/${id}/`, { body });
+  }
+  /** The linear chain draft→confirmed→invoiced→paid→delivered→completed→
+   * archived, `lost` from every non-terminal state — `SALE_TRANSITIONS`,
+   * ported in `saleForm.ts` so the desk only offers legal moves. */
+  transitionSale(id: string, toStatus: string) {
+    return this.create<SaleAdmin>(`/sales/${id}/transition/`, { to_status: toStatus });
+  }
+  setPaymentStatus(id: string, paymentStatus: string) {
+    return this.create<SaleAdmin>(`/sales/${id}/payment-status/`, {
+      payment_status: paymentStatus,
+    });
+  }
+  setDeliveryStatus(id: string, deliveryStatus: string) {
+    return this.create<SaleAdmin>(`/sales/${id}/delivery-status/`, {
+      delivery_status: deliveryStatus,
+    });
   }
 }
 

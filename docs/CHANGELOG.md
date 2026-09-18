@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 12 Step 2: Published works + Market Sales
+
+- `/admin/published`: the Market App tab — the public catalogue slice with images, search,
+  Remove-from-app, and the hidden-by-a-gap tile (Data Health's own count). `/admin/sales`:
+  the deals ledger — stat tiles from per-status totals, ＋ New deal (kit Pickers), the guarded
+  linear chain, payment/delivery setters, R7 draft-only terms lock. G-SALE-1…5 recorded.
+
 ## 2026-09-18 — Phase 12 Step 1: the catalogue core — Artworks Database + Artists
 
 - The panel's biggest desk (`databaseView()` ported onto Phase 7's admin CRUD): search + filter

@@ -181,7 +181,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'market',
     label: 'Market App',
     tabs: [
-      tab('market', 'Published works', null, 'ready', '7'),
+      tab(
+        'market',
+        'Published works',
+        '/admin/published',
+        'ready',
+        '12·2',
+        'the collector list endpoint IS the published set (G-CAT-2).',
+      ),
       // App Design is in this group AND under Operations — one screen, two
       // entry points (:11730 and :11764). A fact to port, not a bug to fix.
       tab(
@@ -246,8 +253,22 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     label: 'Sales',
     folded: true,
     tabs: [
-      tab('marketSales', 'Market Sales', null, 'ready', '7', 'sales admin, 5 routes.'),
-      tab('auctionSales', 'Auction Sales', null, 'ready', '7'),
+      tab(
+        'marketSales',
+        'Market Sales',
+        '/admin/sales',
+        'ready',
+        '12·2',
+        'sales admin, 5 routes.',
+      ),
+      tab(
+        'auctionSales',
+        'Auction Sales',
+        null,
+        'partial',
+        '12+',
+        'Sale has no source axis (G-SALE-4) — auction settlement is its own loop.',
+      ),
     ],
   },
   {
