@@ -196,6 +196,13 @@ admin (`darz-studio.html`, not `app.html`), and the frontend currently has exact
 screen plus the scaffolding bar from the team sign-in. It should get its own plan once the collector
 surfaces above are settled. Recorded in `docs/TASKLIST.md` under Phase 11b.
 
+**Written 2026-09-18 → `docs/PHASE_11B_PLAN.md`** (Steps 0-7, decisions D9-D16, waiting on the
+owner). Two things that plan found which change the sizing given here: the nine desks are **not**
+siblings — the old panel is a two-tier navbar with sixteen groups and they are scattered across
+five of them, so a **panel shell is Step 0** — and two further desks belong to this phase that
+were not known when this section was written: **Access Requests** (backend Phase 34's review queue,
+the other half of Step 1 above) and **Collector Club** (backend Phase 35).
+
 ---
 
 ## Progress log
@@ -237,3 +244,11 @@ _Append one entry per step as it merges. Newest last._
   One thing the seeding caught that reading would not: `selection_queryset` also requires
   `is_published=True`, so a granted but unpublished work is invisible — worth knowing when a
   collector reports an empty curated set. 141 tests (was 137).
+- **2026-09-18 — G-P24-1 re-checked and narrowed.** Reading backend Phase 35 for the Phase 11b plan
+  showed the gap was recorded slightly wrong: `crm.CollectorSelection` gives a selection a **name**,
+  so the name now exists in the data — it is only absent from what the collector is served
+  (`ArtworkSelectionSerializer` is the collector artwork shape + `visibility`, nothing else), and
+  one grant can legitimately belong to several named selections, so there is no single name to
+  attach even in principle without the backend picking one. The gap stands and the chip is
+  unchanged; the fix is now a serializer field rather than a model change.
+  `docs/PHASE_24_35_API_GAPS.md` updated. No code change.

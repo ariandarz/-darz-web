@@ -30,8 +30,9 @@ Before that, the Market App design pass (PR #15, branch `claude/darz-web-fronten
 was merged to `development` on 2026-09-17 on the owner's instruction ("land the design pass") and
 `main` was brought level the same day, the way the v0.1 release was (the PR #17 / #18 pattern). Its
 merge commit's tree is the gated PR head: typecheck clean · lint 3 pre-existing warnings · 98/98
-tests · format · build. Two entry points `development` had are unlinked in the merged result — an
-**owner decision**, recorded under "Design pass" below.
+tests · format · build. Two entry points `development` had are unlinked in the merged result;
+researched 2026-09-18 and narrowed to **one** open owner decision (`/artists`) — recorded under
+"Design pass" below.
 
 **Eleven merged remote branches are still present.** Each is `ahead:0` against `development`, so
 every commit on them is already in `development` and deleting the ref loses nothing:
@@ -102,11 +103,13 @@ below, a whole panel's worth of API with no frontend UI.
    seeded local backend in CI (heavier, honest) or stub the API at the network layer (lighter,
    less honest). Suggested: stub for the render/routing assertions, plus a small real-backend
    smoke set.
-3. Owner decision on the two unlinked entry points (artist index `/artists`,
-   `/auctions/notifications`) — see "Design pass" below; then one small PR either way. A third,
-   newer one sits beside them: **the team sign-in has no link either.** `/admin/login` is reachable
-   only by typing the URL or being redirected there from the desk, because `app.html` renders no
-   entry point for its own team card (see Phase 7 below). One line if the owner wants it.
+3. Owner decision on **one** unlinked entry point — the artist index `/artists`. Researched
+   2026-09-18 (see "Design pass" below for the evidence): the old app's own artist list is
+   orphaned the same way, so the question is whether to **add** an entry point it never had, not
+   whether to restore one this port dropped. Recommendation: accept deep-link only. The other two
+   that used to sit on this line are closed — `/auctions/notifications` is reachable from
+   `AuctionBanner`, and `/admin/login` is correctly unlinked because the old admin is a separate
+   application file.
 4. Unblock the deploy (Phase 14) — **still blocked; narrowed to a Vercel team role, 2026-09-18.**
    There is no `darz-web` project on the team (it holds only `darzstudio-art` and `koocheh-web`).
    **Both** creation paths were tried and fail identically:
@@ -282,14 +285,29 @@ Re-skinned every collector screen to the `darzstudio.art` `design/market-app/` h
       Settings screens, `LayoutController`, Send Inquiry); **the design pass owns the skin** (tokens,
       shell chrome, catalogue / detail / artist / auctions / lot / gate styling, Dropdown / Segment).
       Surfaces not ported (no backend) are listed in `docs/API_INTEGRATION_GAPS.md` § Design-pass flags.
-- [ ] **Owner decision — two entry points `development` had that the merged result lacks** (the
-      routes exist; nothing links to them): (1) the **artist index** `/artists` — the catalogue hero's
-      Saved / Auctions / Artists pills were dropped per the package, and no screen links to the index
-      now (deep-link only, and it is live in v0.1; Saved is reachable from Profile, Auctions has its
-      nav tab when on); (2) **`/auctions/notifications`** — its link lived in the design pass's
-      Profile → Auctions tab, which the merge replaced with v0.1's Profile (matters only with
-      `VITE_FEATURE_SET=full`). Options: restore the pills, add an Artists entry where the package
-      places one, or accept deep-link only. Not changed without a decision (faithful-port rule).
+- [ ] **Owner decision — the artist index `/artists` has no entry point.** Researched against
+      `app.html` 2026-09-18; the other two "missing links" resolved to **no change needed** and are
+      recorded below rather than left open.
+      1. **`/artists` — the one real question, and the old app has the same hole.** `artistsView()`
+         exists (`app.html:5319`) with live search and sort handlers (`DZ.artSearch`/`DZ.artSort`,
+         `:11497-11498`), so it was plainly meant to be reachable — but **nothing enters it**. The
+         hash router's section table `SEC` (`:3577`) has keys for market / auctions / records /
+         highlights / profile / settings / saved / stories / insights and **no `artists`**, and
+         `render()` (`:5701`) does `else if(tab==='artists'){ if(currentArtist)artistView(currentArtist);
+         else market(); }` — landing on the artists tab with no artist selected shows the **Market**.
+         Its only two callers are its own search/sort handlers and the records-archive repaint. So
+         this repo's orphaned `/artists` is a *faithful* reproduction of an entry point the old app
+         lost, not a porting miss. `/artists/:id` (detail) is reachable from five places and is
+         fine. **The decision is therefore not "restore a link" but "add one the old app never
+         had".** Options: accept deep-link only (faithful, my recommendation), restore the
+         catalogue hero's Artists pill the design package dropped, or place an entry where the
+         package would put one. Not changed without a decision (faithful-port rule).
+      2. **`/auctions/notifications` — not missing.** `AuctionBanner.tsx:43` navigates there for a
+         notification with no lot. Reachable, and hidden in v0.1 anyway (`features.auctions` off).
+         No change.
+      3. **`/admin/login` — correctly unlinked.** The old admin is a **separate application file**
+         (`darz-studio.html`), never linked from the collector app. A collector-facing link to the
+         team gate would be an invention and a mild disclosure. No change.
 
 ## Phase 3 — Typed API client + auth ✅ (branch `phase-3-api-client`)
 
@@ -574,7 +592,7 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [ ] Accounting desk UI (4 ledger books + Private Deals) — real Django permission scope replaces
       the old passkey hack; don't rebuild the passkey pattern in the frontend
 
-## Phase 11b — Admin: Owner Panel (Collectors, Memberships, Team, Dashboard, App Design, Activity, Projects, Data Health, Import) ✅ backend ready 2026-09-17
+## Phase 11b — Admin: Owner Panel ✅ backend ready 2026-09-17 · **plan drafted 2026-09-18 → `docs/PHASE_11B_PLAN.md`**
 
 New since the last `TASKLIST.md` pass — the client asked to prioritize finishing "the panel" (the old
 `darz-studio.html` admin app). Backend audited every old panel tab against existing `admin/*` routes
@@ -583,6 +601,35 @@ any frontend UI yet.** No API gaps were recorded for these — each is a plain a
 faithfully scoped, real HTTP-verified. Old-panel tab names in parens for continuity with the design
 package/faithful-port research.
 
+> **Read `docs/PHASE_11B_PLAN.md` before starting any item below.** It is the working contract
+> (Steps 0-7, decisions D9-D16, waiting on the owner). Three things it establishes that the list
+> below got wrong, found by reading `darz-studio.html` rather than the backend's tab names:
+>
+> 1. **These desks are not siblings.** The old panel is a **two-tier navbar with sixteen groups**
+>    (`darz-studio.html:11721-11779`), and Phase 11b's desks are scattered across five of them.
+>    Import sits beside Database under *Artworks*; Data Health sits under *Operations*; App Design
+>    appears in **two** groups. Building them as standalone top-level pages would invent an
+>    information architecture the old panel does not have. **The panel shell is Step 0** and every
+>    other step depends on it.
+> 2. **Two desks are missing from the list below** (it predates backend Phases 34 and 35):
+>    **Access Requests** (`systemView`, `:33115`) — the review queue for the requests the collector
+>    gate now sends, so every request submitted through the form shipped in the last round is
+>    currently invisible outside Django admin — and **Collector Club** (`clubView`, `:33740`),
+>    backed by Phase 35's `crm.CollectorSelection`. A third, **Access keys** (`accessView`,
+>    `:33029`), exists in the old panel as its own owner-only desk as well as folded into
+>    Collectors below.
+> 3. **There is no approved design package for the panel.** `design/market-app/` covers the Market
+>    App only; there is no `design/admin/`. So `darz-studio.html`'s own shipped CSS *is* the spec,
+>    which raises rather than lowers the bar on CLAUDE.md rule 5 — there is no reference capture to
+>    compare a panel screen against.
+
+- [ ] **Panel shell** (Step 0 — prerequisite for every desk below) — the old panel's two-tier
+      navbar ported as data (`adminNav.ts` ← `darz-studio.html:11721-11803`: groups, labels, the
+      `OWNER_ONLY` list, and the explicit "THE OWNER ALWAYS SEES EVERY TAB" rule at `:11794`), an
+      `AdminShell` replacing the scaffolding `AdminLayout`/`.ad-bar`, the `/admin` route tree, and a
+      `RequireOwner` beside the existing `RequireTeam` so a standard admin can neither see nor
+      URL-reach Memberships/Team. Only the groups this phase builds are registered — unbuilt ones
+      **absent, not stubbed**.
 - [ ] **Collectors desk** (old panel "Collectors" tab) — list/search/filter (tier, access_status) +
       create/edit/soft-delete + issue/revoke access keys (plaintext key shown once on issue, never
       re-fetchable — the UI must warn "copy this now").
@@ -590,6 +637,28 @@ package/faithful-port research.
       `GET/POST .../{id}/access-keys/`, `POST /api/auth/admin/access-keys/{id}/revoke/`.
 - [ ] **Collector Activity feed** (old panel "Collector Activity" tab) — read-only, filter by
       collector/kind/artwork. `GET /api/crm/admin/activity/`.
+- [ ] **Access keys desk** (old panel "Access", owner-only, `darz-studio.html:33029`) — the same
+      `AccessKey` rows the Collectors desk issues, as their own desk: every key with its expiry cell
+      (`expCell`, `:33042` — Never / Expired / Expires today / *n*d left, three colours), type and
+      status filters, the logins-today counter and the expiring-soon review list. Issue is
+      shown-once; extend is +1 week / +1 month / permanent.
+      `POST /api/auth/admin/access-keys/{id}/revoke/`, `POST .../{id}/extend/`,
+      `GET /api/auth/admin/collectors/{id}/login-events/`.
+- [ ] **Access Requests desk** (old panel "Access Request", owner-only, `:33115`, panel
+      `accReqPanel()` `:33006`) — **missing from this list until 2026-09-18**; backend Phase 34
+      shipped it after the list was written, so every request submitted through the "Request access"
+      form this repo shipped in the last round is currently invisible outside Django admin. Pending
+      cards (name · date · contact · city · "heard via" · referral · the quoted `why`) with Issue
+      key / Decline. Note the **deviation** (plan §2.3): the old "Issue key" opened the full
+      editable key modal pre-filled from the request; the API's approve takes one optional `tier`,
+      derives the collector and returns the plaintext key once.
+      `GET /api/auth/admin/access-requests/`, `POST .../{id}/approve/`, `POST .../{id}/decline/`.
+- [ ] **Collector Club desk** (old panel "Collector Club", `:33740`) — **missing from this list
+      until 2026-09-18**; backend Phase 35 shipped `crm.CollectorSelection` after it was written.
+      Named selections: name, note, the artwork picker and the invited-collector list. Mind Phase
+      35's overlap rule — removing a (work, collector) pair only revokes its grant if no *other*
+      selection still wants it, so the UI must not imply a selection owns its grants exclusively.
+      `GET/POST /api/crm/admin/selections/`, `GET/PATCH/DELETE .../{id}/`.
 - [ ] **Dashboard** (old panel "Dashboard" tab, scoped to V1 essentials — see the backend doc for
       what didn't port: perf/analytics charts, cloud-sync banners) — requests-needing-attention per
       kind, today's activity, collector/catalogue/auction totals, pending exhibition reviews.
