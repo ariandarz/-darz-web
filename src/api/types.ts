@@ -412,3 +412,39 @@ export interface AccessRequest {
   status: 'pending' | 'approved' | 'declined';
   created_at: string;
 }
+
+/** Admin artwork row/detail — `ArtworkAdminSerializer`, all fields. The list
+ * rows carry NO images and the artist as a bare uuid + `artist_name_raw`
+ * (G-CAT-1: no thumbnail or resolved artist name on the admin list row — the
+ * desk resolves names against the artists roster instead). Updates require
+ * `expected_version`; `availability_status`/`is_published` are read-only and
+ * change only through `/transition/` and `/publish/`·`/unpublish/`. */
+export type ArtworkAdmin = Schemas['ArtworkAdmin'];
+
+/** An artwork's stored image — read-only shape; upload is multipart, the
+ * object key is always server-generated. */
+export type ArtworkImageAdmin = Schemas['ArtworkImage'];
+
+/** Admin artist row — `ArtistAdminSerializer`. The admin roster list takes no
+ * filters at all (no search/ordering/works count — G-CAT-3); the desk fetches
+ * pages and searches client-side. */
+export type ArtistAdmin = Schemas['ArtistAdmin'];
+
+/** The admin catalogue list's query — `ArtworkFilterSet`, shared with the
+ * collector catalogue: `search` over artist name/title/medium/dimensions,
+ * exact `artist`(id)/`availability_status`/`currency`/`price_type`,
+ * `medium` icontains, `ordering` year|-year|artist|-artist|price|-price
+ * (price only within one currency — frontend rule). There is NO
+ * `is_published` filter (G-CAT-2) and no `year`/`source` filter — the old
+ * desk's Market-App/Year/Source dropdowns have no server counterpart yet. */
+export interface ArtworkAdminQuery {
+  search?: string;
+  artist?: string;
+  availability_status?: string;
+  currency?: string;
+  price_type?: string;
+  medium?: string;
+  ordering?: string;
+  page?: number;
+  per_page?: number;
+}

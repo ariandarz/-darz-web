@@ -5,6 +5,14 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-18 — Phase 12 Step 1: the catalogue core — Artworks Database + Artists
+
+- The panel's biggest desk (`databaseView()` ported onto Phase 7's admin CRUD): search + filter
+  toolbar with the old removable-chip row, the ✓ APP per-work publish toggle, status pills, and a
+  full editor — guarded status transitions, provenance rows, per-work collector actions, the real
+  multi-image store (multipart upload / primary / remove). Artists: roster + inline intro + CRUD.
+  Gaps G-CAT-1…8 recorded; verified live end to end (moto S3 standing in for MinIO).
+
 ## 2026-09-18 — Phase 11b Step 6: Activity feed + Collector Club — the phase's desks complete
 
 - The "Requests & Activity" tab gains its second half: the read-only view/save/search/login log

@@ -1432,3 +1432,351 @@
 .ad-pickhit + .ad-pickhit {
   border-top: 1px solid var(--hair2);
 }
+
+/* ══ Artworks Database + Artists (Phase 12·1) ══════════════════════════════
+   Ported blocks and their sources:
+   - .ad-fchip      ← the active-filter chips, darz-studio.html:26687 (inline:
+                      dark #0A0A0A pill, radius 20, white ✕ in a 22%-white
+                      round) mapped onto the admin tokens;
+   - .ad-appck      ← .appck / .appck-bx, :8841-8845 (the ✓ APP checkbox
+                      button; .on inverts to ink);
+   - .ad-stpill     ← .db-stpill + tone classes, :8791-8798 (ok/res/gone/neut,
+                      light + dark values as shipped);
+   - the rest is this port's own join to the desk kit.                       */
+.ad-fchips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.ad-fchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 20px;
+  padding: 5px 6px 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  max-width: 230px;
+}
+.ad-fchip-l {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ad-fchip button {
+  cursor: pointer;
+  border: 0;
+  color: inherit;
+  background: color-mix(in srgb, var(--paper) 22%, transparent);
+  border-radius: 50%;
+  width: 17px;
+  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  flex: 0 0 auto;
+  padding: 0;
+}
+.ad-fchips-clear {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 0;
+  color: var(--danger);
+  background: none;
+  padding: 6px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ad-appck {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--card);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  color: var(--ink3);
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.14s,
+    background 0.14s,
+    color 0.14s;
+}
+.ad-appck .ad-appck-bx {
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid var(--hair);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--card);
+}
+.ad-appck:hover {
+  border-color: var(--ink);
+  color: var(--ink2);
+}
+.ad-appck.on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+.ad-appck:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ad-stpill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 20px;
+  padding: 3px 9px;
+  line-height: 1.3;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid;
+  width: fit-content;
+}
+.ad-stpill.is-ok {
+  color: #0f7a43;
+  background: #f1fbf6;
+  border-color: #bfe6cf;
+}
+.ad-stpill.is-res {
+  color: #8a5a00;
+  background: #fdf6e9;
+  border-color: #ebd9b0;
+}
+.ad-stpill.is-gone {
+  color: #9b1c34;
+  background: #fdf2f4;
+  border-color: #eccdd4;
+}
+.ad-stpill.is-neut {
+  color: var(--ink2);
+  background: var(--soft);
+  border-color: var(--hair);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ad-stpill.is-ok {
+    color: #7fe3ad;
+    background: #16241c;
+    border-color: #244a36;
+  }
+  :root:not([data-theme='light']) .ad-stpill.is-res {
+    color: #e8c489;
+    background: #241d10;
+    border-color: #4a3d24;
+  }
+  :root:not([data-theme='light']) .ad-stpill.is-gone {
+    color: #f0a5b4;
+    background: #2a1820;
+    border-color: #4d2630;
+  }
+}
+:root[data-theme='dark'] .ad-stpill.is-ok {
+  color: #7fe3ad;
+  background: #16241c;
+  border-color: #244a36;
+}
+:root[data-theme='dark'] .ad-stpill.is-res {
+  color: #e8c489;
+  background: #241d10;
+  border-color: #4a3d24;
+}
+:root[data-theme='dark'] .ad-stpill.is-gone {
+  color: #f0a5b4;
+  background: #2a1820;
+  border-color: #4d2630;
+}
+
+/* the Work cell — the row's own "open & edit" surface (:26756) */
+.ad-worklink {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.ad-workid {
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 0.06em;
+}
+.ad-rowacts {
+  display: inline-flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* the editor's status & reach card */
+.ad-reach {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.ad-reachrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* provenance rows (:34196 — one input per ownership stage) */
+.ad-provrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.ad-provrow input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 9px 12px;
+  outline: none;
+}
+.ad-provrow input:focus {
+  border-color: var(--ink);
+}
+.ad-provadd {
+  align-self: flex-start;
+}
+.ad-subnote {
+  font-weight: 400;
+  color: var(--ink3);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* collector-action checkboxes (:34168 — auto-fill grid of bordered boxes) */
+.ad-actgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 7px;
+  margin-top: 4px;
+}
+.ad-actck {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: var(--card);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ad-actck input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--ink);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+/* the image store */
+.ad-imggrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.ad-imgcard {
+  margin: 0;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card);
+}
+.ad-imgcard img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: var(--soft);
+}
+.ad-imgcard figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
+}
+.ad-imgadd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed var(--hair);
+  border-radius: 12px;
+  min-height: 150px;
+  cursor: pointer;
+  text-align: center;
+  padding: 12px;
+}
+.ad-imgadd:hover {
+  border-color: var(--ink);
+}
+
+/* the Artists desk's inline intro (:33576) */
+.ad-biocol {
+  min-width: 200px;
+}
+.ad-bioline {
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 7px 9px;
+  outline: none;
+}
+.ad-bioline:hover {
+  border-color: var(--hair);
+}
+.ad-bioline:focus {
+  border-color: var(--ink);
+  background: var(--card);
+}

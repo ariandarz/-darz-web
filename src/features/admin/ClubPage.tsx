@@ -238,9 +238,11 @@ function SelectionEditor({
         onChange={setWorks}
         search={async (q) => {
           const page = await catalogAdmin.artworks({ search: q, per_page: 8 });
+          // the admin row has no artist object (G-CAT-1) — the raw name is
+          // the label's best available prefix
           return page.results.map((a) => ({
             id: a.id,
-            label: a.artist?.display_name ? `${a.artist.display_name} — ${a.title}` : a.title,
+            label: a.artist_name_raw ? `${a.artist_name_raw} — ${a.title}` : a.title,
           }));
         }}
       />
