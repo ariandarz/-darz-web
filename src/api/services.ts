@@ -73,6 +73,9 @@ import type {
   LedgerEntryAdmin,
   LedgerQuery,
   LedgerSummary,
+  PrivateDealAdmin,
+  DealQuery,
+  DealsSummary,
 } from './types';
 
 export abstract class ResourceService {
@@ -987,6 +990,43 @@ export class AccountingAdminService extends ResourceService {
   deleteEntry(id: string) {
     return this.client.send<void>('DELETE', `${this.basePath}/ledger/${id}/`);
   }
+  deals(query: DealQuery = {}) {
+    return this.list<PrivateDealAdmin>('/deals/', query as RequestOptions['query']);
+  }
+  deal(id: string) {
+    return this.retrieve<PrivateDealAdmin>(`/deals/${id}/`);
+  }
+  createDeal(body: Record<string, unknown>) {
+    return this.create<PrivateDealAdmin>('/deals/', body);
+  }
+  updateDeal(id: string, body: Record<string, unknown>) {
+    return this.client.send<PrivateDealAdmin>('PATCH', `${this.basePath}/deals/${id}/`, {
+      body,
+    });
+  }
+  deleteDeal(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/deals/${id}/`);
+  }
+  dealsSummary(query: DealQuery = {}) {
+    return this.retrieve<DealsSummary>('/deals/summary/', query as RequestOptions['query']);
+  }
+  /** Slotted receipt/contract uploads — multipart; the slot vocabulary is
+   * `accounting.deal_attachment_slot`. */
+  uploadDealAttachment(dealId: string, file: File, slot?: string) {
+    const form = new FormData();
+    form.append('file', file);
+    if (slot) form.append('slot', slot);
+    return this.client.send<unknown>('POST', `${this.basePath}/deals/${dealId}/attachments/`, {
+      body: form,
+    });
+  }
+  deleteDealAttachment(dealId: string, attachmentId: string) {
+    return this.client.send<void>(
+      'DELETE',
+      `${this.basePath}/deals/${dealId}/attachments/${attachmentId}/`,
+    );
+  }
+
   /** Per-currency income/expense/net/pending/salaries — currencies are never
    * summed together (the service's own rule). */
   ledgerSummary(book: string, month?: string) {

@@ -1901,3 +1901,27 @@ a.ad-ghostbtn {
 .ad-inc {
   color: var(--status-avail);
 }
+.ad-moneygrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px 14px;
+  margin-bottom: 4px;
+}
+.ad-moneyrow {
+  display: grid;
+  grid-template-columns: 1fr 110px 74px;
+  align-items: center;
+  gap: 8px;
+}
+.ad-moneyrow input,
+.ad-moneyrow select {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 8px 10px;
+  outline: none;
+  min-width: 0;
+}

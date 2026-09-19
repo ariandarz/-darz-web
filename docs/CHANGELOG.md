@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 12 Step 8: Private Deals + receipts (PR #53, left open)
+
+- The Accounting desk's second half: the deals CRM with the server-computed per-deal calc and
+  per-currency summary, the 15-amount money grid, slotted receipt uploads with served links.
+
 ## 2026-09-19 — Phase 12 Step 7: Accounting — the four-ledger books
 
 - `/admin/accounting` (owner-only): the four books as a segment, the per-currency summary strip

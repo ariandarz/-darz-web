@@ -34,7 +34,9 @@ import type {
 import { ListController } from '../shared/ListController';
 import { useListController } from '../shared/useListController';
 import type { AccountingAdminService } from '../../api/services';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Segment } from '../../components';
+import { AccountingDeals } from './AccountingDeals';
 import {
   ConfirmDialog,
   DeskAction,
@@ -60,6 +62,9 @@ class LedgerController extends ListController<LedgerEntryAdmin, LedgerQuery> {
 export function AccountingPage() {
   const { accountingAdmin } = useApi();
   const options = useOptions();
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const view = params.get('view') === 'deals' ? 'deals' : 'books';
 
   const books = choices(options, 'accounting.book');
   const types = choices(options, 'accounting.entry_type');
@@ -181,10 +186,33 @@ export function AccountingPage() {
     },
   ];
 
+  if (view === 'deals') {
+    return (
+      <DeskPage
+        title="Accounting"
+        action={
+          <span className="ad-rowacts">
+            <ViewSeg view={view} setParams={setParams} />
+            <DeskAction onClick={() => navigate('/admin/accounting/deals/new')}>
+              ＋ New deal
+            </DeskAction>
+          </span>
+        }
+      >
+        <AccountingDeals />
+      </DeskPage>
+    );
+  }
+
   return (
     <DeskPage
       title="Accounting"
-      action={<DeskAction onClick={() => setEditing('new')}>＋ New entry</DeskAction>}
+      action={
+        <span className="ad-rowacts">
+          <ViewSeg view={view} setParams={setParams} />
+          <DeskAction onClick={() => setEditing('new')}>＋ New entry</DeskAction>
+        </span>
+      }
       toolbar={
         <>
           <SelectFilter
@@ -295,6 +323,30 @@ export function AccountingPage() {
         />
       )}
     </DeskPage>
+  );
+}
+
+function ViewSeg({
+  view,
+  setParams,
+}: {
+  view: 'books' | 'deals';
+  setParams: (p: URLSearchParams) => void;
+}) {
+  return (
+    <Segment<'books' | 'deals'>
+      label="Books or deals"
+      options={[
+        { value: 'books', content: 'Books' },
+        { value: 'deals', content: 'Private Deals' },
+      ]}
+      value={view}
+      onChange={(v) => {
+        const next = new URLSearchParams();
+        if (v === 'deals') next.set('view', 'deals');
+        setParams(next);
+      }}
+    />
   );
 }
 

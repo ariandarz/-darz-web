@@ -557,3 +557,41 @@ export interface LedgerSummary {
   >;
   converted_income: Record<string, string>;
 }
+
+/** A private deal — `PrivateDealSerializer` (owner-only): the old panel's
+ * Private Deals CRM in full — parties, payment tracks, commission, follow-up,
+ * 15 money fields each with its own currency companion, the per-deal `calc`
+ * roll-up (server-computed, per currency, never mixed) and slotted
+ * attachments with served URLs. */
+export type PrivateDealAdmin = Schemas['PrivateDeal'];
+
+export interface DealQuery {
+  status?: string;
+  pay_status?: string;
+  artist_label?: string;
+  buyer_name?: string;
+  seller_name?: string;
+  /** YYYY-MM over deal_date */
+  month?: string;
+  page?: number;
+  per_page?: number;
+}
+
+/** `GET /accounting/admin/deals/summary/` — `pdealSummary` served: the same
+ * per-currency discipline as the ledger summary. */
+export interface DealsSummary {
+  currencies: string[];
+  by_currency: Record<
+    string,
+    {
+      sale: string;
+      commission: string;
+      costs: string;
+      expenses: string;
+      received: string;
+      net: string;
+      remaining: string;
+    }
+  >;
+  count?: number;
+}
