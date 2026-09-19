@@ -468,10 +468,10 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'accounting',
         'Accounting',
-        null,
+        '/admin/accounting',
         'ready',
-        '11',
-        'accounting admin, 15 routes (4 ledgers + Private Deals).',
+        '12·7',
+        'the four-ledger books; deals/attachments/settlement follow.',
       ),
       tab(
         'automations',

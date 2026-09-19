@@ -816,6 +816,16 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
 - [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
+- [x] **Step 7 — Accounting: the four-ledger books** ✅ 2026-09-19 (overnight run) —
+      `/admin/accounting` (owner-only end to end, the backend's own `IsOwner`): the four books
+      (Darz · Koocheh · Personal · Expenses Arian) as a segment, the per-currency summary strip
+      (`acctSummary` served — income/expense/net/pending/salaries, NEVER summed across
+      currencies, plus the manual-rate converted-income view), the month/type/status filters,
+      and entry CRUD over the write serializer's whole set (essentials + manual FX + sale
+      labels; `book` immutable on edit, said on the form). Deals, attachments/receipts, the
+      Arian review and the settlement follow as their own step. Verified live: income + expense
+      land, the strip nets 38,000 USD, books are separate worlds, edit flips the pill, and a
+      standard admin meets the refusal card.
 - [x] **Step 6 — Auction Records desk** ✅ 2026-09-19 (overnight run) — `/admin/auction-records`
       (+`/new|:id`): the widened external-results DB (backend Phase 11-admin, BE-R1…R6) as a full
       desk — search + the Past/Upcoming/Live sections + the admin-only status filter; rows with

@@ -15,6 +15,7 @@ import {
   DocumentsAdminService,
   GalleryAdminService,
   AuctionsAdminService,
+  AccountingAdminService,
   AuthService,
   CatalogService,
   CrmService,
@@ -68,6 +69,7 @@ export class DarzApi {
   readonly documentsAdmin: DocumentsAdminService;
   readonly galleryAdmin: GalleryAdminService;
   readonly auctionsAdmin: AuctionsAdminService;
+  readonly accountingAdmin: AccountingAdminService;
 
   constructor(baseUrl: string = resolveBaseUrl(), storage?: Storage | null) {
     this.session = new AuthSession(baseUrl, storage);
@@ -86,6 +88,7 @@ export class DarzApi {
     this.documentsAdmin = new DocumentsAdminService(this.client);
     this.galleryAdmin = new GalleryAdminService(this.client);
     this.auctionsAdmin = new AuctionsAdminService(this.client);
+    this.accountingAdmin = new AccountingAdminService(this.client);
   }
 }
 

@@ -70,6 +70,9 @@ import type {
   GalleryUpdateAdmin,
   BidderRegistrationAdmin,
   LotAdmin,
+  LedgerEntryAdmin,
+  LedgerQuery,
+  LedgerSummary,
 } from './types';
 
 export abstract class ResourceService {
@@ -958,6 +961,39 @@ export class AuctionsAdminService extends ResourceService {
   }
   rejectRegistration(id: string) {
     return this.create<BidderRegistrationAdmin>(`/registrations/${id}/reject/`);
+  }
+}
+
+/** `/api/accounting/admin/` — the owner's books (backend Phase 11,
+ * owner-only end to end): the four-ledger entry CRUD, the per-currency
+ * summary, and — later steps — private deals, attachments, the Arian
+ * review, the settlement. */
+export class AccountingAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/accounting/admin');
+  }
+
+  ledger(query: LedgerQuery = {}) {
+    return this.list<LedgerEntryAdmin>('/ledger/', query as RequestOptions['query']);
+  }
+  createEntry(body: Record<string, unknown>) {
+    return this.create<LedgerEntryAdmin>('/ledger/', body);
+  }
+  updateEntry(id: string, body: Record<string, unknown>) {
+    return this.client.send<LedgerEntryAdmin>('PATCH', `${this.basePath}/ledger/${id}/`, {
+      body,
+    });
+  }
+  deleteEntry(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/ledger/${id}/`);
+  }
+  /** Per-currency income/expense/net/pending/salaries — currencies are never
+   * summed together (the service's own rule). */
+  ledgerSummary(book: string, month?: string) {
+    return this.retrieve<LedgerSummary>('/ledger/summary/', {
+      book,
+      ...(month ? { month } : {}),
+    } as RequestOptions['query']);
   }
 }
 

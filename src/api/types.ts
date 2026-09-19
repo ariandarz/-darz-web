@@ -516,3 +516,44 @@ export type LotAdmin = Schemas['LotAdmin'];
 /** A paddle request — `BidderRegistrationAdminSerializer`. Approving assigns
  * the auction's next sequential paddle number server-side. */
 export type BidderRegistrationAdmin = Schemas['BidderRegistrationAdmin'];
+
+/** A ledger entry — `LedgerEntrySerializer` (backend Phase 11's accounting,
+ * owner-only end to end). Four books (Darz · Koocheh · Personal · Expenses
+ * Arian — the old app's own ledgers), income/expense, seven statuses, the
+ * manual-FX fields and the sale labels. `book` is immutable after create. */
+export type LedgerEntryAdmin = Schemas['LedgerEntry'];
+
+export interface LedgerQuery {
+  book?: string;
+  entry_type?: string;
+  status?: string;
+  category?: string;
+  person?: string;
+  position?: string;
+  /** YYYY-MM */
+  month?: string;
+  page?: number;
+  per_page?: number;
+}
+
+/** `GET /accounting/admin/ledger/summary/?book=&month=` — the old
+ * `acctSummary` served: per-currency buckets, never summed across
+ * currencies, plus the manual-rate converted-income view (`acctConv`). */
+export interface LedgerSummary {
+  book: string;
+  month: string;
+  currencies: string[];
+  by_currency: Record<
+    string,
+    {
+      currency: string;
+      income: string;
+      expense: string;
+      salaries: string;
+      pending: string;
+      net: string;
+      count: number;
+    }
+  >;
+  converted_income: Record<string, string>;
+}

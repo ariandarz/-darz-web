@@ -29,6 +29,7 @@ import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
 import { ArtistsPage } from './features/admin/ArtistsPage';
 import { AuctionAdminDetailPage } from './features/admin/AuctionAdminDetailPage';
+import { AccountingPage } from './features/admin/AccountingPage';
 import { AuctionsAdminPage } from './features/admin/AuctionsAdminPage';
 import { RegistrationsPage } from './features/admin/RegistrationsPage';
 import { RecordEditorPage } from './features/admin/RecordEditorPage';
@@ -307,6 +308,14 @@ export function AppRoutes() {
           element={
             <RequireOwner title="Team">
               <TeamPage />
+            </RequireOwner>
+          }
+        />
+        <Route
+          path="/admin/accounting"
+          element={
+            <RequireOwner title="Accounting">
+              <AccountingPage />
             </RequireOwner>
           }
         />

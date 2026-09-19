@@ -1893,3 +1893,11 @@ a.ad-ghostbtn {
   padding: 6px 8px;
   outline: none;
 }
+
+/* ══ Accounting (Phase 12·7) ═══════════════════════════════════════════════ */
+.ad-bookseg {
+  margin-bottom: 12px;
+}
+.ad-inc {
+  color: var(--status-avail);
+}

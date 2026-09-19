@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 12 Step 7: Accounting — the four-ledger books
+
+- `/admin/accounting` (owner-only): the four books as a segment, the per-currency summary strip
+  (never summed across currencies), month/type/status filters, entry CRUD with manual FX and
+  sale labels. Deals/attachments/settlement follow as their own step.
+
 ## 2026-09-19 — Phase 12 Step 6: the Auction Records desk
 
 - `/admin/auction-records` (+editor): the widened comparables DB as a desk — sections, search,
