@@ -11,6 +11,36 @@
  */
 import { expect, test } from '@playwright/test';
 
+// On a CI failure the job logs must carry the diagnosis themselves (this
+// environment cannot fetch CI artifacts): collect every console message and
+// page error from the start of each test, and print them — with the final
+// URL and a body-text snippet — when the test did not pass.
+const captured: string[] = [];
+test.beforeEach(({ page }) => {
+  captured.length = 0;
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') {
+      captured.push(`[console.${m.type()}] ${m.text()}`);
+    }
+  });
+  page.on('pageerror', (e) => captured.push(`[pageerror] ${e.message}`));
+  page.on('requestfailed', (r) =>
+    captured.push(`[requestfailed] ${r.method()} ${r.url()} — ${r.failure()?.errorText}`),
+  );
+});
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status === testInfo.expectedStatus) return;
+  console.log(`--- diagnosis: ${testInfo.title} ---`);
+  console.log('final URL:', page.url());
+  for (const line of captured) console.log(line);
+  const body = await page
+    .locator('body')
+    .innerText()
+    .catch(() => '(body unreadable)');
+  console.log('body text:', JSON.stringify(body.slice(0, 600)));
+  console.log('--- end diagnosis ---');
+});
+
 test('the collector gate boots and shows its shipped anatomy', async ({ page }) => {
   await page.goto('/login');
   // the gate's own copy (LoginPage — ported from the design package)
