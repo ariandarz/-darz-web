@@ -2,7 +2,7 @@
  * standardSet — "the standard set": Darz's REAL service catalogue as data,
  * plus the pure helpers that turn it into API bodies.
  *
- * WHAT THIS IS. 30 service lines, priced in TOMAN, copied from the two places
+ * WHAT THIS IS. 27 service lines, priced in TOMAN, copied from the two places
  * Darz's real services actually live:
  *
  *  1. THE 8 EXHIBITION SERVICES, with their real prices —
@@ -57,14 +57,17 @@
  * is copied into what follows. The one part of that seed that stays is the
  * four CHECKLIST templates (:13444-13447), which are workflow, not pricing.
  *
- * NEAR-DUPLICATES ARE KEPT, NOT MERGED (`NEAR_DUPLICATES`). Four coverage
- * lines look like priced exhibition services. Copying a price between two
- * services the owner never said were the same is the invented-number problem
- * again, so both sides are kept and the four pairs are listed for the owner
- * to merge in one pass. One pair — "Artist interview" / "Artist Interview" —
- * differs only in case, so the two collide on `nameKey`, the idempotency key
- * every plan and every line lookup uses; `NAME_COLLISIONS` carries that, and
- * says what it costs until the owner resolves the pair.
+ * FOUR PAIRS ARE ONE SERVICE (`MERGED_SERVICES`). Four coverage lines named
+ * the same service as a priced exhibition line. They were kept apart at first
+ * — copying a price between two services the owner never called the same is
+ * the invented-number problem again — and the pairs were listed for a ruling.
+ * **The owner ruled on 2026-09-19 that each pair is one service**, so each is
+ * now a single row: the exhibition side, which carries Darz's real price and
+ * the name the gallery sees in its portal, plus the coverage line's group and
+ * running notes. No price was invented by the merge; "Darz Listing" is still
+ * quoted on request, because neither side had a price. A workspace seeded
+ * before the ruling still holds the folded rows — `supersededRows` finds them
+ * so the desk can name them, and the owner deletes them.
  *
  * HOW IT RUNS. Nothing here runs on its own: a server DB starts honest and
  * empty, so an owner clicks "Add the standard set" on the Packages desk and
@@ -168,24 +171,41 @@ export const STANDARD_SERVICES: readonly StandardService[] = [
     name: 'Exhibition Photo Coverage',
     source: 'exhibition',
     serviceKey: 'exhibition_photo',
+    // ALSO the coverage menu's §02 "Installation photography"
+    // (`coverage-packages.html:239`) — the owner ruled on 2026-09-19 that the
+    // two are one service. This is the side that carries Darz's real price and
+    // the name the gallery already sees in its portal, so it keeps both and
+    // takes the coverage line's group and running notes. See MERGED_SERVICES.
+    group: '02',
+    groupTitle: 'Content Production',
     category: 'production',
     unit: 'piece',
     internalCost: 0,
     price: 700000,
     about:
       'Professional photographic documentation of the exhibition, including installation views, individual artworks, details, spatial elements, and overall atmosphere.',
+    flow: 'On-site shoot · colour-corrected edit · delivered web + print sizes.',
+    time: 'Shoot day-of · 3–4 day delivery',
+    need: 'Access window with lighting on, work list',
   },
   {
     // exhibition_catalogue.py:19
     name: 'Video Documentation',
     source: 'exhibition',
     serviceKey: 'video_documentation',
+    // ALSO the coverage menu's §02 "Video walkthrough / reel"
+    // (`coverage-packages.html:242`) — one service, per the owner, 2026-09-19.
+    group: '02',
+    groupTitle: 'Content Production',
     category: 'production',
     unit: 'piece',
     internalCost: 0,
     price: 10000000,
     about:
       'A short, professionally edited video documenting the exhibition, its spatial arrangement, artworks, and overall atmosphere.',
+    flow: 'We shoot + edit to a 20–40s reel with captions and music.',
+    time: 'From opening · 4–5 day delivery',
+    need: 'Quiet access window; artist optional',
   },
   {
     // exhibition_catalogue.py:25
@@ -235,8 +255,8 @@ export const STANDARD_SERVICES: readonly StandardService[] = [
     // whichever the catalogue happened to return first. They are one service,
     // and this is the side carrying Darz's real price, so it takes the group
     // membership and the coverage menu's own wording below. The other three
-    // NEAR_DUPLICATES have genuinely different names and stay separate —
-    // merging those is the owner's call, not one the key forces.
+    // pairs have genuinely different names and were merged later, on the
+    // owner's ruling of 2026-09-19 — see MERGED_SERVICES.
     group: '02',
     groupTitle: 'Content Production',
     category: 'media',
@@ -265,12 +285,21 @@ export const STANDARD_SERVICES: readonly StandardService[] = [
     name: 'Darz Listing',
     source: 'exhibition',
     serviceKey: 'darz_listing',
+    // ALSO the coverage menu's §05 "Collector network push"
+    // (`coverage-packages.html:260`) — one service, per the owner, 2026-09-19.
+    // Still unpriced: the exhibition catalogue quotes this one on request and
+    // the coverage line never had a price, so the merge carries none either.
+    group: '05',
+    groupTitle: 'Amplification & Collector Reach',
     category: 'media',
     unit: 'piece',
     internalCost: 0,
     price: null,
     about:
       'Selected artworks listed on the private Darz Market App, providing direct access to a curated network of collectors and art professionals.',
+    flow: 'Curated into the Market App · collectors notified.',
+    time: 'During the run',
+    need: 'Work list with images and prices',
   },
   /* group 01 Announcement & Pre-Show — coverage-packages.html:232 */
   {
@@ -336,21 +365,6 @@ export const STANDARD_SERVICES: readonly StandardService[] = [
   },
   /* group 02 Content Production — coverage-packages.html:238 */
   {
-    // coverage-packages.html:239
-    name: 'Installation photography',
-    source: 'coverage',
-    group: '02',
-    groupTitle: 'Content Production',
-    category: 'production',
-    unit: 'piece',
-    internalCost: 0,
-    price: null,
-    about: 'Professional photos of the hung exhibition — full room views and detail shots.',
-    flow: 'On-site shoot · colour-corrected edit · delivered web + print sizes.',
-    time: 'Shoot day-of · 3–4 day delivery',
-    need: 'Access window with lighting on, work list',
-  },
-  {
     // coverage-packages.html:240
     name: 'Opening-night coverage',
     source: 'coverage',
@@ -379,21 +393,6 @@ export const STANDARD_SERVICES: readonly StandardService[] = [
     flow: 'Wall/studio shoot · colour-corrected · multiple sizes.',
     time: '4–6 days',
     need: 'Access to works, titles & dimensions',
-  },
-  {
-    // coverage-packages.html:242
-    name: 'Video walkthrough / reel',
-    source: 'coverage',
-    group: '02',
-    groupTitle: 'Content Production',
-    category: 'production',
-    unit: 'piece',
-    internalCost: 0,
-    price: null,
-    about: 'A short vertical reel walking through the show, paced and captioned.',
-    flow: 'We shoot + edit to a 20–40s reel with captions and music.',
-    time: 'From opening · 4–5 day delivery',
-    need: 'Quiet access window; artist optional',
   },
   /* group 03 Editorial & Catalogue — coverage-packages.html:245 */
   {
@@ -554,21 +553,6 @@ export const STANDARD_SERVICES: readonly StandardService[] = [
     need: 'Approved assets',
   },
   {
-    // coverage-packages.html:260
-    name: 'Collector network push',
-    source: 'coverage',
-    group: '05',
-    groupTitle: 'Amplification & Collector Reach',
-    category: 'media',
-    unit: 'piece',
-    internalCost: 0,
-    price: null,
-    about: 'Your works surfaced inside the private Darz collector app and network.',
-    flow: 'Curated into the Market App · collectors notified.',
-    time: 'During the run',
-    need: 'Work list with images and prices',
-  },
-  {
     // coverage-packages.html:261
     name: 'Direct collector push',
     source: 'coverage',
@@ -631,47 +615,81 @@ export const UNPRICED_SERVICES: readonly StandardService[] = STANDARD_SERVICES.f
   (s) => s.price === null,
 );
 
-/* ── near-duplicates: kept, listed, never merged ────────────────────────── */
+/* ── the merged pairs: one row each, on the owner's ruling ─────────────── */
 
-export interface NearDuplicate {
-  /** The coverage line's name, verbatim. */
-  coverage: string;
-  /** The exhibition line's name, verbatim. */
-  exhibition: string;
-  /** What overlaps and what differs — the note the owner decides from. */
+export interface MergedService {
+  /** The name the catalogue keeps — always the exhibition line, because it is
+   * the one the gallery portal shows and the one `priceList.ts` joins a
+   * package's prices by. */
+  kept: string;
+  /** The coverage-menu name folded into it, verbatim from its source. */
+  folded: string;
+  /** Where the folded name comes from, so a reader can check the original. */
+  foldedSource: string;
+  /** Why they are one service — the owner's reasoning, not this module's. */
   why: string;
-  /** True when the two names case-fold to ONE `nameKey`. Derived from the
-   * names above, so it can never drift from them. */
-  sameNameKey: boolean;
 }
 
-/** Four coverage lines look like priced exhibition services. They are NOT
- * merged and no price is copied across: two services the owner never said
- * were the same would otherwise end up sharing an invented price, which is
- * the whole problem this data exists to undo. Both sides are seeded; this is
- * the list the desk shows so the owner can merge them in one pass. */
-export const NEAR_DUPLICATES: readonly NearDuplicate[] = [
+/**
+ * Four coverage lines named the same service as a priced exhibition line.
+ * **The owner ruled on 2026-09-19 that each pair IS one service**, so each is
+ * a single catalogue row here: the exhibition side, which carries Darz's real
+ * price and the name the gallery already sees, plus the coverage line's group
+ * membership and running notes.
+ *
+ * Which side survives is not a preference. `priceList.ts` joins a package's
+ * prices to the catalogue **by the exhibition service's name**, so folding the
+ * other way would silently stop the composer pricing that line.
+ *
+ * No price was invented by any of these merges: three keep a real Toman price
+ * that was already on the exhibition line, and "Darz Listing" stays unpriced
+ * because neither side had a price.
+ *
+ * A workspace seeded BEFORE this ruling still holds the folded rows as their
+ * own lines — the seed only ever adds, never deletes. `supersededRows` finds
+ * them so the desk can say which to remove; deleting is the owner's click.
+ */
+export const MERGED_SERVICES: readonly MergedService[] = [
   {
-    coverage: 'Installation photography',
-    exhibition: 'Exhibition Photo Coverage',
-    why: 'Both photograph the hung show. The coverage line is the §02 on-site shoot and carries no price; the exhibition line is the priced one the gallery portal already offers (700,000 T).',
+    kept: 'Exhibition Photo Coverage',
+    folded: 'Installation photography',
+    foldedSource: 'coverage-packages.html:239',
+    why: 'Both photograph the hung show — full room views and detail shots. The exhibition line is the priced one (700,000 T) the gallery portal already offers.',
   },
   {
-    coverage: 'Video walkthrough / reel',
-    exhibition: 'Video Documentation',
-    why: 'Both are an edited video of the show. The coverage line is a 20–40s captioned vertical reel; the exhibition line is a short documentary edit, priced at 10,000,000 T.',
+    kept: 'Video Documentation',
+    folded: 'Video walkthrough / reel',
+    foldedSource: 'coverage-packages.html:242',
+    why: 'Both are an edited video of the show. The exhibition line is the priced one (10,000,000 T); the reel is how it is cut and delivered.',
   },
   {
-    coverage: 'Collector network push',
-    exhibition: 'Darz Listing',
-    why: 'Both put the works in front of the Darz collector network. The coverage line is the §05 push into the Market App; the exhibition line is the Market App listing itself, quoted on request.',
+    kept: 'Artist Interview',
+    folded: 'Artist interview',
+    foldedSource: 'coverage-packages.html (con-intv)',
+    why: 'The same string but for one capital. Merged before the ruling because the catalogue key is case-folded and could never have held both.',
   },
-].map((p) => ({ ...p, sameNameKey: sameName(p.coverage, p.exhibition) }));
-// A fourth pair is NOT here: "Artist interview" and "Artist Interview" are the
-// same string but for a capital, so the folded key cannot hold both and one
-// row would simply never be written. That pair is merged into the priced line;
-// the three above have different names, so whether they are one service is the
-// owner's call.
+  {
+    kept: 'Darz Listing',
+    folded: 'Collector network push',
+    foldedSource: 'coverage-packages.html:260',
+    why: 'Both put the works in front of the Darz collector network through the Market App. Quoted on request — neither side carried a price.',
+  },
+];
+
+/** The folded names, for a workspace that was seeded before the ruling. */
+export const SUPERSEDED_NAMES: readonly string[] = MERGED_SERVICES.map((m) => m.folded);
+
+/**
+ * Rows in THIS workspace's catalogue that a merge has superseded: a line whose
+ * name was folded into another and which no longer belongs to the standard
+ * set. Returns them so the desk can name them; nothing here deletes a row an
+ * owner's workspace already holds.
+ */
+export function supersededRows<T extends NamedRow>(existing: readonly T[]): T[] {
+  const folded = new Set(SUPERSEDED_NAMES.map(nameKey));
+  const kept = new Set(STANDARD_SERVICES.map((s) => nameKey(s.name)));
+  return existing.filter((r) => folded.has(nameKey(r.name)) && !kept.has(nameKey(r.name)));
+}
 
 export interface NameCollision {
   /** The shared `nameKey`. */
@@ -694,21 +712,12 @@ function collisions(rows: readonly { name: string }[]): NameCollision[] {
 }
 
 /**
- * Names that case-fold to the SAME `nameKey` — today exactly one:
- * "Artist interview" (coverage §02) and "Artist Interview" (the exhibition
- * catalogue). Neither is renamed, because renaming a real service is
- * inventing copy, so the cost is stated instead:
- *
- *  - a run writes BOTH rows, and the catalogue then holds two lines whose
- *    names differ only in case;
- *  - `serviceIdIndex` keeps the FIRST row per key, so the "Content
- *    Production" package's "Artist interview" line links to whichever of the
- *    two the catalogue read returns first — possibly the priced one;
- *  - a second run skips both, so nothing multiplies.
- *
- * The fix is the owner's, not this module's: merge the pair (it is also the
- * third entry of `NEAR_DUPLICATES`) or rename one side, then re-link that
- * package's line.
+ * Names that case-fold to the same `nameKey` — **today none**, and a test
+ * pins that. The one pair that ever collided ("Artist interview" and "Artist
+ * Interview") is merged into a single row, so the catalogue can no longer hold
+ * two lines the idempotency key cannot tell apart. Kept as a guard: a future
+ * addition that collides shows up here and in the desk rather than quietly
+ * losing a row on the next seed.
  */
 export const NAME_COLLISIONS: readonly NameCollision[] = collisions(STANDARD_SERVICES);
 

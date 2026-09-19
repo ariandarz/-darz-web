@@ -68,7 +68,12 @@ rather than leaving it to be noticed on the invoice.
 - **The backend**: an admin read of the exhibition catalogue (or the menu as data, so the _starting_
   prices become editable); a re-issue for a lost link; the pricelist file served to the desk; a
   `description` field on a catalogue line; `?search=` on partners.
-- **The owner**: the 23 unpriced coverage services carry no price yet, and three look-alike pairs
-  (Installation photography / Exhibition Photo Coverage · Video walkthrough / Video Documentation ·
-  Collector network push / Darz Listing) are either one service or two — a business call, not one
-  this app should guess.
+- **The owner**: the 20 unpriced coverage services carry no price yet — they read "not priced yet"
+  and are quoted per show until one is set.
+
+**Ruled 2026-09-19:** the four look-alike pairs (Installation photography / Exhibition Photo
+Coverage · Video walkthrough / Video Documentation · Artist interview / Artist Interview ·
+Collector network push / Darz Listing) **are one service each**. Each is a single catalogue row on
+the exhibition side, which is both the name the gallery's portal shows and the name the composer
+joins prices by. No price was invented by the merge. A workspace seeded before the ruling still
+holds the folded rows; the Packages desk names them and the owner deletes them.

@@ -66,7 +66,8 @@
  *    spot what does not come across: the Toman prices and what a workspace
  *    without TMN gets instead, no internal costs, no "on request" (an
  *    unpriced line is written as 0), no descriptions (G-PROJ-8), and the
- *    near-duplicate pairs it refuses to merge;
+ *    pairs the owner ruled are one service, and any row a merge superseded
+ *    that this workspace still holds;
  *  - `Lib.toast` lines are inline status notes; `dzConfirm` is
  *    `ConfirmDialog`.
  */
@@ -118,7 +119,8 @@ import {
   walkServices,
 } from './projectForm';
 import {
-  NEAR_DUPLICATES,
+  MERGED_SERVICES,
+  supersededRows,
   STANDARD_CURRENCY,
   STANDARD_SET_COUNTS,
   checklistInput,
@@ -885,13 +887,12 @@ function countText(kind: SeedKind, n: number): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** The near-duplicate paragraph's opening, counted rather than written out:
- * the pairs are data, and the owner merging one would make a typed "four"
- * false on the spot. */
-function duplicateLead(n: number): string {
+/** The merged-pairs paragraph's opening, counted rather than written out, so
+ * it can never disagree with the list under it. */
+function mergedLead(n: number): string {
   return n === 1
-    ? 'One coverage line looks like a priced exhibition service'
-    : `${n} coverage lines look like priced exhibition services`;
+    ? 'One coverage line and one exhibition service are the same service'
+    : `${n} coverage lines name the same service as a priced exhibition line`;
 }
 
 /** "a, b and c". */
@@ -1051,6 +1052,10 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
 
   // a plan is only shown when every list in it came back from THIS read
   const fresh = tpl.key === gen;
+  // lines a merge superseded that THIS workspace still holds (a seed run
+  // before the 2026-09-19 ruling wrote both sides); read from the same fresh
+  // walk, so it can never be named off a stale catalogue
+  const stale = supersededRows(fresh ? (tpl.services ?? []) : []);
   const plans = {
     services: planServices(fresh ? (tpl.services ?? []) : []),
     packages: planPackages(fresh ? (tpl.packages ?? []) : []),
@@ -1217,21 +1222,35 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
         price — what each service actually is, how it runs, its timing and what Darz needs from
         the gallery stay in the source menus.
       </p>
-      {/* the pairs the owner merges in one pass, never merged for them: a price
-          copied between two services nobody has called the same is an invented
-          price again. One line each, the overlap on the row’s own title */}
-      {NEAR_DUPLICATES.length > 0 && (
+      {/* Four pairs named one service twice. The owner ruled on 2026-09-19
+          that each pair IS one service, so each is a single line here — said
+          out loud because the coverage menu still lists the other name, and a
+          reader comparing the two would otherwise think a service went
+          missing. The overlap is on the row’s own title. */}
+      {MERGED_SERVICES.length > 0 && (
         <>
           <p className="dzp-mut" role="note">
-            {duplicateLead(NEAR_DUPLICATES.length)}. Both sides are added and no price is
-            copied across — merge them here once you have decided they are the same service:
+            {mergedLead(MERGED_SERVICES.length)} — one line each, keeping the priced name the
+            gallery already sees in its portal:
           </p>
-          {NEAR_DUPLICATES.map((d) => (
-            <div className="dzp-mut" key={d.coverage} title={d.why}>
-              “{d.coverage}” and “{d.exhibition}”
+          {MERGED_SERVICES.map((m) => (
+            <div className="dzp-mut" key={m.folded} title={m.why}>
+              “{m.folded}” is part of “{m.kept}”
             </div>
           ))}
         </>
+      )}
+      {/* A workspace seeded before that ruling still holds the folded rows as
+          their own lines: the seed only ever adds. Name them; deleting one is
+          the owner's click on its own row, never this card's. */}
+      {stale.length > 0 && (
+        <p className="dzp-mut" role="note">
+          This workspace still has {stale.length === 1 ? 'a line' : `${stale.length} lines`}{' '}
+          from before that ruling — {joinWords(stale.map((r) => `“${r.name}”`))}.{' '}
+          {stale.length === 1 ? 'It is' : 'They are'} no longer part of the standard set;
+          delete {stale.length === 1 ? 'it' : 'them'} from the catalogue above when the
+          programmes no longer point at {stale.length === 1 ? 'it' : 'them'}.
+        </p>
       )}
       {!ready && !tpl.error && <p className="dz-state">Loading…</p>}
       {ready && (
