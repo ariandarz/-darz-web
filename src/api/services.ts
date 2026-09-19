@@ -88,6 +88,29 @@ import type {
   ExhibitionAdminPatch,
   ExhibitionLineInput,
   ExhibitionQuery,
+  ProjectAdmin,
+  ProjectCreateInput,
+  ProjectPatch,
+  ProjectStage,
+  ProjectAttachmentAdmin,
+  ProjectDashboard,
+  ProjectReportRow,
+  ProjectQuery,
+  PartnerOrgAdmin,
+  PartnerOrgInput,
+  PartnerOrgPatch,
+  PartnerOrgQuery,
+  ServiceCatalogItemAdmin,
+  ServiceCatalogItemInput,
+  ServiceCatalogItemPatch,
+  ServiceCatalogQuery,
+  PackageTemplateAdmin,
+  PackageTemplateInput,
+  PackageTemplatePatch,
+  ChecklistTemplateAdmin,
+  ChecklistTemplateInput,
+  ChecklistTemplatePatch,
+  PageQuery,
 } from './types';
 import type { PortalClient } from './PortalClient';
 
@@ -1248,6 +1271,163 @@ export class AuthService extends ResourceService {
    */
   requestAccess(body: AccessRequestInput) {
     return this.create<AccessRequest>('/access-requests/', body);
+  }
+}
+
+/** `/api/projects/admin/` — the Projects group (backend Phase 31,
+ * `apps/projects`): projects CRUD + the stage machine + dashboard/reports
+ * aggregates, per-project attachments, and the four reference tables the old
+ * panel kept beside them (partner orgs, service catalogue, package templates,
+ * checklist templates). Every write except attachments carries the optimistic
+ * lock (`expected_version`); a stale one is a 409 → `ConflictError`. All of
+ * it is `IsStandardAdminOrOwner` — no `proj*` tab was in the old panel's
+ * `OWNER_ONLY` list (`darz-studio.html:11800`). */
+export class ProjectsAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/projects/admin');
+  }
+
+  // --- projects ------------------------------------------------------------
+  projects(query: ProjectQuery = {}) {
+    // Django's BooleanField accepts `True`/`False` (and 1/0), not the
+    // lowercase pair the endpoint documents — normalised here so no desk
+    // has to know (G-PROJ-6).
+    const { archived, ...rest } = query;
+    const wire: Record<string, unknown> =
+      archived === undefined ? rest : { ...rest, archived: archived ? 'True' : 'False' };
+    return this.list<ProjectAdmin>('/projects/', wire as RequestOptions['query']);
+  }
+  project(id: string) {
+    return this.retrieve<ProjectAdmin>(`/projects/${id}/`);
+  }
+  createProject(body: ProjectCreateInput) {
+    return this.create<ProjectAdmin>('/projects/', body);
+  }
+  updateProject(id: string, body: ProjectPatch) {
+    return this.client.send<ProjectAdmin>('PATCH', `${this.basePath}/projects/${id}/`, {
+      body,
+    });
+  }
+  deleteProject(id: string) {
+    return this.remove(`/projects/${id}/`);
+  }
+  /** The old board's `kmove` / rail click: moving a project also re-derives
+   * its status label server-side (`Project.STAGE_STATUS_MAP`). */
+  setStage(id: string, stage: ProjectStage, expectedVersion: number) {
+    return this.create<ProjectAdmin>(`/projects/${id}/stage/`, {
+      stage,
+      expected_version: expectedVersion,
+    });
+  }
+  dashboard() {
+    return this.retrieve<ProjectDashboard>('/projects/dashboard/');
+  }
+  reports() {
+    return this.retrieve<{ deliverables: ProjectReportRow[] }>('/projects/reports/');
+  }
+
+  // --- attachments (private S3, `projects/<id>/…`) ---------------------------
+  attachments(projectId: string, query: PageQuery = {}) {
+    return this.list<ProjectAttachmentAdmin>(
+      `/projects/${projectId}/attachments/`,
+      query as RequestOptions['query'],
+    );
+  }
+  uploadAttachment(projectId: string, file: File, label = '') {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('label', label);
+    return this.create<ProjectAttachmentAdmin>(`/projects/${projectId}/attachments/`, form);
+  }
+  deleteAttachment(projectId: string, attachmentId: string) {
+    return this.remove(`/projects/${projectId}/attachments/${attachmentId}/`);
+  }
+
+  // --- partner orgs ----------------------------------------------------------
+  partners(query: PartnerOrgQuery = {}) {
+    return this.list<PartnerOrgAdmin>('/partners/', query as RequestOptions['query']);
+  }
+  partner(id: string) {
+    return this.retrieve<PartnerOrgAdmin>(`/partners/${id}/`);
+  }
+  createPartner(body: PartnerOrgInput) {
+    return this.create<PartnerOrgAdmin>('/partners/', body);
+  }
+  updatePartner(id: string, body: PartnerOrgPatch) {
+    return this.client.send<PartnerOrgAdmin>('PATCH', `${this.basePath}/partners/${id}/`, {
+      body,
+    });
+  }
+  deletePartner(id: string) {
+    return this.remove(`/partners/${id}/`);
+  }
+
+  // --- service catalogue (the rate card, D21) --------------------------------
+  services(query: ServiceCatalogQuery = {}) {
+    return this.list<ServiceCatalogItemAdmin>(
+      '/service-catalog/',
+      query as RequestOptions['query'],
+    );
+  }
+  service(id: string) {
+    return this.retrieve<ServiceCatalogItemAdmin>(`/service-catalog/${id}/`);
+  }
+  createService(body: ServiceCatalogItemInput) {
+    return this.create<ServiceCatalogItemAdmin>('/service-catalog/', body);
+  }
+  updateService(id: string, body: ServiceCatalogItemPatch) {
+    return this.client.send<ServiceCatalogItemAdmin>(
+      'PATCH',
+      `${this.basePath}/service-catalog/${id}/`,
+      { body },
+    );
+  }
+  deleteService(id: string) {
+    return this.remove(`/service-catalog/${id}/`);
+  }
+
+  // --- package templates -----------------------------------------------------
+  packages(query: PageQuery = {}) {
+    return this.list<PackageTemplateAdmin>('/packages/', query as RequestOptions['query']);
+  }
+  packageTemplate(id: string) {
+    return this.retrieve<PackageTemplateAdmin>(`/packages/${id}/`);
+  }
+  createPackage(body: PackageTemplateInput) {
+    return this.create<PackageTemplateAdmin>('/packages/', body);
+  }
+  updatePackage(id: string, body: PackageTemplatePatch) {
+    return this.client.send<PackageTemplateAdmin>(
+      'PATCH',
+      `${this.basePath}/packages/${id}/`,
+      {
+        body,
+      },
+    );
+  }
+  deletePackage(id: string) {
+    return this.remove(`/packages/${id}/`);
+  }
+
+  // --- checklist templates ---------------------------------------------------
+  checklists(query: PageQuery = {}) {
+    return this.list<ChecklistTemplateAdmin>('/checklists/', query as RequestOptions['query']);
+  }
+  checklist(id: string) {
+    return this.retrieve<ChecklistTemplateAdmin>(`/checklists/${id}/`);
+  }
+  createChecklist(body: ChecklistTemplateInput) {
+    return this.create<ChecklistTemplateAdmin>('/checklists/', body);
+  }
+  updateChecklist(id: string, body: ChecklistTemplatePatch) {
+    return this.client.send<ChecklistTemplateAdmin>(
+      'PATCH',
+      `${this.basePath}/checklists/${id}/`,
+      { body },
+    );
+  }
+  deleteChecklist(id: string) {
+    return this.remove(`/checklists/${id}/`);
   }
 }
 

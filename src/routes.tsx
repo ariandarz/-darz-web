@@ -58,6 +58,17 @@ import { MembershipsPage } from './features/admin/MembershipsPage';
 import { TeamPage } from './features/admin/TeamPage';
 import { RequireOwner } from './features/admin/RequireOwner';
 import { AdminShell } from './features/admin/AdminShell';
+import { ProjectsDashboardPage } from './features/admin/projects/ProjectsDashboardPage';
+import { ProjectsListPage } from './features/admin/projects/ProjectsListPage';
+import { NewProjectPage } from './features/admin/projects/NewProjectPage';
+import { ProjectPage } from './features/admin/projects/ProjectPage';
+import { ProjectReportPage } from './features/admin/projects/ProjectReportPage';
+import { ProjectPipelinePage } from './features/admin/projects/ProjectPipelinePage';
+import { PackagesPage } from './features/admin/projects/PackagesPage';
+import { PackageEditorPage } from './features/admin/projects/PackageEditorPage';
+import { ProjectsCalculatorPage } from './features/admin/projects/ProjectsCalculatorPage';
+import { ProjectPartnersPage } from './features/admin/projects/ProjectPartnersPage';
+import { ProjectsReportsPage } from './features/admin/projects/ProjectsReportsPage';
 import { AdminThreadPage } from './features/admin/AdminThreadPage';
 import { DashboardPage } from './features/admin/DashboardPage';
 import { asAdminRole, firstVisiblePath } from './features/admin/adminNav';
@@ -342,6 +353,22 @@ export function AppRoutes() {
             </RequireOwner>
           }
         />
+        {/* Projects (Phase 11c) — the old group's eight sub-tabs (:13580-13587)
+            as routes; the record and its print report ride /:id, reached from
+            the list, the board and the dashboard cards. Static segments come
+            first so react-router ranks them above /:id. */}
+        <Route path="/admin/projects" element={<ProjectsDashboardPage />} />
+        <Route path="/admin/projects/list" element={<ProjectsListPage />} />
+        <Route path="/admin/projects/new" element={<NewProjectPage />} />
+        <Route path="/admin/projects/pipeline" element={<ProjectPipelinePage />} />
+        <Route path="/admin/projects/packages" element={<PackagesPage />} />
+        <Route path="/admin/projects/packages/new" element={<PackageEditorPage />} />
+        <Route path="/admin/projects/packages/:id" element={<PackageEditorPage />} />
+        <Route path="/admin/projects/calculator" element={<ProjectsCalculatorPage />} />
+        <Route path="/admin/projects/partners" element={<ProjectPartnersPage />} />
+        <Route path="/admin/projects/reports" element={<ProjectsReportsPage />} />
+        <Route path="/admin/projects/:id" element={<ProjectPage />} />
+        <Route path="/admin/projects/:id/report" element={<ProjectReportPage />} />
         <Route path="/admin/collectors/:id" element={<CollectorDetailPage />} />
         <Route path="/admin/club" element={<ClubPage />} />
         {/* owner-only (`OWNER_ONLY` has `system`): the nav hides the tab from a

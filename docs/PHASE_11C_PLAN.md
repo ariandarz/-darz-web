@@ -1,8 +1,9 @@
 # Phase 11c — Projects: the plan
 
-**Status: DRAFT for the owner's review (written 2026-09-19, the overnight run's last block).**
-The architecture doc (§6 row 9) requires Projects to arrive with its own plan before any build —
-this is that plan. Nothing in this phase is built yet.
+**Status: BUILT 2026-09-19 (all four steps in one pass, on the owner's "go ahead with the
+projects").** Written 2026-09-19 as the plan the architecture doc (§6 row 9) requires; what
+changed in the build is recorded under "As built" at the end — the map below held, with three
+API facts found on the way (G-PROJ-2/3: `status` and the stage sub-state are not writable).
 
 ## What it is
 
@@ -76,3 +77,24 @@ class is the truth to mirror).
   a loop whose admin half already shipped; Projects is a whole new territory. The §6 order
   says portal (row 7) before projects (row 9); this plan does not change that, it only makes
   Projects ready to start.
+
+## As built (2026-09-19)
+
+- Steps 1-4 landed together as one PR: `/admin/projects` (dashboard) · `/list` (+ `?quick=`) ·
+  `/new` · `/:id` (the record: stage rail, nine sections, attachments, the Proposal section) ·
+  `/:id/report` (`?client=1`) · `/pipeline` · `/packages` (+ the service catalogue panel, the
+  package editor at `/packages/new|:id`) · `/calculator` · `/partners` · `/reports` (roll-up +
+  per-project reports + checklist templates).
+- **Calculator (D21):** prices from catalogue rows × quantities (cost, recommended, discount,
+  approved, gross, margin, deposit/on delivery; client-quote view). The old rate-card editor
+  (hours × rates, contingency, multipliers, `:15359`) is not ported — no backend holds a rate
+  card. Seeding the catalogue with the old rates is the owner's call (G-PROJ-4).
+- **Proposal:** issues from the record's Proposal section once a package is applied — a
+  `documents.Document` (kind `proposal`, ref = the project no) rendered client-side with the
+  Phase 10b renderer, one `DARZ-PRO-YYYY-NNNN` series shared with exhibition proposals. The old
+  Proposal Builder (`builder`, `:14647` — the free-form themed document editor) is not ported.
+- **Not writable on the API, stated on screen:** `status` (G-PROJ-2) and the per-stage
+  sub-state (G-PROJ-3) — so the Delayed / Awaiting-approval tiles stay 0, checklists are not
+  applied on a move, and the scope gate keys on pipeline order.
+- `projSeedIfEmpty` did not port (as planned); `projCss` folded into `admin.css` as the
+  `.dzp-*` block. Verified live per CLAUDE.md rule 5 (see the PR).

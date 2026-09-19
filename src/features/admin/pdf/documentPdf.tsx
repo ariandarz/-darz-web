@@ -193,6 +193,11 @@ export interface DocumentPdfFields {
   note?: string;
   terms?: string;
   bank?: { holder?: string; bank?: string; card?: string; iban?: string };
+  /** The two exhibition-specific headings, overridable by a document that
+   * is not about a show — the project proposal (Phase 11c) reads "Proposed
+   * for this project" / "From the client". Absent = the exhibition wording. */
+  lines_label?: string;
+  counterparty_label?: string;
 }
 
 const SYM: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', TMN: 'T ', T: 'T ' };
@@ -269,7 +274,8 @@ export function DarzDocument({
         )}
 
         <Text style={st.secLbl}>
-          {invoice ? 'Exhibition services' : 'Proposed for this exhibition'}
+          {fields.lines_label ??
+            (invoice ? 'Exhibition services' : 'Proposed for this exhibition')}
         </Text>
         {lines.map((l, i) => (
           <View style={st.line} key={i} wrap={false}>
@@ -285,22 +291,27 @@ export function DarzDocument({
           </View>
         ))}
 
-        <View style={st.totals}>
-          <View style={st.totRow}>
-            <Text style={st.totK}>Subtotal</Text>
-            <Text style={st.totV}>{moneyStr(fields.currency, fields.subtotal)}</Text>
-          </View>
-          {(fields.discount ?? 0) > 0 && (
+        {/* A document with no total at all is the old "calm non-priced
+            version" (`darz-studio.html:14028`): it carries the scope and no
+            money, so the whole block goes rather than printing a zero. */}
+        {fields.total !== undefined && (
+          <View style={st.totals}>
             <View style={st.totRow}>
-              <Text style={st.totK}>Discount</Text>
-              <Text style={st.totV}>−{moneyStr(fields.currency, fields.discount)}</Text>
+              <Text style={st.totK}>Subtotal</Text>
+              <Text style={st.totV}>{moneyStr(fields.currency, fields.subtotal)}</Text>
             </View>
-          )}
-          <View style={[st.totRow, st.totGrand]}>
-            <Text style={st.totGrandK}>{invoice ? 'Total due' : 'Total'}</Text>
-            <Text style={st.totGrandV}>{moneyStr(fields.currency, fields.total)}</Text>
+            {(fields.discount ?? 0) > 0 && (
+              <View style={st.totRow}>
+                <Text style={st.totK}>Discount</Text>
+                <Text style={st.totV}>−{moneyStr(fields.currency, fields.discount)}</Text>
+              </View>
+            )}
+            <View style={[st.totRow, st.totGrand]}>
+              <Text style={st.totGrandK}>{invoice ? 'Total due' : 'Total'}</Text>
+              <Text style={st.totGrandV}>{moneyStr(fields.currency, fields.total)}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {fields.note ? (
           <View style={st.noteBlock} wrap={false}>
@@ -332,7 +343,7 @@ export function DarzDocument({
 
         <View style={st.sigRow} wrap={false}>
           <View style={st.sigCol}>
-            <Text style={st.sigHead}>From the gallery</Text>
+            <Text style={st.sigHead}>{fields.counterparty_label ?? 'From the gallery'}</Text>
             <View style={st.sigLine} />
             <Text style={st.sigLbl}>Name</Text>
             <View style={st.sigLine} />

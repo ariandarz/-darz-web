@@ -741,17 +741,16 @@ package/faithful-port research.
       their collector-side consumers, D17's key names from the old `app_theme` payload; and the old
       desk's fonts/colour/per-page-button editors, deliberately not built until something reads
       those keys (an editor for keys with no consumer lies about what Save does).
-- [ ] **Projects desk** (old panel "Projects" — Dashboard/List/Pipeline/Packages/Proposal/Calculator/
-      Partners/Reports sub-tabs) — full pipeline CRUD: create/edit/archive a project, drag/move
-      through 17 stages (auto-derives the status label — don't compute it client-side), partner
-      orgs, service catalog, package templates, checklist templates, file attachments, the
-      dashboard priority-queue tiles, the deliverables-roll-up report. **Not built on the backend**
-      (flagged, not silently dropped): the Proposal Builder's document composition — defer that
-      sub-tab until it's scoped (would reuse `documents.Document` like the gallery portal's
-      exhibition proposals). Endpoints under `/api/projects/admin/` — see `darzmarket-api`
-      `docs/TASKLIST.md` Phase 23 for the full list (projects/partners/service-catalog/packages/
-      checklists, each list+detail; projects also get `/stage/`, `/dashboard/`, `/reports/`,
-      `/attachments/`).
+- [x] **Projects desk** ✅ 2026-09-19 — **Phase 11c** (`docs/PHASE_11C_PLAN.md`, all four steps in
+      one PR): the seven desks under `/admin/projects…` (dashboard · list · pipeline · packages +
+      service catalogue · calculator · partners · reports) plus the record (`/:id` — stage rail,
+      the nine old sections, server-side attachments, the Proposal section) and the print report.
+      Stage moves call `/stage/` (the status label is derived server-side, G-PROJ-2); the
+      calculator prices from the catalogue (D21); the client proposal issues as a
+      `documents.Document` (kind `proposal`) through the Phase 10b renderer. Not ported, stated:
+      the old Proposal Builder (`:14647`), the client-side rate card, the seeds; the stage
+      sub-state cannot be written (G-PROJ-3). Gaps **G-PROJ-1…5** in `ADMIN_ARCHITECTURE.md` §2.
+      Live-verified on the real backend (see the PR).
 - [x] **Data Health** ✅ 2026-09-18 (old panel "Data Health" tab, `healthView` :26360, scoped
       down) — the three surviving checks rendered with counts, first-50 items and an explicit
       "…and n more"; the desk says on screen why the other five did not port (they diagnosed the
@@ -881,9 +880,9 @@ surface before building each. Ordered by V1 relevance:
 - [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — still
       not built.
 - [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — still not built.
-- [ ] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
-      full faithful port. See the new "Phase 11b" section below for the real endpoint list — this
-      bullet stays only as the Phases-12+ cross-reference.
+- [x] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
+      full faithful port. Data Health + Import shipped in Phase 11b, Projects in Phase 11c
+      (2026-09-19) — this bullet stays only as the Phases-12+ cross-reference.
 - [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
 
 ## Phase 13 — Testing

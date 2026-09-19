@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 11c: Projects — the eight-tab group over backend Phase 31
+
+- Dashboard, list, record (stage rail, nine sections, attachments, one-click proposal), print
+  report, 17-stage board, packages + service catalogue, catalogue-priced calculator (D21),
+  partners with responsibility matrices, reports + checklist templates. Gaps G-PROJ-1…7.
+- Reviewed adversarially before the PR: the non-priced proposal prints no totals at all, the
+  PRO series is scanned across both proposal kinds, a deleted partner org can no longer wedge
+  a record's saves, and the desks share one page-walker and one client-name rule.
+
 ## 2026-09-19 — Phase 10b: the desk half — Exhibitions queue, composer, one-click documents
 
 - The gallery loop closed from the desk side: requested shows queue into Sources, the composer

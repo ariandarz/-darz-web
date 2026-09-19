@@ -58,7 +58,7 @@ so this table cannot drift away from what the navbar does. Tests assert the coun
 | **Auctions** | Live Auctions · Auction Records · Register to Bid | ✅ ✅ ✅ | 7 |
 | **Collectors** *(More)* | Collectors · Requests & Activity · Collector Club | ✅ ✅ ✅ | 11b·2-3 |
 | **Sales** *(More)* | Market Sales · Auction Sales | ✅ ✅ | 7 |
-| **Projects** *(More)* | Dashboard · Projects · Pipeline · Packages · Proposal · Calculator · Partners · Reports | ✅×7, ✗ Proposal | 11c |
+| **Projects** *(More)* | Dashboard · Projects · Pipeline · Packages · Proposal · Calculator · Partners · Reports | ✅×7, ◐ Proposal | 11c *(built 2026-09-19; the proposal issues from the project record)* |
 | **Intelligence** *(More)* | Overview · Tagging & Review · Smart Filters · Recommendations · History | ✅×5 | 11 |
 | **Operations** *(More)* | **App Design** · Logistics & Payments · Analytics · Data Health | ✅ ✗ ✗ ◐ | 11b·5-6 · *(P20; no analytics API)* |
 | **Social** 🔒 | Instagram · **Insights & Stories** · Content Calendar · AI Settings | ✗ ✗ ✗ ✗ | *(backend deliberately unscoped; Stories = P22)* |
@@ -88,7 +88,7 @@ Everything else is waiting on UI only — **141 admin routes exist and this fron
 | Languages / white-label | backend Phase 26 not built |
 | Analytics | no analytics API; the Dashboard summary is the only aggregate |
 | Instagram · Content Calendar · AI Settings · Strategy · Automations | **deliberately unscoped** by the backend, awaiting an owner decision there |
-| Projects › Proposal | Proposal Builder composition unbuilt on both sides |
+| Projects › Proposal Builder | the free-form proposal document editor (`builder`, `:14647`) is unbuilt on both sides; the client proposal itself issues from the project record as a `documents.Document` (kind `proposal`) |
 
 ### Gaps found while building (the frontend designs around these; none blocks a desk)
 
@@ -121,6 +121,13 @@ Everything else is waiting on UI only — **141 admin routes exist and this fron
 | **G-PORT-8** | **"What collectors can do" + the offer floor have no portal write** — `allowed_actions` is an admin-side Artwork field; no floor/auto-decline engine exists. | Both ride the work's one Send update as payload (`offer_actions`/`offer_floor`) for Darz to apply on review; the old "automatically declined" promise is not made. |
 | **G-PORT-9…10** | The v872 cover artwork is not in the state (9); there is no unauthenticated probe, so the gate cannot greet by name before the code (10). | Cover hidden (the old absent-cover behaviour); the gate greets generically and the name arrives with the first load. |
 | **G-PORT-12** | **No admin catalogue endpoint** — the full Exhibition Services menu (descriptions + default prices, `exhibition_catalogue.py`) is served only through the token+PIN portal read; `/api/options/` gives the desk `{value,label}` pairs. | The composer seeds unpriced drafts and the admin types the price (the desk's job anyway); `compose` refills catalogue descriptions server-side, so documents still carry them. |
+| **G-PROJ-1** | **No server-side quick filters** — the old dashboard cards opened the list pre-filtered (active / delayed / awaiting approval / deliverables ≤7d / unpaid, `:13631-13635`) and Partners counted projects per org (`projForOrg`, `:13352`), all client-side over the whole store; `ProjectFilterSet` serves search/status/stage/category/archived only. | The list (in quick mode), the board and Partners fetch every non-archived page (100/page) and filter client-side — right for a services desk of dozens of projects; a `?quick=`/`?partner=` param closes it when the roster grows. |
+| **G-PROJ-2** | **`status` is not settable** — `ProjectUpdateSerializer` omits it; `set_stage` derives it from the stage (`STAGE_STATUS_MAP`). The old Overview had a Status `<select>` (`:13781`). | The record shows the status read-only with "derived from the stage"; the list's Status filter still works. |
+| **G-PROJ-3** | **The stage sub-state is not writable** — `stages` (`{stage: {owner, start, due, checklist, intApproved, cliApproved, doneTs, …}}`) is served but absent from the update serializer, while the dashboard's Delayed / Awaiting-approval tiles and the old scope gate (`:13323`) read it, and the old stage move seeded a checklist into it (`:13712`). | Both tiles stay 0 and say so; checklist templates are managed but never applied; the scope gate keys on pipeline ORDER (a curatorial/mixed project enters Research/Production only from Deposit or later), which is what a forward move through the pipeline meant. A `stages` PATCH field closes all three. |
+| **G-PROJ-4** | **The service catalogue's categories were narrowed** from the old seven (media / content / editorial / curatorial / pm / documentation / distribution, `SVC_CATS` `:13327`) to four (`media / production / curatorial / other`), and the old client-side seeds (`projSeedIfEmpty`, `:13381` — 34 catalogue lines, 8 packages, a rate card, 4 checklists) do not port. | Scope-by-category tags follow the served four. **D21 stays with the owner:** enter the old rates through the catalogue panel or seed them server-side. |
+| **G-PROJ-5** | **Gallery links are not partner orgs** — the old Partners tab and client picker merged the galleries store into the org list (`:15382`, `:13296`); here `client_partner_org` is an FK to `PartnerOrg` only. | The desks say gallery partners live under Sources & Partners; a gallery that is also a project client is entered once as a partner org. |
+| **G-PROJ-6** | **`?archived=` 400s on `true`/`false`** — `ExactFilter("archived")` hands the raw string to Django's BooleanField, which takes `True`/`False`/`1`/`0` only; the endpoint's own parameter doc says `true/false`. | `ProjectsAdminService.projects` takes a boolean and spells it `True`/`False`. A `BooleanFilter` (or lowercase acceptance) on the backend closes it. |
+| **G-PROJ-7** | **A soft-deleted partner org stays on a project's read but is rejected on write** — `ProjectSerializer` returns the tombstoned org in `client_partner_org` / `partner_orgs`, while the update serializer's `PrimaryKeyRelatedField` filters `is_deleted=False` (`serializers.py:87-110`), so a project that had it would 400 on every save. Found by review, before it reached anyone. | The record sends the two org links only when they CHANGE, a changed lane set carries only orgs the page could load, and a deleted org keeps its name from the record's own `partner_orgs` mirror with a note. Filtering the read (or accepting a tombstoned id it served) closes it. |
 | **G-PORT-11** | **The portal throttle defaults to `30/hour`** (`GALLERY_PORTAL_THROTTLE_RATE`) and every action — reads included — spends it: "Confirm all available" on a 25-work portal exhausts the hour. Found live: past the limit, submits 429 and the page silently keeps stale state. | Owner/backend tuning decision; verified locally with the env knob raised. |
 
 ---
@@ -274,7 +281,7 @@ Everything below assumes the desk kit, which is done.
 | **6** | Documents studio | §5. After the catalogue, because a pricelist and a proposal both reference works. |
 | **7** | Galleries + Sources & Partners + Market Portal | The gallery loop, including the no-login portal. |
 | **8** | Auctions admin · Intelligence · Data Health · Import | |
-| **9** | Projects (Phase 11c) | Its own plan — ~2,300 lines of old source, eight sub-tabs. |
+| **9** | Projects (Phase 11c) ✅ 2026-09-19 | Its own plan (`docs/PHASE_11C_PLAN.md`) — ~2,300 lines of old source, eight sub-tabs; seven desks + the record with its stage rail and one-click proposal. Gaps G-PROJ-1…5. |
 | — | Social · Logistics · Analytics · Languages · Strategy · Automations | Blocked on the backend. UI-only work is possible for **Insights & Stories** if the owner wants it ahead of its API. |
 
 ---
