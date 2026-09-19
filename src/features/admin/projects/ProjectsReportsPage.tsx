@@ -38,7 +38,12 @@
  *  - stage labels come from `projects.stage` (`useOptions`), never the old
  *    `PROJ_STAGES` table; a new template's default stage stays the old
  *    'proposal' (:15469) when that key exists, else the first stage;
- *  - the `Lib.toast` lines are `.dzp-mut` status lines.
+ *  - the `Lib.toast` lines are `.dzp-mut` status lines;
+ *  - the old panel seeded four standard checklist templates on first open
+ *    (`projSeedIfEmpty`, :13443-13448). That silent seeding is not ported —
+ *    they arrive with the standard set, an explicit owner action on the
+ *    Packages desk — so the EMPTY panel says where they come from and links
+ *    there. The action itself lives in that one place; no button here.
  *
  * Stated absence (G-PROJ-3): a template is kept here but never applied to a
  * project's stage — the old `setStage` seeded the stage checklist from the
@@ -89,6 +94,7 @@ const PANEL_HEAD = {
 const PANEL_LABEL = { margin: 0 } as const; // :15466 — the label had no margin there
 const CHK_NAME = { flex: 1, fontSize: 12, color: 'var(--ink)' } as const; // :15459
 const NOTE = { margin: '0 0 10px' } as const;
+const EMPTY_NEXT = { marginTop: 6 } as const; // the empty panel's second line
 const EDITOR = { borderTop: '1px solid var(--hair)', padding: '12px 0 14px' } as const;
 const ITEMS = { minHeight: 120 } as const; // :15475
 const WARN = { color: 'var(--dzp-attn)', marginTop: 8 } as const; // the old overlap note's amber (:13831)
@@ -436,7 +442,22 @@ export function ProjectsReportsPage() {
                 </div>
               ))
             ) : (
-              <div className="dzp-mut">No checklist templates yet.</div>
+              <>
+                <div className="dzp-mut">No checklist templates yet.</div>
+                {/* where the old panel's four came from: `projSeedIfEmpty`
+                    wrote Proposal checklist · Shoot-day checklist ·
+                    Publication checklist · Archive handoff on first open
+                    (:13443-13448). That seeding is not ported — the four
+                    arrive with the standard set, an explicit owner action
+                    on the Packages desk. One place only; no button here. */}
+                <div className="dzp-mut" style={EMPTY_NEXT}>
+                  The old panel’s four standard templates arrive with the standard set under{' '}
+                  <Link to="/admin/projects/packages?catalogue=1">
+                    Packages › Service catalogue
+                  </Link>{' '}
+                  — the owner adds them there.
+                </div>
+              </>
             ))}
         </div>
       </div>

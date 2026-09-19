@@ -52,6 +52,21 @@
  *    what a project keeps here (its written deliverables and money) and
  *    what it loses (issuing a proposal), not the old "snapshot" line. A 409
  *    is the conflict banner with Reload; so is one on a service save;
+ *  - "＋ Add the standard set" (owner only, the panel's `StandardSetCard`)
+ *    writes Darz's REAL catalogue by an explicit click, through the ordinary
+ *    create endpoints, skipping by name anything already there: the
+ *    exhibition services with their real Toman prices, the coverage
+ *    services (unpriced — Darz quotes them per show) in their five
+ *    programmes, and the four checklist templates (the data and the plan
+ *    live in `standardSet.ts`, which every count on the card is read from).
+ *    The old panel's `projSeedIfEmpty` demo rates (:13386-13433) are NOT
+ *    what this writes any more — their USD prices were invented for a demo
+ *    and reached clients through the calculator and the proposal, so the
+ *    owner ruled them out; only the checklists stayed. The card says on the
+ *    spot what does not come across: the Toman prices and what a workspace
+ *    without TMN gets instead, no internal costs, no "on request" (an
+ *    unpriced line is written as 0), no descriptions (G-PROJ-8), and the
+ *    near-duplicate pairs it refuses to merge;
  *  - `Lib.toast` lines are inline status notes; `dzConfirm` is
  *    `ConfirmDialog`.
  */
@@ -61,6 +76,7 @@ import { ConflictError } from '../../../api/errors';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
 import type { ProjectsAdminService } from '../../../api/services';
 import type {
+  ChecklistTemplateAdmin,
   Choice,
   PackageTemplateAdmin,
   PageQuery,
@@ -88,6 +104,7 @@ import {
   asCounts,
   asInternal,
   asPackageLines,
+  choiceLabel,
   choices,
   clientName,
   defaultCurrency,
@@ -96,9 +113,23 @@ import {
   scopeByCat,
   stageLabel,
   svcName,
+  walkPages,
   walkProjects,
   walkServices,
 } from './projectForm';
+import {
+  NEAR_DUPLICATES,
+  STANDARD_CURRENCY,
+  STANDARD_SET_COUNTS,
+  checklistInput,
+  missingServices,
+  packageInput,
+  planChecklists,
+  planPackages,
+  planServices,
+  serviceIdIndex,
+  serviceInput,
+} from './standardSet';
 import '../admin.css';
 
 const CONFLICT_PROJECT =
@@ -224,6 +255,9 @@ export function PackagesPage() {
   const svcLoading = svcWalk.rows === null && !svcWalk.error;
 
   const [svcDraft, setSvcDraft] = useState<ServiceDraft | null>(null);
+  // the standard set's own card — one inline editor slot, so opening it puts
+  // the service editor away and vice versa
+  const [stdOpen, setStdOpen] = useState(false);
   const [svcError, setSvcError] = useState<string | null>(null);
   const [svcConflict, setSvcConflict] = useState(false);
   const [removingSvc, setRemovingSvc] = useState<ServiceCatalogItemAdmin | null>(null);
@@ -247,6 +281,7 @@ export function PackagesPage() {
   const editSvc = (row: ServiceCatalogItemAdmin | null) => {
     setSvcError(null);
     setSvcConflict(false);
+    setStdOpen(false);
     setSvcDraft(
       row
         ? {
@@ -453,10 +488,41 @@ export function PackagesPage() {
               <div className="fl" style={PANEL_LABEL}>
                 Service catalogue · {catalogue.length} lines
               </div>
-              <button type="button" className="dzp-btn sm" onClick={() => editSvc(null)}>
-                ＋ Add service
-              </button>
+              <div className="dzp-acts" style={{ marginTop: 0 }}>
+                {/* Darz's real catalogue on an explicit click, where the old
+                    panel seeded itself silently (`projSeedIfEmpty`,
+                    :13381-13451) — owner only, because it writes prices into
+                    the shared catalogue (`projCanMoney()`, :13282) */}
+                {canMoney && (
+                  <button
+                    type="button"
+                    className="dzp-btn sm"
+                    aria-expanded={stdOpen}
+                    onClick={() => {
+                      setSvcDraft(null);
+                      setStdOpen(!stdOpen);
+                    }}
+                  >
+                    ＋ Add the standard set
+                  </button>
+                )}
+                <button type="button" className="dzp-btn sm" onClick={() => editSvc(null)}>
+                  ＋ Add service
+                </button>
+              </div>
             </div>
+
+            {canMoney && stdOpen && (
+              <StandardSetCard
+                onCancel={() => setStdOpen(false)}
+                onDone={() => {
+                  // the panel's list and the package grid re-read, so the new
+                  // rows are simply there behind the card's report
+                  setSvcGen((g) => g + 1);
+                  void reload();
+                }}
+              />
+            )}
 
             {/* :13936-13944 `editSvc` — the modal's form, inline in the panel */}
             {svcDraft && (
@@ -724,14 +790,21 @@ function PackageCard({
           </span>
         ))}
       </div>
-      {/* :13911 — owner only, in the default currency */}
-      {canMoney && (
-        <div className="pm">
-          Cost <b>{projMoney(it.internalCost + it.externalCost, cur)}</b> · Min{' '}
-          <b>{projMoney(it.minFee, cur)}</b> · Rec <b>{projMoney(it.recFee, cur)}</b> · Margin{' '}
-          <b>{it.targetMargin}%</b>
-        </div>
-      )}
+      {/* :13911 — owner only, in the default currency. A template with no
+          figures at all (every standard programme starts that way: Darz
+          quotes them) prints no money line rather than four zeroes under a
+          currency it was never priced in — the desk's default is not the
+          catalogue's, and "0 USD" on a Toman catalogue reads as a claim. */}
+      {canMoney &&
+        (it.internalCost || it.externalCost || it.minFee || it.recFee ? (
+          <div className="pm">
+            Cost <b>{projMoney(it.internalCost + it.externalCost, cur)}</b> · Min{' '}
+            <b>{projMoney(it.minFee, cur)}</b> · Rec <b>{projMoney(it.recFee, cur)}</b> ·
+            Margin <b>{it.targetMargin}%</b>
+          </div>
+        ) : (
+          <div className="pm">No fee set — quoted per show.</div>
+        ))}
       {/* :13916 — `DZProjects.proposal(pkgId)` previewed the bare template;
           here a proposal issues from a project's record, so Proposal opens
           the same pick as Apply and the note under it says why */}
@@ -774,6 +847,433 @@ function PackageCard({
           onCancel={onCancelPick}
         />
       )}
+    </div>
+  );
+}
+
+/* ── the standard set (Darz's real services, `standardSet.ts`) ──────────── */
+
+/** The three kinds the card ticks, in the order it lists and writes them. */
+type SeedKind = 'services' | 'packages' | 'checklists';
+
+const SEED_KINDS: SeedKind[] = ['services', 'packages', 'checklists'];
+
+/** Singular / plural, so every count reads as a sentence rather than a
+ * table ("1 service line", "4 checklist templates"). */
+const SEED_NOUNS: Record<SeedKind, [string, string]> = {
+  services: ['service line', 'service lines'],
+  packages: ['package template', 'package templates'],
+  checklists: ['checklist template', 'checklist templates'],
+};
+
+/** The preview row's heading. */
+const SEED_TITLES: Record<SeedKind, string> = {
+  services: 'Service lines',
+  packages: 'Package templates',
+  checklists: 'Checklist templates',
+};
+
+function countText(kind: SeedKind, n: number): string {
+  const [one, many] = SEED_NOUNS[kind];
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** The near-duplicate paragraph's opening, counted rather than written out:
+ * the pairs are data, and the owner merging one would make a typed "four"
+ * false on the spot. */
+function duplicateLead(n: number): string {
+  return n === 1
+    ? 'One coverage line looks like a priced exhibition service'
+    : `${n} coverage lines look like priced exhibition services`;
+}
+
+/** "a, b and c". */
+function joinWords(parts: string[]): string {
+  if (parts.length < 2) return parts.join('');
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+/** The tick labels — every count comes from the data module, never typed out
+ * here. The service lines are named plainly: the notes below the ticks are
+ * where the card says how many of them arrive unpriced, and a tick that
+ * promised a "rate card" would contradict them. */
+const SEED_TICKS: Record<SeedKind, string> = {
+  services: countText('services', STANDARD_SET_COUNTS.services),
+  packages: countText('packages', STANDARD_SET_COUNTS.packages),
+  checklists: countText('checklists', STANDARD_SET_COUNTS.checklists),
+};
+
+type SeedTicks = Record<SeedKind, boolean>;
+type SeedCounts = Record<SeedKind, number>;
+
+/** A package left uncreated because the catalogue has no row for one of its
+ * lines — `packageInput` would drop that line silently. */
+interface ShortPackage {
+  name: string;
+  missing: string[];
+}
+
+interface SeedStep {
+  label: string;
+  done: number;
+  /** 0 for a step with nothing to count (the catalogue re-read). */
+  total: number;
+}
+
+interface SeedReport {
+  added: SeedCounts;
+  skipped: SeedCounts;
+  short: ShortPackage[];
+  /** The failure that stopped the run; null when it ran to the end. */
+  error: string | null;
+}
+
+/** "Added 3 service lines and 1 package template, skipped 27 service lines
+ * already there." — exact counts, per kind. */
+function resultText(r: SeedReport): string {
+  const added = SEED_KINDS.filter((k) => r.added[k] > 0).map((k) => countText(k, r.added[k]));
+  const skipped = SEED_KINDS.filter((k) => r.skipped[k] > 0).map((k) =>
+    countText(k, r.skipped[k]),
+  );
+  if (!added.length)
+    return skipped.length
+      ? `Nothing new to add — ${joinWords(skipped)} already there.`
+      : 'Nothing was added.';
+  const tail = skipped.length ? `, skipped ${joinWords(skipped)} already there.` : '.';
+  return `Added ${joinWords(added)}${tail}`;
+}
+
+/** Nothing is rolled back, so a failure says exactly what did get written. */
+function failureText(r: SeedReport): string {
+  const added = SEED_KINDS.filter((k) => r.added[k] > 0).map((k) => countText(k, r.added[k]));
+  return added.length
+    ? `Nothing was rolled back; added before it stopped: ${joinWords(added)}.`
+    : 'Nothing was added, and nothing was rolled back.';
+}
+
+/**
+ * Darz's real catalogue written by an explicit, idempotent, owner-only action
+ * — never the silent first-open seed the old panel did (`projSeedIfEmpty`,
+ * :13381-13451), which a server DB must not: the exhibition services with
+ * their real Toman prices, the coverage services in their five programmes and
+ * the four checklist templates (`standardSet.ts`), through the ordinary create
+ * endpoints wherever the admin is signed in. Every plan skips by NAME
+ * (trimmed, case-insensitive), so nothing is duplicated or overwritten and a
+ * run that stopped half-way is resumed by pressing the button again.
+ *
+ * Every number the card states — how many lines, how many of them unpriced,
+ * which pairs look alike — is read from `standardSet.ts`, never typed here, so
+ * the copy cannot outlive the data it describes.
+ *
+ * The packages are written after the catalogue is re-read, because a template
+ * links its lines by the id the API hands back; one whose line is missing is
+ * named in the report instead of being created short of its scope.
+ */
+function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: () => void }) {
+  const { projectsAdmin } = useApi();
+  const options = useOptions();
+  const [tick, setTick] = useState<SeedTicks>({
+    services: true,
+    packages: true,
+    checklists: true,
+  });
+  const [gen, setGen] = useState(0);
+  // The card reads all THREE lists itself, under one key. The panel has its
+  // own catalogue walk, but a plan must never mix a fresh read of one list
+  // with a stale read of another: after a run both the panel's walk and this
+  // one are in flight, and a plan built on the pre-run catalogue would offer
+  // to create everything a second time. `key === gen` is the whole test
+  // (the `Walk<T>` pattern of `ProjectPick`, :190).
+  const [tpl, setTpl] = useState<{
+    key: number;
+    services: ServiceCatalogItemAdmin[] | null;
+    packages: PackageTemplateAdmin[] | null;
+    checklists: ChecklistTemplateAdmin[] | null;
+    error: string | null;
+  }>({ key: -1, services: null, packages: null, checklists: null, error: null });
+  const [step, setStep] = useState<SeedStep | null>(null);
+  const [report, setReport] = useState<SeedReport | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // all three lists are read WHOLE (each is server-paginated, and a name
+  // already there on page 3 must still be skipped)
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      walkServices(projectsAdmin),
+      walkPages((page) => projectsAdmin.packages({ page, per_page: 100 })),
+      walkPages((page) => projectsAdmin.checklists({ page, per_page: 100 })),
+    ]).then(
+      ([services, packages, checklists]) =>
+        alive && setTpl({ key: gen, services, packages, checklists, error: null }),
+      (err: unknown) =>
+        alive &&
+        setTpl({
+          key: gen,
+          services: null,
+          packages: null,
+          checklists: null,
+          error: err instanceof Error ? err.message : 'Could not read what is already there.',
+        }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [projectsAdmin, gen]);
+
+  // TMN — the owner's decision: Darz prices Iranian galleries in Toman, and
+  // international galleries are quoted in USD or EUR later, chosen at the
+  // time. Used when this backend serves it; the served list decides, so the
+  // enum is never assumed (a workspace without TMN gets the same numbers in
+  // its default currency, and the card says so)
+  const currencies = choices(options, 'currency');
+  // the served label ("Iranian Toman"), never a lookup typed in this repo;
+  // `choiceLabel` falls back to the code for a currency this workspace has no
+  // option for — which is exactly the case the second note below describes
+  const currencyWord = (c: string) => choiceLabel(currencies, c);
+  // “Iranian Toman (TMN)”, or the bare code when the served list carries no
+  // label of its own — so the sentence never reads “TMN (TMN)”
+  const currencyName = (c: string) => {
+    const word = currencyWord(c);
+    return word && word !== c ? `${word} (${c})` : c;
+  };
+  const seedCurrency = currencies.some((c) => c.value === STANDARD_CURRENCY)
+    ? STANDARD_CURRENCY
+    : defaultCurrency(options) || STANDARD_CURRENCY;
+  const priced = STANDARD_SET_COUNTS.services - STANDARD_SET_COUNTS.unpriced;
+
+  // a plan is only shown when every list in it came back from THIS read
+  const fresh = tpl.key === gen;
+  const plans = {
+    services: planServices(fresh ? (tpl.services ?? []) : []),
+    packages: planPackages(fresh ? (tpl.packages ?? []) : []),
+    checklists: planChecklists(fresh ? (tpl.checklists ?? []) : []),
+  };
+  const ready =
+    fresh &&
+    options !== null &&
+    tpl.services !== null &&
+    tpl.packages !== null &&
+    tpl.checklists !== null;
+
+  // a package is only creatable once every line it names can be resolved —
+  // against the catalogue as it will be when the run reaches the packages,
+  // so the lines this run would add count too. One that cannot is shown as
+  // waiting on its lines, not as "to add", because the run refuses to write
+  // a template short of its scope
+  const plannedIndex = serviceIdIndex([
+    ...(tpl.services ?? []),
+    ...(tick.services
+      ? plans.services.create.map((s, i) => ({ id: `planned-${i}`, name: s.name }))
+      : []),
+  ]);
+  const shortPackages = plans.packages.create.filter(
+    (p) => missingServices(p, plannedIndex).length > 0,
+  );
+  const creatable = {
+    services: plans.services.create.length,
+    packages: plans.packages.create.length - shortPackages.length,
+    checklists: plans.checklists.create.length,
+  };
+  const toAdd = SEED_KINDS.reduce((n, k) => n + (tick[k] ? creatable[k] : 0), 0);
+
+  const toggle = (k: SeedKind, on: boolean) =>
+    setTick((t) => {
+      const next = { ...t };
+      next[k] = on;
+      return next;
+    });
+
+  /** Sequential — there is no bulk endpoint, and a package needs the ids of
+   * the lines written before it. A failure stops the run where it is. */
+  const run = async () => {
+    if (busy || !ready) return;
+    setBusy(true);
+    setReport(null);
+    const added: SeedCounts = { services: 0, packages: 0, checklists: 0 };
+    const skipped: SeedCounts = {
+      services: tick.services ? plans.services.skip.length : 0,
+      packages: tick.packages ? plans.packages.skip.length : 0,
+      checklists: tick.checklists ? plans.checklists.skip.length : 0,
+    };
+    const short: ShortPackage[] = [];
+    let failure: string | null = null;
+    try {
+      if (tick.services) {
+        const rows = plans.services.create;
+        let n = 0;
+        for (const s of rows) {
+          n += 1;
+          setStep({ label: 'Adding service lines', done: n, total: rows.length });
+          await projectsAdmin.createService(serviceInput(s, seedCurrency));
+          added.services += 1;
+        }
+      }
+      if (tick.packages && plans.packages.create.length) {
+        setStep({ label: 'Re-reading the service catalogue', done: 0, total: 0 });
+        // the WHOLE catalogue: a template's named line resolves against the
+        // rows just created AND the ones that were already here
+        const idByName = serviceIdIndex(await walkServices(projectsAdmin));
+        const rows = plans.packages.create;
+        let n = 0;
+        for (const p of rows) {
+          n += 1;
+          setStep({ label: 'Adding package templates', done: n, total: rows.length });
+          const missing = missingServices(p, idByName);
+          if (missing.length) {
+            short.push({ name: p.name, missing });
+            continue;
+          }
+          await projectsAdmin.createPackage(packageInput(p, idByName));
+          added.packages += 1;
+        }
+      }
+      if (tick.checklists) {
+        const rows = plans.checklists.create;
+        let n = 0;
+        for (const c of rows) {
+          n += 1;
+          setStep({ label: 'Adding checklist templates', done: n, total: rows.length });
+          await projectsAdmin.createChecklist(checklistInput(c));
+          added.checklists += 1;
+        }
+      }
+    } catch (err: unknown) {
+      failure = err instanceof Error ? err.message : 'That did not go through.';
+    }
+    setStep(null);
+    setBusy(false);
+    setReport({ added, skipped, short, error: failure });
+    setGen((g) => g + 1); // the preview re-reads what is there now
+    if (added.services || added.packages || added.checklists) onDone();
+  };
+
+  return (
+    <div className="dzp-svcgrp">
+      <div className="gh">Service catalogue · Standard set</div>
+      <p className="dzp-mut">
+        These are Darz’s own services — the exhibition services the gallery portal already
+        offers, with their real prices, and the Exhibition Coverage programmes, which Darz
+        quotes per show — plus the checklist templates. Anything already here by name is
+        skipped, so it is safe to run twice.
+      </p>
+      {tpl.error && <DeskBanner>{tpl.error}</DeskBanner>}
+      {SEED_KINDS.map((k) => (
+        <label className="dzp-chk" key={k}>
+          <input
+            type="checkbox"
+            checked={tick[k]}
+            disabled={busy}
+            onChange={(e) => toggle(k, e.target.checked)}
+          />
+          {SEED_TICKS[k]}
+        </label>
+      ))}
+      {/* the currency is the owner’s decision — Iranian galleries are priced in
+          Toman — so the card names it before the run rather than leaving the
+          figures unlabelled. The fallback itself is unchanged: the served list
+          decides, and this only says which way it went */}
+      {seedCurrency === STANDARD_CURRENCY ? (
+        <p className="dzp-mut" role="note">
+          The lines are added in {currencyName(STANDARD_CURRENCY)} — Darz’s own prices, in the
+          currency Iranian galleries are quoted in. International galleries come later, in USD
+          or EUR chosen at the time; nothing here decides that.
+        </p>
+      ) : (
+        <p className="dzp-mut" role="note">
+          These are Toman prices and this workspace does not offer {STANDARD_CURRENCY} — the
+          lines are added in {currencyName(seedCurrency)} at the same numbers, so a Toman
+          figure reads as {seedCurrency} until you reprice it. Add {STANDARD_CURRENCY} to the
+          currency options first if that is not what you want.
+        </p>
+      )}
+      {/* the numbers, stated before the run rather than discovered after it */}
+      {STANDARD_SET_COUNTS.unpriced > 0 && (
+        <p className="dzp-mut" role="note">
+          {STANDARD_SET_COUNTS.unpriced} of the {STANDARD_SET_COUNTS.services} service lines
+          arrive unpriced — the coverage work Darz quotes per show, and Darz Listing, which is
+          on request. The catalogue has no “on request”, so they are written as 0: not priced
+          yet, never free, and the calculator quotes them at 0 until you price them. The other{' '}
+          {priced} carry the real exhibition-service prices the gallery portal already quotes.
+        </p>
+      )}
+      {/* no internal cost exists for these, and the calculator prices from this
+          catalogue (D21) — so it reads cost as nil until the owner enters one */}
+      <p className="dzp-mut" role="note">
+        No internal cost comes with them: Darz has none recorded for these services, so every
+        line is written at 0 and the calculator’s margin reads against a nil cost until you
+        enter one.
+      </p>
+      {/* G-PROJ-8 — the fields the backend has nowhere to put */}
+      <p className="dzp-mut" role="note">
+        Only the names carry over. A service line here is a name, a category, a unit and a
+        price — what each service actually is, how it runs, its timing and what Darz needs from
+        the gallery stay in the source menus.
+      </p>
+      {/* the pairs the owner merges in one pass, never merged for them: a price
+          copied between two services nobody has called the same is an invented
+          price again. One line each, the overlap on the row’s own title */}
+      {NEAR_DUPLICATES.length > 0 && (
+        <>
+          <p className="dzp-mut" role="note">
+            {duplicateLead(NEAR_DUPLICATES.length)}. Both sides are added and no price is
+            copied across — merge them here once you have decided they are the same service:
+          </p>
+          {NEAR_DUPLICATES.map((d) => (
+            <div className="dzp-mut" key={d.coverage} title={d.why}>
+              “{d.coverage}” and “{d.exhibition}”
+            </div>
+          ))}
+        </>
+      )}
+      {!ready && !tpl.error && <p className="dz-state">Loading…</p>}
+      {ready && (
+        <div style={{ marginTop: 4 }}>
+          {SEED_KINDS.filter((k) => tick[k]).map((k) => (
+            <div className="dzp-mut" key={k}>
+              {SEED_TITLES[k]} · {creatable[k]} to add · {plans[k].skip.length} already there
+              {k === 'packages' && shortPackages.length > 0
+                ? ` · ${shortPackages.length} waiting on service lines this run will not add`
+                : ''}
+            </div>
+          ))}
+        </div>
+      )}
+      {step && (
+        <p className="dzp-mut" role="status">
+          {step.total > 0 ? `${step.label}… ${step.done} of ${step.total}` : `${step.label}…`}
+        </p>
+      )}
+      {report?.error && (
+        <DeskBanner>
+          {report.error} {failureText(report)} Press “Add to this workspace” again to carry on
+          where it stopped — anything already there is skipped.
+        </DeskBanner>
+      )}
+      {report && !report.error && (
+        <p className="dzp-mut" role="status">
+          {resultText(report)}
+        </p>
+      )}
+      {report?.short.map((s) => (
+        <p className="dzp-mut" role="status" key={s.name}>
+          “{s.name}” was not added: the catalogue has no{' '}
+          {joinWords(s.missing.map((m) => `“${m}”`))}.
+        </p>
+      ))}
+      <div className="dzp-acts">
+        <button type="button" className="dzp-btn gho" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="dzp-btn pri"
+          disabled={busy || !ready || toAdd === 0}
+          onClick={() => void run()}
+        >
+          Add to this workspace
+        </button>
+      </div>
     </div>
   );
 }
