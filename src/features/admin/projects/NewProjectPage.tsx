@@ -26,15 +26,31 @@
  *    page sends only what was typed;
  *  - the category default is the first `projects.category` choice (the old
  *    `|| 'media'` was the first PROJ_CATS entry too, :13744);
- *  - the toast (`Lib.toast`, :13741) is the desk banner.
+ *  - the toast (`Lib.toast`, :13741) is the desk banner; a 400 from the
+ *    server shows its per-field messages there (the old form had no server
+ *    to disagree with it), the same way the record page does.
  */
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ValidationError } from '../../../api/errors';
 import { useApi, useOptions } from '../../../api/hooks';
 import type { PartnerOrgAdmin, ProjectCategory, ProjectCreateInput } from '../../../api/types';
 import { DeskBanner, DeskPage } from '../kit';
 import { choices } from './projectForm';
 import '../admin.css';
+
+/** A 400's per-field messages ("start_date: Date has wrong format"), else the
+ * error's own line, else the fallback — the same shape as ProjectPage's
+ * `errorText`. It is pure and belongs in `projectForm.ts` once that file
+ * exports it (noted for its owner); kept local here so the two pages of the
+ * same record agree in the meantime. */
+function errorText(err: unknown, fallback: string): string {
+  if (err instanceof ValidationError) {
+    const parts = Object.entries(err.fields).map(([k, v]) => `${k}: ${v.join(' ')}`);
+    return parts.length ? parts.join(' · ') : err.message;
+  }
+  return err instanceof Error ? err.message : fallback;
+}
 
 export function NewProjectPage() {
   const { projectsAdmin } = useApi();
@@ -104,7 +120,7 @@ export function NewProjectPage() {
         state: { note: `Project ${created.no} created` },
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not create the project.');
+      setError(errorText(err, 'Could not create the project.'));
       setBusy(false);
     }
   };

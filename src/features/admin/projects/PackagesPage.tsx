@@ -42,13 +42,16 @@
  *    default-currency money line (:13911);
  *  - "Proposal" on a card (:13916 `DZProjects.proposal(pkgId)` — the
  *    preview from a bare template, no project) has no desk here: the
- *    proposal is a section of the project record, so the button is a link
- *    to the projects list that says so — a stated redirect, not a dead
- *    button;
+ *    proposal is a section of the project record, so the button opens the
+ *    card's own project pick with a note saying the proposal issues from
+ *    the record it lands on — a stated redirect, not a dead button;
  *  - an apply is `PATCH …/projects/{id}/` with the optimistic lock; the
  *    old snapshot copy (`appliedPackage`, :14004) has no API field — the FK
- *    (`applied_package`) is the link. A 409 is the conflict banner with
- *    Reload; so is one on a service save;
+ *    (`applied_package`) is the link, and a deleted template is tombstoned
+ *    (`is_deleted`, filtered out of every read), so the delete confirm says
+ *    what a project keeps here (its written deliverables and money) and
+ *    what it loses (issuing a proposal), not the old "snapshot" line. A 409
+ *    is the conflict banner with Reload; so is one on a service save;
  *  - `Lib.toast` lines are inline status notes; `dzConfirm` is
  *    `ConfirmDialog`.
  */
@@ -188,11 +191,15 @@ interface ServiceDraft {
   currency: string;
 }
 
+/** A walk the pick can tell apart from a stale one (`key` vs its `gen`). */
 interface Walk<T> {
   key: number;
   rows: T[] | null;
   error: string | null;
 }
+
+/** Which button opened a card's project pick (:13916 — Proposal or Apply). */
+type PickVia = 'apply' | 'proposal';
 
 /* :13929 — the panel head's label carried its own inline style */
 const PANEL_LABEL = {
@@ -222,19 +229,17 @@ export function PackagesPage() {
 
   // the catalogue — walked whole, re-walked after every service save/remove
   const [svcGen, setSvcGen] = useState(0);
-  const [svcWalk, setSvcWalk] = useState<Walk<ServiceCatalogItemAdmin>>({
-    key: -1,
-    rows: null,
-    error: null,
-  });
+  const [svcWalk, setSvcWalk] = useState<{
+    rows: ServiceCatalogItemAdmin[] | null;
+    error: string | null;
+  }>({ rows: null, error: null });
   useEffect(() => {
     let alive = true;
     walkServices(projectsAdmin).then(
-      (rows) => alive && setSvcWalk({ key: svcGen, rows, error: null }),
+      (rows) => alive && setSvcWalk({ rows, error: null }),
       (err: unknown) =>
         alive &&
         setSvcWalk({
-          key: svcGen,
           rows: null,
           error: err instanceof Error ? err.message : 'Could not load the service catalogue.',
         }),
@@ -252,7 +257,8 @@ export function PackagesPage() {
   const [svcConflict, setSvcConflict] = useState(false);
   const [removingSvc, setRemovingSvc] = useState<ServiceCatalogItemAdmin | null>(null);
   const [removingPkg, setRemovingPkg] = useState<PackageTemplateAdmin | null>(null);
-  const [applying, setApplying] = useState<string | null>(null);
+  // the one card whose project pick is open, and which button opened it
+  const [applying, setApplying] = useState<{ id: string; via: PickVia } | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -447,8 +453,12 @@ export function PackagesPage() {
                 categories={categories}
                 canMoney={canMoney}
                 cur={cur}
-                applying={applying === p.id}
-                onApplyToggle={() => setApplying(applying === p.id ? null : p.id)}
+                applying={applying?.id === p.id ? applying.via : null}
+                onApplyToggle={(via) =>
+                  setApplying(
+                    applying?.id === p.id && applying.via === via ? null : { id: p.id, via },
+                  )
+                }
                 onPick={applyTo(p)}
                 onCancelPick={() => setApplying(null)}
                 onDelete={() => setRemovingPkg(p)}
@@ -457,15 +467,6 @@ export function PackagesPage() {
           </div>
         )}
         {state.pagination && <Pager pagination={state.pagination} onPage={setPage} />}
-
-        {/* stated redirect — the old card's "Proposal" previewed a bare
-            template (:13916); here the proposal is a section of the record */}
-        {view === 'rows' && (
-          <p className="dzp-mut" role="note">
-            Proposal · apply a package to a project, then issue the proposal from that
-            project’s record.
-          </p>
-        )}
 
         {/* :13919-13929 `_svcPanel` */}
         {svcOpen && (
@@ -640,9 +641,12 @@ export function PackagesPage() {
       </div>
 
       {removingPkg && (
-        // :13997
+        // :13997 read "Projects it was applied to keep their snapshot." —
+        // this API keeps no copy (`applied_package` is a bare FK and the
+        // delete tombstones the row, `PackageTemplateService.soft_delete`),
+        // so the confirm promises only what a project really keeps here
         <ConfirmDialog
-          message="Delete this package template? Projects it was applied to keep their snapshot."
+          message="Delete this package template? Projects it was applied to keep the deliverables and money already written to them, but can no longer issue a proposal from it."
           okLabel="Delete"
           danger
           onCancel={() => setRemovingPkg(null)}
@@ -698,8 +702,8 @@ function PackageCard({
   categories: Choice[];
   canMoney: boolean;
   cur: string;
-  applying: boolean;
-  onApplyToggle: () => void;
+  applying: PickVia | null;
+  onApplyToggle: (via: PickVia) => void;
   onPick: (project: ProjectAdmin, now: number) => Promise<ReactNode>;
   onCancelPick: () => void;
   onDelete: () => void;
@@ -757,20 +761,23 @@ function PackageCard({
           <b>{it.targetMargin}%</b>
         </div>
       )}
-      {/* :13916 */}
+      {/* :13916 — `DZProjects.proposal(pkgId)` previewed the bare template;
+          here a proposal issues from a project's record, so Proposal opens
+          the same pick as Apply and the note under it says why */}
       <div className="dzp-acts">
-        <Link
+        <button
+          type="button"
           className="dzp-btn sm pri"
-          to="/admin/projects/list"
-          title="Apply to a project, then issue the proposal from its record"
+          aria-expanded={applying === 'proposal'}
+          onClick={() => onApplyToggle('proposal')}
         >
           Proposal
-        </Link>
+        </button>
         <button
           type="button"
           className="dzp-btn sm"
-          aria-expanded={applying}
-          onClick={onApplyToggle}
+          aria-expanded={applying === 'apply'}
+          onClick={() => onApplyToggle('apply')}
         >
           Apply
         </button>
@@ -781,6 +788,13 @@ function PackageCard({
           Delete
         </button>
       </div>
+      {applying === 'proposal' && (
+        // stated redirect — the record the apply lands on has the Proposal section
+        <p className="dzp-mut" role="note" style={{ marginTop: 10 }}>
+          Proposal · apply the package to a project first; the proposal issues from that
+          project’s record.
+        </p>
+      )}
       {applying && (
         <ProjectPick
           prompt={`Apply “${p.name || 'package'}” to which project?`} // :14000

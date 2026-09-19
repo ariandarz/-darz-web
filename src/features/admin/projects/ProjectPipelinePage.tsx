@@ -17,8 +17,8 @@
  *  - `kmove` (:13704): one step either way, clamped at both ends;
  *  - the scope gate (:13707-13708): a curatorial / mixed project cannot
  *    enter Research or Production before Scope Approval, Contract and
- *    Deposit — the reason shown in a `.dzp-gate` banner with Dismiss (the
- *    old `dzConfirm(reason, {okLabel: 'Got it'})`);
+ *    Deposit — the reason shown in a `.dzp-gate` banner whose button keeps
+ *    the old label, "Got it" (`dzConfirm(reason, {okLabel: 'Got it'})`);
  *  - the "Stage → {label}" confirmation (:13718) as an inline status note.
  *
  * Mechanics that changed:
@@ -233,7 +233,7 @@ export function ProjectPipelinePage() {
           <div className="dzp-gate" role="alert" style={{ marginTop: 0, marginBottom: 12 }}>
             {gate}{' '}
             <button type="button" className="dzp-btn sm gho" onClick={() => setGate(null)}>
-              Dismiss
+              Got it
             </button>
           </div>
         )}

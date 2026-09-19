@@ -2291,6 +2291,10 @@ a.ad-ghostbtn {
   display: block;
   width: 100%;
 }
+/* :13472/:13505/:13543 hovered on `--hair2`, one shade darker than the
+   resting hairline. This repo's `--hair2` is the SOFTER hairline, so the
+   desk kit's own hover (`.ad-tile.is-link:hover`) is used instead — the same
+   one-step-stronger reading in both skins. */
 .dzp-att:hover {
   border-color: var(--ink);
 }
@@ -3114,39 +3118,15 @@ details[open] > .dzp-secsum::before {
 /* dark (:13569-13571) — the old `html.dz-admindark .dzp` override: the six
    palette values that change, `color-scheme: dark` for the native controls,
    and the charcoal primary/segment/toggle/active-pill + the wait-pill/chip
-   greys. Written under the file's own two dark selectors (:1585-1616, as the
-   contract asks) PLUS `html.dz-bw`, the class ThemeController actually
-   toggles (src/design/ThemeController.ts:95) and every other stylesheet in
-   this repo keys its dark rules on. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .ad-page,
-  :root:not([data-theme='light']) .dzp {
-    --dzp-attn: #e79ab0;
-    --dzp-attnbg: #2a1c22;
-    --dzp-block: #f0879a;
-    --dzp-blockbg: #2c1a1e;
-    --dzp-done: #6fcf97;
-    --dzp-donebg: #182a20;
-  }
-  :root:not([data-theme='light']) .dzp {
-    color-scheme: dark;
-  }
-  :root:not([data-theme='light']) .dzp-btn.pri,
-  :root:not([data-theme='light']) .dzp-seg button.on,
-  :root:not([data-theme='light']) .dzp-tog.on,
-  :root:not([data-theme='light']) .dzp-pill.active {
-    background: #26262e;
-    border-color: #3a3a44;
-    color: #f1efe9;
-  }
-  :root:not([data-theme='light']) .dzp-pill.wait,
-  :root:not([data-theme='light']) .dzp-chip {
-    background: #212129;
-    color: #b0aca2;
-  }
-}
-:root[data-theme='dark'] .ad-page,
-:root[data-theme='dark'] .dzp,
+   greys.
+
+   Keyed on `html.dz-bw` ALONE, the class `ThemeController.apply()` toggles
+   (src/design/ThemeController.ts:95) and every token in `src/design/tokens.css`
+   keys its dark values on. Deliberately NOT on `prefers-color-scheme` (which
+   the rules just above this block still use): the app does not consult the OS
+   preference at all — `resolveInitial()` (:79-82) picks charcoal unless the
+   owner stored the paper skin — so an OS-dark machine on the paper skin would
+   otherwise get these dark accents on light cards. */
 html.dz-bw .ad-page,
 html.dz-bw .dzp {
   --dzp-attn: #e79ab0;
@@ -3156,14 +3136,9 @@ html.dz-bw .dzp {
   --dzp-done: #6fcf97;
   --dzp-donebg: #182a20;
 }
-:root[data-theme='dark'] .dzp,
 html.dz-bw .dzp {
   color-scheme: dark;
 }
-:root[data-theme='dark'] .dzp-btn.pri,
-:root[data-theme='dark'] .dzp-seg button.on,
-:root[data-theme='dark'] .dzp-tog.on,
-:root[data-theme='dark'] .dzp-pill.active,
 html.dz-bw .dzp-btn.pri,
 html.dz-bw .dzp-seg button.on,
 html.dz-bw .dzp-tog.on,
@@ -3172,8 +3147,6 @@ html.dz-bw .dzp-pill.active {
   border-color: #3a3a44;
   color: #f1efe9;
 }
-:root[data-theme='dark'] .dzp-pill.wait,
-:root[data-theme='dark'] .dzp-chip,
 html.dz-bw .dzp-pill.wait,
 html.dz-bw .dzp-chip {
   background: #212129;

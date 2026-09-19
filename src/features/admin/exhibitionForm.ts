@@ -214,6 +214,20 @@ export const DOC_SERIES = {
 export type ExhibitionDocKind = keyof typeof DOC_SERIES;
 
 /**
+ * Every document kind that draws its numbers from a series — the scan that
+ * prefills a reference has to read ALL of them or the number repeats.
+ *
+ * `PRO` is shared: an exhibition proposal and a project proposal
+ * (`projects/projectForm.ts::PROPOSAL_SERIES`) are one series of Darz
+ * proposals, stored under two kinds because they hang off different records.
+ * `SINV` has one kind today and is listed for the same reason.
+ */
+export const SERIES_KINDS: Record<string, readonly string[]> = {
+  PRO: ['exhibition_proposal', 'proposal'],
+  SINV: ['exhibition_invoice'],
+};
+
+/**
  * `DARZ-<code>-<year>-<NNNN>` — the next number in this series and year,
  * scanned from the references already saved on documents (rule 4: take the
  * highest seen before incrementing; rule 1 keeps every issued number with

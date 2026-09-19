@@ -18,25 +18,37 @@
  * proposals, scanned over both kinds so a number is never reused.
  *
  * Stated on screen rather than dropped:
- *  - a non-owner sees the old pricing toggle collapsed to its :14067 line and
- *    the lines go out unpriced ("On confirmation" on the PDF; the shared
- *    renderer still prints a zero total line — a renderer limit, not a
- *    pricing choice);
+ *  - a non-owner sees the old pricing toggle collapsed to its :14067 line
+ *    and issues the old "calm non-priced version" (:14028): the snapshot
+ *    carries no line prices, no subtotal and no total, and the shared
+ *    `documentPdf` drops its totals block when the total is undefined, so
+ *    the client-facing PDF shows the scope with no money on it;
+ *  - the card's sentence (:13854) still says "preview and share"; a line
+ *    under it says neither exists here — issuing confirms the PDF at once;
  *  - the documents list has no `ref` filter (only `kind`), so the card walks
- *    every proposal and filters client-side.
+ *    every proposal and filters client-side;
+ *  - a failure after the draft was created (render / upload / confirm)
+ *    keeps that draft in hand: Issue again resumes from the PDF under the
+ *    same reference (never a second document with the same number), and
+ *    the list reloads so the draft shows meanwhile.
+ * Copy: the document's status prints from `documents.status` (options),
+ * except a confirmed proposal reads "Final" — the old :13853 word.
  * Not ported: the composer's free-text intro, the three pricing modes, the
  * share link and the print view — no API for a share link, and the
  * document's own note + terms fields are what prints.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useApi, useOptions } from '../../../api/hooks';
-import type { DocumentAdmin, Paginated, ProjectAdmin } from '../../../api/types';
+import type { Choice, DocumentAdmin, Paginated, ProjectAdmin } from '../../../api/types';
 import { DeskBanner } from '../kit';
 import { nextReference } from '../exhibitionForm';
+import type { DocumentPdfFields } from '../pdf/renderPdf';
 import {
   PROPOSAL_SERIES,
   asPackageLines,
   buildProposalFields,
+  choiceLabel,
+  choices,
   defaultCurrency,
   fmtDate,
 } from './projectForm';
@@ -46,16 +58,25 @@ import '../admin.css';
 const FILE_NAME = { flex: 1, fontSize: 12, color: 'var(--ink2)' } as const;
 const GAP12 = { marginTop: 12 } as const;
 
+/** :13853 — the one old word kept over the options label: a confirmed
+ * proposal read "Final" (the old proposal's own `final` status). */
+const STATUS_WORDS: Record<string, string> = { confirmed: 'Final' };
+
 /** The saved reference of a document (rule 1: it lives in `fields`). */
 function refOf(d: DocumentAdmin): string | undefined {
   return ((d.fields ?? {}) as Record<string, unknown>).reference as string | undefined;
 }
 
-/** :13853 — the old status vocabulary over the document's status. */
-function statusWord(d: DocumentAdmin): string {
-  if (d.status === 'confirmed') return 'Final';
-  if (d.status === 'draft') return 'Draft';
-  return d.status;
+/** The document's status in words — the `documents.status` label, :13853's
+ * "Final" for a confirmed one. */
+function statusWord(list: Choice[], d: DocumentAdmin): string {
+  return STATUS_WORDS[d.status] ?? choiceLabel(list, d.status);
+}
+
+/** A draft created by the issue chain whose PDF is not confirmed yet. */
+interface PendingDraft {
+  doc: DocumentAdmin;
+  fields: DocumentPdfFields;
 }
 
 /** Every page of a list (the documents list has no `ref` filter). */
@@ -79,6 +100,7 @@ export function ProjectProposal({
   onIssued: () => void;
 }) {
   const { documentsAdmin } = useApi();
+  const docStatuses = choices(useOptions(), 'documents.status');
   const [docs, setDocs] = useState<DocumentAdmin[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
@@ -108,7 +130,7 @@ export function ProjectProposal({
   // :13853 — "Last saved · Final · date" from the newest document, else the old line
   const newest = docs?.[0];
   const pst = newest
-    ? `Last saved · ${statusWord(newest)} · ${fmtDate(newest.updated_at)}`
+    ? `Last saved · ${statusWord(docStatuses, newest)} · ${fmtDate(newest.updated_at)}`
     : 'Not created yet';
 
   return (
@@ -120,6 +142,12 @@ export function ProjectProposal({
           Generate, preview and share the polished Darz proposal for the applied package —{' '}
           {pst}.
         </p>
+        {/* the sentence's preview and share have no counterpart here (no share
+            link on the API, no preview step in the one-go chain) — said so */}
+        <div className="dzp-mut" style={GAP12}>
+          No preview or share link yet — issuing renders and confirms the PDF in one go; open
+          it from the list below.
+        </div>
         {!canMoney && (
           // :14067 — the old composer's owner-only pricing toggle, for a standard admin
           <div className="dzp-mut" style={GAP12}>
@@ -134,7 +162,7 @@ export function ProjectProposal({
             {docs.map((d) => (
               <div className="dzp-line" key={d.id}>
                 <span style={FILE_NAME}>
-                  {refOf(d) || d.title} · {statusWord(d)}
+                  {refOf(d) || d.title} · {statusWord(docStatuses, d)}
                 </span>
                 {d.pdf_url ? (
                   <a
@@ -154,10 +182,16 @@ export function ProjectProposal({
         )}
         {!issuing && (
           <div className="dzp-acts">
+            {/* Either login issues: the non-priced version carries no totals
+                at all and the renderer now drops the block for an undefined
+                total (`documentPdf.tsx`), so nothing prints a zero. The list
+                failing to load never blocks issuing (the chain has its own
+                reference fallback) — the button waits only while the list is
+                still on its way. */}
             <button
               type="button"
               className="dzp-btn sm pri"
-              disabled={docs === null}
+              disabled={docs === null && !error}
               onClick={() => setIssuing(true)}
             >
               Issue proposal
@@ -171,6 +205,7 @@ export function ProjectProposal({
           canMoney={canMoney}
           docs={docs ?? []}
           onClose={() => setIssuing(false)}
+          onCreated={() => void load()}
           onDone={() => {
             setIssuing(false);
             void load();
@@ -188,19 +223,24 @@ export function ProjectProposal({
  * in this repo either): reference (prefilled from the highest PRO number
  * seen across BOTH proposal kinds), note, terms, then read the package +
  * catalogue → build the snapshot → create → render → upload → confirm
- * without further clicks. The snapshot never re-derives (rule 1).
+ * without further clicks. The snapshot never re-derives (rule 1). A failure
+ * after the create keeps the draft as `pending`: the next click resumes at
+ * the render with the SAME document and snapshot, so the reference is issued
+ * once (`onCreated` reloads the card's list so the draft shows meanwhile).
  */
 function ProposalIssueCard({
   project,
   canMoney,
   docs,
   onClose,
+  onCreated,
   onDone,
 }: {
   project: ProjectAdmin;
   canMoney: boolean;
   docs: DocumentAdmin[];
   onClose: () => void;
+  onCreated: () => void;
   onDone: () => void;
 }) {
   const { projectsAdmin, documentsAdmin } = useApi();
@@ -212,11 +252,14 @@ function ProposalIssueCard({
   const [step, setStep] = useState<'form' | 'working'>('form');
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
+  const [pending, setPending] = useState<PendingDraft | null>(null);
 
   // rule 4 (highest seen): one PRO series over project AND exhibition
   // proposals; the library being unreachable never blocks issuing — fall
-  // back to this project's own documents (a lower floor, still monotonic)
+  // back to this project's own documents (a lower floor, still monotonic).
+  // Once a draft is pending its reference is fixed — no re-prefill.
   useEffect(() => {
+    if (pending) return;
     let alive = true;
     Promise.all([
       walk((page) => documentsAdmin.documents({ kind: 'proposal', page, per_page: 100 })),
@@ -232,59 +275,72 @@ function ProposalIssueCard({
     return () => {
       alive = false;
     };
-  }, [documentsAdmin, year, docs]);
+  }, [documentsAdmin, year, docs, pending]);
 
   const issue = async () => {
     setStep('working');
     setError('');
+    let draft = pending;
     try {
-      if (!project.applied_package) throw new Error('No package is applied to this project.');
-      setProgress('Reading the package…');
-      const [pkg, catalog] = await Promise.all([
-        projectsAdmin.packageTemplate(project.applied_package),
-        walk((page) => projectsAdmin.services({ page, per_page: 100 })),
-      ]);
-      // the lines are priced from the catalogue, so the currency is the
-      // catalogue's (first priced line), else the options' default
-      const firstSvc = asPackageLines(pkg.lines)
-        .map((l) => catalog.find((s) => s.id === l.svcId))
-        .find((s) => s !== undefined);
-      const currency = firstSvc?.currency || defaultCurrency(options);
-      const clientName = project.client_partner_org?.name || project.client_name || '';
-      const fields = buildProposalFields(project, pkg, catalog, {
-        reference,
-        note,
-        terms,
-        currency,
-        clientName,
-      });
-      if (!canMoney) {
-        // :14067 — the refined, non-priced version: no line prices, no sum
-        fields.lines = (fields.lines ?? []).map((l) => ({ ...l, price: '' }));
-        fields.subtotal = 0;
-        fields.total = 0;
+      if (!draft) {
+        if (!project.applied_package)
+          throw new Error('No package is applied to this project.');
+        setProgress('Reading the package…');
+        const [pkg, catalog] = await Promise.all([
+          projectsAdmin.packageTemplate(project.applied_package),
+          walk((page) => projectsAdmin.services({ page, per_page: 100 })),
+        ]);
+        // the lines are priced from the catalogue, so the currency is the
+        // catalogue's (first priced line), else the options' default
+        const firstSvc = asPackageLines(pkg.lines)
+          .map((l) => catalog.find((s) => s.id === l.svcId))
+          .find((s) => s !== undefined);
+        const currency = firstSvc?.currency || defaultCurrency(options);
+        const clientName = project.client_partner_org?.name || project.client_name || '';
+        const fields = buildProposalFields(project, pkg, catalog, {
+          reference,
+          note,
+          terms,
+          currency,
+          clientName,
+        });
+        if (!canMoney) {
+          // :14067 / :14028 — the refined, non-priced version carries no
+          // pricing at all: no line prices, no subtotal, no total (the card
+          // gates the button until the renderer can print this shape)
+          fields.lines = (fields.lines ?? []).map((l) => ({ ...l, price: '' }));
+          delete fields.subtotal;
+          delete fields.discount;
+          delete fields.total;
+        }
+        setProgress('Creating the document…');
+        const doc = await documentsAdmin.createDocument({
+          kind: 'proposal',
+          title: `${project.name} — Project proposal`,
+          ref: project.no,
+          fields: { ...fields },
+        });
+        draft = { doc, fields };
+        setPending(draft);
       }
-      setProgress('Creating the document…');
-      const doc = await documentsAdmin.createDocument({
-        kind: 'proposal',
-        title: `${project.name} — Project proposal`,
-        ref: project.no,
-        fields: { ...fields },
-      });
       setProgress('Rendering the PDF…');
       const { renderDocumentPdf } = await import('../pdf/renderPdf');
-      const blob = await renderDocumentPdf('exhibition_proposal', fields);
+      const blob = await renderDocumentPdf('exhibition_proposal', draft.fields);
       setProgress('Uploading…');
       await documentsAdmin.uploadPdf(
-        doc.id,
-        new File([blob], `${reference}.pdf`, { type: 'application/pdf' }),
+        draft.doc.id,
+        new File([blob], `${draft.fields.reference ?? reference}.pdf`, {
+          type: 'application/pdf',
+        }),
       );
       setProgress('Confirming (issuing)…');
-      await documentsAdmin.confirmDocument(doc.id);
+      await documentsAdmin.confirmDocument(draft.doc.id);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The issue chain failed.');
       setStep('form');
+      // the draft exists on the server — let the list show it as such
+      if (draft) onCreated();
     }
   };
 
@@ -300,7 +356,11 @@ function ProposalIssueCard({
           <div className="dzp-form" style={GAP12}>
             <label className="full">
               <span className="fl">{PROPOSAL_SERIES.label} reference</span>
-              <input value={reference} onChange={(e) => setReference(e.target.value)} />
+              <input
+                value={reference}
+                disabled={!!pending}
+                onChange={(e) => setReference(e.target.value)}
+              />
             </label>
             <label className="full">
               <span className="fl">Note from Darz</span>
@@ -308,6 +368,7 @@ function ProposalIssueCard({
                 className="dzp-ta"
                 rows={2}
                 value={note}
+                disabled={!!pending}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Optional — prints on the document"
               />
@@ -318,12 +379,19 @@ function ProposalIssueCard({
                 className="dzp-ta"
                 rows={2}
                 value={terms}
+                disabled={!!pending}
                 onChange={(e) => setTerms(e.target.value)}
                 placeholder="Optional"
               />
             </label>
           </div>
           {error && <DeskBanner>{error}</DeskBanner>}
+          {pending && (
+            <div className="dzp-mut" style={GAP12}>
+              The draft {pending.fields.reference ?? reference} is created with these fields —
+              Issue again resumes from the PDF.
+            </div>
+          )}
           <div className="dzp-acts">
             <button type="button" className="dzp-btn gho" onClick={onClose}>
               Cancel

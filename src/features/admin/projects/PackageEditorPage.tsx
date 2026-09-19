@@ -30,13 +30,20 @@
  *  - a create navigates to the new id's editor (the old re-listed); an
  *    update carries `expected_version` — a 409 is the conflict banner with
  *    Reload;
+ *  - "Apply to project" applied the unsaved draft as a snapshot (:14001)
+ *    and a custom proposal only became a template through "Save as
+ *    template" (:13981); the API's apply is a FK to a saved template, so
+ *    the page saves first (a custom proposal as a template), then runs the
+ *    same inline pick the cards use (`ProjectPick`) — a note under the
+ *    footer says so, since nothing else on screen would;
  *  - "Preview proposal" (:13981 `proposalFromEditor`, the preview of an
  *    unsaved draft) has no desk here: the proposal is a section of the
- *    project record, so the button is a link to the projects list that
- *    says so — a stated redirect, not a dead button;
- *  - "Apply to project" applied the unsaved draft as a snapshot (:14001);
- *    the API's apply is a FK to a saved template, so the page saves first,
- *    then runs the same inline pick the cards use (`ProjectPick`);
+ *    project record, so the button takes the Apply path (save, pick, the
+ *    record link) and the same note says why — a stated redirect, not a
+ *    dead button;
+ *  - the create's hand-off (`location.state` — the "Package saved" line and
+ *    whether to open the pick) is read once and cleared, so a refresh does
+ *    not replay it;
  *  - `internal` is the owner's block (:13964): a standard admin's PATCH
  *    never carries it, so the stored pricing survives their edit; their
  *    create sends the blank defaults (:13954);
@@ -371,6 +378,13 @@ function PackageEditor({ id, custom }: { id: string; custom: boolean }) {
   const [applyOpen, setApplyOpen] = useState<boolean>(
     () => (location.state as RouteState | null)?.apply === true,
   );
+  // the hand-off is read once: React Router keeps `state` in history, so a
+  // refresh would show "Package saved" again and re-open the pick (and its
+  // whole active-project walk) on every reload of this URL
+  useEffect(() => {
+    if (location.state)
+      navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [location.state, location.pathname, location.search, navigate]);
 
   // promise chains, not async/await: state is set in the settle callbacks
   const load = useCallback(() => {
@@ -818,13 +832,16 @@ function PackageEditor({ id, custom }: { id: string; custom: boolean }) {
             Cancel
           </button>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Link
+            {/* :13981 `proposalFromEditor` — no bare-draft preview on this
+                API; the Apply path ends on the record that issues it */}
+            <button
+              type="button"
               className="dzp-btn"
-              to="/admin/projects/list"
-              title="Apply to a project, then issue the proposal from its record"
+              disabled={busy}
+              onClick={() => void applyToProject()}
             >
               Preview proposal
-            </Link>
+            </button>
             <button
               type="button"
               className="dzp-btn"
@@ -843,11 +860,14 @@ function PackageEditor({ id, custom }: { id: string; custom: boolean }) {
             </button>
           </div>
         </div>
-        {/* stated redirect — the old "Preview proposal" rendered an unsaved
-            draft (:13981); here the proposal issues from a project's record */}
+        {/* stated mechanics — :14001 applied the unsaved draft as a snapshot
+            and :13981's preview rendered it; this API links a project to a
+            saved template and issues the proposal from the project's record */}
         <p className="dzp-mut" role="note">
-          Preview proposal · apply this package to a project, then issue the proposal from that
-          project’s record.
+          Apply to project · saves {custom ? 'this proposal as a template' : 'the package'}{' '}
+          first — the API links a project to a saved template — then asks which project.
+          Preview proposal · takes the same path: the proposal issues from that project’s
+          record, not from a bare template.
         </p>
 
         {applyOpen && pkg && (

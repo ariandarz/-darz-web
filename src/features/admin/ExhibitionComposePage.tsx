@@ -32,6 +32,7 @@ import type {
 import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
 import {
   DOC_SERIES,
+  SERIES_KINDS,
   buildDocumentFields,
   draftFromCatalogue,
   lineTotals,
@@ -639,14 +640,28 @@ function IssueDocumentDialog({
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
 
-  // prefill the reference from EVERY stored document of this kind (rule 4:
-  // highest seen), and the bank block from this device's last invoice
+  // prefill the reference from EVERY stored document in this SERIES (rule 4:
+  // highest seen) — `SERIES_KINDS` names them, because the PRO series is
+  // shared with the project proposals (Phase 11c) and scanning one kind
+  // alone would hand out a number the other kind already used
   useEffect(() => {
     let alive = true;
     const refOf = (d: DocumentAdmin) =>
       ((d.fields ?? {}) as Record<string, unknown>).reference as string | undefined;
-    documentsAdmin.documents({ kind, per_page: 200 }).then(
-      (p) => alive && setReference(nextReference(p.results.map(refOf), series.code, year)),
+    Promise.all(
+      (SERIES_KINDS[series.code] ?? [kind]).map((k) =>
+        documentsAdmin.documents({ kind: k, per_page: 200 }),
+      ),
+    ).then(
+      (pages) =>
+        alive &&
+        setReference(
+          nextReference(
+            pages.flatMap((p) => p.results.map(refOf)),
+            series.code,
+            year,
+          ),
+        ),
       // the library being unreachable never blocks issuing — fall back to
       // this event's own documents (a lower floor, still monotonic here)
       () => alive && setReference(nextReference(docs.map(refOf), series.code, year)),

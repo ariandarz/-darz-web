@@ -32,11 +32,24 @@
  *    the same PATCH so unsaved edits are not lost; Cancel and Delete go to
  *    the list;
  *  - `dzConfirm(reason, {okLabel:'Got it'})` for a blocked move (:13708) is
- *    the `.dzp-gate` panel with a Dismiss button; `dzConfirm` for Delete is
+ *    the `.dzp-gate` panel, its button keeping the old word; `dzConfirm` for Delete is
  *    `ConfirmDialog`; the Proposal section issues a `documents.Document`
  *    (ProjectProposal.tsx) instead of opening the old composer (:14049);
  *  - the report buttons of the old Reports desk (:15455-15456) also sit under
- *    the header here, since the report is a route of this record now.
+ *    the header here, since the report is a route of this record now;
+ *  - a partner org the Partners desk soft-deleted stays on the record (its
+ *    confirm promises "Projects keep their recorded roles") but the update
+ *    serializer rejects its id (`PrimaryKeyRelatedField(is_deleted=False)`,
+ *    serializers.py:104-110, while the read serializer still returns it —
+ *    an API gap): the two org links are therefore send-on-change, a changed
+ *    lane set carries only orgs the page could load, and such a lane / client
+ *    is named from the record's own `partner_orgs` mirror with a note;
+ *  - the record is keyed on the route id (as PackageEditorPage), so one id →
+ *    another remounts with fresh state and a late response cannot land on
+ *    the wrong record; the inputs are disabled while a write is in flight
+ *    (the adopt would drop keystrokes typed meanwhile); Cancel goes back to
+ *    where the record was opened from (`_close`, :13761), the list when
+ *    there is nowhere to go back to.
  * Not ported: `venueEventId` / `_ts` / `updatedBy` bookkeeping (no fields),
  * the list / pipeline / dashboard re-render after save (routes now). A lane
  * without a partner org cannot be saved (the wire dict is keyed by org) —
@@ -113,6 +126,8 @@ const GAP8 = { marginTop: 8 } as const; // :13806
 const DEL_ROW = { padding: '14px 2px' } as const; // :13867
 const FOOT_RIGHT = { display: 'flex', gap: 8, marginLeft: 'auto' } as const; // :13761
 const POINTER = { cursor: 'pointer' } as const; // :13767
+// the in-flight guard is a bare <fieldset> — no box of its own
+const FIELDSET = { border: 0, padding: 0, margin: 0, minWidth: 0 } as const;
 
 /* ── the working copy (`_projDraft`, :13756) ────────────────────────────── */
 
@@ -172,12 +187,23 @@ function draftFrom(p: ProjectAdmin, currency: string): Draft {
 }
 
 /** Every editable field in one PATCH body (minus the lock, added per call).
- * Money and internal notes go only when the login may see them. */
-function patchFrom(d: Draft, canMoney: boolean): Omit<ProjectPatch, 'expected_version'> {
-  const orgIds = Array.from(new Set(d.lanes.map((l) => l.orgId).filter(Boolean)));
+ * Money and internal notes go only when the login may see them. The two
+ * partner-org links are send-on-change (PATCH is partial): the update
+ * serializer rejects a soft-deleted org that the record still returns, so an
+ * untouched client / lane set is left out, and a changed lane set carries only
+ * the orgs the page could load (`known`, null until the partners walk lands)
+ * — the lane itself stays in `partner_roles`. */
+function patchFrom(
+  d: Draft,
+  canMoney: boolean,
+  p: ProjectAdmin,
+  known: PartnerOrgAdmin[] | null,
+): Omit<ProjectPatch, 'expected_version'> {
+  let orgIds = Array.from(new Set(d.lanes.map((l) => l.orgId).filter(Boolean)));
+  if (known) orgIds = orgIds.filter((id) => known.some((o) => o.id === id));
+  const linked = p.partner_orgs.map((o) => o.id);
   const body: Omit<ProjectPatch, 'expected_version'> = {
     name: d.name,
-    client_partner_org: d.client_partner_org || null,
     client_name: d.client_name,
     contact: d.contact,
     venue: d.venue,
@@ -192,12 +218,15 @@ function patchFrom(d: Draft, canMoney: boolean): Omit<ProjectPatch, 'expected_ve
     team: parseList(d.teamText),
     suppliers: parseList(d.suppliersText),
     partner_roles: lanesToRoles(d.lanes),
-    partner_org_ids: orgIds,
     links: d.links,
     media_links: d.media_links,
     results: d.results,
     report: d.report,
   };
+  if (d.client_partner_org !== (p.client_partner_org?.id ?? ''))
+    body.client_partner_org = d.client_partner_org || null;
+  if (orgIds.length !== linked.length || orgIds.some((id) => !linked.includes(id)))
+    body.partner_org_ids = orgIds;
   if (d.category) body.category = d.category as ProjectCategory;
   if (canMoney) {
     body.money = d.money;
@@ -235,6 +264,13 @@ function errorText(err: unknown, fallback: string): string {
 
 export function ProjectPage() {
   const { id = '' } = useParams();
+  // keyed on the route id (as PackageEditorPage): one record → another starts
+  // a fresh instance, so no draft, section state or late response of the
+  // previous id ever shows under the new one
+  return <ProjectRecord key={id} id={id} />;
+}
+
+function ProjectRecord({ id }: { id: string }) {
   const { projectsAdmin } = useApi();
   const options = useOptions();
   const { me } = useSession();
@@ -249,7 +285,9 @@ export function ProjectPage() {
   const defCur = defaultCurrency(options);
 
   const [project, setProject] = useState<ProjectAdmin | null>(null);
-  const [partners, setPartners] = useState<PartnerOrgAdmin[]>([]);
+  // null until the partners walk lands (or if it fails) — the selects then
+  // fall back to the record's own `partner_orgs` mirror for names
+  const [partners, setPartners] = useState<PartnerOrgAdmin[] | null>(null);
   const [attachments, setAttachments] = useState<ProjectAttachmentAdmin[] | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [draftKey, setDraftKey] = useState('');
@@ -296,7 +334,9 @@ export function ProjectPage() {
     void loadAttachments();
   }, [loadAttachments]);
 
-  // `projClientOptions()` (:13296) — the partner orgs, for the client and lane selects
+  // `projClientOptions()` (:13296) — the partner orgs, for the client and lane
+  // selects; a failed walk leaves `partners` null (the selects still name the
+  // record's own orgs from its mirror, and no lane set is filtered)
   useEffect(() => {
     let alive = true;
     walk((page) => projectsAdmin.partners({ page, per_page: 100 })).then(
@@ -321,8 +361,8 @@ export function ProjectPage() {
   const dirty =
     !!project &&
     !!draft &&
-    JSON.stringify(patchFrom(draft, canMoney)) !==
-      JSON.stringify(patchFrom(draftFrom(project, defCur), canMoney));
+    JSON.stringify(patchFrom(draft, canMoney, project, partners)) !==
+      JSON.stringify(patchFrom(draftFrom(project, defCur), canMoney, project, partners));
 
   const act = async (fn: () => Promise<void>) => {
     if (busy) return;
@@ -347,7 +387,7 @@ export function ProjectPage() {
   ): Promise<ProjectAdmin> => {
     if (!project) throw new Error('No project loaded.');
     const next = await projectsAdmin.updateProject(id, {
-      ...patchFrom(d, canMoney),
+      ...patchFrom(d, canMoney, project, partners),
       ...extra,
       expected_version: project.version,
     });
@@ -452,9 +492,13 @@ export function ProjectPage() {
 
   const today = todayIso();
   const flag = projFlag(project, stages, today); // :13757
+  const orgs = partners ?? [];
+  // an org the loaded list does not carry was deleted on the Partners desk
+  // (the list is every non-deleted org) — the record keeps it as recorded
+  const gone = (orgId: string) => !!partners && !!orgId && !orgs.some((o) => o.id === orgId);
   // `projClientName` (:13298) — the linked org's name, else the fallback name
   const linkedName = draft.client_partner_org
-    ? (partners.find((o) => o.id === draft.client_partner_org)?.name ??
+    ? (orgs.find((o) => o.id === draft.client_partner_org)?.name ??
       (project.client_partner_org?.id === draft.client_partner_org
         ? project.client_partner_org.name
         : ''))
@@ -470,490 +514,268 @@ export function ProjectPage() {
   return (
     <DeskPage title={draft.name || 'Untitled project'}>
       <div className="dzp">
-        {/* :13758-13759 — eyebrow, chips */}
-        <p className="ad-desksub">
-          {project.no} · {choiceLabel(categories, draft.category) || '—'}
-        </p>
-        <div className="dzp-acts">
-          <span className="dzp-chip">{clientName || 'No client'}</span>
-          <span className={`dzp-pill ${flag.c}`}>{flag.t}</span>
-          {canMoney && (
-            <Link className="dzp-btn sm" to={`/admin/projects/${id}/report`}>
-              Internal report
-            </Link>
-          )}
-          <Link className="dzp-btn sm pri" to={`/admin/projects/${id}/report?client=1`}>
-            Client report
-          </Link>
-        </div>
-
-        {error && <DeskBanner>{error}</DeskBanner>}
-        {conflict && (
-          <DeskBanner>
-            Someone else saved this project in the meantime — reload to continue.{' '}
-            <button
-              type="button"
-              className="dzp-btn sm"
-              onClick={() => {
-                setConflict(false);
-                setGen((g) => g + 1);
-                void load();
-              }}
-            >
-              Reload
-            </button>
-          </DeskBanner>
-        )}
-        {note && (
-          <p className="dzp-mut" role="status">
-            {note}
+        {/* the whole body sits in one <fieldset> so a write in flight locks the
+            inputs: the adopt of its response rebuilds the draft, and anything
+            typed in between would be lost */}
+        <fieldset disabled={busy} style={FIELDSET}>
+          {/* :13758-13759 — eyebrow, chips */}
+          <p className="ad-desksub">
+            {project.no} · {choiceLabel(categories, draft.category) || '—'}
           </p>
-        )}
-
-        {/* :13767 — the stage rail; a click moves the project */}
-        <div className="dzp-rail">
-          {stages.map((s) => (
-            <div
-              key={s.value}
-              className={`dzp-st ${stageState(stages, project.stage, s.value)}`}
-              role="button"
-              tabIndex={0}
-              aria-disabled={busy}
-              style={POINTER}
-              onClick={() => moveStage(s.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  moveStage(s.value);
-                }
-              }}
-            >
-              <span className="rd" />
-              <div className="l">{s.label}</div>
-            </div>
-          ))}
-        </div>
-        {gate && (
-          // :13708 — `dzConfirm(gate.reason, {okLabel:'Got it'})`
-          <div className="dzp-gate" role="alert">
-            {gate}
-            <div className="dzp-acts">
-              <button type="button" className="dzp-btn sm" onClick={() => setGate(null)}>
-                Dismiss
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* :13775-13787 · :13858 */}
-        <Section
-          id="overview"
-          label="Overview"
-          open={isOpen('overview', true)}
-          onToggle={toggle}
-        >
-          <div className="dzp-form">
-            <label className="full">
-              <span className="fl">Project name</span>
-              <input value={draft.name} onChange={(e) => patch({ name: e.target.value })} />
-            </label>
-            <label>
-              <span className="fl">Client (linked)</span>
-              <select
-                value={draft.client_partner_org}
-                onChange={(e) => patch({ client_partner_org: e.target.value })}
-              >
-                <option value="">— none —</option>
-                {draft.client_partner_org &&
-                  !partners.some((o) => o.id === draft.client_partner_org) && (
-                    <option value={draft.client_partner_org}>
-                      {linkedName || draft.client_partner_org}
-                    </option>
-                  )}
-                {partners.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span className="fl">Client name (fallback)</span>
-              <input
-                value={draft.client_name}
-                onChange={(e) => patch({ client_name: e.target.value })}
-              />
-            </label>
-            <label>
-              <span className="fl">Main contact</span>
-              <input
-                value={draft.contact}
-                onChange={(e) => patch({ contact: e.target.value })}
-              />
-            </label>
-            <label>
-              <span className="fl">Category</span>
-              <select
-                value={draft.category}
-                onChange={(e) => patch({ category: e.target.value })}
-              >
-                {!categories.some((c) => c.value === draft.category) && (
-                  <option value={draft.category}>{draft.category || '—'}</option>
-                )}
-                {categories.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {/* :13781 was a <select>; `status` is not writable (G-PROJ-2) */}
-              <span className="fl">Status</span>
-              <span>{choiceLabel(statuses, project.status) || '—'}</span>
-              <span className="dzp-mut">derived from the stage</span>
-            </label>
-            <label>
-              <span className="fl">Venue / show</span>
-              <input value={draft.venue} onChange={(e) => patch({ venue: e.target.value })} />
-            </label>
-            <label>
-              <span className="fl">City</span>
-              <input value={draft.city} onChange={(e) => patch({ city: e.target.value })} />
-            </label>
-            <label>
-              <span className="fl">Country</span>
-              <input
-                value={draft.country}
-                onChange={(e) => patch({ country: e.target.value })}
-              />
-            </label>
-            <label>
-              <span className="fl">Start</span>
-              <input
-                type="date"
-                value={draft.start_date}
-                onChange={(e) => patch({ start_date: e.target.value })}
-              />
-            </label>
-            <label>
-              <span className="fl">End</span>
-              <input
-                type="date"
-                value={draft.end_date}
-                onChange={(e) => patch({ end_date: e.target.value })}
-              />
-            </label>
-          </div>
-        </Section>
-
-        {/* :13789-13793 · :13859 */}
-        <Section
-          id="scope"
-          label="Scope & deliverables"
-          open={isOpen('scope', false)}
-          onToggle={toggle}
-        >
-          <div className="dzp-form">
-            <label className="full">
-              <span className="fl">Scope of work</span>
-              <textarea
-                className="dzp-ta"
-                value={draft.scope}
-                onChange={(e) => patch({ scope: e.target.value })}
-              />
-            </label>
-            <label>
-              <span className="fl">Darz responsibilities</span>
-              <textarea
-                className="dzp-ta"
-                value={draft.darz_resp}
-                onChange={(e) => patch({ darz_resp: e.target.value })}
-              />
-            </label>
-            <label>
-              <span className="fl">Partner responsibilities</span>
-              <textarea
-                className="dzp-ta"
-                value={draft.partner_resp}
-                onChange={(e) => patch({ partner_resp: e.target.value })}
-              />
-            </label>
-          </div>
-          <div style={GAP12}>
-            <div className="dzp-fl">Deliverables</div>
-            {draft.deliverables.length ? (
-              draft.deliverables.map((x, i) => (
-                <div className="dzp-line" key={x.id || `d${i}`}>
-                  <input
-                    type="checkbox"
-                    checked={x.done}
-                    style={CHECK}
-                    aria-label="Done"
-                    onChange={(e) =>
-                      // :13884 toggleDel
-                      setDel(i, {
-                        done: e.target.checked,
-                        doneTs: e.target.checked ? Date.now() : 0,
-                        doneBy: e.target.checked ? doneBy : '',
-                      })
-                    }
-                  />
-                  <input
-                    value={x.text}
-                    placeholder="Deliverable"
-                    onChange={(e) => setDel(i, { text: e.target.value })}
-                  />
-                  <input
-                    type="date"
-                    style={DATE}
-                    value={x.due}
-                    onChange={(e) => setDel(i, { due: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    className="dzp-btn sm dgr gho"
-                    aria-label="Remove deliverable"
-                    onClick={() =>
-                      patch({ deliverables: draft.deliverables.filter((_, j) => j !== i) })
-                    }
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="dzp-mut">No deliverables yet.</div>
+          <div className="dzp-acts">
+            <span className="dzp-chip">{clientName || 'No client'}</span>
+            <span className={`dzp-pill ${flag.c}`}>{flag.t}</span>
+            {canMoney && (
+              <Link className="dzp-btn sm" to={`/admin/projects/${id}/report`}>
+                Internal report
+              </Link>
             )}
-            <div className="dzp-acts">
+            <Link className="dzp-btn sm pri" to={`/admin/projects/${id}/report?client=1`}>
+              Client report
+            </Link>
+          </div>
+
+          {error && <DeskBanner>{error}</DeskBanner>}
+          {conflict && (
+            <DeskBanner>
+              Someone else saved this project in the meantime — reload to continue.{' '}
               <button
                 type="button"
                 className="dzp-btn sm"
-                onClick={() =>
-                  // :13882 addDel
-                  patch({
-                    deliverables: [
-                      ...draft.deliverables,
-                      {
-                        id: uid('dl'),
-                        text: '',
-                        owner: '',
-                        due: '',
-                        depId: '',
-                        done: false,
-                        doneTs: 0,
-                        doneBy: '',
-                      },
-                    ],
-                  })
-                }
+                onClick={() => {
+                  setConflict(false);
+                  setGen((g) => g + 1);
+                  void load();
+                }}
               >
-                ＋ Add deliverable
+                Reload
               </button>
-            </div>
-          </div>
-        </Section>
+            </DeskBanner>
+          )}
+          {note && (
+            <p className="dzp-mut" role="status">
+              {note}
+            </p>
+          )}
 
-        {/* :13795-13796 · :13860 */}
-        <Section id="team" label="Team" open={isOpen('team', false)} onToggle={toggle}>
-          <div className="dzp-form">
-            <label className="full">
-              <span className="fl">Team members (comma-separated)</span>
-              <input
-                value={draft.teamText}
-                onChange={(e) => patch({ teamText: e.target.value })}
-              />
-            </label>
-            <label className="full">
-              <span className="fl">External suppliers (comma-separated)</span>
-              <input
-                value={draft.suppliersText}
-                onChange={(e) => patch({ suppliersText: e.target.value })}
-              />
-            </label>
+          {/* :13767 — the stage rail; a click moves the project */}
+          <div className="dzp-rail">
+            {stages.map((s) => (
+              <div
+                key={s.value}
+                className={`dzp-st ${stageState(stages, project.stage, s.value)}`}
+                role="button"
+                tabIndex={0}
+                aria-disabled={busy}
+                style={POINTER}
+                onClick={() => moveStage(s.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    moveStage(s.value);
+                  }
+                }}
+              >
+                <span className="rd" />
+                <div className="l">{s.label}</div>
+              </div>
+            ))}
           </div>
-        </Section>
-
-        {/* :13823-13849 · :13861 */}
-        <Section
-          id="partners"
-          label="Partners & roles"
-          open={isOpen('partners', false)}
-          onToggle={toggle}
-        >
-          {draft.lanes.length ? (
-            draft.lanes.map((lane, i) => (
-              <LaneCard
-                key={i}
-                lane={lane}
-                warn={!!lane.delivClass && overlaps.has(lane.delivClass)}
-                partners={partners}
-                onChange={(next) => setLane(i, next)}
-                onRemove={() => patch({ lanes: draft.lanes.filter((_, j) => j !== i) })} // :15439
-              />
-            ))
-          ) : (
-            // :13847
-            <div className="dzp-mut">
-              No partner roles yet. Add each org’s lane so responsibilities never silently
-              collide.
+          {gate && (
+            // :13708 — `dzConfirm(gate.reason, {okLabel:'Got it'})`
+            <div className="dzp-gate" role="alert">
+              {gate}
+              <div className="dzp-acts">
+                <button type="button" className="dzp-btn sm" onClick={() => setGate(null)}>
+                  Got it
+                </button>
+              </div>
             </div>
           )}
-          {(unkeyed > 0 || dupOrgs > 0) && (
-            <div className="dzp-mut" style={GAP8}>
-              The record keeps one lane per partner org
-              {unkeyed > 0
-                ? ` — ${unkeyed} lane${unkeyed === 1 ? '' : 's'} without a partner will not be saved`
-                : ''}
-              {dupOrgs > 0 ? ` — for a partner with two lanes only the later one is kept` : ''}
-              .
-            </div>
-          )}
-          <div className="dzp-acts">
-            <button
-              type="button"
-              className="dzp-btn sm"
-              onClick={() =>
-                // :15437 addRole
-                patch({
-                  lanes: [
-                    ...draft.lanes,
-                    {
-                      orgId: '',
-                      role: 'media',
-                      delivClass: '',
-                      deliverables: '',
-                      deadline: '',
-                      contact: '',
-                      materials: '',
-                      ownership: '',
-                      channels: '',
-                      approval: '',
-                      budget: '',
-                      dependsOn: '',
-                      status: 'on-track',
-                    },
-                  ],
-                })
-              }
-            >
-              ＋ Add partner role
-            </button>
-          </div>
-          {/* :13849 */}
-          <div className="dzp-darz">
-            <div className="h">{DARZ_ROLE_DETAIL.h}</div>
-            <p>{DARZ_ROLE_DETAIL.p}</p>
-          </div>
-        </Section>
 
-        {/* :13851-13855 · :13862 — only once a package is applied */}
-        {project.applied_package && (
+          {/* :13775-13787 · :13858 */}
           <Section
-            id="proposal"
-            label="Proposal"
-            open={isOpen('proposal', false)}
+            id="overview"
+            label="Overview"
+            open={isOpen('overview', true)}
             onToggle={toggle}
           >
-            <ProjectProposal
-              project={project}
-              canMoney={canMoney}
-              onIssued={() => setNote('Proposal finalized & saved to the Library')} // :14108
-            />
-          </Section>
-        )}
-
-        {/* :13798-13809 · :13863 — owner only */}
-        {canMoney && (
-          <Section id="money" label="Money" open={isOpen('money', false)} onToggle={toggle}>
             <div className="dzp-form">
-              <MoneyField
-                label="Internal cost"
-                value={m.internalCost}
-                currencies={currencies}
-                onChange={(v) => setMoney({ internalCost: v })}
-              />
-              <MoneyField
-                label="External cost"
-                value={m.externalCost}
-                currencies={currencies}
-                onChange={(v) => setMoney({ externalCost: v })}
-              />
-              <MoneyField
-                label="Darz service fee"
-                value={m.fee}
-                currencies={currencies}
-                onChange={(v) => setMoney({ fee: v })}
-              />
-              <MoneyField
-                label="Total client price"
-                value={m.clientPrice}
-                currencies={currencies}
-                onChange={(v) => setMoney({ clientPrice: v })}
-              />
-            </div>
-            <div className="dzp-form" style={GAP8}>
-              {/* :13804 */}
+              <label className="full">
+                <span className="fl">Project name</span>
+                <input value={draft.name} onChange={(e) => patch({ name: e.target.value })} />
+              </label>
               <label>
-                <span className="fl">Invoice status</span>
+                <span className="fl">Client (linked)</span>
                 <select
-                  value={m.invoiceStatus}
-                  onChange={(e) =>
-                    setMoney({ invoiceStatus: e.target.value as InvoiceStatus })
-                  }
+                  value={draft.client_partner_org}
+                  onChange={(e) => patch({ client_partner_org: e.target.value })}
                 >
-                  {INVOICE_STATUSES.map((x) => (
-                    <option key={x} value={x}>
-                      {x}
+                  <option value="">— none —</option>
+                  {draft.client_partner_org &&
+                    !orgs.some((o) => o.id === draft.client_partner_org) && (
+                      <option value={draft.client_partner_org}>
+                        {linkedName || draft.client_partner_org}
+                      </option>
+                    )}
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                {gone(draft.client_partner_org) && (
+                  <span className="dzp-mut">
+                    This partner org was deleted on the Partners desk — the record keeps it as
+                    recorded.
+                  </span>
+                )}
+              </label>
+              <label>
+                <span className="fl">Client name (fallback)</span>
+                <input
+                  value={draft.client_name}
+                  onChange={(e) => patch({ client_name: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="fl">Main contact</span>
+                <input
+                  value={draft.contact}
+                  onChange={(e) => patch({ contact: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="fl">Category</span>
+                <select
+                  value={draft.category}
+                  onChange={(e) => patch({ category: e.target.value })}
+                >
+                  {!categories.some((c) => c.value === draft.category) && (
+                    <option value={draft.category}>{draft.category || '—'}</option>
+                  )}
+                  {categories.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
                     </option>
                   ))}
                 </select>
               </label>
+              <label>
+                {/* :13781 was a <select>; `status` is not writable (G-PROJ-2), so
+                  the label wraps an <output> — the derived value, not a field */}
+                <span className="fl">Status</span>
+                <output>{choiceLabel(statuses, project.status) || '—'}</output>
+                <span className="dzp-mut">derived from the stage</span>
+              </label>
+              <label>
+                <span className="fl">Venue / show</span>
+                <input
+                  value={draft.venue}
+                  onChange={(e) => patch({ venue: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="fl">City</span>
+                <input value={draft.city} onChange={(e) => patch({ city: e.target.value })} />
+              </label>
+              <label>
+                <span className="fl">Country</span>
+                <input
+                  value={draft.country}
+                  onChange={(e) => patch({ country: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="fl">Start</span>
+                <input
+                  type="date"
+                  value={draft.start_date}
+                  onChange={(e) => patch({ start_date: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="fl">End</span>
+                <input
+                  type="date"
+                  value={draft.end_date}
+                  onChange={(e) => patch({ end_date: e.target.value })}
+                />
+              </label>
+            </div>
+          </Section>
+
+          {/* :13789-13793 · :13859 */}
+          <Section
+            id="scope"
+            label="Scope & deliverables"
+            open={isOpen('scope', false)}
+            onToggle={toggle}
+          >
+            <div className="dzp-form">
+              <label className="full">
+                <span className="fl">Scope of work</span>
+                <textarea
+                  className="dzp-ta"
+                  value={draft.scope}
+                  onChange={(e) => patch({ scope: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="fl">Darz responsibilities</span>
+                <textarea
+                  className="dzp-ta"
+                  value={draft.darz_resp}
+                  onChange={(e) => patch({ darz_resp: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="fl">Partner responsibilities</span>
+                <textarea
+                  className="dzp-ta"
+                  value={draft.partner_resp}
+                  onChange={(e) => patch({ partner_resp: e.target.value })}
+                />
+              </label>
             </div>
             <div style={GAP12}>
-              <div className="dzp-fl">Payment schedule</div>
-              {m.payments.length ? (
-                m.payments.map((p, i) => (
-                  <div className="dzp-line" key={p.id || `p${i}`}>
+              <div className="dzp-fl">Deliverables</div>
+              {draft.deliverables.length ? (
+                draft.deliverables.map((x, i) => (
+                  <div className="dzp-line" key={x.id || `d${i}`}>
                     <input
                       type="checkbox"
-                      checked={p.paid}
+                      checked={x.done}
                       style={CHECK}
-                      aria-label="Paid"
+                      aria-label="Done"
                       onChange={(e) =>
-                        // :13880 — paidTs follows the tick
-                        setPay(i, {
-                          paid: e.target.checked,
-                          paidTs: e.target.checked ? Date.now() : 0,
+                        // :13884 toggleDel
+                        setDel(i, {
+                          done: e.target.checked,
+                          doneTs: e.target.checked ? Date.now() : 0,
+                          doneBy: e.target.checked ? doneBy : '',
                         })
                       }
                     />
                     <input
-                      value={p.label}
-                      placeholder="Stage / label"
-                      onChange={(e) => setPay(i, { label: e.target.value })}
+                      value={x.text}
+                      placeholder="Deliverable"
+                      aria-label="Deliverable"
+                      onChange={(e) => setDel(i, { text: e.target.value })}
                     />
                     <input
-                      value={p.amount}
-                      placeholder="0"
-                      inputMode="decimal"
-                      style={AMOUNT}
-                      onChange={(e) => setPay(i, { amount: e.target.value })}
+                      type="date"
+                      style={DATE}
+                      value={x.due}
+                      aria-label="Due"
+                      onChange={(e) => setDel(i, { due: e.target.value })}
                     />
-                    <select
-                      style={CUR}
-                      value={p.currency}
-                      aria-label="Currency"
-                      onChange={(e) => setPay(i, { currency: e.target.value })}
-                    >
-                      <CurrencyOptions currencies={currencies} current={p.currency} />
-                    </select>
                     <button
                       type="button"
                       className="dzp-btn sm dgr gho"
-                      aria-label="Remove stage"
+                      aria-label="Remove deliverable"
                       onClick={() =>
-                        setMoney({ payments: m.payments.filter((_, j) => j !== i) })
+                        patch({ deliverables: draft.deliverables.filter((_, j) => j !== i) })
                       }
                     >
                       ✕
@@ -961,242 +783,494 @@ export function ProjectPage() {
                   </div>
                 ))
               ) : (
-                <div className="dzp-mut">No payment stages yet.</div>
+                <div className="dzp-mut">No deliverables yet.</div>
               )}
               <div className="dzp-acts">
                 <button
                   type="button"
                   className="dzp-btn sm"
                   onClick={() =>
-                    // :13879 addPay
-                    setMoney({
-                      payments: [
-                        ...m.payments,
+                    // :13882 addDel
+                    patch({
+                      deliverables: [
+                        ...draft.deliverables,
                         {
-                          id: uid('pay'),
-                          label: '',
-                          amount: '',
-                          currency: defCur,
+                          id: uid('dl'),
+                          text: '',
+                          owner: '',
                           due: '',
-                          paid: false,
-                          paidTs: 0,
+                          depId: '',
+                          done: false,
+                          doneTs: 0,
+                          doneBy: '',
                         },
                       ],
                     })
                   }
                 >
-                  ＋ Add stage
+                  ＋ Add deliverable
                 </button>
               </div>
-            </div>
-            <div style={GAP12}>
-              {/* :13801 */}
-              <div className="dzp-fl">Totals (grouped by currency — never converted)</div>
-              {mc.currencies.length ? (
-                mc.currencies.map((c) => {
-                  const b = mc.byCur[c];
-                  return (
-                    <div className="dzp-mrow" key={c}>
-                      <span>{c}</span>
-                      <b>
-                        Client {projMoney(b.client, c)} · Fee {projMoney(b.fee, c)} · Cost{' '}
-                        {projMoney(b.internal + b.external, c)}
-                        {b.paid || b.due
-                          ? ` · Paid ${projMoney(b.paid, c)} / Due ${projMoney(b.due, c)}`
-                          : ''}
-                      </b>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="dzp-mut">No amounts recorded yet.</div>
-              )}
             </div>
           </Section>
-        )}
 
-        {/* :13811-13816 · :13864 */}
-        <Section
-          id="files"
-          label="Files & links"
-          open={isOpen('files', false)}
-          onToggle={toggle}
-        >
-          {/* :13814 read "Attachments (kept on this device)" — they are server files now */}
-          <div className="dzp-fl">Attachments</div>
-          {attachments === null ? (
-            <p className="dz-state">Loading…</p>
-          ) : attachments.length ? (
-            attachments.map((a) => (
-              <div className="dzp-line" key={a.id}>
-                <span style={FILE_NAME}>{a.original_name || a.label || 'File'}</span>
-                <a
-                  className="dzp-btn sm gho"
-                  href={a.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open
-                </a>
-                <button
-                  type="button"
-                  className="dzp-btn sm dgr gho"
-                  disabled={busy}
-                  aria-label={`Remove ${a.original_name || 'file'}`}
-                  onClick={() => void removeAttachment(a)}
-                >
-                  ✕
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="dzp-mut">No files attached.</div>
-          )}
-          <div className="dzp-acts">
-            <button
-              type="button"
-              className="dzp-btn sm"
-              disabled={busy}
-              onClick={() => fileInput.current?.click()}
-            >
-              ＋ Attach file
-            </button>
-            <input
-              ref={fileInput}
-              type="file"
-              hidden
-              aria-hidden="true"
-              tabIndex={-1}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = '';
-                if (f) void attach(f);
-              }}
-            />
-          </div>
-          <div style={GAP12}>
-            <div className="dzp-fl">Links</div>
-            <LinkRows
-              rows={draft.links}
-              empty="No links."
-              addLabel="＋ Add link"
-              onChange={(rows) => patch({ links: rows })}
-            />
-          </div>
-          <div style={GAP12}>
-            <div className="dzp-fl">Media &amp; publication links</div>
-            <LinkRows
-              rows={draft.media_links}
-              empty="No media links."
-              addLabel="＋ Add media link"
-              onChange={(rows) => patch({ media_links: rows })}
-            />
-          </div>
-        </Section>
-
-        {/* :13818-13819 · :13865 */}
-        <Section
-          id="results"
-          label="Results"
-          open={isOpen('results', false)}
-          onToggle={toggle}
-        >
-          <div className="dzp-form">
-            <label className="full">
-              <span className="fl">Performance results</span>
-              <textarea
-                className="dzp-ta"
-                value={draft.results}
-                onChange={(e) => patch({ results: e.target.value })}
-              />
-            </label>
-            <label className="full">
-              <span className="fl">Final report</span>
-              <textarea
-                className="dzp-ta"
-                value={draft.report}
-                onChange={(e) => patch({ report: e.target.value })}
-              />
-            </label>
-          </div>
-        </Section>
-
-        {/* :13821 · :13866 — owner only */}
-        {canMoney && (
-          <Section
-            id="internal"
-            label="Internal notes"
-            open={isOpen('internal', false)}
-            onToggle={toggle}
-          >
+          {/* :13795-13796 · :13860 */}
+          <Section id="team" label="Team" open={isOpen('team', false)} onToggle={toggle}>
             <div className="dzp-form">
               <label className="full">
-                <span className="fl">
-                  Internal notes — never appears in any client-facing export
-                </span>
-                <textarea
-                  className="dzp-ta"
-                  value={draft.internal_notes}
-                  onChange={(e) => patch({ internal_notes: e.target.value })}
+                <span className="fl">Team members (comma-separated)</span>
+                <input
+                  value={draft.teamText}
+                  onChange={(e) => patch({ teamText: e.target.value })}
+                />
+              </label>
+              <label className="full">
+                <span className="fl">External suppliers (comma-separated)</span>
+                <input
+                  value={draft.suppliersText}
+                  onChange={(e) => patch({ suppliersText: e.target.value })}
                 />
               </label>
             </div>
           </Section>
-        )}
 
-        {/* :13867 */}
-        <div style={DEL_ROW}>
-          <button
-            type="button"
-            className="dzp-btn gho sm dgr"
-            disabled={busy}
-            onClick={() => setDeleting(true)}
+          {/* :13823-13849 · :13861 */}
+          <Section
+            id="partners"
+            label="Partners & roles"
+            open={isOpen('partners', false)}
+            onToggle={toggle}
           >
-            Delete project
-          </button>
-        </div>
-
-        {/* :13761-13763 — the modal footer */}
-        <div className="dzp-acts">
-          <button
-            type="button"
-            className="dzp-btn gho"
-            disabled={busy}
-            onClick={() => navigate('/admin/projects/list')}
-          >
-            Cancel
-          </button>
-          {dirty && <span className="dzp-mut">unsaved changes</span>}
-          <span style={FOOT_RIGHT}>
-            {project.archived ? (
-              <button
-                type="button"
-                className="dzp-btn"
-                disabled={busy}
-                onClick={() => void archive(false)}
-              >
-                Unarchive
-              </button>
+            {draft.lanes.length ? (
+              draft.lanes.map((lane, i) => (
+                <LaneCard
+                  key={i}
+                  lane={lane}
+                  warn={!!lane.delivClass && overlaps.has(lane.delivClass)}
+                  partners={orgs}
+                  // the record's own `{id, name}` mirror names an org the list no longer has
+                  mirrorName={
+                    project.partner_orgs.find((o) => o.id === lane.orgId)?.name ?? ''
+                  }
+                  gone={gone(lane.orgId)}
+                  onChange={(next) => setLane(i, next)}
+                  onRemove={() => patch({ lanes: draft.lanes.filter((_, j) => j !== i) })} // :15439
+                />
+              ))
             ) : (
+              // :13847
+              <div className="dzp-mut">
+                No partner roles yet. Add each org’s lane so responsibilities never silently
+                collide.
+              </div>
+            )}
+            {(unkeyed > 0 || dupOrgs > 0) && (
+              <div className="dzp-mut" style={GAP8}>
+                The record keeps one lane per partner org
+                {unkeyed > 0
+                  ? ` — ${unkeyed} lane${unkeyed === 1 ? '' : 's'} without a partner will not be saved`
+                  : ''}
+                {dupOrgs > 0
+                  ? ` — for a partner with two lanes only the later one is kept`
+                  : ''}
+                .
+              </div>
+            )}
+            <div className="dzp-acts">
               <button
                 type="button"
-                className="dzp-btn"
-                disabled={busy}
-                onClick={() => void archive(true)}
+                className="dzp-btn sm"
+                onClick={() =>
+                  // :15437 addRole
+                  patch({
+                    lanes: [
+                      ...draft.lanes,
+                      {
+                        orgId: '',
+                        role: 'media',
+                        delivClass: '',
+                        deliverables: '',
+                        deadline: '',
+                        contact: '',
+                        materials: '',
+                        ownership: '',
+                        channels: '',
+                        approval: '',
+                        budget: '',
+                        dependsOn: '',
+                        status: 'on-track',
+                      },
+                    ],
+                  })
+                }
               >
-                Archive
+                ＋ Add partner role
               </button>
+            </div>
+            {/* :13849 */}
+            <div className="dzp-darz">
+              <div className="h">{DARZ_ROLE_DETAIL.h}</div>
+              <p>{DARZ_ROLE_DETAIL.p}</p>
+            </div>
+          </Section>
+
+          {/* :13851-13855 · :13862 — only once a package is applied */}
+          {project.applied_package && (
+            <Section
+              id="proposal"
+              label="Proposal"
+              open={isOpen('proposal', false)}
+              onToggle={toggle}
+            >
+              <ProjectProposal
+                project={project}
+                canMoney={canMoney}
+                onIssued={() => setNote('Proposal finalized & saved to the Library')} // :14108
+              />
+            </Section>
+          )}
+
+          {/* :13798-13809 · :13863 — owner only */}
+          {canMoney && (
+            <Section id="money" label="Money" open={isOpen('money', false)} onToggle={toggle}>
+              <div className="dzp-form">
+                <MoneyField
+                  label="Internal cost"
+                  value={m.internalCost}
+                  currencies={currencies}
+                  onChange={(v) => setMoney({ internalCost: v })}
+                />
+                <MoneyField
+                  label="External cost"
+                  value={m.externalCost}
+                  currencies={currencies}
+                  onChange={(v) => setMoney({ externalCost: v })}
+                />
+                <MoneyField
+                  label="Darz service fee"
+                  value={m.fee}
+                  currencies={currencies}
+                  onChange={(v) => setMoney({ fee: v })}
+                />
+                <MoneyField
+                  label="Total client price"
+                  value={m.clientPrice}
+                  currencies={currencies}
+                  onChange={(v) => setMoney({ clientPrice: v })}
+                />
+              </div>
+              <div className="dzp-form" style={GAP8}>
+                {/* :13804 */}
+                <label>
+                  <span className="fl">Invoice status</span>
+                  <select
+                    value={m.invoiceStatus}
+                    onChange={(e) =>
+                      setMoney({ invoiceStatus: e.target.value as InvoiceStatus })
+                    }
+                  >
+                    {INVOICE_STATUSES.map((x) => (
+                      <option key={x} value={x}>
+                        {x}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div style={GAP12}>
+                <div className="dzp-fl">Payment schedule</div>
+                {m.payments.length ? (
+                  m.payments.map((p, i) => (
+                    <div className="dzp-line" key={p.id || `p${i}`}>
+                      <input
+                        type="checkbox"
+                        checked={p.paid}
+                        style={CHECK}
+                        aria-label="Paid"
+                        onChange={(e) =>
+                          // :13880 — paidTs follows the tick
+                          setPay(i, {
+                            paid: e.target.checked,
+                            paidTs: e.target.checked ? Date.now() : 0,
+                          })
+                        }
+                      />
+                      <input
+                        value={p.label}
+                        placeholder="Stage / label"
+                        aria-label="Stage / label"
+                        onChange={(e) => setPay(i, { label: e.target.value })}
+                      />
+                      <input
+                        value={p.amount}
+                        placeholder="0"
+                        inputMode="decimal"
+                        style={AMOUNT}
+                        aria-label="Amount"
+                        onChange={(e) => setPay(i, { amount: e.target.value })}
+                      />
+                      <select
+                        style={CUR}
+                        value={p.currency}
+                        aria-label="Currency"
+                        onChange={(e) => setPay(i, { currency: e.target.value })}
+                      >
+                        <CurrencyOptions currencies={currencies} current={p.currency} />
+                      </select>
+                      <button
+                        type="button"
+                        className="dzp-btn sm dgr gho"
+                        aria-label="Remove stage"
+                        onClick={() =>
+                          setMoney({ payments: m.payments.filter((_, j) => j !== i) })
+                        }
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="dzp-mut">No payment stages yet.</div>
+                )}
+                <div className="dzp-acts">
+                  <button
+                    type="button"
+                    className="dzp-btn sm"
+                    onClick={() =>
+                      // :13879 addPay
+                      setMoney({
+                        payments: [
+                          ...m.payments,
+                          {
+                            id: uid('pay'),
+                            label: '',
+                            amount: '',
+                            currency: defCur,
+                            due: '',
+                            paid: false,
+                            paidTs: 0,
+                          },
+                        ],
+                      })
+                    }
+                  >
+                    ＋ Add stage
+                  </button>
+                </div>
+              </div>
+              <div style={GAP12}>
+                {/* :13801 */}
+                <div className="dzp-fl">Totals (grouped by currency — never converted)</div>
+                {mc.currencies.length ? (
+                  mc.currencies.map((c) => {
+                    const b = mc.byCur[c];
+                    return (
+                      <div className="dzp-mrow" key={c}>
+                        <span>{c}</span>
+                        <b>
+                          Client {projMoney(b.client, c)} · Fee {projMoney(b.fee, c)} · Cost{' '}
+                          {projMoney(b.internal + b.external, c)}
+                          {b.paid || b.due
+                            ? ` · Paid ${projMoney(b.paid, c)} / Due ${projMoney(b.due, c)}`
+                            : ''}
+                        </b>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="dzp-mut">No amounts recorded yet.</div>
+                )}
+              </div>
+            </Section>
+          )}
+
+          {/* :13811-13816 · :13864 */}
+          <Section
+            id="files"
+            label="Files & links"
+            open={isOpen('files', false)}
+            onToggle={toggle}
+          >
+            {/* :13814 read "Attachments (kept on this device)" — they are server files now */}
+            <div className="dzp-fl">Attachments</div>
+            {attachments === null ? (
+              <p className="dz-state">Loading…</p>
+            ) : attachments.length ? (
+              attachments.map((a) => (
+                <div className="dzp-line" key={a.id}>
+                  <span style={FILE_NAME}>{a.original_name || a.label || 'File'}</span>
+                  <a
+                    className="dzp-btn sm gho"
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open
+                  </a>
+                  <button
+                    type="button"
+                    className="dzp-btn sm dgr gho"
+                    disabled={busy}
+                    aria-label={`Remove ${a.original_name || 'file'}`}
+                    onClick={() => void removeAttachment(a)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="dzp-mut">No files attached.</div>
             )}
+            <div className="dzp-acts">
+              <button
+                type="button"
+                className="dzp-btn sm"
+                disabled={busy}
+                onClick={() => fileInput.current?.click()}
+              >
+                ＋ Attach file
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                hidden
+                aria-hidden="true"
+                tabIndex={-1}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  if (f) void attach(f);
+                }}
+              />
+            </div>
+            <div style={GAP12}>
+              <div className="dzp-fl">Links</div>
+              <LinkRows
+                rows={draft.links}
+                empty="No links."
+                addLabel="＋ Add link"
+                onChange={(rows) => patch({ links: rows })}
+              />
+            </div>
+            <div style={GAP12}>
+              <div className="dzp-fl">Media &amp; publication links</div>
+              <LinkRows
+                rows={draft.media_links}
+                empty="No media links."
+                addLabel="＋ Add media link"
+                onChange={(rows) => patch({ media_links: rows })}
+              />
+            </div>
+          </Section>
+
+          {/* :13818-13819 · :13865 */}
+          <Section
+            id="results"
+            label="Results"
+            open={isOpen('results', false)}
+            onToggle={toggle}
+          >
+            <div className="dzp-form">
+              <label className="full">
+                <span className="fl">Performance results</span>
+                <textarea
+                  className="dzp-ta"
+                  value={draft.results}
+                  onChange={(e) => patch({ results: e.target.value })}
+                />
+              </label>
+              <label className="full">
+                <span className="fl">Final report</span>
+                <textarea
+                  className="dzp-ta"
+                  value={draft.report}
+                  onChange={(e) => patch({ report: e.target.value })}
+                />
+              </label>
+            </div>
+          </Section>
+
+          {/* :13821 · :13866 — owner only */}
+          {canMoney && (
+            <Section
+              id="internal"
+              label="Internal notes"
+              open={isOpen('internal', false)}
+              onToggle={toggle}
+            >
+              <div className="dzp-form">
+                <label className="full">
+                  <span className="fl">
+                    Internal notes — never appears in any client-facing export
+                  </span>
+                  <textarea
+                    className="dzp-ta"
+                    value={draft.internal_notes}
+                    onChange={(e) => patch({ internal_notes: e.target.value })}
+                  />
+                </label>
+              </div>
+            </Section>
+          )}
+
+          {/* :13867 */}
+          <div style={DEL_ROW}>
             <button
               type="button"
-              className="dzp-btn pri"
+              className="dzp-btn gho sm dgr"
               disabled={busy}
-              onClick={() => void save()}
+              onClick={() => setDeleting(true)}
             >
-              Save
+              Delete project
             </button>
-          </span>
-        </div>
+          </div>
+
+          {/* :13761-13763 — the modal footer */}
+          <div className="dzp-acts">
+            <button
+              type="button"
+              className="dzp-btn gho"
+              disabled={busy}
+              // `_close` (:13761) returned to wherever the modal was opened from;
+              // a deep link has no entry behind it, so that one goes to the list
+              onClick={() =>
+                location.key === 'default' ? navigate('/admin/projects/list') : navigate(-1)
+              }
+            >
+              Cancel
+            </button>
+            {dirty && <span className="dzp-mut">unsaved changes</span>}
+            <span style={FOOT_RIGHT}>
+              {project.archived ? (
+                <button
+                  type="button"
+                  className="dzp-btn"
+                  disabled={busy}
+                  onClick={() => void archive(false)}
+                >
+                  Unarchive
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="dzp-btn"
+                  disabled={busy}
+                  onClick={() => void archive(true)}
+                >
+                  Archive
+                </button>
+              )}
+              <button
+                type="button"
+                className="dzp-btn pri"
+                disabled={busy}
+                onClick={() => void save()}
+              >
+                Save
+              </button>
+            </span>
+          </div>
+        </fieldset>
       </div>
 
       {deleting && (
@@ -1317,6 +1391,7 @@ function LinkRows({
             <input
               value={x.label}
               placeholder="Label"
+              aria-label="Label"
               style={LABEL}
               onChange={(e) =>
                 onChange(rows.map((r, j) => (j === i ? { ...r, label: e.target.value } : r)))
@@ -1325,6 +1400,7 @@ function LinkRows({
             <input
               value={x.url}
               placeholder="https://…"
+              aria-label="URL"
               onChange={(e) =>
                 onChange(rows.map((r, j) => (j === i ? { ...r, url: e.target.value } : r)))
               }
@@ -1355,17 +1431,23 @@ function LinkRows({
   );
 }
 
-/** :13825-13846 — one partner's lane, with the overlap guard line. */
+/** :13825-13846 — one partner's lane, with the overlap guard line. An org the
+ * partner list no longer carries keeps its name from the record's mirror
+ * (`mirrorName`), and `gone` says so under the select. */
 function LaneCard({
   lane,
   warn,
   partners,
+  mirrorName,
+  gone,
   onChange,
   onRemove,
 }: {
   lane: PartnerLane;
   warn: boolean;
   partners: PartnerOrgAdmin[];
+  mirrorName: string;
+  gone: boolean;
   onChange: (lane: PartnerLane) => void;
   onRemove: () => void;
 }) {
@@ -1384,7 +1466,7 @@ function LaneCard({
           <select value={lane.orgId} onChange={(e) => set({ orgId: e.target.value })}>
             <option value="">— partner —</option>
             {lane.orgId && !partners.some((o) => o.id === lane.orgId) && (
-              <option value={lane.orgId}>{lane.orgId}</option>
+              <option value={lane.orgId}>{mirrorName || lane.orgId}</option>
             )}
             {partners.map((o) => (
               <option key={o.id} value={o.id}>
@@ -1392,6 +1474,12 @@ function LaneCard({
               </option>
             ))}
           </select>
+          {gone && (
+            <span className="dzp-mut">
+              This partner org was deleted on the Partners desk — the record keeps it as
+              recorded.
+            </span>
+          )}
         </label>
         <label>
           <span className="fl">Main role</span>

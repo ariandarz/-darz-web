@@ -14,7 +14,10 @@
  *  - the row anatomy (:13666-13673): name · client · city · number, the
  *    category chip and the status pill, "Stage:" / "Next:" and, for the
  *    owner, the per-currency money line (`projCanMoney()`, :13667);
- *  - the empty sentence (:13650).
+ *  - the empty sentence (:13650);
+ *  - the one `Lib.toast` line that lands here, "Project deleted" (:13895) —
+ *    the record hands it over as `location.state.note` and it shows as the
+ *    inline status line the contract prescribes.
  *
  * Mechanics that changed:
  *  - the old `PROJV` in-memory view state lives in the URL (`?search=
@@ -26,6 +29,15 @@
  *    category/status/archived). The old sort by last-updated (:13641) has
  *    no ordering key on the API (`created|name` only), so the server's
  *    default order stands there.
+ *  - two stated absences under the toolbar (never a silent drop): the
+ *    server search (`filters.py:6`) reads name / no / client_name / venue,
+ *    not the city, contact or category the old haystack (:13638) also
+ *    matched — the old placeholder (:13656) is kept verbatim and the note
+ *    says what it does not cover (G-PROJ-1); and `status` follows the stage
+ *    (`STAGE_STATUS_MAP`, `models.py:221-237`, G-PROJ-2), so four of the
+ *    `projects.status` choices the old select could set by hand (:13645,
+ *    :13781) — Negotiation, Scheduled, Completed, Cancelled — never match.
+ *    The choices themselves stay server-fed (no hardcoded label list).
  *  - QUICK MODE (`?quick=active|delayed|approval|deliverables|unpaid`): the
  *    API has no quick filter (G-PROJ-1), so the page walks every
  *    non-archived project once (`archived: false, per_page: 100`,
@@ -40,7 +52,7 @@
  *    drops stale responses, like every other desk.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
 import type { ProjectsAdminService } from '../../../api/services';
 import type { Choice, Paginated, ProjectAdmin, ProjectQuery } from '../../../api/types';
@@ -167,8 +179,15 @@ export function ProjectsListPage() {
   const options = useOptions();
   const { me } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
   const canMoney = asAdminRole(me?.role) === 'owner'; // projCanMoney(), :13282
+
+  // the record's `Lib.toast('Project deleted')` (:13895) as a status line —
+  // ProjectPage hands it over in `location.state.note` after the delete
+  const [note] = useState<string | null>(
+    () => (location.state as { note?: string } | null)?.note ?? null,
+  );
 
   const stages = choices(options, 'projects.stage');
   const categories = choices(options, 'projects.category');
@@ -334,6 +353,26 @@ export function ProjectsListPage() {
             </span>
           </div>
         )}
+
+        {note && (
+          <p className="dzp-mut" role="status">
+            {note}
+          </p>
+        )}
+
+        {/* stated absences — the server search (`ProjectFilterSet`, filters.py:6)
+            covers name/no/client_name/venue, while the old haystack (:13638) also
+            read city, contact and category (quick mode still applies the old
+            haystack client-side, so that sentence goes only with the server
+            list); `status` follows the stage (`STAGE_STATUS_MAP`, models.py:221-
+            237), so four choices the old select could set by hand (:13645) never
+            match a project here */}
+        <p className="dzp-mut" role="note">
+          {!quick &&
+            'Search matches the name, number, client name and venue on this API — not the city or contact yet (G-PROJ-1). '}
+          Status follows the stage (G-PROJ-2): Negotiation, Scheduled, Completed and Cancelled
+          are never set, so those filters match nothing.
+        </p>
 
         {banner && <DeskBanner>{banner}</DeskBanner>}
         {body === 'loading' && <p className="dz-state">Loading…</p>}

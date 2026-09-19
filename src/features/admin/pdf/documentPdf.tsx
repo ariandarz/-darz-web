@@ -291,22 +291,27 @@ export function DarzDocument({
           </View>
         ))}
 
-        <View style={st.totals}>
-          <View style={st.totRow}>
-            <Text style={st.totK}>Subtotal</Text>
-            <Text style={st.totV}>{moneyStr(fields.currency, fields.subtotal)}</Text>
-          </View>
-          {(fields.discount ?? 0) > 0 && (
+        {/* A document with no total at all is the old "calm non-priced
+            version" (`darz-studio.html:14028`): it carries the scope and no
+            money, so the whole block goes rather than printing a zero. */}
+        {fields.total !== undefined && (
+          <View style={st.totals}>
             <View style={st.totRow}>
-              <Text style={st.totK}>Discount</Text>
-              <Text style={st.totV}>−{moneyStr(fields.currency, fields.discount)}</Text>
+              <Text style={st.totK}>Subtotal</Text>
+              <Text style={st.totV}>{moneyStr(fields.currency, fields.subtotal)}</Text>
             </View>
-          )}
-          <View style={[st.totRow, st.totGrand]}>
-            <Text style={st.totGrandK}>{invoice ? 'Total due' : 'Total'}</Text>
-            <Text style={st.totGrandV}>{moneyStr(fields.currency, fields.total)}</Text>
+            {(fields.discount ?? 0) > 0 && (
+              <View style={st.totRow}>
+                <Text style={st.totK}>Discount</Text>
+                <Text style={st.totV}>−{moneyStr(fields.currency, fields.discount)}</Text>
+              </View>
+            )}
+            <View style={[st.totRow, st.totGrand]}>
+              <Text style={st.totGrandK}>{invoice ? 'Total due' : 'Total'}</Text>
+              <Text style={st.totGrandV}>{moneyStr(fields.currency, fields.total)}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {fields.note ? (
           <View style={st.noteBlock} wrap={false}>
