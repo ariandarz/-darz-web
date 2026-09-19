@@ -84,7 +84,12 @@ const routes = {
   'POST /api/auth/token/refresh/': () => envelope(TOKENS),
   'GET /api/auth/me/': () => envelope(ME),
   'GET /api/options/': () => envelope(OPTIONS),
-  'GET /api/admin/summary/': () => envelope(SUMMARY),
+  // the REAL path: DashboardService = '/dashboard' + '/admin/summary/'.
+  // The route said '/api/admin/summary/' until PR #54 — the summary then
+  // fell into the paginated catch-all and Tiles crashed on
+  // `requests.new_by_kind`, which is what the overnight bimodal e2e runs
+  // really were: the walk only passed when the assertions outran the fetch.
+  'GET /api/dashboard/admin/summary/': () => envelope(SUMMARY),
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
       healthy: true,

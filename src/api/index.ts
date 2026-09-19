@@ -23,7 +23,9 @@ import {
   OptionsService,
   ThemeService,
   RecommendationService,
+  GalleryPortalService,
 } from './services';
+import { PortalClient } from './PortalClient';
 
 /** The API base URL comes from the environment only — no hardcoded fallback.
  * Set `VITE_API_BASE_URL` in `.env` (or `.env.local`); see `.env.example`. */
@@ -70,6 +72,8 @@ export class DarzApi {
   readonly galleryAdmin: GalleryAdminService;
   readonly auctionsAdmin: AuctionsAdminService;
   readonly accountingAdmin: AccountingAdminService;
+  /** The no-login partner portal — its own unauthenticated client. */
+  readonly portal: GalleryPortalService;
 
   constructor(baseUrl: string = resolveBaseUrl(), storage?: Storage | null) {
     this.session = new AuthSession(baseUrl, storage);
@@ -89,6 +93,7 @@ export class DarzApi {
     this.galleryAdmin = new GalleryAdminService(this.client);
     this.auctionsAdmin = new AuctionsAdminService(this.client);
     this.accountingAdmin = new AccountingAdminService(this.client);
+    this.portal = new GalleryPortalService(new PortalClient(baseUrl));
   }
 }
 

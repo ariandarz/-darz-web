@@ -576,10 +576,16 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       2026-09-17 — `apps.notifications` has no `GET` for it); push delivery itself is ready
       (Phase 13), but the frontend can't complete the browser subscribe handshake without the key.
 
-## Phase 10 — Gallery Update Portal (frontend) ✅ backend ready (Phase 12 A+B merged)
+## Phase 10 — Gallery Update Portal (frontend) ✅ done 2026-09-19
 
-- [ ] No-login token+PIN portal: load state, submit updates, pricelist/Q&A
-- [ ] Admin review/approve desk UI
+- [x] No-login token+PIN portal (`/portal/:token`, 2026-09-19): gate → works + one-submission
+      updates (the payload keys `GalleryUpdateService.approve` auto-applies) → funnel Status
+      (feat_funnel) → pricelist upload (real multipart) → messages → Exhibition Services
+      (create/pick/submit → composed package → document acceptance). Ported from
+      `gallery-update.html` (build 914); gaps recorded as **G-PORT-1…11**
+      (`docs/ADMIN_ARCHITECTURE.md` §2). Live-verified full-circle both ways (step15: 37 checks).
+- [x] Admin review/approve desk UI — shipped with Phase 11b (the Sources & Partners desk); the
+      issue reveal now hands over the ready-to-send `/portal/{token}` address.
 
 ## Phase 11 — Admin: Marketing Hub, AI Tagging, Document Builder, Accounting ✅ backend ready
 

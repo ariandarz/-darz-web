@@ -69,6 +69,7 @@ import { RecordDetailPage } from './features/auctions/RecordDetailPage';
 import { ChatPage } from './features/chat/ChatPage';
 import { ThreadPage } from './features/chat/ThreadPage';
 import { ConversationsProvider } from './features/conversations/ConversationsProvider';
+import { PortalPage } from './features/portal/PortalPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { ArtistRecordsPage } from './features/records/ArtistRecordsPage';
 import { RecordsArchiveProvider } from './features/records/RecordsArchiveProvider';
@@ -355,6 +356,18 @@ export function AppRoutes() {
             old panel does with a page it cannot open (:11815). */}
         <Route path="/admin/*" element={<AdminIndex />} />
       </Route>
+      {/* The no-login partner portal (Phase 14) — its own world, like the
+          desk but with no session guard at all: the token in the URL plus
+          the PIN is the door, verified server-side on every request. No
+          collector providers, no app shell, the LINK's theme. */}
+      <Route
+        path="/portal/:token"
+        element={
+          <Gate flag="galleryPortal">
+            <PortalPage />
+          </Gate>
+        }
+      />
       <Route path="/_design" element={<App />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
