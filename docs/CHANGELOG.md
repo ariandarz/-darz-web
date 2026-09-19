@@ -5,6 +5,19 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Exhibition Services, on its own, and one page to an issued document
+
+- **Its own section** (`/admin/exhibition-services`): one list — name, what it covers, price —
+  edited in place, with the programmes under it. The price list is no longer three tabs deep inside
+  Projects, and it is still the same rows every proposal is priced from.
+- **`/admin/issue`** replaces composing-then-a-modal-per-kind: pick the show (client, dates and
+  venue fill themselves) · proposal or invoice, reference numbered for you · services from the
+  library, price and description filled · quantity, price, discount, note, payment terms · the
+  document beside it as you type · one button that saves the package, renders the PDF and files it.
+- **Quantity** is new (G-PORT-16): it rides the document, where the client reads it, because the
+  service line has no field for it. The compose desk keeps the request, the package and the
+  document history, and hands off to the one page rather than growing a modal.
+
 ## 2026-09-19 — The four look-alike pairs are one service each (owner's ruling)
 
 - "Installation photography" / Exhibition Photo Coverage · "Video walkthrough / reel" / Video

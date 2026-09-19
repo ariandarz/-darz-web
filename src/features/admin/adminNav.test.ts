@@ -250,12 +250,14 @@ describe('the map itself — every registered tab is documented', () => {
 });
 
 describe('the map’s size, stated so a partial port cannot pass quietly', () => {
-  it('registers 14 groups and 55 tabs', () => {
+  it('registers 14 groups and 57 tabs', () => {
     // 14 groups: ADGROUPS' fifteen entries minus `more`, which is the
     // folded-group menu rather than a group of its own.
     expect(ADMIN_GROUPS.length).toBe(14);
-    // 53 group tabs + Dashboard + Chat, the two that belong to no group.
-    expect(allTabs().length).toBe(55);
+    // 55 group tabs + Dashboard + Chat, the two that belong to no group.
+    // 53 + the two Exhibition Services tabs the owner asked for on
+    // 2026-09-19 (the library, and the one-page issue flow).
+    expect(allTabs().length).toBe(57);
   });
 
   it('counts what is actually built, so progress cannot be overstated', () => {
@@ -268,6 +270,8 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'artists',
       'galleries',
       'sources',
+      'exhservices',
+      'issue',
       'market',
       'design',
       'docProposals',

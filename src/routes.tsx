@@ -41,6 +41,8 @@ import { PublishedPage } from './features/admin/PublishedPage';
 import { SaleDetailPage } from './features/admin/SaleDetailPage';
 import { SourceDetailPage } from './features/admin/SourceDetailPage';
 import { ExhibitionComposePage } from './features/admin/ExhibitionComposePage';
+import { ExhibitionServicesPage } from './features/admin/exhibitions/ExhibitionServicesPage';
+import { IssueDocumentPage } from './features/admin/exhibitions/IssueDocumentPage';
 import { SourcesPage } from './features/admin/SourcesPage';
 import { SalesPage } from './features/admin/SalesPage';
 import { ArtworkEditorPage } from './features/admin/ArtworkEditorPage';
@@ -306,6 +308,13 @@ export function AppRoutes() {
           path="/admin/sources/:id/exhibitions/:eventId"
           element={<ExhibitionComposePage />}
         />
+        {/* Exhibition Services — its own section (owner, 2026-09-19): the
+            price list, and the one page that turns a show into a proposal or
+            an invoice. `/admin/issue/:eventId` arrives with the show chosen,
+            which is how every "issue a document" link into it is built. */}
+        <Route path="/admin/exhibition-services" element={<ExhibitionServicesPage />} />
+        <Route path="/admin/issue" element={<IssueDocumentPage />} />
+        <Route path="/admin/issue/:eventId" element={<IssueDocumentPage />} />
         <Route path="/admin/sales" element={<SalesPage />} />
         <Route path="/admin/sales/:id" element={<SaleDetailPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />

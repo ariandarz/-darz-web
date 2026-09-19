@@ -12,10 +12,10 @@
  *       `approve: true` (the gate `set_published` requires);
  *   3 · PUBLISH to the portal — the switch the partner's Exhibitions tab
  *       reads;
- *   4 · ISSUE the documents — proposal / invoice with a one-click
- *       create → render (client-side PDF, the backend's own contract) →
- *       upload → confirm chain, the reference following doc-reference.js
- *       (per-series per-year, saved with the document forever).
+ *   4 · the DOCUMENTS already issued for this show — history and signing.
+ *       Issuing itself moved to its own page (`/admin/issue/:eventId`) on the
+ *       owner's instruction of 2026-09-19: one screen from choosing the show
+ *       to the filed PDF, instead of a modal on top of this one.
  *
  * `compose` REPLACES all lines server-side, so the editor always writes the
  * whole package — there is no per-line PATCH to drift against.
@@ -32,28 +32,20 @@ import type {
 } from '../../api/types';
 import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
 import {
-  DOC_SERIES,
-  SERIES_KINDS,
-  buildDocumentFields,
   draftFromCatalogue,
   lineTotals,
   money,
-  nextReference,
   seedLines,
   toLineInputs,
-  type BankDetails,
-  type ExhibitionDocKind,
   type LineDraft,
 } from './exhibitionForm';
 import { asCatalogueEntries, priceExhibitionServices, priceListSummary } from './priceList';
 import { choices, choiceLabel, fmtDate } from '../portal/portalForm';
 import './admin.css';
 
-const BANK_KEY = 'darz_desk_bank_details'; // per-device convenience; the record is Document.fields
-
 export function ExhibitionComposePage() {
   const { id: linkId = '', eventId = '' } = useParams();
-  const { galleryAdmin, documentsAdmin, projectsAdmin } = useApi();
+  const { galleryAdmin, projectsAdmin } = useApi();
   const options = useOptions();
   const navigate = useNavigate();
 
@@ -77,7 +69,6 @@ export function ExhibitionComposePage() {
   const [currency, setCurrency] = useState('');
   const [discount, setDiscount] = useState('');
   const [adminNote, setAdminNote] = useState('');
-  const [issuing, setIssuing] = useState<ExhibitionDocKind | null>(null);
   const [unpublishAsk, setUnpublishAsk] = useState(false);
 
   const currencies = choices(options, 'currency');
@@ -512,28 +503,11 @@ export function ExhibitionComposePage() {
         ev={ev}
         docs={docs}
         busy={busy}
-        onIssue={(kind) => setIssuing(kind)}
+        onIssue={() => navigate(`/admin/issue/${ev.id}`)}
         onChanged={() => void load()}
         act={act}
         galleryAdmin={galleryAdmin}
       />
-
-      {issuing && (
-        <IssueDocumentDialog
-          kind={issuing}
-          ev={ev}
-          partner={partner}
-          lines={lines}
-          docs={docs ?? []}
-          onClose={() => setIssuing(null)}
-          onDone={() => {
-            setIssuing(null);
-            void load();
-          }}
-          galleryAdmin={galleryAdmin}
-          documentsAdmin={documentsAdmin}
-        />
-      )}
 
       {unpublishAsk && (
         <ConfirmDialog
@@ -572,7 +546,7 @@ function DocumentsSection({
   ev: ExhibitionAdmin;
   docs: DocumentAdmin[] | null;
   busy: boolean;
-  onIssue: (kind: ExhibitionDocKind) => void;
+  onIssue: () => void;
   onChanged: () => void;
   act: ActFn;
   galleryAdmin: ReturnType<typeof useApi>['galleryAdmin'];
@@ -648,237 +622,16 @@ function DocumentsSection({
           );
         })}
 
+      {/* One way to issue, not two. Composing a package and issuing a document
+          used to be this same screen with a modal per document kind on top of
+          it; the owner asked for one page instead (2026-09-19), so issuing
+          lives at `/admin/issue/:eventId` and this section keeps the history.
+          That page saves the lines too, so nothing is lost by leaving here. */}
       <div className="ad-rowacts ad-exhacts">
-        <button
-          type="button"
-          className="ad-action"
-          disabled={busy}
-          onClick={() => onIssue('exhibition_proposal')}
-        >
-          Issue a proposal
-        </button>
-        <button
-          type="button"
-          className="ad-rowbtn"
-          disabled={busy}
-          onClick={() => onIssue('exhibition_invoice')}
-        >
-          Issue an invoice
+        <button type="button" className="ad-action" disabled={busy} onClick={onIssue}>
+          Issue a proposal or invoice →
         </button>
       </div>
     </section>
-  );
-}
-
-/**
- * The one-click issue chain: reference (doc-reference rule, prefilled from
- * the highest already saved), note/terms (+ bank block on invoices,
- * remembered per device), then create → render → upload → confirm without
- * further clicks. The document snapshot never re-derives (rule 1).
- */
-function IssueDocumentDialog({
-  kind,
-  ev,
-  partner,
-  lines,
-  docs,
-  onClose,
-  onDone,
-  galleryAdmin,
-  documentsAdmin,
-}: {
-  kind: ExhibitionDocKind;
-  ev: ExhibitionAdmin;
-  partner: string;
-  lines: LineDraft[];
-  docs: DocumentAdmin[];
-  onClose: () => void;
-  onDone: () => void;
-  galleryAdmin: ReturnType<typeof useApi>['galleryAdmin'];
-  documentsAdmin: ReturnType<typeof useApi>['documentsAdmin'];
-}) {
-  const series = DOC_SERIES[kind];
-  const year = new Date().getFullYear();
-  const [reference, setReference] = useState('');
-  const [note, setNote] = useState('');
-  const [terms, setTerms] = useState('');
-  // the bank block: per-device convenience, read once at mount (the RECORD
-  // is what lands in Document.fields)
-  const [bank, setBank] = useState<BankDetails>(() => {
-    if (kind !== 'exhibition_invoice') return { holder: '', bank: '', card: '', iban: '' };
-    try {
-      const parsed = JSON.parse(
-        localStorage.getItem(BANK_KEY) ?? '{}',
-      ) as Partial<BankDetails>;
-      return {
-        holder: parsed.holder ?? '',
-        bank: parsed.bank ?? '',
-        card: parsed.card ?? '',
-        iban: parsed.iban ?? '',
-      };
-    } catch {
-      return { holder: '', bank: '', card: '', iban: '' };
-    }
-  });
-  const [step, setStep] = useState<'form' | 'working' | 'error'>('form');
-  const [progress, setProgress] = useState('');
-  const [error, setError] = useState('');
-
-  // prefill the reference from EVERY stored document in this SERIES (rule 4:
-  // highest seen) — `SERIES_KINDS` names them, because the PRO series is
-  // shared with the project proposals (Phase 11c) and scanning one kind
-  // alone would hand out a number the other kind already used
-  useEffect(() => {
-    let alive = true;
-    const refOf = (d: DocumentAdmin) =>
-      ((d.fields ?? {}) as Record<string, unknown>).reference as string | undefined;
-    Promise.all(
-      (SERIES_KINDS[series.code] ?? [kind]).map((k) =>
-        documentsAdmin.documents({ kind: k, per_page: 200 }),
-      ),
-    ).then(
-      (pages) =>
-        alive &&
-        setReference(
-          nextReference(
-            pages.flatMap((p) => p.results.map(refOf)),
-            series.code,
-            year,
-          ),
-        ),
-      // the library being unreachable never blocks issuing — fall back to
-      // this event's own documents (a lower floor, still monotonic here)
-      () => alive && setReference(nextReference(docs.map(refOf), series.code, year)),
-    );
-    return () => {
-      alive = false;
-    };
-  }, [documentsAdmin, kind, series.code, year, docs]);
-
-  const issue = async () => {
-    setStep('working');
-    setError('');
-    try {
-      const fields = buildDocumentFields(kind, ev, partner, lines, {
-        reference,
-        note,
-        terms,
-        bank: kind === 'exhibition_invoice' ? bank : undefined,
-      });
-      setProgress('Creating the document…');
-      const doc = await galleryAdmin.createExhibitionDocument(ev.id, {
-        doc_type: kind,
-        title: `${ev.title} — ${kind === 'exhibition_proposal' ? 'Proposal' : 'Invoice'}`,
-        fields,
-      });
-      setProgress('Rendering the PDF…');
-      const { renderDocumentPdf } = await import('./pdf/renderPdf');
-      const blob = await renderDocumentPdf(kind, fields);
-      setProgress('Uploading…');
-      await galleryAdmin.uploadExhibitionDocumentPdf(ev.id, doc.id, blob, `${reference}.pdf`);
-      setProgress('Confirming (issuing)…');
-      await galleryAdmin.confirmExhibitionDocument(ev.id, doc.id);
-      if (kind === 'exhibition_invoice') {
-        try {
-          localStorage.setItem(BANK_KEY, JSON.stringify(bank));
-        } catch {
-          /* convenience only */
-        }
-      }
-      onDone();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'The issue chain failed.');
-      setStep('error');
-    }
-  };
-
-  return (
-    <div className="ad-modal">
-      <div className="ad-modalcard ad-issuecard">
-        <h3 className="ad-modaltitle">
-          {kind === 'exhibition_proposal' ? 'Issue the proposal' : 'Issue the invoice'}
-        </h3>
-        <p className="ad-cellsub">
-          Snapshot of the package as it stands —{' '}
-          {lines.filter((l) => l.status !== 'declined').length} line(s). Created, rendered and
-          confirmed in one go; publish the show so the partner sees it.
-        </p>
-
-        {step !== 'working' ? (
-          <>
-            <label className="ad-field">
-              <span>{series.label} reference</span>
-              <input value={reference} onChange={(e) => setReference(e.target.value)} />
-            </label>
-            <label className="ad-field">
-              <span>Note from Darz</span>
-              <textarea
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Optional — prints on the document"
-              />
-            </label>
-            <label className="ad-field">
-              <span>Terms</span>
-              <textarea
-                rows={2}
-                value={terms}
-                onChange={(e) => setTerms(e.target.value)}
-                placeholder="Optional"
-              />
-            </label>
-            {kind === 'exhibition_invoice' && (
-              <div className="ad-bankgrid">
-                <label className="ad-field">
-                  <span>Account holder</span>
-                  <input
-                    value={bank.holder}
-                    onChange={(e) => setBank({ ...bank, holder: e.target.value })}
-                  />
-                </label>
-                <label className="ad-field">
-                  <span>Bank</span>
-                  <input
-                    value={bank.bank}
-                    onChange={(e) => setBank({ ...bank, bank: e.target.value })}
-                  />
-                </label>
-                <label className="ad-field">
-                  <span>Card no.</span>
-                  <input
-                    value={bank.card}
-                    onChange={(e) => setBank({ ...bank, card: e.target.value })}
-                  />
-                </label>
-                <label className="ad-field">
-                  <span>Sheba (IBAN)</span>
-                  <input
-                    value={bank.iban}
-                    onChange={(e) => setBank({ ...bank, iban: e.target.value })}
-                  />
-                </label>
-              </div>
-            )}
-            {error && <DeskBanner>{error}</DeskBanner>}
-            <div className="ad-rowacts ad-exhacts">
-              <button
-                type="button"
-                className="ad-action"
-                onClick={() => void issue()}
-                disabled={!reference.trim()}
-              >
-                Create &amp; issue
-              </button>
-              <button type="button" className="ad-rowbtn" onClick={onClose}>
-                Cancel
-              </button>
-            </div>
-          </>
-        ) : (
-          <p className="dz-state">{progress}</p>
-        )}
-      </div>
-    </div>
   );
 }
