@@ -2185,3 +2185,1030 @@ a.ad-ghostbtn {
   color: var(--ink3);
   margin-top: 4px;
 }
+
+/* ---- Phase 11c: Projects (projCss, darz-studio.html:13454-13575) ---- */
+/* The old Projects group injected its own stylesheet, `projCss()` (:13454-
+   13577): a light palette declared as locals on `.dzp` (:13458) plus a
+   `html.dz-admindark .dzp` override (:13569-13571). Ported with the same
+   `.dzp-*` class names; the locals mapped onto this file's tokens —
+   `--w`→`--card`, `--soft`→`--soft`, `--soft2`→`--bg`, `--ink/--ink2/--ink3/
+   --hair` as-is, `--mag`→`--magenta`. The old `--hair2` was a DARKER hairline
+   (#DCDCDC; tokens.css's `--hair2` is the softer one), so it becomes `--hair`
+   for dashed borders and the rail line, and `--ink` for hover borders — the
+   file's own hover convention (`.ad-tile.is-link:hover`, `.ad-rowbtn:hover`).
+   Fonts: "Cormorant Garamond"→`--font-head`, "Space Mono"→`--font-mono`,
+   "Barlow"→`--sans` (tokens.css:66-71). The five status palettes are local
+   custom properties (`--dzp-*`) so pills, gates, tags and the rail share one
+   dark switch.
+   Not ported — the desk kit or the router replaces them: `.dzp-head/.sub`,
+   `.dzp-hacts`, `.dzp-new` (:13462-13466 → DeskPage/DeskAction), `.dzp-bar`
+   (:13478 → .ad-toolbar), the detail modal `.dzp-modalbg/.dzp-modal/.dzp-mx`
+   (:13513-13522 → the /admin/projects/:id route), `.dzp-mx3` (:13561, not in
+   the contract), `.dzp *{box-sizing}` (:13459 — base.css:8-15 is global). The
+   old `.dzp .num`/`.dzp .mut` (:13460-13461) are the standalone `.dzp-num`/
+   `.dzp-mut` the contract names; the old `.dzp-fl` field wrapper (:13535-
+   13537, money section :13802) is superseded by the contract's `.dzp-fl` =
+   the inline section label at :13793 — money fields sit inside `.dzp-form`,
+   and `.dzp-money input/select` keep the control recipe they had. */
+
+/* status palettes — light values from `.dzp` :13458; dark from :13569 below.
+   On `.dzp` as well as `.ad-page` so a body rendered outside DeskPage (the
+   client report window) still resolves them. */
+.ad-page,
+.dzp {
+  --dzp-wait: #8a8a8a;
+  --dzp-attn: #b23a5b;
+  --dzp-attnbg: #fbedf2;
+  --dzp-attndot: #e8005c;
+  --dzp-block: #e11d48;
+  --dzp-blockbg: #fcebee;
+  --dzp-done: #178048;
+  --dzp-donebg: #eaf5ee;
+  --dzp-donedot: #1f9d57;
+}
+
+/* the wrapper every Projects page body sits in (:13458) */
+.dzp {
+  font-family: var(--sans);
+  color: var(--ink2);
+}
+/* :13460 `.dzp .num` */
+.dzp-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+/* :13461 `.dzp .mut, .dzp-mut` */
+.dzp-mut {
+  font-size: 12px;
+  color: var(--ink3);
+}
+
+/* segment (:13467-13469) */
+.dzp-seg {
+  display: inline-flex;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card);
+}
+.dzp-seg button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border: 0;
+  border-right: 1px solid var(--hair);
+  background: transparent;
+  color: var(--ink2);
+  cursor: pointer;
+}
+.dzp-seg button:last-child {
+  border-right: 0;
+}
+.dzp-seg button.on {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* dashboard cards (:13470-13477). `.dzp-att` is a <button> in the old markup
+   (:13612), so it takes the font/colour reset the old left to the UA. */
+.dzp-cards6 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.dzp-att {
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 14px 15px;
+  cursor: pointer;
+  text-align: left;
+  display: block;
+  width: 100%;
+}
+.dzp-att:hover {
+  border-color: var(--ink);
+}
+.dzp-att .n {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.dzp-att .k {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 3px;
+}
+.dzp-att .d {
+  font-size: 11px;
+  color: var(--ink2);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.dzp-att.a .n {
+  color: var(--dzp-attn);
+}
+.dzp-att.b .n {
+  color: var(--dzp-block);
+}
+.dzp-att.g .n {
+  color: var(--dzp-done);
+}
+.dzp-att .mlist {
+  margin-top: 7px;
+  font-size: 11px;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.dzp-att .mlist b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* list toolbar controls (:13479-13481) */
+.dzp-search {
+  flex: 1;
+  min-width: 150px;
+  font-size: 16px;
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  padding: 11px 14px;
+  background: var(--card);
+  color: var(--ink);
+}
+.dzp-sel {
+  font-size: 12.5px;
+  color: var(--ink2);
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: var(--card);
+  cursor: pointer;
+  max-width: 100%;
+}
+.dzp-tog {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 9px 13px;
+  background: var(--card);
+  color: var(--ink2);
+  cursor: pointer;
+}
+.dzp-tog.on {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+/* empty state + list rows (:13482-13491) */
+.dzp-empty {
+  border: 1px dashed var(--hair);
+  border-radius: 14px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink3);
+  font-size: 13px;
+}
+.dzp-list {
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card);
+}
+.dzp-row {
+  display: grid;
+  grid-template-columns: 1.7fr 1.1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--hair);
+  cursor: pointer;
+}
+.dzp-row:last-child {
+  border-bottom: 0;
+}
+.dzp-row:hover {
+  background: var(--soft);
+}
+.dzp-who .t {
+  font-family: var(--font-head);
+  font-size: 17px;
+  color: var(--ink);
+  line-height: 1.12;
+}
+.dzp-who .a {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.dzp-who .no {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--ink3);
+}
+.dzp-mid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dzp-chip {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--ink2);
+  display: inline-block;
+}
+.dzp-end {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  text-align: right;
+}
+.dzp-nx {
+  font-size: 10.5px;
+  color: var(--ink3);
+}
+.dzp-nx b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* status pill (:13492-13498) — the wait/active literals are the old ones;
+   their dark values sit in the dark block below, like `.ad-stpill` */
+.dzp-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.dzp-pill::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.dzp-pill.wait {
+  background: var(--bg);
+  color: #5f5f5f;
+}
+.dzp-pill.wait::before {
+  background: var(--dzp-wait);
+}
+.dzp-pill.active {
+  background: #f1f1f1;
+  color: var(--ink);
+}
+.dzp-pill.active::before {
+  background: var(--ink);
+}
+.dzp-pill.attn {
+  background: var(--dzp-attnbg);
+  color: var(--dzp-attn);
+}
+.dzp-pill.attn::before {
+  background: var(--dzp-attndot);
+}
+.dzp-pill.block {
+  background: var(--dzp-blockbg);
+  color: var(--dzp-block);
+}
+.dzp-pill.block::before {
+  background: var(--dzp-block);
+}
+.dzp-pill.done {
+  background: var(--dzp-donebg);
+  color: var(--dzp-done);
+}
+.dzp-pill.done::before {
+  background: var(--dzp-donedot);
+}
+
+/* pipeline kanban (:13499-13508) */
+.dzp-kan {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.dzp-kcol {
+  flex: 0 0 208px;
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 11px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+.dzp-kh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  background: var(--soft);
+}
+.dzp-kh .nm {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.dzp-kh .ct {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+}
+.dzp-kcard {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 9px;
+  cursor: pointer;
+}
+.dzp-kcard:hover {
+  border-color: var(--ink);
+}
+.dzp-kcard.attn {
+  border-left: 2px solid var(--dzp-attndot);
+}
+.dzp-kcard.block {
+  border-left: 2px solid var(--dzp-block);
+}
+.dzp-kcard .kt {
+  font-family: var(--font-head);
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.dzp-kcard .ka {
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.dzp-kmove {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+.dzp-kmove button {
+  flex: 1;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  border-radius: 7px;
+  padding: 5px;
+  cursor: pointer;
+  color: var(--ink2);
+}
+.dzp-kmore {
+  font-size: 10.5px;
+  color: var(--ink3);
+  text-align: center;
+  padding: 6px 0;
+}
+
+/* placeholder card (:13509-13511) */
+.dzp-ph {
+  border: 1px dashed var(--hair);
+  border-radius: 16px;
+  padding: 44px 24px;
+  text-align: center;
+  background: var(--card);
+}
+.dzp-ph h2 {
+  font-family: var(--font-head);
+  font-size: 24px;
+  color: var(--ink);
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.dzp-ph p {
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin: 0 auto;
+  max-width: 420px;
+  line-height: 1.55;
+}
+
+/* stage rail (:13523-13530) — the active ring was rgba(232,0,92,.14), i.e.
+   the magenta at 14% */
+.dzp-rail {
+  display: flex;
+  align-items: flex-start;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding: 18px 2px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.dzp-st {
+  flex: 0 0 74px;
+  text-align: center;
+  position: relative;
+}
+.dzp-st .rd {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  margin: 0 auto 8px;
+  position: relative;
+  z-index: 2;
+  border: 2px solid var(--soft);
+  background: var(--card);
+}
+.dzp-st::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--hair);
+  z-index: 1;
+}
+.dzp-st:first-child::before {
+  display: none;
+}
+.dzp-st .l {
+  font-size: 9px;
+  color: var(--ink3);
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0 2px;
+}
+.dzp-st.done .rd {
+  background: var(--dzp-donedot);
+  border-color: var(--dzp-donedot);
+}
+.dzp-st.done::before {
+  background: var(--dzp-donedot);
+}
+.dzp-st.active .rd {
+  background: var(--ink);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--magenta) 14%, transparent);
+}
+.dzp-st.active .l {
+  color: var(--ink);
+  font-weight: 700;
+}
+.dzp-st.active::before {
+  background: linear-gradient(90deg, var(--dzp-donedot), var(--ink));
+}
+.dzp-st.wait .rd {
+  border-color: var(--dzp-wait);
+}
+
+/* collapsible sections (:13531-13534) */
+.dzp-sec {
+  border-top: 1px solid var(--hair);
+}
+.dzp-sec:first-of-type {
+  border-top: 0;
+}
+.dzp-secsum {
+  list-style: none;
+  cursor: pointer;
+  padding: 13px 2px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dzp-secsum::-webkit-details-marker {
+  display: none;
+}
+.dzp-secsum::before {
+  content: '▸';
+  color: var(--ink3);
+  font-size: 10px;
+}
+details[open] > .dzp-secsum::before {
+  content: '▾';
+}
+.dzp-secbody {
+  padding: 2px 2px 16px;
+}
+
+/* form grid (:13535-13538). `.dzp-money input/select` were `.dzp-fl input/
+   select` in the old rule; they keep the recipe under their own name. */
+.dzp-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+.dzp-form label {
+  font-size: 11px;
+  color: var(--ink2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dzp-form label.full {
+  grid-column: 1 / -1;
+}
+/* `.dzp-line` row controls (deliverables, payments, links — :13789/:13803/
+   :13811) were bare UA inputs in the old modal, readable only through its
+   `color-scheme`; here they take the form recipe so a row reads like the
+   field above it in both themes. Checkboxes keep their own look (:13546). */
+.dzp-form input,
+.dzp-form select,
+.dzp-money input,
+.dzp-money select,
+.dzp-line input:not([type='checkbox']),
+.dzp-line select,
+.dzp-ta {
+  font: inherit;
+  font-size: 16px;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: var(--card);
+  color: var(--ink);
+}
+/* :13537 `.dzp-form .fl`; `.dzp-fl` is the same label repeated inline as a
+   section heading in the old detail body (:13793, with its 6px gap) */
+.dzp-form .fl,
+.dzp-fl {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.dzp-fl {
+  margin-bottom: 6px;
+}
+.dzp-ta {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+}
+
+/* money field, money rows, line rows (:13539-13541) */
+.dzp-money {
+  display: flex;
+  gap: 6px;
+}
+.dzp-money input {
+  flex: 1;
+  min-width: 0;
+}
+.dzp-money select {
+  flex: 0 0 auto;
+  width: 92px;
+}
+.dzp-mrow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: 12px;
+}
+.dzp-mrow:last-child {
+  border-bottom: 0;
+}
+.dzp-mrow b {
+  color: var(--ink);
+  font-weight: 600;
+  text-align: right;
+}
+.dzp-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.dzp-line:last-child {
+  border-bottom: 0;
+}
+.dzp-line input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* buttons, actions, gate, checklist (:13542-13546) */
+.dzp-btn {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dzp-btn:hover {
+  border-color: var(--ink);
+}
+.dzp-btn.pri {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.dzp-btn.gho {
+  background: transparent;
+}
+.dzp-btn.dgr {
+  color: var(--dzp-block);
+}
+.dzp-btn.sm {
+  font-size: 10.5px;
+  padding: 6px 10px;
+}
+.dzp-acts {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  align-items: center;
+}
+.dzp-gate {
+  background: var(--dzp-attnbg);
+  color: var(--dzp-attn);
+  border: 1px solid var(--dzp-attndot);
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.dzp-chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--ink2);
+}
+.dzp-chk input {
+  width: 16px;
+  height: 16px;
+}
+
+/* packages (:13548-13554) */
+.dzp-pkgs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.dzp-pkg {
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dzp-pkg .pn {
+  font-family: var(--font-head);
+  font-size: 19px;
+  color: var(--ink);
+  line-height: 1.12;
+}
+.dzp-pkg .pp {
+  font-size: 11.5px;
+  color: var(--ink3);
+  line-height: 1.45;
+}
+.dzp-pkg .pl {
+  font-size: 11.5px;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.dzp-pkg .pl b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.dzp-pkg .pm {
+  font-size: 11px;
+  color: var(--ink2);
+  border-top: 1px solid var(--hair);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+.dzp-pkg .pm b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.dzp-cnt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.dzp-cnt span {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 11px;
+  background: var(--bg);
+  color: var(--ink2);
+}
+
+/* panel + service groups (:13555-13556) */
+.dzp-panel {
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 4px 15px;
+  margin-top: 14px;
+}
+.dzp-svcgrp {
+  border-top: 1px solid var(--hair);
+  padding: 10px 0;
+}
+.dzp-svcgrp:first-child {
+  border-top: 0;
+}
+.dzp-svcgrp .gh {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 6px;
+}
+
+/* calculator (:13557-13560) */
+.dzp-calc {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  align-items: start;
+}
+.dzp-res {
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: var(--soft);
+  padding: 15px;
+  position: sticky;
+  top: 10px;
+}
+.dzp-res .rr {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: 12px;
+}
+.dzp-res .rr:last-child {
+  border-bottom: 0;
+}
+.dzp-res .rr b {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dzp-res .big b {
+  font-size: 16px;
+}
+.dzp-res .rr.hi {
+  background: var(--bg);
+  margin: 4px -8px;
+  padding: 8px;
+  border-radius: 8px;
+  border-bottom: 0;
+}
+
+/* partners: role cards, matrix, the Darz note (:13562-13565) */
+.dzp-role {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.dzp-role.warn {
+  border-color: var(--dzp-attndot);
+  box-shadow: 0 0 0 1px var(--dzp-attndot) inset;
+}
+.dzp-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.dzp-matrix th,
+.dzp-matrix td {
+  border: 1px solid var(--hair);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.dzp-matrix th {
+  background: var(--bg);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.dzp-mwrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+}
+.dzp-darz {
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 13px 15px;
+  margin-top: 12px;
+}
+.dzp-darz .h {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 6px;
+}
+.dzp-darz p {
+  font-size: 12px;
+  color: var(--ink2);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* proposal scope blocks + tags (:13566-13567) */
+.dzp-scope {
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+}
+.dzp-scope .sh {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 4px;
+}
+.dzp-scope .si {
+  font-size: 11.5px;
+  color: var(--ink2);
+  line-height: 1.55;
+}
+.dzp-scope .si b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.dzp-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9px;
+  margin-left: 5px;
+}
+.dzp-tag.inc {
+  background: var(--dzp-donebg);
+  color: var(--dzp-done);
+}
+.dzp-tag.add {
+  background: var(--dzp-attnbg);
+  color: var(--dzp-attn);
+}
+.dzp-tag.exc {
+  background: var(--bg);
+  color: var(--ink3);
+}
+
+/* dark (:13569-13571) — the old `html.dz-admindark .dzp` override: the six
+   palette values that change, `color-scheme: dark` for the native controls,
+   and the charcoal primary/segment/toggle/active-pill + the wait-pill/chip
+   greys. Written under the file's own two dark selectors (:1585-1616, as the
+   contract asks) PLUS `html.dz-bw`, the class ThemeController actually
+   toggles (src/design/ThemeController.ts:95) and every other stylesheet in
+   this repo keys its dark rules on. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ad-page,
+  :root:not([data-theme='light']) .dzp {
+    --dzp-attn: #e79ab0;
+    --dzp-attnbg: #2a1c22;
+    --dzp-block: #f0879a;
+    --dzp-blockbg: #2c1a1e;
+    --dzp-done: #6fcf97;
+    --dzp-donebg: #182a20;
+  }
+  :root:not([data-theme='light']) .dzp {
+    color-scheme: dark;
+  }
+  :root:not([data-theme='light']) .dzp-btn.pri,
+  :root:not([data-theme='light']) .dzp-seg button.on,
+  :root:not([data-theme='light']) .dzp-tog.on,
+  :root:not([data-theme='light']) .dzp-pill.active {
+    background: #26262e;
+    border-color: #3a3a44;
+    color: #f1efe9;
+  }
+  :root:not([data-theme='light']) .dzp-pill.wait,
+  :root:not([data-theme='light']) .dzp-chip {
+    background: #212129;
+    color: #b0aca2;
+  }
+}
+:root[data-theme='dark'] .ad-page,
+:root[data-theme='dark'] .dzp,
+html.dz-bw .ad-page,
+html.dz-bw .dzp {
+  --dzp-attn: #e79ab0;
+  --dzp-attnbg: #2a1c22;
+  --dzp-block: #f0879a;
+  --dzp-blockbg: #2c1a1e;
+  --dzp-done: #6fcf97;
+  --dzp-donebg: #182a20;
+}
+:root[data-theme='dark'] .dzp,
+html.dz-bw .dzp {
+  color-scheme: dark;
+}
+:root[data-theme='dark'] .dzp-btn.pri,
+:root[data-theme='dark'] .dzp-seg button.on,
+:root[data-theme='dark'] .dzp-tog.on,
+:root[data-theme='dark'] .dzp-pill.active,
+html.dz-bw .dzp-btn.pri,
+html.dz-bw .dzp-seg button.on,
+html.dz-bw .dzp-tog.on,
+html.dz-bw .dzp-pill.active {
+  background: #26262e;
+  border-color: #3a3a44;
+  color: #f1efe9;
+}
+:root[data-theme='dark'] .dzp-pill.wait,
+:root[data-theme='dark'] .dzp-chip,
+html.dz-bw .dzp-pill.wait,
+html.dz-bw .dzp-chip {
+  background: #212129;
+  color: #b0aca2;
+}
+
+/* phones (:13572) — minus the `.dzp-head h1` and `.dzp-modal*` entries, whose
+   elements are not ported */
+@media (max-width: 720px) {
+  .dzp-cards6 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dzp-row {
+    grid-template-columns: 1fr;
+  }
+  .dzp-mid,
+  .dzp-end {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .dzp-form {
+    grid-template-columns: 1fr;
+  }
+  /* v992 · iOS focus-zoom guard (:13573-13574) — every Projects form control
+     is ≥16px on phones so tapping a field never zooms the layout */
+  .dzp input,
+  .dzp select,
+  .dzp textarea,
+  .dzp-sel,
+  .dzp-search,
+  .dzp-tog,
+  .dzp-money input,
+  .dzp-money select,
+  .dzp-line input,
+  .dzp-line select {
+    font-size: 16px;
+  }
+}

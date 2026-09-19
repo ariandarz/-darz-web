@@ -193,6 +193,11 @@ export interface DocumentPdfFields {
   note?: string;
   terms?: string;
   bank?: { holder?: string; bank?: string; card?: string; iban?: string };
+  /** The two exhibition-specific headings, overridable by a document that
+   * is not about a show — the project proposal (Phase 11c) reads "Proposed
+   * for this project" / "From the client". Absent = the exhibition wording. */
+  lines_label?: string;
+  counterparty_label?: string;
 }
 
 const SYM: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', TMN: 'T ', T: 'T ' };
@@ -269,7 +274,8 @@ export function DarzDocument({
         )}
 
         <Text style={st.secLbl}>
-          {invoice ? 'Exhibition services' : 'Proposed for this exhibition'}
+          {fields.lines_label ??
+            (invoice ? 'Exhibition services' : 'Proposed for this exhibition')}
         </Text>
         {lines.map((l, i) => (
           <View style={st.line} key={i} wrap={false}>
@@ -332,7 +338,7 @@ export function DarzDocument({
 
         <View style={st.sigRow} wrap={false}>
           <View style={st.sigCol}>
-            <Text style={st.sigHead}>From the gallery</Text>
+            <Text style={st.sigHead}>{fields.counterparty_label ?? 'From the gallery'}</Text>
             <View style={st.sigLine} />
             <Text style={st.sigLbl}>Name</Text>
             <View style={st.sigLine} />
