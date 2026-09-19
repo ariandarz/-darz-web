@@ -335,7 +335,13 @@ function Shell({
               key={id}
               type="button"
               className={section === id ? 'on' : ''}
-              onClick={() => setSection(id)}
+              onClick={() => {
+                setSection(id);
+                // opening Messages refetches the state — a desk reply sent
+                // mid-session must show without a page reload (Exhibitions
+                // forces its own fetch the same way)
+                if (id === 'messages') void session.reload();
+              }}
             >
               {label}
               {dot && <span className="dot" />}

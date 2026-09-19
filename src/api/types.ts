@@ -758,3 +758,64 @@ export interface PortalExhibitionInput {
   gallery_note?: string;
   project?: string;
 }
+
+/** Admin tier of one exhibition (`ExhibitionEventSerializer`) — the portal's
+ * trimmed `PortalExhibition` plus the admin-owned fields. */
+export interface ExhibitionAdmin {
+  id: string;
+  link: string;
+  title: string;
+  event_date: string;
+  venue: string;
+  artists: string;
+  note: string;
+  project: string;
+  gallery_selected: string[];
+  gallery_note: string;
+  request_status: 'draft' | 'requested' | 'approved' | 'rejected';
+  currency: string;
+  discount: string;
+  admin_note: string;
+  published: boolean;
+  gallery_updated_at: string | null;
+  admin_updated_at: string | null;
+  created_by: string | null;
+  service_lines: PortalServiceLine[];
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One composed line (`ExhibitionServiceLineInputSerializer`) — `compose`
+ * REPLACES the whole package with these. */
+export interface ExhibitionLineInput {
+  service_key: string;
+  title?: string;
+  description?: string;
+  price?: string | null;
+  currency?: string;
+  status?: 'proposed' | 'confirmed' | 'declined' | 'delivered';
+  admin_note?: string;
+  position?: number;
+}
+
+/** Admin-owned PATCH fields (`ExhibitionAdminUpdateSerializer`). */
+export interface ExhibitionAdminPatch {
+  title?: string;
+  event_date?: string;
+  venue?: string;
+  artists?: string;
+  project?: string;
+  currency?: string;
+  discount?: string;
+  admin_note?: string;
+  request_status?: 'draft' | 'requested' | 'approved' | 'rejected';
+}
+
+export interface ExhibitionQuery {
+  link?: string;
+  request_status?: string;
+  published?: 'true' | 'false';
+  page?: number;
+  per_page?: number;
+}

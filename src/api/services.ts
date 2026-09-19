@@ -84,6 +84,10 @@ import type {
   PortalExhibition,
   PortalExhibitionInput,
   PortalCatalogueEntry,
+  ExhibitionAdmin,
+  ExhibitionAdminPatch,
+  ExhibitionLineInput,
+  ExhibitionQuery,
 } from './types';
 import type { PortalClient } from './PortalClient';
 
@@ -853,6 +857,86 @@ export class GalleryAdminService extends ResourceService {
   }
   rejectUpdate(id: string, note = '') {
     return this.create<GalleryUpdateAdmin>(`/updates/${id}/reject/`, { note });
+  }
+
+  /** The link's Q&A thread — the admin side of the portal's Messages tab.
+   * Chronological (`GalleryMessage.Meta.ordering = created_at`). */
+  linkMessages(linkId: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<PortalMessage>(
+      `/links/${linkId}/messages/`,
+      query as RequestOptions['query'],
+    );
+  }
+  sendLinkMessage(linkId: string, body: string) {
+    return this.create<PortalMessage>(`/links/${linkId}/messages/`, { body });
+  }
+
+  // --- Exhibition Services (Phase 12-A, the desk half) ----------------------
+
+  exhibitions(query: ExhibitionQuery = {}) {
+    return this.list<ExhibitionAdmin>('/exhibitions/', query as RequestOptions['query']);
+  }
+  exhibition(id: string) {
+    return this.retrieve<ExhibitionAdmin>(`/exhibitions/${id}/`);
+  }
+  createExhibitionForLink(linkId: string, body: PortalExhibitionInput) {
+    return this.create<ExhibitionAdmin>(`/links/${linkId}/exhibitions/`, body);
+  }
+  updateExhibition(id: string, body: ExhibitionAdminPatch) {
+    return this.client.send<ExhibitionAdmin>('PATCH', `${this.basePath}/exhibitions/${id}/`, {
+      body,
+    });
+  }
+  deleteExhibition(id: string) {
+    return this.remove(`/exhibitions/${id}/`);
+  }
+  /** REPLACES the whole priced package (`ExhibitionEventService.compose` —
+   * existing lines are soft-deleted first); `approve: true` also flips
+   * request_status to approved, the gate `set_published` requires. */
+  composeExhibition(
+    id: string,
+    body: {
+      lines: ExhibitionLineInput[];
+      approve?: boolean;
+      currency?: string;
+      discount?: string;
+      admin_note?: string;
+    },
+  ) {
+    return this.create<ExhibitionAdmin>(`/exhibitions/${id}/compose/`, body);
+  }
+  publishExhibition(id: string, published: boolean) {
+    return this.create<ExhibitionAdmin>(`/exhibitions/${id}/publish/`, { published });
+  }
+
+  exhibitionDocuments(id: string) {
+    return this.list<DocumentAdmin>(`/exhibitions/${id}/documents/`);
+  }
+  createExhibitionDocument(
+    id: string,
+    body: {
+      doc_type: 'exhibition_proposal' | 'exhibition_invoice';
+      title?: string;
+      fields?: Record<string, unknown>;
+    },
+  ) {
+    return this.create<DocumentAdmin>(`/exhibitions/${id}/documents/`, body);
+  }
+  /** The backend NEVER renders document visuals — the client renders the PDF
+   * and uploads it here (the Document model's own words). */
+  uploadExhibitionDocumentPdf(id: string, documentId: string, file: Blob, filename: string) {
+    const form = new FormData();
+    form.append('file', file, filename);
+    return this.create<DocumentAdmin>(
+      `/exhibitions/${id}/documents/${documentId}/upload/`,
+      form,
+    );
+  }
+  confirmExhibitionDocument(id: string, documentId: string) {
+    return this.create<DocumentAdmin>(`/exhibitions/${id}/documents/${documentId}/confirm/`);
+  }
+  signExhibitionDocument(id: string, documentId: string) {
+    return this.create<DocumentAdmin>(`/exhibitions/${id}/documents/${documentId}/sign/`);
   }
 }
 
