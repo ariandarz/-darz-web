@@ -25,8 +25,10 @@ test('a team session signs in and lands on the Dashboard', async ({ page }) => {
   await page.waitForURL('**/admin');
   // the desk renders the canned summary
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-  // the shell's two-tier nav is up (group tabs present)
-  await expect(page.locator('.ad-tabs')).toBeVisible();
+  // the shell's two-tier nav is up (group tabs present). The generous
+  // timeout is deliberate: one CI run found the Dashboard heading before
+  // the nav — the runner is slow enough to catch the shell mid-paint.
+  await expect(page.locator('.ad-tabs')).toBeVisible({ timeout: 15000 });
 });
 
 test('a desk renders its empty state against an empty backend', async ({ page }) => {

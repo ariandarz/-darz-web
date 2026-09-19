@@ -73,3 +73,13 @@ jobs:
 
       - name: E2E smoke (stub tier)
         run: npm run e2e
+
+      # a red e2e run must explain itself — Playwright's per-failure context
+      # (error-context.md, traces) is unreadable otherwise
+      - name: Upload failure context
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure-context
+          path: test-results/
+          if-no-files-found: ignore
