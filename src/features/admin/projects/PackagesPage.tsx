@@ -790,14 +790,21 @@ function PackageCard({
           </span>
         ))}
       </div>
-      {/* :13911 — owner only, in the default currency */}
-      {canMoney && (
-        <div className="pm">
-          Cost <b>{projMoney(it.internalCost + it.externalCost, cur)}</b> · Min{' '}
-          <b>{projMoney(it.minFee, cur)}</b> · Rec <b>{projMoney(it.recFee, cur)}</b> · Margin{' '}
-          <b>{it.targetMargin}%</b>
-        </div>
-      )}
+      {/* :13911 — owner only, in the default currency. A template with no
+          figures at all (every standard programme starts that way: Darz
+          quotes them) prints no money line rather than four zeroes under a
+          currency it was never priced in — the desk's default is not the
+          catalogue's, and "0 USD" on a Toman catalogue reads as a claim. */}
+      {canMoney &&
+        (it.internalCost || it.externalCost || it.minFee || it.recFee ? (
+          <div className="pm">
+            Cost <b>{projMoney(it.internalCost + it.externalCost, cur)}</b> · Min{' '}
+            <b>{projMoney(it.minFee, cur)}</b> · Rec <b>{projMoney(it.recFee, cur)}</b> ·
+            Margin <b>{it.targetMargin}%</b>
+          </div>
+        ) : (
+          <div className="pm">No fee set — quoted per show.</div>
+        ))}
       {/* :13916 — `DZProjects.proposal(pkgId)` previewed the bare template;
           here a proposal issues from a project's record, so Proposal opens
           the same pick as Apply and the note under it says why */}
@@ -1024,6 +1031,12 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
   // `choiceLabel` falls back to the code for a currency this workspace has no
   // option for — which is exactly the case the second note below describes
   const currencyWord = (c: string) => choiceLabel(currencies, c);
+  // “Iranian Toman (TMN)”, or the bare code when the served list carries no
+  // label of its own — so the sentence never reads “TMN (TMN)”
+  const currencyName = (c: string) => {
+    const word = currencyWord(c);
+    return word && word !== c ? `${word} (${c})` : c;
+  };
   const seedCurrency = currencies.some((c) => c.value === STANDARD_CURRENCY)
     ? STANDARD_CURRENCY
     : defaultCurrency(options) || STANDARD_CURRENCY;
@@ -1162,16 +1175,16 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
           decides, and this only says which way it went */}
       {seedCurrency === STANDARD_CURRENCY ? (
         <p className="dzp-mut" role="note">
-          The lines are added in {currencyWord(STANDARD_CURRENCY)} ({STANDARD_CURRENCY}) —
-          Darz’s own prices, in the currency Iranian galleries are quoted in. International
-          galleries come later, in USD or EUR chosen at the time; nothing here decides that.
+          The lines are added in {currencyName(STANDARD_CURRENCY)} — Darz’s own prices, in the
+          currency Iranian galleries are quoted in. International galleries come later, in USD
+          or EUR chosen at the time; nothing here decides that.
         </p>
       ) : (
         <p className="dzp-mut" role="note">
           These are Toman prices and this workspace does not offer {STANDARD_CURRENCY} — the
-          lines are added in {currencyWord(seedCurrency)} at the same numbers, so each one
-          reads as {seedCurrency} until you reprice it. Add {STANDARD_CURRENCY} to the currency
-          options first if that is not what you want.
+          lines are added in {currencyName(seedCurrency)} at the same numbers, so a Toman
+          figure reads as {seedCurrency} until you reprice it. Add {STANDARD_CURRENCY} to the
+          currency options first if that is not what you want.
         </p>
       )}
       {/* the numbers, stated before the run rather than discovered after it */}
@@ -1179,9 +1192,9 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
         <p className="dzp-mut" role="note">
           {STANDARD_SET_COUNTS.unpriced} of the {STANDARD_SET_COUNTS.services} service lines
           arrive unpriced — the coverage work Darz quotes per show, and Darz Listing, which is
-          on request. They are written as 0 because the catalogue has no “on request”: a 0 here
-          means not priced yet, not free. The other {priced} carry the real exhibition-service
-          prices the gallery portal already quotes.
+          on request. The catalogue has no “on request”, so they are written as 0: not priced
+          yet, never free, and the calculator quotes them at 0 until you price them. The other{' '}
+          {priced} carry the real exhibition-service prices the gallery portal already quotes.
         </p>
       )}
       {/* no internal cost exists for these, and the calculator prices from this
