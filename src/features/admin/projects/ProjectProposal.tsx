@@ -23,6 +23,17 @@
  *    carries no line prices, no subtotal and no total, and the shared
  *    `documentPdf` drops its totals block when the total is undefined, so
  *    the client-facing PDF shows the scope with no money on it;
+ *  - the proposal's CURRENCY is a choice on the issue card, its options the
+ *    backend's (`currency` on `GET /api/options/`), defaulting to the one
+ *    the project's package lines are actually priced in — the catalogue's,
+ *    which for Darz's real services is Toman (`standardSet.ts`) — and
+ *    falling back to the desk default. Iranian galleries are quoted in
+ *    Toman; international ones are a later phase, in USD or EUR chosen at
+ *    the time. Pick a currency the lines are NOT priced in and no rate is
+ *    invented: the document goes out with its line prices open ("On
+ *    confirmation") and no totals — the same honest shape as the
+ *    non-priced version above — and the card says which currency the lines
+ *    carry and why the prices were left open;
  *  - the card's sentence (:13854) still says "preview and share"; a line
  *    under it says neither exists here — issuing confirms the PDF at once;
  *  - the documents list has no `ref` filter (only `kind`), so the card walks
@@ -39,7 +50,13 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useApi, useOptions } from '../../../api/hooks';
-import type { Choice, DocumentAdmin, ProjectAdmin } from '../../../api/types';
+import type {
+  Choice,
+  DocumentAdmin,
+  PackageTemplateAdmin,
+  ProjectAdmin,
+  ServiceCatalogItemAdmin,
+} from '../../../api/types';
 import { DeskBanner } from '../kit';
 import { nextReference } from '../exhibitionForm';
 import type { DocumentPdfFields } from '../pdf/renderPdf';
@@ -52,6 +69,7 @@ import {
   defaultCurrency,
   fmtDate,
   walkPages,
+  walkServices,
 } from './projectForm';
 import '../admin.css';
 
@@ -72,6 +90,75 @@ function refOf(d: DocumentAdmin): string | undefined {
  * "Final" for a confirmed one. */
 function statusWord(list: Choice[], d: DocumentAdmin): string {
   return STATUS_WORDS[d.status] ?? choiceLabel(list, d.status);
+}
+
+/**
+ * Every currency the package's lines are ACTUALLY priced in, in line order,
+ * deduped. A line whose service is gone, or whose catalogue row carries no
+ * currency of its own, contributes none — the calculator reads them the same
+ * way (`ProjectsCalculatorPage.tsx:153-161`). Usually one entry: the whole
+ * seeded catalogue is Toman (`standardSet.ts`).
+ */
+function lineCurrencies(
+  pkg: Pick<PackageTemplateAdmin, 'lines'>,
+  catalog: Array<Pick<ServiceCatalogItemAdmin, 'id' | 'currency'>>,
+): string[] {
+  const out: string[] = [];
+  for (const l of asPackageLines(pkg.lines)) {
+    const c = catalog.find((s) => s.id === l.svcId)?.currency;
+    if (c && !out.includes(c)) out.push(c);
+  }
+  return out;
+}
+
+/** The catalogue's prices can go onto the document only when every priced
+ * line already agrees with the chosen currency — this app holds no exchange
+ * rate and will not invent one. Lines with no currency of their own have
+ * nothing to disagree with, so they carry as before. */
+function carriesCataloguePrices(lineCurs: string[], chosen: string): boolean {
+  return lineCurs.length === 0 || (lineCurs.length === 1 && lineCurs[0] === chosen);
+}
+
+/** The snapshot with its money taken off: no line price (the shared renderer
+ * prints "On confirmation" for an empty one, `documentPdf.tsx:287-289`) and
+ * no totals block at all (it drops for an undefined total, :294) — the old
+ * "calm non-priced version" (:14028). */
+function stripPrices(fields: DocumentPdfFields): void {
+  fields.lines = (fields.lines ?? []).map((l) => ({ ...l, price: '' }));
+  delete fields.subtotal;
+  delete fields.discount;
+  delete fields.total;
+}
+
+/** The sentence under the choice: which currency the package's lines are
+ * priced in — so the choice is informed — and, when the chosen one is not
+ * that, the plain reason the document goes out with its prices left open. */
+function currencyNote(a: {
+  hasPackage: boolean;
+  reading: boolean;
+  error: string;
+  lineCurs: string[];
+  chosen: string;
+  canMoney: boolean;
+  /** the options' label for a code, falling back to the code itself */
+  word: (c: string) => string;
+}): string {
+  const { word } = a;
+  if (!a.hasPackage)
+    return 'No package is applied to this project, so there are no catalogue prices to carry.';
+  if (a.error)
+    return `The package’s prices could not be read here (${a.error}) — choose the currency yourself. Issuing reads them again, and still leaves the line prices open if they are not in ${word(a.chosen)}.`;
+  if (a.reading) return 'Reading which currency the package’s lines are priced in…';
+  const priced = a.lineCurs.map(word).join(' and ');
+  if (!a.canMoney)
+    return `${priced ? `The catalogue prices these lines in ${priced}. ` : ''}This login issues the non-priced version either way, so no price prints whichever currency is chosen — the choice only labels the document.`;
+  if (a.lineCurs.length === 0)
+    return `The package’s lines carry no currency of their own, so they go out under ${word(a.chosen)}.`;
+  if (a.lineCurs.length > 1)
+    return `The package’s lines are priced in more than one currency (${priced}), so no single choice matches them all. Nothing here converts between them: the line prices go out open — “On confirmation” on every line, no subtotal and no total.`;
+  if (carriesCataloguePrices(a.lineCurs, a.chosen))
+    return `The package’s lines are priced in ${priced} — this proposal carries those prices as they stand.`;
+  return `The package’s lines are priced in ${priced} and this proposal is in ${word(a.chosen)}. Nothing here converts one into the other, so the line prices go out open: “On confirmation” on every line, and no subtotal or total — the same shape as the non-priced version, with the figures left for you to state. Choose ${word(a.lineCurs[0])} to carry the catalogue’s prices as they stand.`;
 }
 
 /** A draft created by the issue chain whose PDF is not confirmed yet. */
@@ -213,9 +300,14 @@ export function ProjectProposal({
  * The one-click issue chain, the `IssueDocumentDialog` shape rendered inline
  * (the old detail had no second modal layer; `.ad-modal*` has no stylesheet
  * in this repo either): reference (prefilled from the highest PRO number
- * seen across BOTH proposal kinds), note, terms, then read the package +
- * catalogue → build the snapshot → create → render → upload → confirm
- * without further clicks. The snapshot never re-derives (rule 1). A failure
+ * seen across BOTH proposal kinds), currency, note, terms, then read the
+ * package + catalogue → build the snapshot → create → render → upload →
+ * confirm without further clicks. The currency is a CHOICE, not a
+ * derivation: it defaults to the one the package's lines are priced in (the
+ * catalogue's) and falls back to the desk default, and picking another
+ * leaves the prices open rather than converting them — `currencyNote` says
+ * which currency the lines carry and why, on the card, before the click.
+ * The snapshot never re-derives (rule 1). A failure
  * after the create keeps the draft as `pending`: the next click resumes at
  * the render with the SAME document and snapshot, so the reference is issued
  * once (`onCreated` reloads the card's list so the draft shows meanwhile).
@@ -245,6 +337,46 @@ function ProposalIssueCard({
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState<PendingDraft | null>(null);
+
+  /* ── the proposal's currency ──────────────────────────────────────────
+     Darz prices Iranian galleries in Toman, and the catalogue is seeded in
+     Toman (`standardSet.ts`); international galleries are a later phase,
+     quoted in USD or EUR chosen at the time. So the currency is chosen here
+     rather than derived, and its options are the backend's — never a list
+     written out in this file. */
+  const currencies = choices(options, 'currency');
+  const pkgId = project.applied_package;
+  // which currency the lines are priced in, read once so the choice below is
+  // informed. The chain reads the package itself at issue time and decides
+  // from THAT, so the document is always built from the catalogue as of the
+  // click; this read only feeds the select and the sentence under it, and
+  // failing it never blocks issuing.
+  const [lineCurs, setLineCurs] = useState<string[] | null>(null);
+  const [curErr, setCurErr] = useState('');
+  useEffect(() => {
+    if (!pkgId) return;
+    let alive = true;
+    Promise.all([projectsAdmin.packageTemplate(pkgId), walkServices(projectsAdmin)]).then(
+      ([pkg, catalog]) => alive && setLineCurs(lineCurrencies(pkg, catalog)),
+      (err: unknown) =>
+        alive && setCurErr(err instanceof Error ? err.message : 'the catalogue read failed'),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [projectsAdmin, pkgId]);
+  const reading = !!pkgId && lineCurs === null && !curErr;
+  // the chosen one, else the lines' own, else the desk default (:13287)
+  const [chosen, setChosen] = useState('');
+  const linesCur = lineCurs?.length === 1 ? lineCurs[0] : '';
+  const currency = chosen || linesCur || defaultCurrency(options);
+  // a <select> whose value has no option of its own silently shows a
+  // different one: the options list can still be loading, and the catalogue
+  // could one day carry a code the list does not
+  const currencyChoices = currencies.some((c) => c.value === currency)
+    ? currencies
+    : [{ value: currency, label: currency || '—' }, ...currencies];
+  const curWord = (c: string) => choiceLabel(currencies, c) || c || '—';
 
   // rule 4 (highest seen): one PRO series over project AND exhibition
   // proposals; the library being unreachable never blocks issuing — fall
@@ -282,12 +414,6 @@ function ProposalIssueCard({
           projectsAdmin.packageTemplate(project.applied_package),
           walkPages((page) => projectsAdmin.services({ page, per_page: 100 })),
         ]);
-        // the lines are priced from the catalogue, so the currency is the
-        // catalogue's (first priced line), else the options' default
-        const firstSvc = asPackageLines(pkg.lines)
-          .map((l) => catalog.find((s) => s.id === l.svcId))
-          .find((s) => s !== undefined);
-        const currency = firstSvc?.currency || defaultCurrency(options);
         const clientName = project.client_partner_org?.name || project.client_name || '';
         const fields = buildProposalFields(project, pkg, catalog, {
           reference,
@@ -296,15 +422,14 @@ function ProposalIssueCard({
           currency,
           clientName,
         });
-        if (!canMoney) {
-          // :14067 / :14028 — the refined, non-priced version carries no
-          // pricing at all: no line prices, no subtotal, no total (the card
-          // gates the button until the renderer can print this shape)
-          fields.lines = (fields.lines ?? []).map((l) => ({ ...l, price: '' }));
-          delete fields.subtotal;
-          delete fields.discount;
-          delete fields.total;
-        }
+        // The catalogue's prices go onto the document only when the chosen
+        // currency IS the one its lines are priced in — decided here, from
+        // the rows this snapshot is built from, not from the card's earlier
+        // read. Otherwise the document takes the same shape a standard
+        // admin's non-priced version takes (:14067 / :14028): no line
+        // prices, no subtotal, no total. No rate is invented either way.
+        if (!canMoney || !carriesCataloguePrices(lineCurrencies(pkg, catalog), currency))
+          stripPrices(fields);
         setProgress('Creating the document…');
         const doc = await documentsAdmin.createDocument({
           kind: 'proposal',
@@ -346,13 +471,29 @@ function ProposalIssueCard({
       {step === 'form' ? (
         <>
           <div className="dzp-form" style={GAP12}>
-            <label className="full">
+            {/* the two halves of the grid: the reference, and beside it the
+                currency this proposal is quoted in */}
+            <label>
               <span className="fl">{PROPOSAL_SERIES.label} reference</span>
               <input
                 value={reference}
                 disabled={!!pending}
                 onChange={(e) => setReference(e.target.value)}
               />
+            </label>
+            <label>
+              <span className="fl">Currency</span>
+              <select
+                value={currency}
+                disabled={!!pending || reading}
+                onChange={(e) => setChosen(e.target.value)}
+              >
+                {currencyChoices.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="full">
               <span className="fl">Note from Darz</span>
@@ -377,6 +518,17 @@ function ProposalIssueCard({
               />
             </label>
           </div>
+          <div className="dzp-mut" style={GAP12}>
+            {currencyNote({
+              hasPackage: !!pkgId,
+              reading,
+              error: curErr,
+              lineCurs: lineCurs ?? [],
+              chosen: currency,
+              canMoney,
+              word: curWord,
+            })}
+          </div>
           {error && <DeskBanner>{error}</DeskBanner>}
           {pending && (
             <div className="dzp-mut" style={GAP12}>
@@ -391,7 +543,7 @@ function ProposalIssueCard({
             <button
               type="button"
               className="dzp-btn pri"
-              disabled={!reference.trim()}
+              disabled={!reference.trim() || reading}
               onClick={() => void issue()}
             >
               Issue proposal

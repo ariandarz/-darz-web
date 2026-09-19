@@ -54,17 +54,19 @@
  *    is the conflict banner with Reload; so is one on a service save;
  *  - "＋ Add the standard set" (owner only, the panel's `StandardSetCard`)
  *    writes Darz's REAL catalogue by an explicit click, through the ordinary
- *    create endpoints, skipping by name anything already there: the 8
- *    exhibition services with their real Toman prices, the 23 coverage
- *    services (unpriced — Darz quotes them per show) grouped into their 5
- *    programmes, and the 4 checklist templates (the data and the plan live
- *    in `standardSet.ts`). The old panel's `projSeedIfEmpty` demo rates
- *    (:13386-13433) are NOT what this writes any more — their USD prices
- *    were invented for a demo and reached clients through the calculator and
- *    the proposal, so the owner ruled them out; only the checklists stayed.
- *    The card says on the spot what does not come across: no internal costs,
- *    no "on request" (an unpriced line is written as 0), no descriptions
- *    (G-PROJ-8), and the four near-duplicate pairs it refuses to merge;
+ *    create endpoints, skipping by name anything already there: the
+ *    exhibition services with their real Toman prices, the coverage
+ *    services (unpriced — Darz quotes them per show) in their five
+ *    programmes, and the four checklist templates (the data and the plan
+ *    live in `standardSet.ts`, which every count on the card is read from).
+ *    The old panel's `projSeedIfEmpty` demo rates (:13386-13433) are NOT
+ *    what this writes any more — their USD prices were invented for a demo
+ *    and reached clients through the calculator and the proposal, so the
+ *    owner ruled them out; only the checklists stayed. The card says on the
+ *    spot what does not come across: the Toman prices and what a workspace
+ *    without TMN gets instead, no internal costs, no "on request" (an
+ *    unpriced line is written as 0), no descriptions (G-PROJ-8), and the
+ *    near-duplicate pairs it refuses to merge;
  *  - `Lib.toast` lines are inline status notes; `dzConfirm` is
  *    `ConfirmDialog`.
  */
@@ -102,6 +104,7 @@ import {
   asCounts,
   asInternal,
   asPackageLines,
+  choiceLabel,
   choices,
   clientName,
   defaultCurrency,
@@ -486,9 +489,10 @@ export function PackagesPage() {
                 Service catalogue · {catalogue.length} lines
               </div>
               <div className="dzp-acts" style={{ marginTop: 0 }}>
-                {/* the old panel's `projSeedIfEmpty` (:13381-13451) as an
-                    explicit action — owner only, because it writes rates and
-                    internal costs (`projCanMoney()`, :13282) */}
+                {/* Darz's real catalogue on an explicit click, where the old
+                    panel seeded itself silently (`projSeedIfEmpty`,
+                    :13381-13451) — owner only, because it writes prices into
+                    the shared catalogue (`projCanMoney()`, :13282) */}
                 {canMoney && (
                   <button
                     type="button"
@@ -840,7 +844,7 @@ function PackageCard({
   );
 }
 
-/* ── the standard set (`projSeedIfEmpty`, :13381-13451) ─────────────────── */
+/* ── the standard set (Darz's real services, `standardSet.ts`) ──────────── */
 
 /** The three kinds the card ticks, in the order it lists and writes them. */
 type SeedKind = 'services' | 'packages' | 'checklists';
@@ -848,7 +852,7 @@ type SeedKind = 'services' | 'packages' | 'checklists';
 const SEED_KINDS: SeedKind[] = ['services', 'packages', 'checklists'];
 
 /** Singular / plural, so every count reads as a sentence rather than a
- * table ("1 service line" / "34 service lines"). */
+ * table ("1 service line", "4 checklist templates"). */
 const SEED_NOUNS: Record<SeedKind, [string, string]> = {
   services: ['service line', 'service lines'],
   packages: ['package template', 'package templates'],
@@ -865,6 +869,15 @@ const SEED_TITLES: Record<SeedKind, string> = {
 function countText(kind: SeedKind, n: number): string {
   const [one, many] = SEED_NOUNS[kind];
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/** The near-duplicate paragraph's opening, counted rather than written out:
+ * the pairs are data, and the owner merging one would make a typed "four"
+ * false on the spot. */
+function duplicateLead(n: number): string {
+  return n === 1
+    ? 'One coverage line looks like a priced exhibition service'
+    : `${n} coverage lines look like priced exhibition services`;
 }
 
 /** "a, b and c". */
@@ -908,8 +921,8 @@ interface SeedReport {
   error: string | null;
 }
 
-/** "Added 34 service lines, 8 package templates and 4 checklist templates,
- * skipped 3 service lines already there." — exact counts, per kind. */
+/** "Added 3 service lines and 1 package template, skipped 27 service lines
+ * already there." — exact counts, per kind. */
 function resultText(r: SeedReport): string {
   const added = SEED_KINDS.filter((k) => r.added[k] > 0).map((k) => countText(k, r.added[k]));
   const skipped = SEED_KINDS.filter((k) => r.skipped[k] > 0).map((k) =>
@@ -934,12 +947,16 @@ function failureText(r: SeedReport): string {
 /**
  * Darz's real catalogue written by an explicit, idempotent, owner-only action
  * — never the silent first-open seed the old panel did (`projSeedIfEmpty`,
- * :13381-13451), which a server DB must not: the 8 exhibition services with
- * their real Toman prices, the 23 coverage services in their 5 programmes and
- * the 4 checklist templates (`standardSet.ts`), through the ordinary create
+ * :13381-13451), which a server DB must not: the exhibition services with
+ * their real Toman prices, the coverage services in their five programmes and
+ * the four checklist templates (`standardSet.ts`), through the ordinary create
  * endpoints wherever the admin is signed in. Every plan skips by NAME
  * (trimmed, case-insensitive), so nothing is duplicated or overwritten and a
  * run that stopped half-way is resumed by pressing the button again.
+ *
+ * Every number the card states — how many lines, how many of them unpriced,
+ * which pairs look alike — is read from `standardSet.ts`, never typed here, so
+ * the copy cannot outlive the data it describes.
  *
  * The packages are written after the catalogue is re-read, because a template
  * links its lines by the id the API hands back; one whose line is missing is
@@ -1003,9 +1020,14 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
   // enum is never assumed (a workspace without TMN gets the same numbers in
   // its default currency, and the card says so)
   const currencies = choices(options, 'currency');
+  // the served label ("Iranian Toman"), never a lookup typed in this repo;
+  // `choiceLabel` falls back to the code for a currency this workspace has no
+  // option for — which is exactly the case the second note below describes
+  const currencyWord = (c: string) => choiceLabel(currencies, c);
   const seedCurrency = currencies.some((c) => c.value === STANDARD_CURRENCY)
     ? STANDARD_CURRENCY
     : defaultCurrency(options) || STANDARD_CURRENCY;
+  const priced = STANDARD_SET_COUNTS.services - STANDARD_SET_COUNTS.unpriced;
 
   // a plan is only shown when every list in it came back from THIS read
   const fresh = tpl.key === gen;
@@ -1118,9 +1140,9 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
       <div className="gh">Service catalogue · Standard set</div>
       <p className="dzp-mut">
         These are Darz’s own services — the exhibition services the gallery portal already
-        offers, with their real prices, and the coverage programmes of the Exhibition Coverage
-        menu — plus the four checklist templates. Anything already here by name is skipped, so
-        it is safe to run twice.
+        offers, with their real prices, and the Exhibition Coverage programmes, which Darz
+        quotes per show — plus the checklist templates. Anything already here by name is
+        skipped, so it is safe to run twice.
       </p>
       {tpl.error && <DeskBanner>{tpl.error}</DeskBanner>}
       {SEED_KINDS.map((k) => (
@@ -1134,13 +1156,40 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
           {SEED_TICKS[k]}
         </label>
       ))}
+      {/* the currency is the owner’s decision — Iranian galleries are priced in
+          Toman — so the card names it before the run rather than leaving the
+          figures unlabelled. The fallback itself is unchanged: the served list
+          decides, and this only says which way it went */}
+      {seedCurrency === STANDARD_CURRENCY ? (
+        <p className="dzp-mut" role="note">
+          The lines are added in {currencyWord(STANDARD_CURRENCY)} ({STANDARD_CURRENCY}) —
+          Darz’s own prices, in the currency Iranian galleries are quoted in. International
+          galleries come later, in USD or EUR chosen at the time; nothing here decides that.
+        </p>
+      ) : (
+        <p className="dzp-mut" role="note">
+          These are Toman prices and this workspace does not offer {STANDARD_CURRENCY} — the
+          lines are added in {currencyWord(seedCurrency)} at the same numbers, so each one
+          reads as {seedCurrency} until you reprice it. Add {STANDARD_CURRENCY} to the currency
+          options first if that is not what you want.
+        </p>
+      )}
       {/* the numbers, stated before the run rather than discovered after it */}
+      {STANDARD_SET_COUNTS.unpriced > 0 && (
+        <p className="dzp-mut" role="note">
+          {STANDARD_SET_COUNTS.unpriced} of the {STANDARD_SET_COUNTS.services} service lines
+          arrive unpriced — the coverage work Darz quotes per show, and Darz Listing, which is
+          on request. They are written as 0 because the catalogue has no “on request”: a 0 here
+          means not priced yet, not free. The other {priced} carry the real exhibition-service
+          prices the gallery portal already quotes.
+        </p>
+      )}
+      {/* no internal cost exists for these, and the calculator prices from this
+          catalogue (D21) — so it reads cost as nil until the owner enters one */}
       <p className="dzp-mut" role="note">
-        {STANDARD_SET_COUNTS.unpriced} of the {STANDARD_SET_COUNTS.services} service lines
-        arrive unpriced — every coverage service, which Darz quotes per show, and Darz Listing,
-        which is on request. They are written as 0 because the catalogue has no “on request”: a
-        0 here means not priced yet, not free. No internal cost is recorded for any of these
-        either, so until you set one the calculator’s margin reads as if cost were nil.
+        No internal cost comes with them: Darz has none recorded for these services, so every
+        line is written at 0 and the calculator’s margin reads against a nil cost until you
+        enter one.
       </p>
       {/* G-PROJ-8 — the fields the backend has nowhere to put */}
       <p className="dzp-mut" role="note">
@@ -1148,19 +1197,21 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
         price — what each service actually is, how it runs, its timing and what Darz needs from
         the gallery stay in the source menus.
       </p>
-      {/* the four pairs the owner merges in one pass, never merged for them */}
-      <p className="dzp-mut" role="note">
-        {NEAR_DUPLICATES.length === 3 ? 'Three' : String(NEAR_DUPLICATES.length)} coverage
-        lines look like priced exhibition services —{' '}
-        {joinWords(NEAR_DUPLICATES.map((d) => `${d.coverage} / ${d.exhibition}`))}. Both sides
-        are added and no price is copied across: merge them here once you have decided they are
-        the same service.
-      </p>
-      {seedCurrency !== STANDARD_CURRENCY && (
-        <p className="dzp-mut" role="note">
-          These prices are in {STANDARD_CURRENCY}, which this workspace does not offer — the
-          lines are added in {seedCurrency} at the same numbers.
-        </p>
+      {/* the pairs the owner merges in one pass, never merged for them: a price
+          copied between two services nobody has called the same is an invented
+          price again. One line each, the overlap on the row’s own title */}
+      {NEAR_DUPLICATES.length > 0 && (
+        <>
+          <p className="dzp-mut" role="note">
+            {duplicateLead(NEAR_DUPLICATES.length)}. Both sides are added and no price is
+            copied across — merge them here once you have decided they are the same service:
+          </p>
+          {NEAR_DUPLICATES.map((d) => (
+            <div className="dzp-mut" key={d.coverage} title={d.why}>
+              “{d.coverage}” and “{d.exhibition}”
+            </div>
+          ))}
+        </>
       )}
       {!ready && !tpl.error && <p className="dz-state">Loading…</p>}
       {ready && (
