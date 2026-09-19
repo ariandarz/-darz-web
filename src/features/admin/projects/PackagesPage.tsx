@@ -89,12 +89,15 @@ import {
   asInternal,
   asPackageLines,
   choices,
+  clientName,
   defaultCurrency,
   projMoney,
   projN,
   scopeByCat,
   stageLabel,
   svcName,
+  walkProjects,
+  walkServices,
 } from './projectForm';
 import '../admin.css';
 
@@ -112,38 +115,6 @@ class PackagesController extends ListController<PackageTemplateAdmin, PageQuery>
   protected fetchPage(query: PageQuery): Promise<Paginated<PackageTemplateAdmin>> {
     return this.projects.packages(query);
   }
-}
-
-/** The whole catalogue (`svcLoad()`, :13920) — the API pages it, 100 a page
- * at most, and every card needs every line to name its services. */
-async function walkServices(api: ProjectsAdminService): Promise<ServiceCatalogItemAdmin[]> {
-  const out: ServiceCatalogItemAdmin[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await api.services({ per_page: 100, page });
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
-}
-
-/** Every non-archived project (:14016 `projLoad().filter(!archived)`) — the
- * API has no "active" list beyond `archived=False` (G-PROJ-1), so the pick
- * walks the set once, 100 a page. */
-async function walkActive(api: ProjectsAdminService): Promise<ProjectAdmin[]> {
-  const out: ProjectAdmin[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await api.projects({ archived: false, per_page: 100, page });
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
-}
-
-/** `projClientName` (:13298): the linked org's name, else the typed one. */
-function clientName(p: ProjectAdmin): string {
-  return p.client_partner_org?.name || p.client_name || '';
 }
 
 interface ServiceGroup {
@@ -842,7 +813,7 @@ export function ProjectPick({
 
   useEffect(() => {
     let alive = true;
-    walkActive(projectsAdmin).then(
+    walkProjects(projectsAdmin).then(
       (rows) => alive && setWalk({ key: gen, rows, error: null }),
       (err: unknown) =>
         alive &&

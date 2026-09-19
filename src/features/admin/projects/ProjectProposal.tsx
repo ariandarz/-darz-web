@@ -39,7 +39,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useApi, useOptions } from '../../../api/hooks';
-import type { Choice, DocumentAdmin, Paginated, ProjectAdmin } from '../../../api/types';
+import type { Choice, DocumentAdmin, ProjectAdmin } from '../../../api/types';
 import { DeskBanner } from '../kit';
 import { nextReference } from '../exhibitionForm';
 import type { DocumentPdfFields } from '../pdf/renderPdf';
@@ -51,6 +51,7 @@ import {
   choices,
   defaultCurrency,
   fmtDate,
+  walkPages,
 } from './projectForm';
 import '../admin.css';
 
@@ -79,17 +80,6 @@ interface PendingDraft {
   fields: DocumentPdfFields;
 }
 
-/** Every page of a list (the documents list has no `ref` filter). */
-async function walk<T>(fetchPage: (page: number) => Promise<Paginated<T>>): Promise<T[]> {
-  const out: T[] = [];
-  for (let page = 1; page <= 50; page++) {
-    const p = await fetchPage(page);
-    out.push(...p.results);
-    if (!p.pagination.has_next) break;
-  }
-  return out;
-}
-
 export function ProjectProposal({
   project,
   canMoney,
@@ -109,7 +99,9 @@ export function ProjectProposal({
   // callbacks, never synchronously inside the effect
   const load = useCallback(
     () =>
-      walk((page) => documentsAdmin.documents({ kind: 'proposal', page, per_page: 100 })).then(
+      walkPages((page) =>
+        documentsAdmin.documents({ kind: 'proposal', page, per_page: 100 }),
+      ).then(
         (all) =>
           setDocs(
             all
@@ -262,8 +254,8 @@ function ProposalIssueCard({
     if (pending) return;
     let alive = true;
     Promise.all([
-      walk((page) => documentsAdmin.documents({ kind: 'proposal', page, per_page: 100 })),
-      walk((page) =>
+      walkPages((page) => documentsAdmin.documents({ kind: 'proposal', page, per_page: 100 })),
+      walkPages((page) =>
         documentsAdmin.documents({ kind: 'exhibition_proposal', page, per_page: 100 }),
       ),
     ]).then(
@@ -288,7 +280,7 @@ function ProposalIssueCard({
         setProgress('Reading the package…');
         const [pkg, catalog] = await Promise.all([
           projectsAdmin.packageTemplate(project.applied_package),
-          walk((page) => projectsAdmin.services({ page, per_page: 100 })),
+          walkPages((page) => projectsAdmin.services({ page, per_page: 100 })),
         ]);
         // the lines are priced from the catalogue, so the currency is the
         // catalogue's (first priced line), else the options' default

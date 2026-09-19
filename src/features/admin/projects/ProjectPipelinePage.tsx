@@ -43,46 +43,26 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ConflictError } from '../../../api/errors';
 import { useApi, useOptions } from '../../../api/hooks';
-import type { ProjectsAdminService } from '../../../api/services';
 import type { Choice, ProjectAdmin, ProjectStage } from '../../../api/types';
 import { DeskAction, DeskBanner, DeskPage, SearchFilter, ToggleFilter } from '../kit';
 import {
   choices,
+  clientName,
   projFlag,
   scopeGate,
   stageIndex,
   stageLabel,
   todayIso,
+  walkProjects,
   type ProjFlag,
 } from './projectForm';
 import '../admin.css';
 
 const CONFLICT = 'Someone else saved this project in the meantime — reload to continue.';
 
-/** `projClientName` (:13298): the linked org's name, else the typed one. */
-function clientName(p: ProjectAdmin): string {
-  return p.client_partner_org?.name || p.client_name || '';
-}
-
 /** The board's search haystack (:13684): no · name · client · city. */
 function hay(p: ProjectAdmin): string {
   return [p.no, p.name, clientName(p), p.city].join(' ').toLowerCase();
-}
-
-/** Every project of one archive state — the API has no board endpoint
- * (G-PROJ-1), so the kanban reads the whole set once, 100 a page. */
-async function walkBoard(
-  api: ProjectsAdminService,
-  archived: boolean,
-): Promise<ProjectAdmin[]> {
-  const out: ProjectAdmin[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await api.projects({ archived, per_page: 100, page });
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
 }
 
 interface Walk {
@@ -108,7 +88,7 @@ export function ProjectPipelinePage() {
 
   useEffect(() => {
     let alive = true;
-    walkBoard(projectsAdmin, archived).then(
+    walkProjects(projectsAdmin, archived).then(
       (rows) => alive && setWalk({ key: walkKey, rows, error: null }),
       (err: unknown) =>
         alive &&

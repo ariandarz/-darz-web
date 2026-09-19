@@ -49,7 +49,6 @@ import { useApi, useOptions, useSession } from '../../../api/hooks';
 import type { ProjectsAdminService } from '../../../api/services';
 import type {
   PackageTemplateAdmin,
-  Paginated,
   PartnerOrgAdmin,
   ProjectAdmin,
   ServiceCatalogItemAdmin,
@@ -64,40 +63,15 @@ import {
   asPackageLines,
   choiceLabel,
   choices,
+  clientName,
   defaultCurrency,
   moneyCalc,
   projMoney,
   scopeByCat,
   stageLabel,
+  walkPages,
 } from './projectForm';
 import '../admin.css';
-
-/* :15499-15505 — the old document's stylesheet, its values verbatim, scoped
-   to the wrapper (the old styled a whole window's `body`); the button's
-   inline style (:15513) joins it, `p`/`ul` get the browser margins the base
-   reset removes, and in print the shell's navbar rows go with `.noprint`. */
-const REPORT_CSS = `
-.dzp-report{margin:0;font-family:Barlow,Helvetica,Arial,sans-serif;color:#1a1a1a;background:#fff;padding:0 0 60px}
-.dzp-report .seam{height:3px;background:linear-gradient(90deg,#00D4CC,#E8005C)}
-.dzp-report .wrap{max-width:760px;margin:0 auto;padding:34px 26px}
-.dzp-report .wm{font-family:"Cormorant Garamond",Palatino,serif;font-size:14px;letter-spacing:.02em;color:#0A0A0A}
-.dzp-report .eyebrow{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#9A9A9A;margin:22px 0 4px}
-.dzp-report h1{font-family:"Cormorant Garamond",Palatino,serif;font-size:34px;font-weight:600;margin:2px 0 4px;color:#0A0A0A}
-.dzp-report h2{font-family:"Cormorant Garamond",Palatino,serif;font-size:20px;font-weight:600;margin:26px 0 8px;color:#0A0A0A;border-top:1px solid #EBEBEB;padding-top:14px}
-.dzp-report p{font-size:13px;line-height:1.6;color:#3C3C3C;margin:1em 0}
-.dzp-report .mut{color:#9A9A9A}
-.dzp-report ul{padding-left:18px;margin:1em 0}
-.dzp-report li{font-size:13px;line-height:1.7;color:#3C3C3C}
-.dzp-report table{width:100%;border-collapse:collapse;margin-top:8px}
-.dzp-report th,.dzp-report td{border:1px solid #EBEBEB;padding:7px 9px;font-size:12px;text-align:left}
-.dzp-report th{background:#FAFAFA;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#3C3C3C}
-.dzp-report .meta{font-size:12px;color:#3C3C3C}
-.dzp-report .noprint{margin:18px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.dzp-report .noprint button{font:inherit;font-size:12px;padding:9px 16px;border:1px solid #0A0A0A;background:#0A0A0A;color:#fff;border-radius:8px;cursor:pointer}
-.dzp-report .noprint a{font-size:12px;color:#3C3C3C}
-.dzp-report .noprint .mut{font-size:12px}
-@media print{.dzp-report .noprint,.ad-top,.ad-subtabs{display:none}}
-`;
 
 /** Everything the document reads, fetched once per visit. */
 interface Loaded {
@@ -107,18 +81,6 @@ interface Loaded {
   partners: PartnerOrgAdmin[];
 }
 
-/** Every page of a list (no filter narrows these). */
-async function walk<T>(fetchPage: (page: number) => Promise<Paginated<T>>): Promise<T[]> {
-  const out: T[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await fetchPage(page);
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
-}
-
 async function loadReport(api: ProjectsAdminService, id: string): Promise<Loaded> {
   const project = await api.project(id);
   const applied = project.applied_package;
@@ -126,16 +88,11 @@ async function loadReport(api: ProjectsAdminService, id: string): Promise<Loaded
     // the package may be gone since it was applied — the report still prints
     applied ? api.packageTemplate(applied).catch(() => null) : Promise.resolve(null),
     applied
-      ? walk((page) => api.services({ page, per_page: 100 }))
+      ? walkPages((page) => api.services({ page, per_page: 100 }))
       : Promise.resolve([] as ServiceCatalogItemAdmin[]),
-    walk((page) => api.partners({ page, per_page: 100 })),
+    walkPages((page) => api.partners({ page, per_page: 100 })),
   ]);
   return { project, pkg, catalog, partners };
-}
-
-/** `projClientName` (:13298): the linked org's name, else the typed one. */
-function clientName(p: ProjectAdmin): string {
-  return p.client_partner_org?.name || p.client_name || '';
 }
 
 /** `projRoleLabel` (:13331) — the dash fallback. */
@@ -189,7 +146,6 @@ export function ProjectReportPage() {
   if (!data || !options) {
     return (
       <div className="dzp-report">
-        <style>{REPORT_CSS}</style>
         <div className="seam" />
         <div className="wrap">
           <div className="wm">darzmarket.art</div>
@@ -226,7 +182,6 @@ export function ProjectReportPage() {
 
   return (
     <div className="dzp-report">
-      <style>{REPORT_CSS}</style>
       {/* :15508 */}
       <div className="seam" />
       <div className="wrap">

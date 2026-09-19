@@ -53,7 +53,6 @@ import type {
   ChecklistTemplateAdmin,
   ChecklistTemplateInput,
   Choice,
-  Paginated,
   ProjectAdmin,
   ProjectReportRow,
 } from '../../../api/types';
@@ -63,8 +62,10 @@ import {
   asChecklistStrings,
   asDeliverables,
   choices,
+  clientName,
   stageLabel,
   todayIso,
+  walkPages,
   type Deliverable,
 } from './projectForm';
 import '../admin.css';
@@ -140,23 +141,6 @@ function rollupStatus(
   return { c: 'active', t: 'Open' };
 }
 
-/** `projClientName` (:13298): the linked org's name, else the typed one. */
-function clientName(p: ProjectAdmin): string {
-  return p.client_partner_org?.name || p.client_name || '';
-}
-
-/** Every page of a list (the projects and the templates have no filter here). */
-async function walk<T>(fetchPage: (page: number) => Promise<Paginated<T>>): Promise<T[]> {
-  const out: T[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await fetchPage(page);
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
-}
-
 function errorText(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
 }
@@ -206,7 +190,7 @@ export function ProjectsReportsPage() {
         alive &&
         setRollup({ rows: null, error: errorText(err, 'Could not load the roll-up.') }),
     );
-    walk((page) => projectsAdmin.projects({ page, per_page: 100 })).then(
+    walkPages((page) => projectsAdmin.projects({ page, per_page: 100 })).then(
       (rows) => alive && setProjects({ rows, error: null }),
       (err: unknown) =>
         alive &&
@@ -219,7 +203,7 @@ export function ProjectsReportsPage() {
 
   const loadChecklists = useCallback(
     () =>
-      walk((page) => projectsAdmin.checklists({ page, per_page: 100 })).then(
+      walkPages((page) => projectsAdmin.checklists({ page, per_page: 100 })).then(
         (rows) => setChks({ rows, error: null }),
         (err: unknown) =>
           setChks({ rows: null, error: errorText(err, 'Could not load the templates.') }),

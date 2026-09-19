@@ -68,7 +68,6 @@ import { ConflictError, ValidationError } from '../../../api/errors';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
 import type {
   Choice,
-  Paginated,
   PartnerOrgAdmin,
   ProjectAdmin,
   ProjectAttachmentAdmin,
@@ -102,6 +101,7 @@ import {
   stageState,
   todayIso,
   uid,
+  walkPages,
   type Deliverable,
   type InvoiceStatus,
   type LinkRow,
@@ -243,17 +243,6 @@ function overlapClasses(lanes: PartnerLane[]): Set<string> {
   return new Set(Object.keys(count).filter((c) => count[c] > 1));
 }
 
-/** Every page of a list (partners for the selects, the attachments). */
-async function walk<T>(fetchPage: (page: number) => Promise<Paginated<T>>): Promise<T[]> {
-  const out: T[] = [];
-  for (let page = 1; page <= 50; page++) {
-    const p = await fetchPage(page);
-    out.push(...p.results);
-    if (!p.pagination.has_next) break;
-  }
-  return out;
-}
-
 function errorText(err: unknown, fallback: string): string {
   if (err instanceof ValidationError) {
     const parts = Object.entries(err.fields).map(([k, v]) => `${k}: ${v.join(' ')}`);
@@ -324,7 +313,7 @@ function ProjectRecord({ id }: { id: string }) {
 
   const loadAttachments = useCallback(
     () =>
-      walk((page) => projectsAdmin.attachments(id, { page, per_page: 100 })).then(
+      walkPages((page) => projectsAdmin.attachments(id, { page, per_page: 100 })).then(
         (rows) => setAttachments(rows),
         (err: unknown) => setError(errorText(err, 'Could not load the attachments.')),
       ),
@@ -339,7 +328,7 @@ function ProjectRecord({ id }: { id: string }) {
   // record's own orgs from its mirror, and no lane set is filtered)
   useEffect(() => {
     let alive = true;
-    walk((page) => projectsAdmin.partners({ page, per_page: 100 })).then(
+    walkPages((page) => projectsAdmin.partners({ page, per_page: 100 })).then(
       (rows) => alive && setPartners(rows),
       () => undefined,
     );

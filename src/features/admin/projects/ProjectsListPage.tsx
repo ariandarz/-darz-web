@@ -74,6 +74,7 @@ import {
   QUICK_LABELS,
   choiceLabel,
   choices,
+  clientName,
   defaultCurrency,
   isQuick,
   matchesQuick,
@@ -83,6 +84,7 @@ import {
   projMoney,
   stageLabel,
   todayIso,
+  walkProjects,
   type Quick,
 } from './projectForm';
 import '../admin.css';
@@ -149,29 +151,11 @@ function sameQuery(a: ProjectQuery, b: ProjectQuery): boolean {
   );
 }
 
-/** `projClientName` (:13298): the linked org's name, else the typed one. */
-function clientName(p: ProjectAdmin): string {
-  return p.client_partner_org?.name || p.client_name || '';
-}
-
 /** The old search haystack (:13638). */
 function hay(p: ProjectAdmin): string {
   return [p.no, p.name, clientName(p), p.contact, p.venue, p.city, p.category]
     .join(' ')
     .toLowerCase();
-}
-
-/** Every non-archived project — no server-side quick filter exists
- * (G-PROJ-1), so quick mode reads the whole active set once. */
-async function walkActive(api: ProjectsAdminService): Promise<ProjectAdmin[]> {
-  const out: ProjectAdmin[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await api.projects({ archived: false, per_page: 100, page });
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
 }
 
 export function ProjectsListPage() {
@@ -217,7 +201,7 @@ export function ProjectsListPage() {
   useEffect(() => {
     if (!needWalk) return;
     let alive = true;
-    walkActive(projectsAdmin).then(
+    walkProjects(projectsAdmin).then(
       (rows) => alive && setWalk({ rows, error: null }),
       (err: unknown) =>
         alive &&

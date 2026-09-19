@@ -57,7 +57,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ConflictError } from '../../../api/errors';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
-import type { ProjectsAdminService } from '../../../api/services';
 import type {
   Choice,
   PackageTemplateAdmin,
@@ -81,6 +80,7 @@ import {
   defaultCurrency,
   projN,
   svcName,
+  walkServices,
   type PackageAddon,
   type PackageCounts,
   type PackageInternal,
@@ -295,18 +295,6 @@ function seed(custom: boolean): PackageTemplateInput {
     b.purpose = 'A one-off proposal assembled from individual service lines.';
   }
   return b;
-}
-
-/** The whole catalogue (`svcLoad()`, :13959) — 100 a page, walked. */
-async function walkServices(api: ProjectsAdminService): Promise<ServiceCatalogItemAdmin[]> {
-  const out: ServiceCatalogItemAdmin[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await api.services({ per_page: 100, page });
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
 }
 
 /** :13960 — the "＋ Add a service line…" menu's optgroups, one per

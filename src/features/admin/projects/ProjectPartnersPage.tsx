@@ -76,6 +76,8 @@ import {
   VANAK_EXAMPLE,
   asLanes,
   choiceLabel,
+  clientName,
+  walkProjects,
   type PartnerLane,
 } from './projectForm';
 import '../admin.css';
@@ -97,11 +99,6 @@ class PartnersController extends ListController<PartnerOrgAdmin, PartnerOrgQuery
 interface Entry {
   p: ProjectAdmin;
   lanes: PartnerLane[];
-}
-
-/** `projClientName` (:13298): the linked org's name, else the typed one. */
-function clientName(p: ProjectAdmin): string {
-  return p.client_partner_org?.name || p.client_name || '';
 }
 
 /** `projRoleLabel` (:13331) / `projDelivClassLabel` (:13332) — the dash fallback. */
@@ -134,19 +131,6 @@ function roleOverlaps(lanes: PartnerLane[]): Set<string> {
   const out = new Set<string>();
   for (const [c, n] of by) if (n > 1) out.add(c);
   return out;
-}
-
-/** Every non-archived project — no server-side partner filter exists
- * (G-PROJ-1), so the counts, roles and matrices read the whole set once. */
-async function walkActive(api: ProjectsAdminService): Promise<ProjectAdmin[]> {
-  const out: ProjectAdmin[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await api.projects({ archived: false, per_page: 100, page });
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
 }
 
 /** The editor's fields (:15420 `_orgDraft`). */
@@ -190,7 +174,7 @@ export function ProjectPartnersPage() {
   });
   useEffect(() => {
     let alive = true;
-    walkActive(projectsAdmin).then(
+    walkProjects(projectsAdmin).then(
       (rows) => alive && setWalk({ rows, error: null }),
       (err: unknown) =>
         alive &&

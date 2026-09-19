@@ -49,7 +49,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
-import type { ProjectsAdminService } from '../../../api/services';
 import type { Choice, ProjectAdmin, ServiceCatalogItemAdmin } from '../../../api/types';
 import { asAdminRole } from '../adminNav';
 import { DeskBanner, DeskPage } from '../kit';
@@ -63,22 +62,11 @@ import {
   projN,
   quoteToMoney,
   svcName,
+  walkServices,
   type PackageLine,
   type Quote,
 } from './projectForm';
 import '../admin.css';
-
-/** The whole catalogue (`rateLoad()`'s replacement, D21) — 100 a page. */
-async function walkServices(api: ProjectsAdminService): Promise<ServiceCatalogItemAdmin[]> {
-  const out: ServiceCatalogItemAdmin[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await api.services({ per_page: 100, page });
-    out.push(...res.results);
-    if (!res.pagination.has_next) return out;
-    page += 1;
-  }
-}
 
 /** The catalogue per `projects.service_category`, in option order (the
  * old `sec()` blocks, :15320); an unlisted category still shows. */

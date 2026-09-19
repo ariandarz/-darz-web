@@ -34,11 +34,12 @@ import type {
   Choice,
   PackageTemplateAdmin,
   PackageTemplateInput,
+  Paginated,
   ProjectAdmin,
   ProjectPatch,
   ServiceCatalogItemAdmin,
 } from '../../../api/types';
-import type { OptionsMap } from '../../../api/services';
+import type { OptionsMap, ProjectsAdminService } from '../../../api/services';
 import type { DocumentPdfFields } from '../pdf/renderPdf';
 import { fmtThousands } from '../../portal/portalForm';
 
@@ -1191,4 +1192,49 @@ export function buildProposalFields(
     note: opts.note || '',
     terms: opts.terms || '',
   };
+}
+
+/* ---- reading a paginated list whole -------------------------------------
+   Every desk in this group needs a whole list the API only pages: the old
+   panel read its one local store (`projLoad()`, `svcLoad()`) and filtered in
+   memory, and no server-side "active", quick-filter or board endpoint
+   replaces that (G-PROJ-1). One walker, one cap, so the desks cannot differ
+   on how much of a list they actually read. */
+
+/** The page cap — 50 pages × 100 rows is far past any real roster, and it
+ * stops a bad `has_next` from looping forever. */
+export const WALK_MAX_PAGES = 50;
+
+/** Every page of a list, in order. */
+export async function walkPages<T>(
+  fetchPage: (page: number) => Promise<Paginated<T>>,
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let page = 1; page <= WALK_MAX_PAGES; page++) {
+    const res = await fetchPage(page);
+    out.push(...res.results);
+    if (!res.pagination.has_next) break;
+  }
+  return out;
+}
+
+/** Every project of one archive state (the board, the quick filters, the
+ * per-partner counts, the project picks). */
+export function walkProjects(
+  api: ProjectsAdminService,
+  archived = false,
+): Promise<ProjectAdmin[]> {
+  return walkPages((page) => api.projects({ archived, per_page: 100, page }));
+}
+
+/** The whole service catalogue (`svcLoad()`, :13920) — the packages, the
+ * calculator and every proposal price from it. */
+export function walkServices(api: ProjectsAdminService): Promise<ServiceCatalogItemAdmin[]> {
+  return walkPages((page) => api.services({ per_page: 100, page }));
+}
+
+/** `projClientName` (:13298) — the linked org's name, else the typed
+ * fallback, else ''. The one rule every desk names a client by. */
+export function clientName(p: ProjectAdmin): string {
+  return p.client_partner_org?.name || p.client_name || '';
 }

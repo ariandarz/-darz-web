@@ -3162,6 +3162,15 @@ html.dz-bw .dzp-chip {
   .dzp-row {
     grid-template-columns: 1fr;
   }
+  /* Not in the old block — the old calculator lived in a desktop admin and
+     its 340px result column simply overflowed a phone. One column, result
+     last and not sticky, is what every other two-column desk here does. */
+  .dzp-calc {
+    grid-template-columns: 1fr;
+  }
+  .dzp-res {
+    position: static;
+  }
   .dzp-mid,
   .dzp-end {
     align-items: flex-start;
@@ -3183,5 +3192,132 @@ html.dz-bw .dzp-chip {
   .dzp-line input,
   .dzp-line select {
     font-size: 16px;
+  }
+}
+
+/* ---- Phase 11c: the project report document (ProjectReportPage) ---------
+   `_reportDoc` (`darz-studio.html:15499-15505`) styled a whole pop-up
+   window's `body`; the report is a route here, so the same values are
+   scoped to `.dzp-report`. Its palette is the document's own, fixed light
+   (a report prints and is read as paper in either skin — the old window had
+   no dark mode either). `p`/`ul` get back the browser margins base.css
+   removes, the Print button keeps its inline recipe (:15513), and in print
+   the panel's two navbar rows go with `.noprint`. */
+.dzp-report {
+  margin: 0;
+  font-family: Barlow, Helvetica, Arial, sans-serif;
+  color: #1a1a1a;
+  background: #fff;
+  padding: 0 0 60px;
+}
+.dzp-report .seam {
+  height: 3px;
+  background: linear-gradient(90deg, #00d4cc, #e8005c);
+}
+.dzp-report .wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 34px 26px;
+}
+.dzp-report .wm {
+  font-family: 'Cormorant Garamond', Palatino, serif;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: #0a0a0a;
+}
+.dzp-report .eyebrow {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  margin: 22px 0 4px;
+}
+.dzp-report h1 {
+  font-family: 'Cormorant Garamond', Palatino, serif;
+  font-size: 34px;
+  font-weight: 600;
+  margin: 2px 0 4px;
+  color: #0a0a0a;
+}
+.dzp-report h2 {
+  font-family: 'Cormorant Garamond', Palatino, serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 26px 0 8px;
+  color: #0a0a0a;
+  border-top: 1px solid #ebebeb;
+  padding-top: 14px;
+}
+.dzp-report p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #3c3c3c;
+  margin: 1em 0;
+}
+.dzp-report .mut {
+  color: #9a9a9a;
+}
+.dzp-report ul {
+  padding-left: 18px;
+  margin: 1em 0;
+}
+.dzp-report li {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #3c3c3c;
+}
+.dzp-report table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.dzp-report th,
+.dzp-report td {
+  border: 1px solid #ebebeb;
+  padding: 7px 9px;
+  font-size: 12px;
+  text-align: left;
+}
+.dzp-report th {
+  background: #fafafa;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #3c3c3c;
+}
+.dzp-report .meta {
+  font-size: 12px;
+  color: #3c3c3c;
+}
+.dzp-report .noprint {
+  margin: 18px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.dzp-report .noprint button {
+  font: inherit;
+  font-size: 12px;
+  padding: 9px 16px;
+  border: 1px solid #0a0a0a;
+  background: #0a0a0a;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dzp-report .noprint a {
+  font-size: 12px;
+  color: #3c3c3c;
+}
+.dzp-report .noprint .mut {
+  font-size: 12px;
+}
+@media print {
+  .dzp-report .noprint,
+  .ad-top,
+  .ad-subtabs {
+    display: none;
   }
 }
