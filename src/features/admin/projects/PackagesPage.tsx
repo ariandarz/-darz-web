@@ -52,6 +52,17 @@
  *    what a project keeps here (its written deliverables and money) and
  *    what it loses (issuing a proposal), not the old "snapshot" line. A 409
  *    is the conflict banner with Reload; so is one on a service save;
+ *  - "＋ Add the standard set" (owner only, the panel's `StandardSetCard`)
+ *    is the port of `projSeedIfEmpty` (:13381-13451): the old panel seeded
+ *    its client-local store the first time a Projects view opened, which a
+ *    server DB must never do silently, so the same 34 service lines, 8
+ *    package templates and 4 checklist templates are written here by an
+ *    explicit click, through the ordinary create endpoints, skipping by
+ *    name anything already there (the data and the plan live in
+ *    `standardSet.ts`). The old rate card itself (:13436-13441 — hourly
+ *    rates, contingency, margins, multipliers) has no backend field and
+ *    does NOT port; under D21 the catalogue's own prices and internal costs
+ *    are the rates, and the card says so where the action is;
  *  - `Lib.toast` lines are inline status notes; `dzConfirm` is
  *    `ConfirmDialog`.
  */
@@ -61,6 +72,7 @@ import { ConflictError } from '../../../api/errors';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
 import type { ProjectsAdminService } from '../../../api/services';
 import type {
+  ChecklistTemplateAdmin,
   Choice,
   PackageTemplateAdmin,
   PageQuery,
@@ -96,9 +108,22 @@ import {
   scopeByCat,
   stageLabel,
   svcName,
+  walkPages,
   walkProjects,
   walkServices,
 } from './projectForm';
+import {
+  STANDARD_CURRENCY,
+  STANDARD_SET_COUNTS,
+  checklistInput,
+  missingServices,
+  packageInput,
+  planChecklists,
+  planPackages,
+  planServices,
+  serviceIdIndex,
+  serviceInput,
+} from './standardSet';
 import '../admin.css';
 
 const CONFLICT_PROJECT =
@@ -224,6 +249,9 @@ export function PackagesPage() {
   const svcLoading = svcWalk.rows === null && !svcWalk.error;
 
   const [svcDraft, setSvcDraft] = useState<ServiceDraft | null>(null);
+  // the standard set's own card — one inline editor slot, so opening it puts
+  // the service editor away and vice versa
+  const [stdOpen, setStdOpen] = useState(false);
   const [svcError, setSvcError] = useState<string | null>(null);
   const [svcConflict, setSvcConflict] = useState(false);
   const [removingSvc, setRemovingSvc] = useState<ServiceCatalogItemAdmin | null>(null);
@@ -247,6 +275,7 @@ export function PackagesPage() {
   const editSvc = (row: ServiceCatalogItemAdmin | null) => {
     setSvcError(null);
     setSvcConflict(false);
+    setStdOpen(false);
     setSvcDraft(
       row
         ? {
@@ -453,10 +482,41 @@ export function PackagesPage() {
               <div className="fl" style={PANEL_LABEL}>
                 Service catalogue · {catalogue.length} lines
               </div>
-              <button type="button" className="dzp-btn sm" onClick={() => editSvc(null)}>
-                ＋ Add service
-              </button>
+              <div className="dzp-acts" style={{ marginTop: 0 }}>
+                {/* the old panel's `projSeedIfEmpty` (:13381-13451) as an
+                    explicit action — owner only, because it writes rates and
+                    internal costs (`projCanMoney()`, :13282) */}
+                {canMoney && (
+                  <button
+                    type="button"
+                    className="dzp-btn sm"
+                    aria-expanded={stdOpen}
+                    onClick={() => {
+                      setSvcDraft(null);
+                      setStdOpen(!stdOpen);
+                    }}
+                  >
+                    ＋ Add the standard set
+                  </button>
+                )}
+                <button type="button" className="dzp-btn sm" onClick={() => editSvc(null)}>
+                  ＋ Add service
+                </button>
+              </div>
             </div>
+
+            {canMoney && stdOpen && (
+              <StandardSetCard
+                catalogue={svcWalk.rows}
+                onCancel={() => setStdOpen(false)}
+                onDone={() => {
+                  // the panel's list and the package grid re-read, so the new
+                  // rows are simply there behind the card's report
+                  setSvcGen((g) => g + 1);
+                  void reload();
+                }}
+              />
+            )}
 
             {/* :13936-13944 `editSvc` — the modal's form, inline in the panel */}
             {svcDraft && (
@@ -774,6 +834,329 @@ function PackageCard({
           onCancel={onCancelPick}
         />
       )}
+    </div>
+  );
+}
+
+/* ── the standard set (`projSeedIfEmpty`, :13381-13451) ─────────────────── */
+
+/** The three kinds the card ticks, in the order it lists and writes them. */
+type SeedKind = 'services' | 'packages' | 'checklists';
+
+const SEED_KINDS: SeedKind[] = ['services', 'packages', 'checklists'];
+
+/** Singular / plural, so every count reads as a sentence rather than a
+ * table ("1 service line" / "34 service lines"). */
+const SEED_NOUNS: Record<SeedKind, [string, string]> = {
+  services: ['service line', 'service lines'],
+  packages: ['package template', 'package templates'],
+  checklists: ['checklist template', 'checklist templates'],
+};
+
+/** The preview row's heading. */
+const SEED_TITLES: Record<SeedKind, string> = {
+  services: 'Service lines',
+  packages: 'Package templates',
+  checklists: 'Checklist templates',
+};
+
+function countText(kind: SeedKind, n: number): string {
+  const [one, many] = SEED_NOUNS[kind];
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "a, b and c". */
+function joinWords(parts: string[]): string {
+  if (parts.length < 2) return parts.join('');
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+/** The tick labels — every count comes from the data module, never typed out
+ * here. The service lines are "the rate card" because under D21 that is what
+ * the catalogue now is. */
+const SEED_TICKS: Record<SeedKind, string> = {
+  services: `The rate card · ${countText('services', STANDARD_SET_COUNTS.services)}`,
+  packages: countText('packages', STANDARD_SET_COUNTS.packages),
+  checklists: countText('checklists', STANDARD_SET_COUNTS.checklists),
+};
+
+type SeedTicks = Record<SeedKind, boolean>;
+type SeedCounts = Record<SeedKind, number>;
+
+/** A package left uncreated because the catalogue has no row for one of its
+ * lines — `packageInput` would drop that line silently. */
+interface ShortPackage {
+  name: string;
+  missing: string[];
+}
+
+interface SeedStep {
+  label: string;
+  done: number;
+  /** 0 for a step with nothing to count (the catalogue re-read). */
+  total: number;
+}
+
+interface SeedReport {
+  added: SeedCounts;
+  skipped: SeedCounts;
+  short: ShortPackage[];
+  /** The failure that stopped the run; null when it ran to the end. */
+  error: string | null;
+}
+
+/** "Added 34 service lines, 8 package templates and 4 checklist templates,
+ * skipped 3 service lines already there." — exact counts, per kind. */
+function resultText(r: SeedReport): string {
+  const added = SEED_KINDS.filter((k) => r.added[k] > 0).map((k) => countText(k, r.added[k]));
+  const skipped = SEED_KINDS.filter((k) => r.skipped[k] > 0).map((k) =>
+    countText(k, r.skipped[k]),
+  );
+  if (!added.length)
+    return skipped.length
+      ? `Nothing new to add — ${joinWords(skipped)} already there.`
+      : 'Nothing was added.';
+  const tail = skipped.length ? `, skipped ${joinWords(skipped)} already there.` : '.';
+  return `Added ${joinWords(added)}${tail}`;
+}
+
+/** Nothing is rolled back, so a failure says exactly what did get written. */
+function failureText(r: SeedReport): string {
+  const added = SEED_KINDS.filter((k) => r.added[k] > 0).map((k) => countText(k, r.added[k]));
+  return added.length
+    ? `Nothing was rolled back; added before it stopped: ${joinWords(added)}.`
+    : 'Nothing was added, and nothing was rolled back.';
+}
+
+/**
+ * `projSeedIfEmpty` (:13381-13451) as an explicit, idempotent, owner-only
+ * action instead of a silent first-open seed: the old panel's own 34 service
+ * lines, 8 package templates and 4 checklist templates (`standardSet.ts`),
+ * written through the ordinary create endpoints wherever the admin is signed
+ * in. Every plan skips by NAME (trimmed, case-insensitive), so nothing is
+ * duplicated or overwritten and a run that stopped half-way is resumed by
+ * pressing the button again.
+ *
+ * The packages are written after the catalogue is re-read, because a template
+ * links its lines by the id the API hands back (the old `SVC01…` keys were
+ * local-store ids and do not exist here); one whose line is missing is named
+ * in the report instead of being created short of its scope.
+ */
+function StandardSetCard({
+  catalogue,
+  onCancel,
+  onDone,
+}: {
+  /** The panel's own walk — null until it has arrived. */
+  catalogue: ServiceCatalogItemAdmin[] | null;
+  onCancel: () => void;
+  onDone: () => void;
+}) {
+  const { projectsAdmin } = useApi();
+  const options = useOptions();
+  const [tick, setTick] = useState<SeedTicks>({
+    services: true,
+    packages: true,
+    checklists: true,
+  });
+  const [gen, setGen] = useState(0);
+  const [tpl, setTpl] = useState<{
+    packages: PackageTemplateAdmin[] | null;
+    checklists: ChecklistTemplateAdmin[] | null;
+    error: string | null;
+  }>({ packages: null, checklists: null, error: null });
+  const [step, setStep] = useState<SeedStep | null>(null);
+  const [report, setReport] = useState<SeedReport | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // both template lists are read WHOLE (the grid is server-paginated, and a
+  // name already there on page 3 must still be skipped). The last rows stay
+  // on screen while the re-walk after a run is in flight.
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      walkPages((page) => projectsAdmin.packages({ page, per_page: 100 })),
+      walkPages((page) => projectsAdmin.checklists({ page, per_page: 100 })),
+    ]).then(
+      ([packages, checklists]) => alive && setTpl({ packages, checklists, error: null }),
+      (err: unknown) =>
+        alive &&
+        setTpl({
+          packages: null,
+          checklists: null,
+          error: err instanceof Error ? err.message : 'Could not load the templates.',
+        }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [projectsAdmin, gen]);
+
+  // :13441 `cur:'USD'` — the old rate card's own currency, used when this
+  // backend serves it; the served list decides, so the enum is never assumed
+  // (a workspace without USD gets the same numbers in its default currency,
+  // and the card says so)
+  const currencies = choices(options, 'currency');
+  const seedCurrency = currencies.some((c) => c.value === STANDARD_CURRENCY)
+    ? STANDARD_CURRENCY
+    : defaultCurrency(options) || STANDARD_CURRENCY;
+
+  const plans = {
+    services: planServices(catalogue ?? []),
+    packages: planPackages(tpl.packages ?? []),
+    checklists: planChecklists(tpl.checklists ?? []),
+  };
+  const ready = catalogue !== null && tpl.packages !== null && tpl.checklists !== null;
+  const toAdd = SEED_KINDS.reduce((n, k) => n + (tick[k] ? plans[k].create.length : 0), 0);
+
+  const toggle = (k: SeedKind, on: boolean) =>
+    setTick((t) => {
+      const next = { ...t };
+      next[k] = on;
+      return next;
+    });
+
+  /** Sequential — there is no bulk endpoint, and a package needs the ids of
+   * the lines written before it. A failure stops the run where it is. */
+  const run = async () => {
+    if (busy || !ready || !catalogue) return;
+    setBusy(true);
+    setReport(null);
+    const added: SeedCounts = { services: 0, packages: 0, checklists: 0 };
+    const skipped: SeedCounts = {
+      services: tick.services ? plans.services.skip.length : 0,
+      packages: tick.packages ? plans.packages.skip.length : 0,
+      checklists: tick.checklists ? plans.checklists.skip.length : 0,
+    };
+    const short: ShortPackage[] = [];
+    let failure: string | null = null;
+    try {
+      if (tick.services) {
+        const rows = plans.services.create;
+        let n = 0;
+        for (const s of rows) {
+          n += 1;
+          setStep({ label: 'Adding service lines', done: n, total: rows.length });
+          await projectsAdmin.createService(serviceInput(s, seedCurrency));
+          added.services += 1;
+        }
+      }
+      if (tick.packages && plans.packages.create.length) {
+        setStep({ label: 'Re-reading the service catalogue', done: 0, total: 0 });
+        // the WHOLE catalogue: a template's named line resolves against the
+        // rows just created AND the ones that were already here
+        const idByName = serviceIdIndex(await walkServices(projectsAdmin));
+        const rows = plans.packages.create;
+        let n = 0;
+        for (const p of rows) {
+          n += 1;
+          setStep({ label: 'Adding package templates', done: n, total: rows.length });
+          const missing = missingServices(p, idByName);
+          if (missing.length) {
+            short.push({ name: p.name, missing });
+            continue;
+          }
+          await projectsAdmin.createPackage(packageInput(p, idByName));
+          added.packages += 1;
+        }
+      }
+      if (tick.checklists) {
+        const rows = plans.checklists.create;
+        let n = 0;
+        for (const c of rows) {
+          n += 1;
+          setStep({ label: 'Adding checklist templates', done: n, total: rows.length });
+          await projectsAdmin.createChecklist(checklistInput(c));
+          added.checklists += 1;
+        }
+      }
+    } catch (err: unknown) {
+      failure = err instanceof Error ? err.message : 'That did not go through.';
+    }
+    setStep(null);
+    setBusy(false);
+    setReport({ added, skipped, short, error: failure });
+    setGen((g) => g + 1); // the preview re-reads what is there now
+    if (added.services || added.packages || added.checklists) onDone();
+  };
+
+  return (
+    <div className="dzp-svcgrp">
+      <div className="gh">Service catalogue · Standard set</div>
+      <p className="dzp-mut">
+        These are the service lines, package templates and checklist templates the old panel
+        started with — anything already here by name is skipped, so it is safe to run twice.
+      </p>
+      {tpl.error && <DeskBanner>{tpl.error}</DeskBanner>}
+      {SEED_KINDS.map((k) => (
+        <label className="dzp-chk" key={k}>
+          <input
+            type="checkbox"
+            checked={tick[k]}
+            disabled={busy}
+            onChange={(e) => toggle(k, e.target.checked)}
+          />
+          {SEED_TICKS[k]}
+        </label>
+      ))}
+      {/* :13436-13441 — the old rate card has no field on this backend */}
+      <p className="dzp-mut" role="note">
+        The rate card itself doesn’t come across: its hourly rates, contingency and margin
+        multipliers have nowhere to live here. These prices and internal costs are the rates
+        now — the calculator prices from them.
+      </p>
+      {seedCurrency !== STANDARD_CURRENCY && (
+        <p className="dzp-mut" role="note">
+          The old prices were quoted in {STANDARD_CURRENCY}, which this workspace does not
+          offer — the lines are added in {seedCurrency} at the same numbers.
+        </p>
+      )}
+      {!ready && !tpl.error && <p className="dz-state">Loading…</p>}
+      {ready && (
+        <div style={{ marginTop: 4 }}>
+          {SEED_KINDS.filter((k) => tick[k]).map((k) => (
+            <div className="dzp-mut" key={k}>
+              {SEED_TITLES[k]} · {plans[k].create.length} to add · {plans[k].skip.length}{' '}
+              already there
+            </div>
+          ))}
+        </div>
+      )}
+      {step && (
+        <p className="dzp-mut" role="status">
+          {step.total > 0 ? `${step.label}… ${step.done} of ${step.total}` : `${step.label}…`}
+        </p>
+      )}
+      {report?.error && (
+        <DeskBanner>
+          {report.error} {failureText(report)} Press “Add to this workspace” again to carry on
+          where it stopped — anything already there is skipped.
+        </DeskBanner>
+      )}
+      {report && !report.error && (
+        <p className="dzp-mut" role="status">
+          {resultText(report)}
+        </p>
+      )}
+      {report?.short.map((s) => (
+        <p className="dzp-mut" role="status" key={s.name}>
+          “{s.name}” was not added: the catalogue has no{' '}
+          {joinWords(s.missing.map((m) => `“${m}”`))}.
+        </p>
+      ))}
+      <div className="dzp-acts">
+        <button type="button" className="dzp-btn gho" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="dzp-btn pri"
+          disabled={busy || !ready || toAdd === 0}
+          onClick={() => void run()}
+        >
+          Add to this workspace
+        </button>
+      </div>
     </div>
   );
 }
