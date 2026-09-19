@@ -76,7 +76,16 @@ import type {
   PrivateDealAdmin,
   DealQuery,
   DealsSummary,
+  PortalState,
+  PortalUpdateSubmit,
+  PortalUpdateRow,
+  PortalPricelist,
+  PortalMessage,
+  PortalExhibition,
+  PortalExhibitionInput,
+  PortalCatalogueEntry,
 } from './types';
+import type { PortalClient } from './PortalClient';
 
 export abstract class ResourceService {
   protected readonly client: ApiClient;
@@ -1155,5 +1164,121 @@ export class AuthService extends ResourceService {
    */
   requestAccess(body: AccessRequestInput) {
     return this.create<AccessRequest>('/access-requests/', body);
+  }
+}
+
+/**
+ * `/api/gallery/portal/{token}/…` — the NO-LOGIN partner portal (Phase 14).
+ *
+ * Not a `ResourceService`: those ride the authenticated `ApiClient`, and this
+ * surface must not (see `PortalClient`). Credentials are per-call — the token
+ * names the link, the PIN proves it (`PortalAuthService.resolve` gates every
+ * request, reads included): `?pin=` on GET, a `pin` field inside JSON bodies,
+ * a `pin` part on multipart (`views.py::_portal_pin`).
+ */
+export class GalleryPortalService {
+  private readonly client: PortalClient;
+
+  constructor(client: PortalClient) {
+    this.client = client;
+  }
+
+  private base(token: string) {
+    return `/gallery/portal/${encodeURIComponent(token)}`;
+  }
+
+  /** The one big read — link + assigned works (+funnel) + pricelists + messages. */
+  state(token: string, pin: string) {
+    return this.client.send<PortalState>('GET', `${this.base(token)}/`, { query: { pin } });
+  }
+
+  /** One update into the pending-review queue. Payload keys the admin's
+   * approval auto-applies: `availability_status` (kind `availability`),
+   * `price_amount`/`currency`/`price_type` (kind `price`), and
+   * `_CORRECTION_FIELDS` (kind `correction`) — everything else is a record
+   * for the reviewer (`GalleryUpdateService.approve`). */
+  submitUpdate(token: string, pin: string, body: PortalUpdateSubmit) {
+    return this.client.send<PortalUpdateRow>('POST', `${this.base(token)}/updates/`, {
+      body: { pin, ...body },
+    });
+  }
+
+  /** Multipart — a real file lands in the private documents bucket. */
+  uploadPricelist(token: string, pin: string, file: File, title: string, notes = '') {
+    const form = new FormData();
+    form.append('pin', pin);
+    form.append('file', file);
+    if (title) form.append('title', title);
+    if (notes) form.append('notes', notes);
+    return this.client.send<PortalPricelist>('POST', `${this.base(token)}/pricelists/`, {
+      body: form,
+    });
+  }
+
+  sendMessage(token: string, pin: string, body: string) {
+    return this.client.send<PortalMessage>('POST', `${this.base(token)}/messages/`, {
+      body: { pin, body },
+    });
+  }
+
+  /** The Exhibition Services menu (`gallery.exhibition_service` seeded list,
+   * admin-overridable per event). */
+  exhibitionCatalogue(token: string, pin: string) {
+    return this.client.send<{ services: PortalCatalogueEntry[] }>(
+      'GET',
+      `${this.base(token)}/exhibitions/catalogue/`,
+      { query: { pin } },
+    );
+  }
+
+  exhibitions(token: string, pin: string) {
+    return this.client.send<{ exhibitions: PortalExhibition[] }>(
+      'GET',
+      `${this.base(token)}/exhibitions/`,
+      { query: { pin } },
+    );
+  }
+
+  createExhibition(token: string, pin: string, body: PortalExhibitionInput) {
+    return this.client.send<PortalExhibition>('POST', `${this.base(token)}/exhibitions/`, {
+      body: { pin, ...body },
+    });
+  }
+
+  updateExhibition(token: string, pin: string, id: string, body: PortalExhibitionInput) {
+    return this.client.send<PortalExhibition>(
+      'PATCH',
+      `${this.base(token)}/exhibitions/${id}/`,
+      {
+        body: { pin, ...body },
+      },
+    );
+  }
+
+  /** Send the show to Darz with the ticked service keys — request_status
+   * flips to `requested`; after that the portal can no longer edit it
+   * (`ExhibitionEventService._guard_portal_editable`). */
+  submitExhibition(token: string, pin: string, id: string, serviceKeys: string[]) {
+    return this.client.send<PortalExhibition>(
+      'POST',
+      `${this.base(token)}/exhibitions/${id}/submit/`,
+      { body: { pin, service_keys: serviceKeys } },
+    );
+  }
+
+  /** Accept a proposal / sign an invoice — name-only (the old canvas pad does
+   * not port: the backend takes `signer_name`, G-PORT-7). */
+  signExhibitionDocument(
+    token: string,
+    pin: string,
+    eventId: string,
+    documentId: string,
+    signerName: string,
+  ) {
+    return this.client.send<DocumentAdmin>(
+      'POST',
+      `${this.base(token)}/exhibitions/${eventId}/documents/${documentId}/sign/`,
+      { body: { pin, signer_name: signerName } },
+    );
   }
 }

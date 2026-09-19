@@ -68,6 +68,9 @@ export interface FeatureFlags {
   /** The admin desk (`/admin/*`) — a team-principal surface, never in the
    * collector nav. */
   adminDesk: boolean;
+  /** The no-login partner portal (`/portal/:token`, Phase 14) — the gallery
+   * loop's outward half. Token+PIN gated server-side, never in any nav. */
+  galleryPortal: boolean;
 }
 
 const V0_1: FeatureFlags = {
@@ -91,6 +94,7 @@ const V0_1: FeatureFlags = {
   membership: false,
   push: false,
   adminDesk: true,
+  galleryPortal: true,
 };
 
 const FULL: FeatureFlags = {
@@ -182,6 +186,7 @@ export const FEATURE_ROUTES: ReadonlyArray<[keyof FeatureFlags, string]> = [
   ['profile', '/profile'],
   ['settings', '/settings'],
   ['adminDesk', '/admin'],
+  ['galleryPortal', '/portal'],
 ];
 
 /** True when `path` belongs to a feature that is switched off. */

@@ -226,10 +226,12 @@ export function SourcesPage() {
 
       {issued && (
         <>
+          {/* Phase 14: the portal is live at /portal/:token — hand over the
+              ready-to-send address, not just the raw key. */}
           <ShownOnceSecret
-            label={`Portal token — ${issued.name}`}
-            value={issued.token}
-            hint="The partner's no-login portal address key. The portal surface itself ships with the portal step — send the pair when it does, or now for safekeeping."
+            label={`Portal link — ${issued.name}`}
+            value={`${window.location.origin}/portal/${issued.token}`}
+            hint="The partner's no-login portal address. Send it with the PIN below — the pair shows only this once."
           />
           <ShownOnceSecret
             label="Portal PIN"

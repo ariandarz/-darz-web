@@ -595,3 +595,166 @@ export interface DealsSummary {
   >;
   count?: number;
 }
+
+/* ─── Gallery Portal (Phase 14) — the no-login partner surface ─────────────
+ * `/api/gallery/portal/{token}/…` — token in the path, PIN on every request
+ * (`?pin=` on GET, a `pin` field on writes). Shapes mirror
+ * `apps/gallery/serializers.py` + `views.py::portal_state`. */
+
+/** `GalleryLinkArtwork.snapshot` — the denormalized per-link copy the portal
+ * reads (`apps/gallery/services.py::GalleryLinkArtworkService.assign`). The
+ * portal never sees the live Artwork; note there is NO image key (G-PORT-1). */
+export interface PortalSnapshot {
+  title?: string | null;
+  artist?: string | null;
+  year?: string | null;
+  medium?: string | null;
+  material?: string | null;
+  dimensions?: string | null;
+  price_amount?: string | null;
+  currency?: string | null;
+  price_type?: string | null;
+  availability_status?: string | null;
+}
+
+/** One funnel entry from `FunnelDerivationService.for_link` — stage is the
+ * `gallery.funnel_stage` enum; `activity` present only with
+ * `feat_funnel_activity` (always anonymous aggregates). */
+export interface PortalFunnel {
+  stage: string;
+  activity?: {
+    offers: number;
+    holds: number;
+    requests: number;
+    saves: number;
+    views: number;
+    last_activity_at: string | null;
+  };
+}
+
+export interface PortalWork {
+  id: string;
+  link: string;
+  artwork: string;
+  snapshot: PortalSnapshot;
+  funnel_status: string;
+  created_at: string;
+  /** injected by `portal_state` when the link has `feat_funnel` */
+  funnel?: PortalFunnel | null;
+}
+
+export interface PortalPricelist {
+  id: string;
+  title: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface PortalMessage {
+  id: string;
+  sender: 'portal' | 'admin';
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+/** `GET /gallery/portal/{token}/` — the link (minus token/pin_hash) plus the
+ * three embedded lists. */
+export interface PortalState {
+  id: string;
+  source_type: 'gallery' | 'artist' | 'collector' | 'dealer';
+  name: string;
+  status: string;
+  theme: Record<string, unknown>;
+  feature_flags: Record<string, unknown>;
+  feat_funnel: boolean;
+  feat_funnel_activity: boolean;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  expires_at: string | null;
+  issued_by: string | null;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  assigned_artworks: PortalWork[];
+  pricelists: PortalPricelist[];
+  messages: PortalMessage[];
+}
+
+/** `POST /gallery/portal/{token}/updates/` body (minus the riding `pin`). */
+export interface PortalUpdateSubmit {
+  kind: string;
+  artwork?: string | null;
+  payload?: Record<string, unknown>;
+}
+
+export interface PortalUpdateRow {
+  id: string;
+  link: string;
+  artwork: string | null;
+  kind: string;
+  payload: Record<string, unknown>;
+  status: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string;
+  created_at: string;
+}
+
+/** One priced line of a composed exhibition package
+ * (`ExhibitionServiceLineSerializer`). */
+export interface PortalServiceLine {
+  id: string;
+  service_key: string;
+  title: string;
+  description: string;
+  price: string | null;
+  currency: string;
+  status: 'proposed' | 'confirmed' | 'declined' | 'delivered';
+  admin_note: string;
+  position: number;
+  created_at: string;
+}
+
+/** `views.py::_portal_exhibition_dict` — the source's trimmed view of one
+ * show. `service_lines`/`documents` fill only once Darz has published it. */
+export interface PortalExhibition {
+  id: string;
+  title: string;
+  event_date: string;
+  venue: string;
+  artists: string;
+  note: string;
+  project: string;
+  gallery_note: string;
+  gallery_selected: string[];
+  request_status: 'draft' | 'requested' | 'approved' | 'rejected';
+  published: boolean;
+  currency: string;
+  discount: string;
+  created_at: string;
+  service_lines: PortalServiceLine[];
+  documents: DocumentAdmin[];
+}
+
+/** `GET /gallery/portal/{token}/exhibitions/catalogue/` — the seeded services
+ * menu (`apps/gallery/exhibition_catalogue.py`), admin-overridable per event. */
+export interface PortalCatalogueEntry {
+  key: string;
+  title: string;
+  description: string;
+  default_price: number | null;
+}
+
+/** Gallery-owned fields of a show — what `create`/`PATCH` from the portal may
+ * carry (`ExhibitionEventCreateSerializer` / `…UpdateSerializer`). */
+export interface PortalExhibitionInput {
+  title?: string;
+  event_date?: string;
+  venue?: string;
+  artists?: string;
+  note?: string;
+  gallery_note?: string;
+  project?: string;
+}

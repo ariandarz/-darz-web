@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 10: the Gallery Portal (`/portal/:token`)
+
+- The no-login partner surface, ported from `gallery-update.html`: PIN gate, works + one-submission
+  updates (the payload keys approval auto-applies), funnel Status, pricelist upload, messages, and
+  the Exhibition Services workspace through to document acceptance. Gaps G-PORT-1…11 recorded.
+
 ## 2026-09-19 — Phase 12 Step 8: Private Deals + receipts (PR #53, left open)
 
 - The Accounting desk's second half: the deals CRM with the server-computed per-deal calc and
