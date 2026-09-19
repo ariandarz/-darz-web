@@ -800,7 +800,23 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       — assign via the kit Picker, remove, per-work funnel-stage override. Verified live end to
       end INCLUDING the portal side: a real `POST /portal/{token}/updates/` with the issued
       token+PIN (201) → banner → queue → approve; disable → the portal answers 401.
-- [ ] **Step 5 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+- [x] **Step 5 — Auctions admin: Live Auctions + Register to Bid** ✅ 2026-09-19 (overnight
+      run) — `/admin/auctions` (`auctionsView()`, `darz-studio.html:31677`: search + status
+      filter, ＋ New auction on the create serializer's exact fields) and `/admin/auctions/:id`:
+      the no-edit record (G-AUC-1 stated), the Phase-35 **invite-only card** (switch + invited
+      collectors via the kit Picker — "an uninvited collector never sees the sale"), and the lots
+      desk — create with the confidential reserve (shown only here), **Go live** (the artwork
+      transitions to Reserved server-side), **Close / Close early** (the found-live rule: `force`
+      bypasses the END TIME, never the reserve — the confirm says the whole rule).
+      `/admin/auction-registrations`: the paddle queue with the ported action titles; approving
+      assigns the next sequential paddle number. G-AUC-1…3 recorded. Verified live end to end:
+      create → invite → lot → go-live → artwork Reserved → queue resolve → approve → paddle #1 →
+      close early → passed → artwork back to Available. (Redis joined the local stack for the
+      Channels lot-state broadcast.)
+- [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+      is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
+      returns in a later pass. **Auction Records desk** (external results DB, full CRUD served)
+      is the next catalogue-adjacent build. — `Sale` has no source axis (G-SALE-4); auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 

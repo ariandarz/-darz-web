@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 12 Step 5: Auctions admin — Live Auctions + Register to Bid
+
+- `/admin/auctions` (+detail): create, the Phase-35 invite-only card, lots with the confidential
+  reserve, Go live (artwork → Reserved), Close/Close early (force bypasses the end time, never
+  the reserve — found live). `/admin/auction-registrations`: the paddle queue; approval assigns
+  the next sequential number. G-AUC-1…3 recorded.
+
 ## 2026-09-18 — Phase 12 Step 4: Galleries & Sources — partners + Source Updates
 
 - `/admin/sources` (+detail): the partner roster, issue with the one-time token+PIN reveal,

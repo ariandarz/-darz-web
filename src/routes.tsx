@@ -28,6 +28,9 @@ import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
 import { ArtistsPage } from './features/admin/ArtistsPage';
+import { AuctionAdminDetailPage } from './features/admin/AuctionAdminDetailPage';
+import { AuctionsAdminPage } from './features/admin/AuctionsAdminPage';
+import { RegistrationsPage } from './features/admin/RegistrationsPage';
 import { DocumentDetailPage } from './features/admin/DocumentDetailPage';
 import { DocumentsPage } from './features/admin/DocumentsPage';
 import { PublishedPage } from './features/admin/PublishedPage';
@@ -274,6 +277,9 @@ export function AppRoutes() {
         <Route path="/admin/documents" element={<DocumentsPage />} />
         <Route path="/admin/documents/:id" element={<DocumentDetailPage />} />
         <Route path="/admin/published" element={<PublishedPage />} />
+        <Route path="/admin/auctions" element={<AuctionsAdminPage />} />
+        <Route path="/admin/auctions/:id" element={<AuctionAdminDetailPage />} />
+        <Route path="/admin/auction-registrations" element={<RegistrationsPage />} />
         <Route path="/admin/sources" element={<SourcesPage />} />
         <Route path="/admin/sources/:id" element={<SourceDetailPage />} />
         <Route path="/admin/sales" element={<SalesPage />} />

@@ -499,3 +499,13 @@ export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
  * price / correction update applies it to the artwork through the real
  * catalog services; the other kinds record intent only. */
 export type GalleryUpdateAdmin = Schemas['GalleryUpdate'];
+
+/** Admin lot — `LotAdminSerializer`: the collector shape PLUS the
+ * confidential `reserve_amount` and `leading_bidder`, with the artwork as a
+ * bare uuid. Lots are create-only (no PATCH — G-AUC-2); they move through
+ * `go-live` and `close` (+`?force=` sells under reserve). */
+export type LotAdmin = Schemas['LotAdmin'];
+
+/** A paddle request — `BidderRegistrationAdminSerializer`. Approving assigns
+ * the auction's next sequential paddle number server-side. */
+export type BidderRegistrationAdmin = Schemas['BidderRegistrationAdmin'];

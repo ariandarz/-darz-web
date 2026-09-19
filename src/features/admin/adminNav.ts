@@ -247,9 +247,30 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'auctions',
     label: 'Auctions',
     tabs: [
-      tab('auctions', 'Live Auctions', null, 'ready', '7', 'auctions admin, 12 routes.'),
-      tab('records', 'Auction Records', null, 'ready', '7'),
-      tab('aucReg', 'Register to Bid', null, 'ready', '7', 'Paddle registrations queue.'),
+      tab(
+        'auctions',
+        'Live Auctions',
+        '/admin/auctions',
+        'ready',
+        '12·5',
+        'auctions admin, 12 routes.',
+      ),
+      tab(
+        'records',
+        'Auction Records',
+        null,
+        'ready',
+        '12+',
+        'the external results DB (full CRUD served) — its own desk next.',
+      ),
+      tab(
+        'aucReg',
+        'Register to Bid',
+        '/admin/auction-registrations',
+        'ready',
+        '12·5',
+        'Paddle registrations queue.',
+      ),
     ],
   },
   {

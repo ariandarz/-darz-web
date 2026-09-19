@@ -68,6 +68,8 @@ import type {
   GalleryLinkAdmin,
   GalleryLinkArtwork,
   GalleryUpdateAdmin,
+  BidderRegistrationAdmin,
+  LotAdmin,
 } from './types';
 
 export abstract class ResourceService {
@@ -836,6 +838,106 @@ export class GalleryAdminService extends ResourceService {
   }
   rejectUpdate(id: string, note = '') {
     return this.create<GalleryUpdateAdmin>(`/updates/${id}/reject/`, { note });
+  }
+}
+
+/** `/api/auctions/admin/` — the auction house's desks (backend Phase 8/35):
+ * auctions (create; detail is GET/DELETE — no edit endpoint, G-AUC-1), the
+ * Phase-35 invite-only list, lots (create-only + go-live/close), and the
+ * paddle-registration queue. The external results DB (`/records/`) waits for
+ * its own desk. */
+export class AuctionsAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/auctions/admin');
+  }
+
+  auctions(query: { page?: number; per_page?: number } = {}) {
+    return this.list<Auction>('/auctions/', query as RequestOptions['query']);
+  }
+  auction(id: string) {
+    return this.retrieve<Auction>(`/auctions/${id}/`);
+  }
+  createAuction(body: {
+    title: string;
+    description?: string;
+    currency: string;
+    starts_at: string;
+    ends_at: string;
+  }) {
+    return this.create<Auction>('/auctions/', body);
+  }
+  deleteAuction(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/auctions/${id}/`);
+  }
+  /** Phase 35 — "Make an auction private": an uninvited collector never sees
+   * it and cannot register a paddle. */
+  inviteList(id: string) {
+    return this.retrieve<{
+      invite_only: boolean;
+      invited_collectors: Array<{ id: string; display_name: string }>;
+    }>(`/auctions/${id}/invite-only/`);
+  }
+  setInviteOnly(id: string, inviteOnly: boolean, invitedCollectorIds: string[]) {
+    return this.create<{
+      invite_only: boolean;
+      invited_collectors: Array<{ id: string; display_name: string }>;
+    }>(`/auctions/${id}/invite-only/`, {
+      invite_only: inviteOnly,
+      invited_collector_ids: invitedCollectorIds,
+    });
+  }
+
+  lots(auctionId: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<LotAdmin>(
+      `/auctions/${auctionId}/lots/`,
+      query as RequestOptions['query'],
+    );
+  }
+  createLot(body: {
+    auction: string;
+    artwork: string;
+    lot_number: number;
+    opening_amount: string;
+    reserve_amount?: string | null;
+    low_estimate?: string | null;
+    high_estimate?: string | null;
+    premium_pct?: string;
+    currency: string;
+    starts_at: string;
+    ends_at: string;
+    soft_close_sec?: number;
+  }) {
+    return this.create<LotAdmin>(`/auctions/${body.auction}/lots/`, body);
+  }
+  /** scheduled → live; the artwork transitions to Reserved server-side. */
+  goLive(lotId: string) {
+    return this.create<LotAdmin>(`/lots/${lotId}/go-live/`);
+  }
+  /** Sells or passes by the engine's own rules (a sale needs bids AND the
+   * reserve met — force never overrides that); `force` closes EARLY, before
+   * the lot's scheduled end ("Lot has not reached its end time yet." is the
+   * plain close's refusal, found live). */
+  closeLot(lotId: string, force = false) {
+    return this.client.send<LotAdmin>('POST', `${this.basePath}/lots/${lotId}/close/`, {
+      query: force ? { force: 'true' } : undefined,
+    });
+  }
+
+  registrations(
+    query: { auction?: string; status?: string; page?: number; per_page?: number } = {},
+  ) {
+    return this.list<BidderRegistrationAdmin>(
+      '/registrations/',
+      query as RequestOptions['query'],
+    );
+  }
+  /** "Approve — the collector is told they are registered" (the old title);
+   * assigns the auction's next sequential paddle number. */
+  approveRegistration(id: string) {
+    return this.create<BidderRegistrationAdmin>(`/registrations/${id}/approve/`);
+  }
+  rejectRegistration(id: string) {
+    return this.create<BidderRegistrationAdmin>(`/registrations/${id}/reject/`);
   }
 }
 
