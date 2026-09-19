@@ -5,6 +5,13 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — D21 resolved: the catalogue carries Darz's real services, in Toman
+
+- "Add the standard set" (owner-only, idempotent) writes the 8 priced exhibition services with their
+  real Toman prices, the 22 other Exhibition Coverage services unpriced, the 5 coverage programmes and
+  the 4 checklists. The old `projSeedIfEmpty` USD figures were demo data and are gone. A project
+  proposal now chooses its currency and never invents a rate. Gaps G-PROJ-8/9.
+
 ## 2026-09-19 — Phase 11c: Projects — the eight-tab group over backend Phase 31
 
 - Dashboard, list, record (stage rail, nine sections, attachments, one-click proposal), print

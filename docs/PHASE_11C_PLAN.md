@@ -72,7 +72,9 @@ class is the truth to mirror).
 
 ## Open questions for the owner
 
-- **D21** (above) — the calculator's rate card provenance.
+- ~~**D21** — the calculator's rate card provenance.~~ **Resolved 2026-09-19:** the catalogue carries Darz's
+  real services in Toman (the 8 priced exhibition services + the 22 other coverage services, unpriced),
+  loaded by an owner-only action; the old demo figures were invented and do not port.
 - Whether Projects outranks the **Gallery Portal surface** in build order — the portal closes
   a loop whose admin half already shipped; Projects is a whole new territory. The §6 order
   says portal (row 7) before projects (row 9); this plan does not change that, it only makes
