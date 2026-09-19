@@ -17,6 +17,7 @@
     "e2e:build": "VITE_API_BASE_URL=http://127.0.0.1:8787/api VITE_FEATURE_SET=full vite build --outDir dist-e2e --logLevel error"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3"

@@ -586,6 +586,14 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       (`docs/ADMIN_ARCHITECTURE.md` §2). Live-verified full-circle both ways (step15: 37 checks).
 - [x] Admin review/approve desk UI — shipped with Phase 11b (the Sources & Partners desk); the
       issue reveal now hands over the ready-to-send `/portal/{token}` address.
+- [x] **Phase 10b — the desk half + documents (2026-09-19, Portal V1 order):** the Exhibitions
+      queue (third face of Sources), the per-partner shows + Q&A thread on the partner page, the
+      composer (`/admin/sources/:id/exhibitions/:eventId` — request → priced package → approve →
+      publish), and one-click proposal/invoice issue: create → client-rendered PDF
+      (@react-pdf/renderer, brand TTFs bundled, golden-fixture design, D18 resolved) → upload →
+      confirm, references per `doc-reference.js` (`DARZ-PRO/SINV-YYYY-NNNN`, highest-seen + 1).
+      The updates queue now reads in words (was → now, raw payload behind a fold). Live-verified
+      full circle both ways (step16: 22 checks; PDFs read back and inspected).
 
 ## Phase 11 — Admin: Marketing Hub, AI Tagging, Document Builder, Accounting ✅ backend ready
 

@@ -42,9 +42,11 @@ import {
   ShownOnceSecret,
   type Column,
 } from './kit';
+import { ExhibitionsQueue } from './ExhibitionsQueue';
+import { describeUpdate } from './exhibitionForm';
 import './admin.css';
 
-type View = 'partners' | 'updates';
+type View = 'partners' | 'updates' | 'exhibitions';
 
 export function SourcesPage() {
   const { galleryAdmin } = useApi();
@@ -52,8 +54,13 @@ export function SourcesPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const typeParam = params.get('type') ?? undefined;
+  const viewParam = params.get('view');
   const [view, setView] = useState<View>(
-    params.get('view') === 'updates' ? 'updates' : 'partners',
+    viewParam === 'updates'
+      ? 'updates'
+      : viewParam === 'exhibitions'
+        ? 'exhibitions'
+        : 'partners',
   );
 
   const types = choices(options, 'gallery.source_type');
@@ -162,13 +169,14 @@ export function SourcesPage() {
             options={[
               { value: 'partners', content: 'Partners' },
               { value: 'updates', content: 'Source Updates' },
+              { value: 'exhibitions', content: 'Exhibitions' },
             ]}
             value={view}
             onChange={(v) => {
               setView(v);
               const next = new URLSearchParams(params);
-              if (v === 'updates') next.set('view', 'updates');
-              else next.delete('view');
+              if (v === 'partners') next.delete('view');
+              else next.set('view', v);
               setParams(next);
             }}
           />
@@ -254,7 +262,12 @@ export function SourcesPage() {
         />
       )}
 
-      {view === 'partners' ? (
+      {view === 'exhibitions' ? (
+        <ExhibitionsQueue
+          options={options}
+          linkNames={new Map((links ?? []).map((l) => [l.id, l.name]))}
+        />
+      ) : view === 'partners' ? (
         !links && !error ? (
           <p className="dz-state">Loading…</p>
         ) : links && links.length === 0 ? (
@@ -270,6 +283,38 @@ export function SourcesPage() {
         <UpdatesQueue kinds={kinds} onReviewed={loadPending} />
       )}
     </DeskPage>
+  );
+}
+
+/** A submitted update in words — the reviewer reads rows, the raw payload
+ * stays behind a fold for the day the words miss something. */
+function ReviewRows({ update }: { update: GalleryUpdateAdmin }) {
+  const rows = describeUpdate(update);
+  const payload = (update.payload as Record<string, unknown>) ?? {};
+  if (!rows.length && !Object.keys(payload).length) return null;
+  return (
+    <div className="ad-revrows">
+      {rows.map((r, i) => (
+        <div className="ad-revrow" key={i}>
+          <span className="ad-revk">{r.label}</span>
+          <span className="ad-revv">
+            {r.from ? (
+              <>
+                <s>{r.from}</s> → <b>{r.to}</b>
+              </>
+            ) : (
+              r.to
+            )}
+          </span>
+        </div>
+      ))}
+      {Object.keys(payload).length > 0 && (
+        <details className="ad-revraw">
+          <summary>raw payload</summary>
+          <pre className="ad-updpayload">{JSON.stringify(payload, null, 1).slice(0, 600)}</pre>
+        </details>
+      )}
+    </div>
   );
 }
 
@@ -382,11 +427,7 @@ function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () =
                 {u.status !== 'pending' ? ` · ${u.status}` : ''}
                 {u.review_note ? ` · “${u.review_note}”` : ''}
               </span>
-              {Object.keys((u.payload as Record<string, unknown>) ?? {}).length > 0 && (
-                <pre className="ad-updpayload">
-                  {JSON.stringify(u.payload, null, 1).slice(0, 400)}
-                </pre>
-              )}
+              <ReviewRows update={u} />
             </div>
             {u.status === 'pending' && (
               <span className="ad-rowacts">

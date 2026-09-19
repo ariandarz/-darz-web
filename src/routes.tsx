@@ -40,6 +40,7 @@ import { DocumentsPage } from './features/admin/DocumentsPage';
 import { PublishedPage } from './features/admin/PublishedPage';
 import { SaleDetailPage } from './features/admin/SaleDetailPage';
 import { SourceDetailPage } from './features/admin/SourceDetailPage';
+import { ExhibitionComposePage } from './features/admin/ExhibitionComposePage';
 import { SourcesPage } from './features/admin/SourcesPage';
 import { SalesPage } from './features/admin/SalesPage';
 import { ArtworkEditorPage } from './features/admin/ArtworkEditorPage';
@@ -290,6 +291,10 @@ export function AppRoutes() {
         <Route path="/admin/auction-records/:id" element={<RecordEditorPage />} />
         <Route path="/admin/sources" element={<SourcesPage />} />
         <Route path="/admin/sources/:id" element={<SourceDetailPage />} />
+        <Route
+          path="/admin/sources/:id/exhibitions/:eventId"
+          element={<ExhibitionComposePage />}
+        />
         <Route path="/admin/sales" element={<SalesPage />} />
         <Route path="/admin/sales/:id" element={<SaleDetailPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />

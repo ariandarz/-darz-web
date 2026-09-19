@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 10b: the desk half — Exhibitions queue, composer, one-click documents
+
+- The gallery loop closed from the desk side: requested shows queue into Sources, the composer
+  prices/approves/publishes, and proposals/invoices issue in one click — client-rendered brand
+  PDFs (golden-fixture design) uploaded + confirmed; the updates queue reads in words.
+
 ## 2026-09-19 — Phase 10: the Gallery Portal (`/portal/:token`)
 
 - The no-login partner surface, ported from `gallery-update.html`: PIN gate, works + one-submission

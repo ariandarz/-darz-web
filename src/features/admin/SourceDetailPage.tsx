@@ -25,6 +25,7 @@ import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type { Choice, GalleryLinkAdmin, GalleryLinkArtwork } from '../../api/types';
 import { ConfirmDialog, DeskBanner, DeskPage, Picker, type PickItem } from './kit';
+import { ExhibitionsSection, MessagesSection } from './SourceExhibitions';
 import './admin.css';
 
 export function SourceDetailPage() {
@@ -178,6 +179,12 @@ export function SourceDetailPage() {
 
       {/* ---- the assigned works ---- */}
       <WorksSection linkId={link.id} stages={stages} />
+
+      {/* ---- Exhibition Services (Phase 10b — the desk half) ---- */}
+      <ExhibitionsSection linkId={link.id} options={options} />
+
+      {/* ---- the portal's Q&A thread, from this side ---- */}
+      <MessagesSection linkId={link.id} />
     </DeskPage>
   );
 }

@@ -618,8 +618,17 @@ function WorkCard({
         </div>
 
         <div className="awc-foot">
+          {/* an untouched card's send IS the old page's availability
+              confirmation (kind availability, no status key) — label it as
+              what it does, the plainest "artwork availability" action */}
           <button className="btn btn--primary" type="button" disabled={busy} onClick={onSend}>
-            {busy ? 'Sending…' : sentAt ? 'Send again' : 'Send update'}
+            {busy
+              ? 'Sending…'
+              : sentAt
+                ? 'Send again'
+                : dirty
+                  ? 'Send update'
+                  : 'Confirm available'}
           </button>
           {sentAt && <span className="sent-tag">Sent to Darz</span>}
         </div>
