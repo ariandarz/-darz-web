@@ -53,16 +53,18 @@
  *    what it loses (issuing a proposal), not the old "snapshot" line. A 409
  *    is the conflict banner with Reload; so is one on a service save;
  *  - "＋ Add the standard set" (owner only, the panel's `StandardSetCard`)
- *    is the port of `projSeedIfEmpty` (:13381-13451): the old panel seeded
- *    its client-local store the first time a Projects view opened, which a
- *    server DB must never do silently, so the same 34 service lines, 8
- *    package templates and 4 checklist templates are written here by an
- *    explicit click, through the ordinary create endpoints, skipping by
- *    name anything already there (the data and the plan live in
- *    `standardSet.ts`). The old rate card itself (:13436-13441 — hourly
- *    rates, contingency, margins, multipliers) has no backend field and
- *    does NOT port; under D21 the catalogue's own prices and internal costs
- *    are the rates, and the card says so where the action is;
+ *    writes Darz's REAL catalogue by an explicit click, through the ordinary
+ *    create endpoints, skipping by name anything already there: the 8
+ *    exhibition services with their real Toman prices, the 23 coverage
+ *    services (unpriced — Darz quotes them per show) grouped into their 5
+ *    programmes, and the 4 checklist templates (the data and the plan live
+ *    in `standardSet.ts`). The old panel's `projSeedIfEmpty` demo rates
+ *    (:13386-13433) are NOT what this writes any more — their USD prices
+ *    were invented for a demo and reached clients through the calculator and
+ *    the proposal, so the owner ruled them out; only the checklists stayed.
+ *    The card says on the spot what does not come across: no internal costs,
+ *    no "on request" (an unpriced line is written as 0), no descriptions
+ *    (G-PROJ-8), and the four near-duplicate pairs it refuses to merge;
  *  - `Lib.toast` lines are inline status notes; `dzConfirm` is
  *    `ConfirmDialog`.
  */
@@ -113,6 +115,7 @@ import {
   walkServices,
 } from './projectForm';
 import {
+  NEAR_DUPLICATES,
   STANDARD_CURRENCY,
   STANDARD_SET_COUNTS,
   checklistInput,
@@ -871,10 +874,9 @@ function joinWords(parts: string[]): string {
 }
 
 /** The tick labels — every count comes from the data module, never typed out
- * here. The service lines are named plainly: the note below the ticks is where
- * the card says that these prices ARE the rates now (D21), and calling the
- * tick "the rate card" read as a contradiction of the same note's "the rate
- * card itself doesn't come across". */
+ * here. The service lines are named plainly: the notes below the ticks are
+ * where the card says how many of them arrive unpriced, and a tick that
+ * promised a "rate card" would contradict them. */
 const SEED_TICKS: Record<SeedKind, string> = {
   services: countText('services', STANDARD_SET_COUNTS.services),
   packages: countText('packages', STANDARD_SET_COUNTS.packages),
@@ -930,18 +932,18 @@ function failureText(r: SeedReport): string {
 }
 
 /**
- * `projSeedIfEmpty` (:13381-13451) as an explicit, idempotent, owner-only
- * action instead of a silent first-open seed: the old panel's own 34 service
- * lines, 8 package templates and 4 checklist templates (`standardSet.ts`),
- * written through the ordinary create endpoints wherever the admin is signed
- * in. Every plan skips by NAME (trimmed, case-insensitive), so nothing is
- * duplicated or overwritten and a run that stopped half-way is resumed by
- * pressing the button again.
+ * Darz's real catalogue written by an explicit, idempotent, owner-only action
+ * — never the silent first-open seed the old panel did (`projSeedIfEmpty`,
+ * :13381-13451), which a server DB must not: the 8 exhibition services with
+ * their real Toman prices, the 23 coverage services in their 5 programmes and
+ * the 4 checklist templates (`standardSet.ts`), through the ordinary create
+ * endpoints wherever the admin is signed in. Every plan skips by NAME
+ * (trimmed, case-insensitive), so nothing is duplicated or overwritten and a
+ * run that stopped half-way is resumed by pressing the button again.
  *
  * The packages are written after the catalogue is re-read, because a template
- * links its lines by the id the API hands back (the old `SVC01…` keys were
- * local-store ids and do not exist here); one whose line is missing is named
- * in the report instead of being created short of its scope.
+ * links its lines by the id the API hands back; one whose line is missing is
+ * named in the report instead of being created short of its scope.
  */
 function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: () => void }) {
   const { projectsAdmin } = useApi();
@@ -995,10 +997,11 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
     };
   }, [projectsAdmin, gen]);
 
-  // :13440 `cur:'USD'` — the old rate card's own currency, used when this
-  // backend serves it; the served list decides, so the enum is never assumed
-  // (a workspace without USD gets the same numbers in its default currency,
-  // and the card says so)
+  // TMN — the owner's decision: Darz prices Iranian galleries in Toman, and
+  // international galleries are quoted in USD or EUR later, chosen at the
+  // time. Used when this backend serves it; the served list decides, so the
+  // enum is never assumed (a workspace without TMN gets the same numbers in
+  // its default currency, and the card says so)
   const currencies = choices(options, 'currency');
   const seedCurrency = currencies.some((c) => c.value === STANDARD_CURRENCY)
     ? STANDARD_CURRENCY
@@ -1114,8 +1117,10 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
     <div className="dzp-svcgrp">
       <div className="gh">Service catalogue · Standard set</div>
       <p className="dzp-mut">
-        These are the service lines, package templates and checklist templates the old panel
-        started with — anything already here by name is skipped, so it is safe to run twice.
+        These are Darz’s own services — the exhibition services the gallery portal already
+        offers, with their real prices, and the coverage programmes of the Exhibition Coverage
+        menu — plus the four checklist templates. Anything already here by name is skipped, so
+        it is safe to run twice.
       </p>
       {tpl.error && <DeskBanner>{tpl.error}</DeskBanner>}
       {SEED_KINDS.map((k) => (
@@ -1129,22 +1134,32 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
           {SEED_TICKS[k]}
         </label>
       ))}
-      {/* :13437-13440 — the old rate card has no field on this backend */}
+      {/* the numbers, stated before the run rather than discovered after it */}
       <p className="dzp-mut" role="note">
-        The rate card itself doesn’t come across: its six hourly rates, its contingency and
-        margin percentages and its ten multipliers have nowhere to live here. These prices and
-        internal costs are the rates now — the calculator prices from them.
+        {STANDARD_SET_COUNTS.unpriced} of the {STANDARD_SET_COUNTS.services} service lines
+        arrive unpriced — every coverage service, which Darz quotes per show, and Darz Listing,
+        which is on request. They are written as 0 because the catalogue has no “on request”: a
+        0 here means not priced yet, not free. No internal cost is recorded for any of these
+        either, so until you set one the calculator’s margin reads as if cost were nil.
       </p>
-      {/* G-PROJ-4 — the narrowing an owner sees the moment the run finishes */}
+      {/* G-PROJ-8 — the fields the backend has nowhere to put */}
       <p className="dzp-mut" role="note">
-        The old panel filed these under seven categories and this backend serves four, so the
-        editorial lines join Media, content and documentation join Production, and project
-        management and translation join Other.
+        Only the names carry over. A service line here is a name, a category, a unit and a
+        price — what each service actually is, how it runs, its timing and what Darz needs from
+        the gallery stay in the source menus.
+      </p>
+      {/* the four pairs the owner merges in one pass, never merged for them */}
+      <p className="dzp-mut" role="note">
+        {NEAR_DUPLICATES.length === 3 ? 'Three' : String(NEAR_DUPLICATES.length)} coverage
+        lines look like priced exhibition services —{' '}
+        {joinWords(NEAR_DUPLICATES.map((d) => `${d.coverage} / ${d.exhibition}`))}. Both sides
+        are added and no price is copied across: merge them here once you have decided they are
+        the same service.
       </p>
       {seedCurrency !== STANDARD_CURRENCY && (
         <p className="dzp-mut" role="note">
-          The old prices were quoted in {STANDARD_CURRENCY}, which this workspace does not
-          offer — the lines are added in {seedCurrency} at the same numbers.
+          These prices are in {STANDARD_CURRENCY}, which this workspace does not offer — the
+          lines are added in {seedCurrency} at the same numbers.
         </p>
       )}
       {!ready && !tpl.error && <p className="dz-state">Loading…</p>}
