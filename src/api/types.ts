@@ -819,3 +819,79 @@ export interface ExhibitionQuery {
   page?: number;
   per_page?: number;
 }
+
+/* ---- Projects (backend Phase 31, `apps/projects`) — frontend Phase 11c ----
+   The old panel's Projects group (`darz-studio.html:13235-15534`) over the
+   server-side store. The JSON-shaped fields (`deliverables`, `money`, `stages`,
+   `partner_roles`, `links`, package `lines`/`counts`/…) come through as
+   `unknown`: the backend stores the old panel's own shapes verbatim (its
+   serializer descriptions spell them out) and `features/admin/projects/
+   projectForm.ts` owns the typed readers/writers for them. */
+export type ProjectAdmin = Schemas['Project'];
+export type ProjectPartnerRef = Schemas['_ProjectPartnerOrg'];
+export type ProjectCategory = Schemas['ProjectCategoryEnum'];
+export type ProjectStage = Schemas['StageEnum'];
+export type ProjectStatus = Schemas['ProjectStatusEnum'];
+export type ProjectCreateInput = Schemas['ProjectCreate'];
+/** `PATCH …/projects/{id}/` — the optimistic lock is required, not optional. */
+export type ProjectPatch = Omit<Schemas['PatchedProjectUpdate'], 'expected_version'> & {
+  expected_version: number;
+};
+export type ProjectAttachmentAdmin = Schemas['ProjectAttachment'];
+export type ProjectDashboard = Schemas['ProjectDashboardSummary'];
+/** One row of `GET …/projects/reports/` (`reports_deliverables_rollup`). */
+export interface ProjectReportRow {
+  project_id: string;
+  project_no: string;
+  project_name: string;
+  deliverable: Record<string, unknown>;
+}
+export type PartnerOrgAdmin = Schemas['PartnerOrg'];
+export type ServiceCatalogItemAdmin = Schemas['ServiceCatalogItem'];
+export type ServiceCategory = Schemas['ProjectServiceCategoryEnum'];
+export type PackageTemplateAdmin = Schemas['PackageTemplate'];
+export type ChecklistTemplateAdmin = Schemas['ChecklistTemplate'];
+
+type Editable<T> = Omit<T, 'id' | 'version' | 'created_at' | 'updated_at'>;
+export type PartnerOrgInput = Editable<PartnerOrgAdmin>;
+export type PartnerOrgPatch = Partial<PartnerOrgInput> & { expected_version: number };
+export type ServiceCatalogItemInput = Editable<ServiceCatalogItemAdmin>;
+export type ServiceCatalogItemPatch = Partial<ServiceCatalogItemInput> & {
+  expected_version: number;
+};
+export type PackageTemplateInput = Editable<PackageTemplateAdmin>;
+export type PackageTemplatePatch = Partial<PackageTemplateInput> & {
+  expected_version: number;
+};
+export type ChecklistTemplateInput = Editable<ChecklistTemplateAdmin>;
+export type ChecklistTemplatePatch = Partial<ChecklistTemplateInput> & {
+  expected_version: number;
+};
+
+/** `ProjectFilterSet` — search on name/no/client_name/venue; exact status,
+ * stage, category, archived; ordering `created|-created|name|-name`. */
+export interface ProjectQuery {
+  search?: string;
+  status?: string;
+  stage?: string;
+  category?: string;
+  archived?: 'true' | 'false';
+  ordering?: 'created' | '-created' | 'name' | '-name';
+  page?: number;
+  per_page?: number;
+}
+export interface PartnerOrgQuery {
+  search?: string;
+  page?: number;
+  per_page?: number;
+}
+export interface ServiceCatalogQuery {
+  search?: string;
+  category?: string;
+  page?: number;
+  per_page?: number;
+}
+export interface PageQuery {
+  page?: number;
+  per_page?: number;
+}
