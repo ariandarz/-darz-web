@@ -1,16 +1,23 @@
-/** The standard set — the old panel's own rates (`projSeedIfEmpty`,
- * `darz-studio.html:13381-13451`) as data: every figure spot-checked against
- * the old line, the seven-to-four category mapping (G-PROJ-4), the
- * skip-by-name plans that make a run idempotent, and the API bodies. */
+/**
+ * The standard set is Darz's real catalogue, so these tests are one question
+ * asked many ways: does a number here still equal the number in the source it
+ * came from? The sources are the backend's own exhibition catalogue
+ * (`apps/gallery/exhibition_catalogue.py`, itself a verbatim port of
+ * `gallery-update.html`'s `EXH_SVC`) and the coverage menu
+ * (`../DarzStudio/coverage-packages.html`'s `DATA`). Nothing here may be
+ * "fixed" to make a test pass: a failure means the data drifted from Darz's
+ * real prices.
+ */
 import { describe, expect, it } from 'vitest';
-import { asCounts, asInternal, asPackageLines, asPackagePaymentStages } from './projectForm';
 import {
-  OLD_CATEGORY_MAP,
+  NEAR_DUPLICATES,
+  NAME_COLLISIONS,
   STANDARD_CHECKLISTS,
   STANDARD_CURRENCY,
   STANDARD_PACKAGES,
   STANDARD_SERVICES,
   STANDARD_SET_COUNTS,
+  UNPRICED_SERVICES,
   checklistInput,
   missingServices,
   nameKey,
@@ -21,40 +28,69 @@ import {
   sameName,
   serviceIdIndex,
   serviceInput,
-  type StandardService,
 } from './standardSet';
 
-const SERVED = ['media', 'production', 'curatorial', 'other'];
+/** Darz's real Toman prices, written out so a change to the module alone can
+ * never make this file agree with it (`exhibition_catalogue.py:11-60`). */
+const REAL_PRICES: ReadonlyArray<[string, number | null]> = [
+  ['Exhibition Photo Coverage', 700000],
+  ['Video Documentation', 10000000],
+  ['Pre-opening Teaser', 12000000],
+  ['Studio Visit & Interview', 20000000],
+  ['Cinematic Exhibition Film', 36000000],
+  ['Artist Interview', 8000000],
+  ['Exhibition Review', 10000000],
+  ['Darz Listing', null],
+];
 
-function svc(name: string): StandardService {
-  const hit = STANDARD_SERVICES.find((s) => s.name === name);
-  if (!hit) throw new Error(`no standard service named ${name}`);
-  return hit;
-}
+/** The coverage menu's five groups and how many services each holds. §02 has
+ * five, one of which is the priced "Artist Interview" (see the merge below). */
+const COVERAGE: ReadonlyArray<[string, number]> = [
+  ['Announcement & Pre-Show', 4],
+  ['Content Production', 5],
+  ['Editorial & Catalogue', 3],
+  ['Distribution on Instagram', 6],
+  ['Amplification & Collector Reach', 5],
+];
 
-/** Every catalogue row, indexed as the desk would after the writes. */
-function fakeIndex(): Map<string, string> {
-  return serviceIdIndex(STANDARD_SERVICES.map((s, i) => ({ id: `id-${i}`, name: s.name })));
-}
+const svc = (name: string) => STANDARD_SERVICES.find((s) => s.name === name)!;
 
 describe('the set itself', () => {
-  it('is the old seed: 34 services, 8 packages, 4 checklists', () => {
-    expect(STANDARD_SERVICES).toHaveLength(34);
-    expect(STANDARD_PACKAGES).toHaveLength(8);
+  it('is 30 real services, 5 programmes and 4 checklists', () => {
+    expect(STANDARD_SERVICES).toHaveLength(30);
+    expect(STANDARD_PACKAGES).toHaveLength(5);
     expect(STANDARD_CHECKLISTS).toHaveLength(4);
-    expect(STANDARD_SET_COUNTS).toEqual({ services: 34, packages: 8, checklists: 4 });
+    expect(STANDARD_SET_COUNTS).toEqual({
+      services: 30,
+      packages: 5,
+      checklists: 4,
+      unpriced: UNPRICED_SERVICES.length,
+    });
   });
 
-  it('prices in the old rate card’s own currency (:13440)', () => {
-    expect(STANDARD_CURRENCY).toBe('USD');
+  it('is priced in Toman — the owner’s decision for Iranian galleries', () => {
+    expect(STANDARD_CURRENCY).toBe('TMN');
   });
 
-  it('keeps the old file’s order at both ends (:13386, :13420)', () => {
-    expect(STANDARD_SERVICES[0].name).toBe('Exhibition listing');
-    expect(STANDARD_SERVICES[STANDARD_SERVICES.length - 1].name).toBe('Post-project report');
+  it('comes from the two real sources and nowhere else', () => {
+    expect(STANDARD_SERVICES.filter((s) => s.source === 'exhibition')).toHaveLength(8);
+    expect(STANDARD_SERVICES.filter((s) => s.source === 'coverage')).toHaveLength(22);
   });
 
-  it('never repeats a name within a kind (the idempotency key)', () => {
+  it('keeps every line traceable to where it came from', () => {
+    for (const s of STANDARD_SERVICES) {
+      if (s.source === 'exhibition') expect(s.serviceKey, s.name).toBeTruthy();
+      else expect(s.group, s.name).toBeTruthy();
+      expect(s.about, s.name).toBeTruthy();
+    }
+  });
+
+  it('files every line under one of the four served categories', () => {
+    for (const s of STANDARD_SERVICES)
+      expect(['media', 'production', 'curatorial', 'other']).toContain(s.category);
+  });
+
+  it('never repeats a name within a kind — the idempotency key', () => {
     for (const names of [
       STANDARD_SERVICES.map((s) => s.name),
       STANDARD_PACKAGES.map((p) => p.name),
@@ -62,284 +98,163 @@ describe('the set itself', () => {
     ]) {
       expect(new Set(names.map(nameKey)).size).toBe(names.length);
     }
+    expect(NAME_COLLISIONS).toHaveLength(0);
   });
 });
 
-describe('the figures are the old ones', () => {
-  const cases: Array<[string, string, number, number]> = [
-    // name, unit, internalCost, price — :13386-13420
-    ['Exhibition listing', 'piece', 20, 120], // :13386, the first
-    ['Content photography (half day)', 'day', 180, 600], // :13389
-    ['Reel / video edit', 'piece', 120, 400], // :13391, the "/" name
-    ['Exhibition text & wall texts', 'piece', 250, 800], // :13397, the "&" name
-    ['Coordination & scheduling', 'hour', 25, 70], // :13400, the cheapest
-    ['Darz channel distribution', 'piece', 30, 150], // :13404
-    ['English-language translation', 'piece', 90, 300], // :13405
-    ['Artist research', 'hour', 40, 120], // :13407, first of the §9 block
-    ['Catalogue development', 'piece', 700, 2200], // :13416, the most expensive
-    ['Post-project report', 'piece', 180, 560], // :13420, the last
-  ];
-  for (const [name, unit, internalCost, price] of cases) {
-    it(`${name} — ${unit}, ${internalCost} / ${price}`, () => {
-      const s = svc(name);
-      expect(s.unit).toBe(unit);
-      expect(s.internalCost).toBe(internalCost);
-      expect(s.price).toBe(price);
-    });
-  }
+describe('the prices are Darz’s, not invented', () => {
+  it.each(REAL_PRICES)('%s is priced at %s Toman', (name, price) => {
+    const row = svc(name as string);
+    expect(row, `${name} is missing`).toBeDefined();
+    expect(row.source).toBe('exhibition');
+    expect(row.price).toBe(price);
+  });
 
-  it('is the cheapest and the most expensive of the whole catalogue', () => {
-    const prices = STANDARD_SERVICES.map((s) => s.price);
-    expect(Math.min(...prices)).toBe(svc('Coordination & scheduling').price);
-    expect(Math.max(...prices)).toBe(svc('Catalogue development').price);
+  it('prices exactly the seven services that have a price, and nothing else', () => {
+    const priced = STANDARD_SERVICES.filter((s) => s.price !== null && s.price > 0);
+    expect(priced.map((s) => s.name).sort()).toEqual(
+      REAL_PRICES.filter(([, p]) => p !== null)
+        .map(([n]) => n as string)
+        .sort(),
+    );
+  });
+
+  it('leaves every coverage-only line unpriced — the menu is quoted per show', () => {
+    for (const s of STANDARD_SERVICES.filter((x) => x.source === 'coverage'))
+      expect(s.price, s.name).toBeNull();
+    expect(UNPRICED_SERVICES).toHaveLength(23); // 22 coverage-only + Darz Listing
+  });
+
+  it('invents no internal cost — none is written down anywhere', () => {
+    for (const s of STANDARD_SERVICES) expect(s.internalCost, s.name).toBe(0);
   });
 });
 
-describe('the seven old categories over the served four (G-PROJ-4)', () => {
-  it('files every line under a served category', () => {
-    for (const s of STANDARD_SERVICES) expect(SERVED).toContain(s.category);
+describe('the look-alike services', () => {
+  it('merges only the pair whose names are one capital apart', () => {
+    // "Artist interview" (coverage §02) and "Artist Interview" (priced) fold to
+    // one key, so they cannot be two rows: the priced side carries §02.
+    const both = STANDARD_SERVICES.filter((s) => sameName(s.name, 'Artist Interview'));
+    expect(both).toHaveLength(1);
+    expect(both[0].price).toBe(8000000);
+    expect(both[0].groupTitle).toBe('Content Production');
+    expect(both[0].flow, 'keeps the coverage menu’s own wording').toBeTruthy();
   });
 
-  it('maps each old category the way the decision says', () => {
-    for (const s of STANDARD_SERVICES) {
-      const mapped = OLD_CATEGORY_MAP[s.oldCategory];
-      if (mapped) expect(s.category).toBe(mapped);
-      else expect(s.oldCategory).toBe('distribution'); // splits by line
+  it('flags the other three instead of merging them or copying a price', () => {
+    expect(NEAR_DUPLICATES).toHaveLength(3);
+    for (const d of NEAR_DUPLICATES) {
+      const cov = svc(d.coverage);
+      const exh = svc(d.exhibition);
+      expect(cov?.source, d.coverage).toBe('coverage');
+      expect(exh?.source, d.exhibition).toBe('exhibition');
+      expect(cov?.price, `${d.coverage} must stay unpriced`).toBeNull();
+      expect(sameName(d.coverage, d.exhibition), 'different names, so not forced').toBe(false);
     }
-    expect(OLD_CATEGORY_MAP).toMatchObject({
-      media: 'media',
-      content: 'production',
-      editorial: 'media',
-      curatorial: 'curatorial',
-      pm: 'other',
-      documentation: 'production',
-      distribution: null,
-    });
-  });
-
-  it('splits the two distribution lines by what they are', () => {
-    expect(svc('Darz channel distribution').category).toBe('media');
-    expect(svc('English-language translation').category).toBe('other');
-  });
-
-  it('keeps every old category recorded, so nothing is lost', () => {
-    expect(new Set(STANDARD_SERVICES.map((s) => s.oldCategory))).toEqual(
-      new Set(Object.keys(OLD_CATEGORY_MAP)),
-    );
   });
 });
 
-describe('the packages', () => {
-  const idx = fakeIndex();
-
-  it('takes the shared pkg() defaults where the old extra set nothing (:13424)', () => {
-    const body = packageInput(
-      STANDARD_PACKAGES.find((p) => p.name === 'Editorial Coverage')!,
-      idx,
-    );
-    expect(body.purpose).toBe('Written editorial coverage with Darz’s voice and context.');
-    expect(body.onsite).toBe(false);
-    expect(body.revisions).toBe(1);
-    expect(body.approval).toBe('One internal + one client review.');
-    expect(body.usage_rights).toBe('Darz channels; client re-use with credit.');
-    expect(body.archive_duration).toBe('12 months');
-    expect(body.cancellation).toBe('Deposit non-refundable once work has begun.');
-    expect(body.deposit_pct).toBe(50);
-    expect(asPackagePaymentStages(body.payment_stages)).toEqual([
-      { label: 'Deposit', pct: 50 },
-      { label: 'On delivery', pct: 50 },
-    ]);
-    // the counts the template set, over the zeroes
-    expect(asCounts(body.counts)).toEqual({
-      posts: 2,
-      stories: 0,
-      articles: 1,
-      interviews: 0,
-      photos: 0,
-      videos: 0,
-      videoMin: 0,
-    });
-    expect(asInternal(body.internal)).toEqual({
-      internalCost: 430,
-      externalCost: 0,
-      minFee: 700,
-      recFee: 1200,
-      targetMargin: 45,
-    });
+describe('the programmes are the coverage groups', () => {
+  it.each(COVERAGE)('%s carries its own %i services and no fee', (title, n) => {
+    const p = STANDARD_PACKAGES.find((x) => x.name === title)!;
+    expect(p, `${title} is missing`).toBeDefined();
+    expect(p.lines).toHaveLength(n as number);
+    for (const l of p.lines) {
+      expect(l.count).toBe(1);
+      expect(svc(l.service)?.groupTitle, l.service).toBe(title);
+    }
+    for (const v of Object.values(p.overrides?.internal ?? {})) expect(Number(v)).toBe(0);
   });
 
-  it('keeps PKG1’s own overrides: no deposit, paid on publication (:13426)', () => {
-    const body = packageInput(
-      STANDARD_PACKAGES.find((p) => p.name === 'Basic Exhibition Listing')!,
-      idx,
-    );
-    expect(body.deposit_pct).toBe(0);
-    expect(asPackagePaymentStages(body.payment_stages)).toEqual([
-      { label: 'On publication', pct: 100 },
-    ]);
-    expect(asInternal(body.internal)).toEqual({
-      internalCost: 60,
-      externalCost: 0,
-      minFee: 120,
-      recFee: 250,
-      targetMargin: 50,
-    });
-  });
-
-  it('keeps PKG7’s Permanent archive and PKG8’s own usage rights', () => {
-    const seven = packageInput(
-      STANDARD_PACKAGES.find((p) => p.name === 'Full Project Documentation & Archive')!,
-      idx,
-    );
-    expect(seven.archive_duration).toBe('Permanent');
-    expect(seven.onsite).toBe(true);
-    const eight = packageInput(
-      STANDARD_PACKAGES.find((p) => p.name === 'International English-Language Package')!,
-      idx,
-    );
-    expect(eight.usage_rights).toBe('Darz international channels; full English rights.');
-    expect(eight.archive_duration).toBe('12 months'); // untouched default
-  });
-
-  it('marks the on-site templates (PKG3/5/6/7) and no others', () => {
-    const onsite = STANDARD_PACKAGES.filter((p) => packageInput(p, idx).onsite).map(
-      (p) => p.name,
-    );
-    expect(onsite).toEqual([
-      'Photography & Video Documentation',
-      'Complete Media Partnership',
-      'Curatorial & Content Partnership',
-      'Full Project Documentation & Archive',
-    ]);
-  });
-
-  it('names lines that exist in the catalogue, and resolves them to ids', () => {
-    for (const p of STANDARD_PACKAGES) expect(missingServices(p, idx)).toEqual([]);
-    const body = packageInput(
-      STANDARD_PACKAGES.find((p) => p.name === 'Complete Media Partnership')!,
-      idx,
-    );
-    expect(asPackageLines(body.lines)).toEqual([
-      { svcId: idx.get(nameKey('Exhibition listing')), count: 1 },
-      { svcId: idx.get(nameKey('Editorial article')), count: 2 },
-      { svcId: idx.get(nameKey('Social media post')), count: 6 },
-      { svcId: idx.get(nameKey('Short-form video production')), count: 2 },
-      { svcId: idx.get(nameKey('Darz channel distribution')), count: 1 },
-    ]);
-  });
-
-  it('drops an unresolved line and reports it rather than writing a dangling id', () => {
-    const partial = new Map([['exhibition listing', 'id-0']]);
-    const pkg = STANDARD_PACKAGES.find((p) => p.name === 'Complete Media Partnership')!;
-    expect(packageInput(pkg, partial).lines).toEqual([{ svcId: 'id-0', count: 1 }]);
-    expect(missingServices(pkg, partial)).toEqual([
-      'Editorial article',
-      'Social media post',
-      'Short-form video production',
-      'Darz channel distribution',
-    ]);
-  });
-
-  it('indexes by the same name rule the plans use', () => {
-    const idx2 = serviceIdIndex([{ id: 'x', name: '  EXHIBITION Listing ' }]);
-    expect(idx2.get(nameKey('Exhibition listing'))).toBe('x');
-    // the first row of a repeated name keeps the link
-    const idx3 = serviceIdIndex([
-      { id: 'first', name: 'Wall texts' },
-      { id: 'second', name: 'wall texts' },
-    ]);
-    expect(idx3.get('wall texts')).toBe('first');
+  it('accounts for every grouped service exactly once across the five', () => {
+    const lines = STANDARD_PACKAGES.flatMap((p) => p.lines.map((l) => l.service));
+    expect(lines).toHaveLength(23);
+    expect(new Set(lines).size).toBe(23);
   });
 });
 
-describe('the checklists', () => {
-  it('carries the four old templates, stages and items verbatim (:13444-13447)', () => {
-    expect(STANDARD_CHECKLISTS.map((c) => [c.name, c.stage])).toEqual([
-      ['Proposal checklist', 'proposal'],
-      ['Shoot-day checklist', 'production'],
-      ['Publication checklist', 'publication'],
-      ['Archive handoff', 'archive'],
+describe('the checklist templates are unchanged', () => {
+  it('keeps the four workflow templates and their stages (:13444-13447)', () => {
+    expect(STANDARD_CHECKLISTS.map((c) => c.name)).toEqual([
+      'Proposal checklist',
+      'Shoot-day checklist',
+      'Publication checklist',
+      'Archive handoff',
     ]);
-    for (const c of STANDARD_CHECKLISTS) expect(c.items).toHaveLength(4);
-    expect(checklistInput(STANDARD_CHECKLISTS[1])).toEqual({
-      name: 'Shoot-day checklist',
-      stage: 'production',
-      items: [
-        'Confirm venue access & time',
-        'Prepare equipment list',
-        'Shot list agreed with the client',
-        'Backup & label files same day',
-      ],
+    expect(STANDARD_CHECKLISTS.map((c) => c.stage)).toEqual([
+      'proposal',
+      'production',
+      'publication',
+      'archive',
+    ]);
+    expect(STANDARD_CHECKLISTS[0].items[0]).toBe('Confirm scope with the client');
+    expect(checklistInput(STANDARD_CHECKLISTS[0])).toMatchObject({
+      name: 'Proposal checklist',
+      stage: 'proposal',
     });
-  });
-
-  it('copies the items, so a body can never mutate the constant', () => {
-    const body = checklistInput(STANDARD_CHECKLISTS[0]);
-    expect(body.items).not.toBe(STANDARD_CHECKLISTS[0].items);
   });
 });
 
-describe('the plan skips what is already there', () => {
-  it('matches a name trimmed and case-insensitively', () => {
-    expect(sameName(' Wall Texts ', 'wall texts')).toBe(true);
-    expect(sameName('Wall texts', 'Wall text')).toBe(false);
+describe('the API bodies', () => {
+  it('sends decimals as strings, in the currency it is given', () => {
+    const photo = svc('Exhibition Photo Coverage');
+    expect(serviceInput(photo, 'TMN')).toEqual({
+      name: 'Exhibition Photo Coverage',
+      category: photo.category,
+      unit: photo.unit,
+      internal_cost: '0',
+      price: '700000',
+      currency: 'TMN',
+    });
   });
 
-  it('creates everything against an empty desk', () => {
-    expect(planServices([]).create).toHaveLength(34);
-    expect(planServices([]).skip).toEqual([]);
-    expect(planPackages([]).create).toHaveLength(8);
+  it('writes an unpriced line as 0 — the field is non-null on the backend', () => {
+    expect(serviceInput(svc('Darz Listing'), 'TMN').price).toBe('0');
+    expect(serviceInput(svc('Curatorial essay'), 'TMN').price).toBe('0');
+  });
+
+  it('resolves a programme’s lines to the ids the API handed back', () => {
+    const rows = STANDARD_SERVICES.map((s, i) => ({ id: `id-${i}`, name: s.name }));
+    const idx = serviceIdIndex(rows);
+    for (const p of STANDARD_PACKAGES) {
+      expect(missingServices(p, idx), p.name).toEqual([]);
+      const body = packageInput(p, idx) as { lines?: Array<{ svcId: string; count: number }> };
+      expect(body.lines).toHaveLength(p.lines.length);
+      for (const l of body.lines ?? []) expect(rows.some((r) => r.id === l.svcId)).toBe(true);
+    }
+  });
+
+  it('names what it cannot resolve rather than writing a programme short', () => {
+    const idx = serviceIdIndex([{ id: 'only', name: 'Exhibition announcement' }]);
+    const p = STANDARD_PACKAGES.find((x) => x.name === 'Announcement & Pre-Show')!;
+    expect(missingServices(p, idx)).toHaveLength(p.lines.length - 1);
+  });
+});
+
+describe('the plan (idempotency by name)', () => {
+  it('skips what is already there, whatever its case or spacing', () => {
+    const plan = planServices([
+      { name: '  exhibition photo coverage  ' },
+      { name: 'Curatorial essay' },
+    ]);
+    expect(plan.skip.map((s) => s.name).sort()).toEqual([
+      'Curatorial essay',
+      'Exhibition Photo Coverage',
+    ]);
+    expect(plan.create).toHaveLength(28);
+  });
+
+  it('plans everything against an empty workspace and nothing against a full one', () => {
+    expect(planServices([]).create).toHaveLength(30);
+    expect(planServices(STANDARD_SERVICES).create).toHaveLength(0);
+    expect(planPackages([]).create).toHaveLength(5);
+    expect(planPackages(STANDARD_PACKAGES).create).toHaveLength(0);
     expect(planChecklists([]).create).toHaveLength(4);
+    expect(planChecklists(STANDARD_CHECKLISTS).create).toHaveLength(0);
   });
 
-  it('skips the lines already in the catalogue, whatever their case or spacing', () => {
-    const p = planServices([
-      { name: '  exhibition LISTING ' },
-      { name: 'Catalogue development' },
-      { name: 'Something the owner added' },
-    ]);
-    expect(p.skip.map((s) => s.name)).toEqual(['Exhibition listing', 'Catalogue development']);
-    expect(p.create).toHaveLength(32);
-    expect(p.create.map((s) => s.name)).not.toContain('Exhibition listing');
-  });
-
-  it('skips packages and checklists the same way, so a run resumes', () => {
-    const pk = planPackages([{ name: 'basic exhibition listing' }]);
-    expect(pk.skip.map((x) => x.name)).toEqual(['Basic Exhibition Listing']);
-    expect(pk.create).toHaveLength(7);
-    const ch = planChecklists([{ name: 'ARCHIVE HANDOFF' }]);
-    expect(ch.skip.map((x) => x.name)).toEqual(['Archive handoff']);
-    expect(ch.create).toHaveLength(3);
-    // a second run over a full desk writes nothing
-    expect(planPackages(STANDARD_PACKAGES).create).toEqual([]);
-    expect(planChecklists(STANDARD_CHECKLISTS).create).toEqual([]);
-    expect(planServices(STANDARD_SERVICES).create).toEqual([]);
-  });
-});
-
-describe('serviceInput', () => {
-  it('sends the decimals as strings and the caller’s currency', () => {
-    expect(serviceInput(svc('Exhibition listing'), STANDARD_CURRENCY)).toEqual({
-      name: 'Exhibition listing',
-      category: 'media',
-      unit: 'piece',
-      internal_cost: '20',
-      price: '120',
-      currency: 'USD',
-    });
-    const dear = serviceInput(svc('Catalogue development'), 'EUR');
-    expect(dear.internal_cost).toBe('700');
-    expect(dear.price).toBe('2200');
-    expect(dear.currency).toBe('EUR');
-  });
-
-  it('emits a body for every line, with no empty name or negative money', () => {
-    for (const s of STANDARD_SERVICES) {
-      const body = serviceInput(s, STANDARD_CURRENCY);
-      expect(body.name.trim()).toBe(body.name);
-      expect(body.name.length).toBeGreaterThan(0);
-      expect(Number(body.internal_cost)).toBeGreaterThanOrEqual(0);
-      expect(Number(body.price)).toBeGreaterThan(Number(body.internal_cost));
-    }
+  it('compares names one way only', () => {
+    expect(sameName(' Artist Interview ', 'artist interview')).toBe(true);
+    expect(sameName('Artist research', 'Artist Interview')).toBe(false);
   });
 });

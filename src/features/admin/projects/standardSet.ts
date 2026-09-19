@@ -1,51 +1,78 @@
 /**
- * standardSet — "the standard set": the old admin panel's own opening rates,
- * as data plus the pure helpers that turn them into API bodies.
+ * standardSet — "the standard set": Darz's REAL service catalogue as data,
+ * plus the pure helpers that turn it into API bodies.
  *
- * WHERE IT COMES FROM. The old panel seeded its client-local store the first
- * time a Projects view opened (`projSeedIfEmpty`, `darz-studio.html`
- * :13381-13451): 34 service-catalogue lines (:13386-13420), 8 package
- * templates (the shared `pkg()` defaults at :13424, the templates at
- * :13426-13433), a rate card (:13437-13440) and 4 checklist templates
- * (:13444-13447). Every value below is copied from those lines exactly —
- * names, units, internal costs, prices, purposes, counts, internal pricing,
- * payment stages and checklist items, including the "&" and "/" in names and
- * the typographic apostrophe in PKG2's "Darz’s".
+ * WHAT THIS IS. 30 service lines, priced in TOMAN, copied from the two places
+ * Darz's real services actually live:
  *
- * WHY IT IS DATA HERE AND NOT A SEED. Phase 11c deliberately did not port the
- * silent seeding — a server DB starts honest and empty, and a store that
- * fills itself on first open cannot be told apart from real work. D21 (the
- * owner's decision) is that the old rates SHOULD be in the real catalogue, so
- * the port is an explicit, idempotent, owner-only action on the Packages
- * desk ("Add the standard set") that writes these rows through the normal
- * admin API. Nothing in this module runs on its own: an owner clicks it, and
- * a run is resumable because every plan skips what is already there by name.
+ *  1. THE 8 EXHIBITION SERVICES, with their real prices —
+ *     `../darzmarket-api/apps/gallery/exhibition_catalogue.py:11-59`, itself a
+ *     verbatim port of `../DarzStudio/gallery-update.html`'s `EXH_SVC`
+ *     (:733-741). Those eight already serve the gallery portal and the
+ *     exhibitions composer through `GET /api/options/`
+ *     (`gallery.exhibition_service`), and THAT catalogue is not touched here:
+ *     the lines are copied into the separate PROJECTS catalogue, each keeping
+ *     its `serviceKey` so the two can be traced to each other later.
+ *  2. THE 23 COVERAGE SERVICES, in 5 groups —
+ *     `../DarzStudio/coverage-packages.html:231-265` ("Darz Studio —
+ *     Exhibition Coverage Programmes", its `var DATA=[…]`). That menu carries
+ *     NO prices by design: the gallery ticks the lines it wants and Darz
+ *     quotes the show.
  *
- * THE CATEGORY MAPPING (G-PROJ-4). The old catalogue had seven categories
- * (`SVC_CATS`, :13327); the backend serves four (`projects.service_category`
- * — media / production / curatorial / other). Each line therefore carries
- * BOTH its old category (`oldCategory`, so nothing is lost) and the served
- * one it is filed under (`category`, `OLD_CATEGORY_MAP` below):
+ * THE CURRENCY (owner decision). Every seeded line is priced in TMN
+ * ('Iranian Toman' on `GET /api/options/`) — Darz prices Iranian galleries in
+ * Toman. International galleries come later and will be quoted in USD or EUR,
+ * chosen at the time; nothing here pre-decides that.
  *
- *   media → media · content → production · editorial → media ·
- *   curatorial → curatorial · pm → other · documentation → production ·
- *   distribution → splits by line: "Darz channel distribution" is a Darz
- *   channel (media), "English-language translation" is neither media nor
- *   production work (other).
+ * WHAT IS NOT HERE, and will not be invented:
+ *  - NO invented prices. The seven priced exhibition lines carry their real
+ *    Toman price and nothing else carries any: Darz Listing is "on request",
+ *    and all 22 coverage-only lines are unpriced because that is the truth. Here
+ *    `price: null` means "not set"; `serviceInput` sends `'0'` for it because
+ *    the backend's `price` is a non-null decimal defaulting to 0, so a 0 on
+ *    the desk reads as "not priced yet", never as "free". `UNPRICED_SERVICES`
+ *    is that list, so the desk can say how many arrive unpriced.
+ *  - NO internal costs. Darz has none recorded for these services (the demo's
+ *    were invented too), so `internalCost` is 0 on every line and the
+ *    calculator's margin reads as if cost were nil. Say so wherever a margin
+ *    is shown.
+ *  - NO descriptions on the backend (G-PROJ-8). `ProjectServiceCatalogItem`
+ *    (`../darzmarket-api/apps/projects/models.py:71-76`) is name / category /
+ *    unit / internal_cost / price / currency and has no description field, so
+ *    each line's `about` — and a coverage line's `flow` / `time` / `need` —
+ *    is kept HERE as documentation of what the service actually is, and
+ *    CANNOT be stored. Only the NAMES carry over into the catalogue; the desk
+ *    says that on screen.
+ *  - NO invented units. Neither source states a unit and none of these
+ *    services is plainly per-day or per-hour, so every line is 'piece'.
+ *  - NO package fees. The five packages carry zeroed `internal` blocks: a
+ *    group is a real Darz programme and its fee is quoted per show.
  *
- * WHAT DOES NOT PORT. The rate card itself (:13437-13440 — the six hourly
- * rates, contingency 10%, min margin 20%, target margin 40% and the ten
- * multipliers, all at 1.0) has no backend field to live in, and under D21 the
- * catalogue's own prices and internal costs ARE the rates: the calculator
- * prices from the catalogue (`calcQuote`, `projectForm.ts`), not from hours ×
- * a rate. The desk says so once, on the card that offers this action. Its
- * currency (`cur:'USD'`, :13440) is the one part that survives, as
- * `STANDARD_CURRENCY` — the currency every seeded line is priced in.
+ * WHAT WAS DROPPED, AND WHY. Until now this module held the old admin panel's
+ * `projSeedIfEmpty` demo data (`../DarzStudio/darz-studio.html:13386-13433`):
+ * 34 service lines and 8 package templates whose USD prices were INVENTED to
+ * stop a demo looking empty. Those numbers drove the calculator's quotes, the
+ * package fees and the line prices on client proposals — so invented numbers
+ * reached clients. The owner ruled them out; they are gone and none of them
+ * is copied into what follows. The one part of that seed that stays is the
+ * four CHECKLIST templates (:13444-13447), which are workflow, not pricing.
  *
- * Everything here is pure: no React, no API calls, no clock, no `id`s. The
- * old `SVC01…`/`PKG1…`/`CHK1…` ids were local-store keys and are NOT carried
- * over — a package names its service LINES, and the runner resolves those
- * names to the real ids the API hands back (`serviceIdIndex`).
+ * NEAR-DUPLICATES ARE KEPT, NOT MERGED (`NEAR_DUPLICATES`). Four coverage
+ * lines look like priced exhibition services. Copying a price between two
+ * services the owner never said were the same is the invented-number problem
+ * again, so both sides are kept and the four pairs are listed for the owner
+ * to merge in one pass. One pair — "Artist interview" / "Artist Interview" —
+ * differs only in case, so the two collide on `nameKey`, the idempotency key
+ * every plan and every line lookup uses; `NAME_COLLISIONS` carries that, and
+ * says what it costs until the owner resolves the pair.
+ *
+ * HOW IT RUNS. Nothing here runs on its own: a server DB starts honest and
+ * empty, so an owner clicks "Add the standard set" on the Packages desk and
+ * these rows are written through the ordinary admin API, skipping by name
+ * anything already there — a half-finished run resumes by clicking again.
+ * Everything is pure: no React, no API calls, no clock, no `id`s. A package
+ * names its service LINES and the runner resolves those names to the real ids
+ * the API hands back (`serviceIdIndex`).
  */
 import type {
   ChecklistTemplateInput,
@@ -64,339 +91,644 @@ import {
   type UNITS,
 } from './projectForm';
 
-/** The unit vocabulary of the service editor (`UNITS`, :13935). */
+/** The unit vocabulary of the service editor (`UNITS`, `darz-studio.html`
+ * :13935). Every line below is 'piece': see the header — neither real source
+ * states a unit, and a day or hour rate would be invented. */
 type ServiceUnit = (typeof UNITS)[number];
 
-/* ── service catalogue (:13386-13420) ───────────────────────────────────── */
+/* ── service catalogue ──────────────────────────────────────────────────── */
+
+/** Which of the two real menus a line comes from. */
+export type StandardSource = 'exhibition' | 'coverage';
 
 export interface StandardService {
-  /** Verbatim from the old row — also the idempotency key. */
+  /** Verbatim from its source — also the idempotency key (see `nameKey`). */
   name: string;
-  /** The old panel's own category (`SVC_CATS`, :13327) — kept so the
-   * narrowing to four is recorded, never silently lost (G-PROJ-4). */
-  oldCategory: string;
-  /** The served category the line is filed under. */
+  source: StandardSource;
+  /** `exhibition` only: its `gallery.exhibition_service` key, so a line here
+   * can be traced back to the catalogue the gallery portal already serves. */
+  serviceKey?: string;
+  /** `coverage` only: the group number as the source writes it ('01'…'05'). */
+  group?: string;
+  /** `coverage` only: that group's title, verbatim. */
+  groupTitle?: string;
   category: ServiceCategory;
   unit: ServiceUnit;
+  /** Always 0 — Darz has no internal cost recorded for these (header). */
   internalCost: number;
-  price: number;
+  /** The real price in `STANDARD_CURRENCY`, or `null` for "not set / on
+   * request". Never a guess. */
+  price: number | null;
+  /** What the service IS: the exhibition line's `desc`, or the coverage
+   * line's `val`. Documentation only — the backend cannot store it
+   * (G-PROJ-8). */
+  about: string;
+  /** `coverage` only: how the service runs (`flow`). Documentation only. */
+  flow?: string;
+  /** `coverage` only: when it happens (`time`). Documentation only. */
+  time?: string;
+  /** `coverage` only: what Darz needs from the gallery (`need`).
+   * Documentation only. */
+  need?: string;
 }
 
-/** The old seven → the served four (G-PROJ-4). `distribution` is `null`
- * because it splits by line (see the two lines' own `category`). */
-export const OLD_CATEGORY_MAP: Readonly<Record<string, ServiceCategory | null>> = {
-  media: 'media',
-  content: 'production',
-  editorial: 'media',
-  curatorial: 'curatorial',
-  pm: 'other',
-  documentation: 'production',
-  distribution: null,
-};
+/* ── the category mapping ────────────────────────────────────────────────────
+ * The backend serves four categories (`projects.service_category` — media /
+ * production / curatorial / other). Only the VALUES are written here; every
+ * label the desk shows comes from `useOptions()`, never from a lookup typed
+ * in this repo. Neither real source carries a category, so each line is filed
+ * by what the service is:
+ *
+ *  - production — anything shot, filmed or built: the five photo / video /
+ *    film exhibition services, the whole of coverage group 02 Content
+ *    Production, the designed "Digital pricelist / catalogue" (§03) and
+ *    "Sales-ready documentation" (§05, the compiled archive).
+ *  - curatorial — the two authored texts of §03: "Curatorial essay" and
+ *    "Artwork descriptions".
+ *  - media — everything placed on a Darz channel or sent to Darz's audience:
+ *    all of §01 Announcement & Pre-Show, all of §04 Distribution on
+ *    Instagram, four of the five §05 amplification lines, and the exhibition
+ *    catalogue's two editorial lines (Artist Interview, Exhibition Review)
+ *    plus Darz Listing, a placement in the Market App.
+ *  - other — nothing. Neither real menu has a line that is neither media,
+ *    production nor curatorial work, so the fourth category stays empty
+ *    rather than being filled to look complete. (The old demo's `other` lines
+ *    — project management, translation — went with the rest of it.)
+ *
+ * Two are judgement calls the owner may want to flip, and both are marked at
+ * their own line below.
+ */
 
-/** :13386-13420, in the old file's order. */
+/** The 30 real lines: the 8 exhibition services first, then the 22 coverage-only
+ * services in their groups — each in its source file's own order. */
 export const STANDARD_SERVICES: readonly StandardService[] = [
+  /* the 8 exhibition services — `exhibition_catalogue.py` :11-59, in that file's order */
   {
-    name: 'Exhibition listing',
-    oldCategory: 'media',
-    category: 'media',
-    unit: 'piece',
-    internalCost: 20,
-    price: 120,
-  },
-  {
-    name: 'Social media post',
-    oldCategory: 'media',
-    category: 'media',
-    unit: 'piece',
-    internalCost: 40,
-    price: 180,
-  },
-  {
-    name: 'Instagram story series',
-    oldCategory: 'media',
-    category: 'media',
-    unit: 'piece',
-    internalCost: 35,
-    price: 150,
-  },
-  {
-    name: 'Content photography (half day)',
-    oldCategory: 'content',
-    category: 'production',
-    unit: 'day',
-    internalCost: 180,
-    price: 600,
-  },
-  {
-    name: 'Short-form video production',
-    oldCategory: 'content',
+    // exhibition_catalogue.py:13
+    name: 'Exhibition Photo Coverage',
+    source: 'exhibition',
+    serviceKey: 'exhibition_photo',
     category: 'production',
     unit: 'piece',
-    internalCost: 300,
-    price: 900,
+    internalCost: 0,
+    price: 700000,
+    about:
+      'Professional photographic documentation of the exhibition, including installation views, individual artworks, details, spatial elements, and overall atmosphere.',
   },
   {
-    name: 'Reel / video edit',
-    oldCategory: 'content',
+    // exhibition_catalogue.py:19
+    name: 'Video Documentation',
+    source: 'exhibition',
+    serviceKey: 'video_documentation',
     category: 'production',
     unit: 'piece',
-    internalCost: 120,
-    price: 400,
+    internalCost: 0,
+    price: 10000000,
+    about:
+      'A short, professionally edited video documenting the exhibition, its spatial arrangement, artworks, and overall atmosphere.',
   },
   {
-    name: 'Editorial article',
-    oldCategory: 'editorial',
-    category: 'media',
-    unit: 'piece',
-    internalCost: 150,
-    price: 500,
-  },
-  {
-    name: 'Artist interview (written)',
-    oldCategory: 'editorial',
-    category: 'media',
-    unit: 'piece',
-    internalCost: 180,
-    price: 650,
-  },
-  {
-    name: 'Exhibition review',
-    oldCategory: 'editorial',
-    category: 'media',
-    unit: 'piece',
-    internalCost: 140,
-    price: 480,
-  },
-  {
-    name: 'Curatorial research',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'hour',
-    internalCost: 40,
-    price: 120,
-  },
-  {
-    name: 'Exhibition concept development',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'piece',
-    internalCost: 600,
-    price: 1800,
-  },
-  {
-    name: 'Exhibition text & wall texts',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'piece',
-    internalCost: 250,
-    price: 800,
-  },
-  {
-    name: 'Artist & artwork selection',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'day',
-    internalCost: 350,
-    price: 1000,
-  },
-  {
-    name: 'Project management',
-    oldCategory: 'pm',
-    category: 'other',
-    unit: 'day',
-    internalCost: 200,
-    price: 500,
-  },
-  {
-    name: 'Coordination & scheduling',
-    oldCategory: 'pm',
-    category: 'other',
-    unit: 'hour',
-    internalCost: 25,
-    price: 70,
-  },
-  {
-    name: 'Professional artwork documentation',
-    oldCategory: 'documentation',
+    // exhibition_catalogue.py:25
+    name: 'Pre-opening Teaser',
+    source: 'exhibition',
+    serviceKey: 'preopening_teaser',
     category: 'production',
-    unit: 'day',
-    internalCost: 220,
-    price: 700,
+    unit: 'piece',
+    internalCost: 0,
+    price: 12000000,
+    about:
+      'A short, professionally edited teaser capturing the installation process and selected moments leading up to the exhibition opening.',
   },
   {
+    // exhibition_catalogue.py:31
+    name: 'Studio Visit & Interview',
+    source: 'exhibition',
+    serviceKey: 'studio_visit',
+    category: 'production',
+    unit: 'piece',
+    internalCost: 0,
+    price: 20000000,
+    about:
+      'A longer-form edited video featuring an interview with the artist, accompanied by photographic documentation of the artist, studio, and working process.',
+  },
+  {
+    // exhibition_catalogue.py:37
+    name: 'Cinematic Exhibition Film',
+    source: 'exhibition',
+    serviceKey: 'cinematic_film',
+    category: 'production',
+    unit: 'piece',
+    internalCost: 0,
+    price: 36000000,
+    about:
+      'A longer, visually driven video capturing the exhibition through cinematic footage, focusing on the artworks, spatial experience, and atmosphere.',
+  },
+  {
+    // exhibition_catalogue.py:43
+    name: 'Artist Interview',
+    source: 'exhibition',
+    serviceKey: 'artist_interview',
+    // ALSO the coverage menu's §02 "Artist interview" (`coverage-packages.html`
+    // `con-intv`). The two names are the same string but for one capital, and
+    // the catalogue's idempotency key is case-folded, so they CANNOT be two
+    // rows: one would never be written and the §02 programme would link to
+    // whichever the catalogue happened to return first. They are one service,
+    // and this is the side carrying Darz's real price, so it takes the group
+    // membership and the coverage menu's own wording below. The other three
+    // NEAR_DUPLICATES have genuinely different names and stay separate —
+    // merging those is the owner's call, not one the key forces.
+    group: '02',
+    groupTitle: 'Content Production',
+    category: 'media',
+    unit: 'piece',
+    internalCost: 0,
+    price: 8000000,
+    about: 'An editorial interview with the artist, produced and edited in Farsi and English.',
+    flow: 'We prepare questions · record/edit · deliver clip + pull-quotes.',
+    time: '~1 week',
+    need: "30–45 min of the artist's time",
+  },
+  {
+    // exhibition_catalogue.py:48
+    name: 'Exhibition Review',
+    source: 'exhibition',
+    serviceKey: 'exhibition_review',
+    category: 'media',
+    unit: 'piece',
+    internalCost: 0,
+    price: 10000000,
+    about:
+      "An editorial review examining the exhibition's concept, artistic approach, works, and broader context, produced in Farsi and English.",
+  },
+  {
+    // exhibition_catalogue.py:54
+    name: 'Darz Listing',
+    source: 'exhibition',
+    serviceKey: 'darz_listing',
+    category: 'media',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about:
+      'Selected artworks listed on the private Darz Market App, providing direct access to a curated network of collectors and art professionals.',
+  },
+  /* group 01 Announcement & Pre-Show — coverage-packages.html:232 */
+  {
+    // coverage-packages.html:233
+    name: 'Exhibition announcement',
+    source: 'coverage',
+    group: '01',
+    groupTitle: 'Announcement & Pre-Show',
+    category: 'media',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about:
+      'A designed feed post on the Darz channel announcing your show — artist, title, dates, venue.',
+    flow: 'We design from your key image and details · one round of approval · scheduled.',
+    time: 'Live 7–10 days before opening',
+    need: 'Key image, artist, dates, venue, one-line blurb',
+  },
+  {
+    // coverage-packages.html:234
+    name: 'Save-the-date stories',
+    source: 'coverage',
+    group: '01',
+    groupTitle: 'Announcement & Pre-Show',
+    category: 'media',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'A 3–5 frame story countdown — date reveal, artist teaser, a signature work.',
+    flow: 'Built from the announcement assets · posted across the opening week.',
+    time: 'Starts ~5 days out',
+    need: 'Same assets, optional artist quote',
+  },
+  {
+    // coverage-packages.html:235
+    name: 'Artist introduction',
+    source: 'coverage',
+    group: '01',
+    groupTitle: 'Announcement & Pre-Show',
+    category: 'media',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'A carousel introducing the artist — portrait, short bio, 2–3 signature works.',
+    flow: 'We write/edit the bio · design the carousel · you approve.',
+    time: '5–7 days before',
+    need: 'Artist portrait, bio/CV, image rights',
+  },
+  {
+    // coverage-packages.html:236
+    name: 'Press note & listings',
+    source: 'coverage',
+    group: '01',
+    groupTitle: 'Announcement & Pre-Show',
+    category: 'media',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'A clean press text plus submission to relevant art listings and contacts.',
+    flow: 'We draft · you approve · we distribute.',
+    time: '10–14 days before',
+    need: 'Show details, any embargo date',
+  },
+  /* group 02 Content Production — coverage-packages.html:238 */
+  {
+    // coverage-packages.html:239
     name: 'Installation photography',
-    oldCategory: 'documentation',
+    source: 'coverage',
+    group: '02',
+    groupTitle: 'Content Production',
     category: 'production',
     unit: 'piece',
-    internalCost: 80,
-    price: 280,
+    internalCost: 0,
+    price: null,
+    about: 'Professional photos of the hung exhibition — full room views and detail shots.',
+    flow: 'On-site shoot · colour-corrected edit · delivered web + print sizes.',
+    time: 'Shoot day-of · 3–4 day delivery',
+    need: 'Access window with lighting on, work list',
   },
   {
-    name: 'Archive creation & handoff',
-    oldCategory: 'documentation',
+    // coverage-packages.html:240
+    name: 'Opening-night coverage',
+    source: 'coverage',
+    group: '02',
+    groupTitle: 'Content Production',
     category: 'production',
     unit: 'piece',
-    internalCost: 150,
-    price: 450,
+    internalCost: 0,
+    price: null,
+    about: 'Candid documentation of the opening — atmosphere, crowd, collectors.',
+    flow: 'On-site shoot · curated, story-ready edit.',
+    time: 'Opening night · same-week delivery',
+    need: 'Timing, consent for recognisable faces',
   },
   {
-    // :13404 — a Darz channel, so it files under media
-    name: 'Darz channel distribution',
-    oldCategory: 'distribution',
+    // coverage-packages.html:241
+    name: 'Artwork photography',
+    source: 'coverage',
+    group: '02',
+    groupTitle: 'Content Production',
+    category: 'production',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'Catalogue-grade shots of individual works, ready for sales and print.',
+    flow: 'Wall/studio shoot · colour-corrected · multiple sizes.',
+    time: '4–6 days',
+    need: 'Access to works, titles & dimensions',
+  },
+  {
+    // coverage-packages.html:242
+    name: 'Video walkthrough / reel',
+    source: 'coverage',
+    group: '02',
+    groupTitle: 'Content Production',
+    category: 'production',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'A short vertical reel walking through the show, paced and captioned.',
+    flow: 'We shoot + edit to a 20–40s reel with captions and music.',
+    time: 'From opening · 4–5 day delivery',
+    need: 'Quiet access window; artist optional',
+  },
+  /* group 03 Editorial & Catalogue — coverage-packages.html:245 */
+  {
+    // coverage-packages.html:246
+    name: 'Curatorial essay',
+    source: 'coverage',
+    group: '03',
+    groupTitle: 'Editorial & Catalogue',
+    category: 'curatorial',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'An original text framing the exhibition — its concept, the work, the artist.',
+    flow: 'We interview + write · you approve · formatted for web and print.',
+    time: '7–10 days',
+    need: 'Concept notes, artist input',
+  },
+  {
+    // coverage-packages.html:247
+    name: 'Artwork descriptions',
+    source: 'coverage',
+    group: '03',
+    groupTitle: 'Editorial & Catalogue',
+    category: 'curatorial',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'Concise, consistent written entries for each work.',
+    flow: 'We write from your data and images.',
+    time: '4–6 days',
+    need: 'Work list with details',
+  },
+  {
+    // coverage-packages.html:248
+    name: 'Digital pricelist / catalogue',
+    source: 'coverage',
+    group: '03',
+    groupTitle: 'Editorial & Catalogue',
+    // judgement call — a designed artefact built from supplied data, so production rather than the
+    // curatorial writing it sits beside (the old demo filed 'Catalogue development' under
+    // curatorial; flip it if the owner reads it that way)
+    category: 'production',
+    unit: 'piece',
+    internalCost: 0,
+    price: null,
+    about: 'A designed Darz pricelist or catalogue of the show — share and print ready.',
+    flow: 'Built in the Darz template · delivered as a clean document.',
+    time: '3–5 days after data',
+    need: 'Full work list, prices, images',
+  },
+  /* group 04 Distribution on Instagram — coverage-packages.html:250 */
+  {
+    // coverage-packages.html:251
+    name: 'Feed post on @darz',
+    source: 'coverage',
+    group: '04',
+    groupTitle: 'Distribution on Instagram',
     category: 'media',
     unit: 'piece',
-    internalCost: 30,
-    price: 150,
+    internalCost: 0,
+    price: null,
+    about: 'One designed post placed on the Darz channel to our audience.',
+    flow: 'Designed · scheduled · posted with tags.',
+    time: 'Scheduled slot',
+    need: 'Approved assets',
   },
   {
-    // :13405 — neither media nor production work, so it files under other
-    name: 'English-language translation',
-    oldCategory: 'distribution',
-    category: 'other',
+    // coverage-packages.html:252
+    name: 'Collaborator (co-author) post',
+    source: 'coverage',
+    group: '04',
+    groupTitle: 'Distribution on Instagram',
+    category: 'media',
     unit: 'piece',
-    internalCost: 90,
-    price: 300,
-  },
-  /* :13406 — full curatorial service lines (§9); each priced, never bundled
-     invisibly (the old file's own section comment) */
-  {
-    name: 'Artist research',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'hour',
-    internalCost: 40,
-    price: 120,
+    internalCost: 0,
+    price: null,
+    about:
+      "One post that appears on BOTH the gallery's feed and Darz's — two audiences, one post.",
+    flow: 'We publish as an Instagram collab so it lands on both grids and pools the reach.',
+    time: 'Scheduled slot',
+    need: 'Gallery handle + accept the collab invite',
   },
   {
-    name: 'Exhibition narrative',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:253
+    name: 'Story series',
+    source: 'coverage',
+    group: '04',
+    groupTitle: 'Distribution on Instagram',
+    category: 'media',
     unit: 'piece',
-    internalCost: 280,
-    price: 900,
+    internalCost: 0,
+    price: null,
+    about: 'A multi-frame story set — works, details, link and tags.',
+    flow: 'Designed · posted with tags and your handle.',
+    time: 'Across show week',
+    need: 'Assets, accounts to tag',
   },
   {
-    name: 'Title development',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:254
+    name: 'Reel placement',
+    source: 'coverage',
+    group: '04',
+    groupTitle: 'Distribution on Instagram',
+    category: 'media',
     unit: 'piece',
-    internalCost: 120,
-    price: 400,
+    internalCost: 0,
+    price: null,
+    about: 'A short vertical video on the Darz channel — the highest-reach format.',
+    flow: 'Edited reel (from your footage or our shoot) · scheduled.',
+    time: 'Scheduled slot',
+    need: 'Footage, or add the shoot from §02',
   },
   {
-    name: 'Wall texts',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:255
+    name: 'Carousel of works',
+    source: 'coverage',
+    group: '04',
+    groupTitle: 'Distribution on Instagram',
+    category: 'media',
     unit: 'piece',
-    internalCost: 160,
-    price: 520,
+    internalCost: 0,
+    price: null,
+    about: 'A swipeable set of the key works with captions.',
+    flow: 'Designed multi-image post · scheduled.',
+    time: 'Scheduled slot',
+    need: 'Selected works + captions',
   },
   {
-    name: 'Artwork captions',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:256
+    name: 'Highlight placement',
+    source: 'coverage',
+    group: '04',
+    groupTitle: 'Distribution on Instagram',
+    category: 'media',
     unit: 'piece',
-    internalCost: 90,
-    price: 300,
+    internalCost: 0,
+    price: null,
+    about: 'Your show saved into a permanent Darz story Highlight with a curated cover.',
+    flow: 'Stories grouped under a designed highlight cover · kept after the run.',
+    time: 'During the run',
+    need: 'Stories posted first',
   },
+  /* group 05 Amplification & Collector Reach — coverage-packages.html:258 */
   {
-    name: 'Spatial & narrative planning',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'day',
-    internalCost: 320,
-    price: 950,
-  },
-  {
-    name: 'Public programmes',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:259
+    name: 'Featured in weekly highlights',
+    source: 'coverage',
+    group: '05',
+    groupTitle: 'Amplification & Collector Reach',
+    category: 'media',
     unit: 'piece',
-    internalCost: 250,
-    price: 750,
+    internalCost: 0,
+    price: null,
+    about:
+      'An editorial feature in the Darz weekly highlight — a curated pick, not just a post.',
+    flow: 'Selected + placed by the Darz editorial desk.',
+    time: 'One week of the run',
+    need: 'Approved assets',
   },
   {
-    name: 'Talks & panels',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:260
+    name: 'Collector network push',
+    source: 'coverage',
+    group: '05',
+    groupTitle: 'Amplification & Collector Reach',
+    category: 'media',
     unit: 'piece',
-    internalCost: 200,
-    price: 650,
+    internalCost: 0,
+    price: null,
+    about: 'Your works surfaced inside the private Darz collector app and network.',
+    flow: 'Curated into the Market App · collectors notified.',
+    time: 'During the run',
+    need: 'Work list with images and prices',
   },
   {
-    name: 'Artist coordination',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'day',
-    internalCost: 180,
-    price: 500,
-  },
-  {
-    name: 'Catalogue development',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:261
+    name: 'Direct collector push',
+    source: 'coverage',
+    group: '05',
+    groupTitle: 'Amplification & Collector Reach',
+    category: 'media',
     unit: 'piece',
-    internalCost: 700,
-    price: 2200,
+    internalCost: 0,
+    price: null,
+    about: 'A dedicated mention sent straight to collectors.',
+    flow: 'We write + send to the collector list.',
+    time: 'Scheduled',
+    need: 'Approved copy and images',
   },
   {
-    name: 'Collector communication',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:262
+    name: 'Paid promotion / boost',
+    source: 'coverage',
+    group: '05',
+    groupTitle: 'Amplification & Collector Reach',
+    category: 'media',
     unit: 'piece',
-    internalCost: 150,
-    price: 480,
+    internalCost: 0,
+    price: null,
+    about: 'Sponsored reach on a chosen post to a targeted audience, with a reach report.',
+    flow: 'We set targeting · run the boost · report the results.',
+    time: 'Runs over set days',
+    need: 'Budget sign-off, target audience',
   },
   {
-    name: 'Institutional communication',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
+    // coverage-packages.html:263
+    name: 'Sales-ready documentation',
+    source: 'coverage',
+    group: '05',
+    groupTitle: 'Amplification & Collector Reach',
+    category: 'production',
     unit: 'piece',
-    internalCost: 180,
-    price: 560,
-  },
-  {
-    name: 'Press briefing',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'piece',
-    internalCost: 140,
-    price: 450,
-  },
-  {
-    name: 'Post-project report',
-    oldCategory: 'curatorial',
-    category: 'curatorial',
-    unit: 'piece',
-    internalCost: 180,
-    price: 560,
+    internalCost: 0,
+    price: null,
+    about:
+      'A complete archive of the show — photos, texts and list — for your records and sales.',
+    flow: 'All assets compiled into one delivered package.',
+    time: 'After the show closes',
+    need: 'Access to all gathered assets',
   },
 ];
 
-/** :13440 `cur:'USD'` — the only part of the old rate card that survives:
- * the currency its prices were quoted in. The desk passes it to
- * `serviceInput` after checking it against the `currency` options. */
-export const STANDARD_CURRENCY = 'USD';
+/** Owner decision: Darz prices Iranian galleries in Toman, so every seeded
+ * line is written in TMN ('Iranian Toman' on `GET /api/options/`).
+ * International galleries come later and will be quoted in USD or EUR, chosen
+ * at the time — that is not decided here. The desk still checks this value
+ * against the served `currency` options before using it, so the enum is never
+ * assumed. */
+export const STANDARD_CURRENCY = 'TMN';
 
-/* ── package templates (:13424-13433) ───────────────────────────────────── */
+/** The lines that arrive with no price — the 22 coverage-only services plus Darz
+ * Listing. Exposed so the desk can say "N of these arrive unpriced" instead
+ * of letting a 0 on the catalogue read as "free". */
+export const UNPRICED_SERVICES: readonly StandardService[] = STANDARD_SERVICES.filter(
+  (s) => s.price === null,
+);
 
-/** One service line of a template, named rather than id'd: the old
- * `{svcId:'SVC07',count:1}` referenced local-store ids that do not exist
- * here, so the runner resolves the NAME against the real catalogue. */
+/* ── near-duplicates: kept, listed, never merged ────────────────────────── */
+
+export interface NearDuplicate {
+  /** The coverage line's name, verbatim. */
+  coverage: string;
+  /** The exhibition line's name, verbatim. */
+  exhibition: string;
+  /** What overlaps and what differs — the note the owner decides from. */
+  why: string;
+  /** True when the two names case-fold to ONE `nameKey`. Derived from the
+   * names above, so it can never drift from them. */
+  sameNameKey: boolean;
+}
+
+/** Four coverage lines look like priced exhibition services. They are NOT
+ * merged and no price is copied across: two services the owner never said
+ * were the same would otherwise end up sharing an invented price, which is
+ * the whole problem this data exists to undo. Both sides are seeded; this is
+ * the list the desk shows so the owner can merge them in one pass. */
+export const NEAR_DUPLICATES: readonly NearDuplicate[] = [
+  {
+    coverage: 'Installation photography',
+    exhibition: 'Exhibition Photo Coverage',
+    why: 'Both photograph the hung show. The coverage line is the §02 on-site shoot and carries no price; the exhibition line is the priced one the gallery portal already offers (700,000 T).',
+  },
+  {
+    coverage: 'Video walkthrough / reel',
+    exhibition: 'Video Documentation',
+    why: 'Both are an edited video of the show. The coverage line is a 20–40s captioned vertical reel; the exhibition line is a short documentary edit, priced at 10,000,000 T.',
+  },
+  {
+    coverage: 'Collector network push',
+    exhibition: 'Darz Listing',
+    why: 'Both put the works in front of the Darz collector network. The coverage line is the §05 push into the Market App; the exhibition line is the Market App listing itself, quoted on request.',
+  },
+].map((p) => ({ ...p, sameNameKey: sameName(p.coverage, p.exhibition) }));
+// A fourth pair is NOT here: "Artist interview" and "Artist Interview" are the
+// same string but for a capital, so the folded key cannot hold both and one
+// row would simply never be written. That pair is merged into the priced line;
+// the three above have different names, so whether they are one service is the
+// owner's call.
+
+export interface NameCollision {
+  /** The shared `nameKey`. */
+  key: string;
+  /** Every `STANDARD_SERVICES` name that folds to it, in catalogue order. */
+  names: readonly string[];
+}
+
+function collisions(rows: readonly { name: string }[]): NameCollision[] {
+  const byKey = new Map<string, string[]>();
+  for (const r of rows) {
+    const k = nameKey(r.name);
+    const hit = byKey.get(k);
+    if (hit) hit.push(r.name);
+    else byKey.set(k, [r.name]);
+  }
+  const out: NameCollision[] = [];
+  for (const [key, names] of byKey) if (names.length > 1) out.push({ key, names });
+  return out;
+}
+
+/**
+ * Names that case-fold to the SAME `nameKey` — today exactly one:
+ * "Artist interview" (coverage §02) and "Artist Interview" (the exhibition
+ * catalogue). Neither is renamed, because renaming a real service is
+ * inventing copy, so the cost is stated instead:
+ *
+ *  - a run writes BOTH rows, and the catalogue then holds two lines whose
+ *    names differ only in case;
+ *  - `serviceIdIndex` keeps the FIRST row per key, so the "Content
+ *    Production" package's "Artist interview" line links to whichever of the
+ *    two the catalogue read returns first — possibly the priced one;
+ *  - a second run skips both, so nothing multiplies.
+ *
+ * The fix is the owner's, not this module's: merge the pair (it is also the
+ * third entry of `NEAR_DUPLICATES`) or rename one side, then re-link that
+ * package's line.
+ */
+export const NAME_COLLISIONS: readonly NameCollision[] = collisions(STANDARD_SERVICES);
+
+/* ── package templates: the 5 coverage groups ───────────────────────────── */
+
+/** One service line of a template, named rather than id'd: a template links
+ * its lines by the id the API hands back, which does not exist until the
+ * catalogue rows are written, so the runner resolves the NAME. */
 export interface StandardPackageLine {
   /** Matches a `StandardService.name`. */
   service: string;
   count: number;
 }
 
-/** The old `extra` argument of `pkg()` (:13424): what a template overrides on
- * top of the shared defaults. Anything absent keeps the default — which is
- * `blankPackage()`, the same :13954 `_blankPkg` block `pkg()`'s base is
- * (counts zeroed, onsite false, revisions 1, "One internal + one client
- * review.", "Darz channels; client re-use with credit.", "12 months",
- * internal all 0 at 40% target margin, deposit 50, Deposit 50 / On delivery
- * 50, "Deposit non-refundable once work has begun."). */
+/** What a template overrides on top of the shared defaults — `blankPackage()`
+ * (`darz-studio.html:13954` `_blankPkg`): counts zeroed, onsite false,
+ * revisions 1, "One internal + one client review.", "Darz channels; client
+ * re-use with credit.", "12 months", deposit 50, Deposit 50 / On delivery 50,
+ * "Deposit non-refundable once work has begun." The five groups override one
+ * thing only: `internal`, zeroed (see below). */
 export interface StandardPackageOverrides {
   onsite?: boolean;
   usageRights?: string;
@@ -410,199 +742,91 @@ export interface StandardPackage {
   name: string;
   purpose: string;
   lines: readonly StandardPackageLine[];
-  /** The old `counts` argument — only the keys the template set; the rest
-   * stay at the shared zeroes. */
+  /** Only the keys a template sets; the rest stay at the shared zeroes. The
+   * five groups set none — a deliverable count is per show. */
   counts: Partial<PackageCounts>;
   overrides?: StandardPackageOverrides;
 }
 
-/** :13426-13433, in the old file's order. */
-export const STANDARD_PACKAGES: readonly StandardPackage[] = [
+/**
+ * No fee, anywhere. `blankPackage()` starts a NEW package at a 40% target
+ * margin, which is the editor's own default for something an owner is about
+ * to price; these five are not that. A coverage group is a real Darz
+ * programme whose fee is quoted per show, so every figure in its `internal`
+ * block is 0 — including `targetMargin`, because a 40 sitting there would
+ * read as a target Darz set for these programmes, and nobody set one. Set
+ * them on the desk when a show is priced.
+ */
+function zeroInternal(): PackageInternal {
+  return { internalCost: 0, externalCost: 0, minFee: 0, recFee: 0, targetMargin: 0 };
+}
+
+/** The five groups of `coverage-packages.html`, verbatim (`no` / `title` /
+ * `desc`). A group IS the package: its title names it, its `desc` is the
+ * purpose, and its own services are its lines. */
+const COVERAGE_GROUPS: readonly { no: string; title: string; desc: string }[] = [
   {
-    // :13426
-    name: 'Basic Exhibition Listing',
-    purpose: 'A clean, credible listing of the show on Darz.',
-    lines: [{ service: 'Exhibition listing', count: 1 }],
-    counts: { posts: 1, stories: 1 },
-    overrides: {
-      internal: {
-        internalCost: 60,
-        externalCost: 0,
-        minFee: 120,
-        recFee: 250,
-        targetMargin: 50,
-      },
-      // the one template paid entirely on publication — no deposit
-      depositPct: 0,
-      paymentStages: [{ label: 'On publication', pct: 100 }],
-    },
+    // coverage-packages.html:232
+    no: '01',
+    title: 'Announcement & Pre-Show',
+    desc: 'Build anticipation before the doors open — the audience should know your show before opening night.',
   },
   {
-    // :13427
-    name: 'Editorial Coverage',
-    purpose: 'Written editorial coverage with Darz’s voice and context.',
-    lines: [
-      { service: 'Editorial article', count: 1 },
-      { service: 'Exhibition review', count: 1 },
-      { service: 'Social media post', count: 2 },
-    ],
-    counts: { articles: 1, posts: 2 },
-    overrides: {
-      internal: {
-        internalCost: 430,
-        externalCost: 0,
-        minFee: 700,
-        recFee: 1200,
-        targetMargin: 45,
-      },
-    },
+    // coverage-packages.html:238
+    no: '02',
+    title: 'Content Production',
+    desc: 'The raw material everything else is built from — photography, video and interviews, shot to a professional standard.',
   },
   {
-    // :13428
-    name: 'Photography & Video Documentation',
-    purpose: 'Professional documentation of the works and the space.',
-    lines: [
-      { service: 'Professional artwork documentation', count: 1 },
-      { service: 'Installation photography', count: 6 },
-      { service: 'Short-form video production', count: 1 },
-    ],
-    counts: { photos: 12, videos: 1, videoMin: 2 },
-    overrides: {
-      onsite: true,
-      internal: {
-        internalCost: 1000,
-        externalCost: 200,
-        minFee: 1600,
-        recFee: 2600,
-        targetMargin: 40,
-      },
-    },
+    // coverage-packages.html:245
+    no: '03',
+    title: 'Editorial & Catalogue',
+    desc: 'Written depth that gives the work context and makes it sellable and quotable.',
   },
   {
-    // :13429
-    name: 'Artist Interview Package',
-    purpose: 'A researched, edited interview presenting the artist.',
-    lines: [
-      { service: 'Artist interview (written)', count: 1 },
-      { service: 'Curatorial research', count: 4 },
-      { service: 'Social media post', count: 2 },
-    ],
-    counts: { interviews: 1, posts: 2 },
-    overrides: {
-      internal: {
-        internalCost: 340,
-        externalCost: 0,
-        minFee: 600,
-        recFee: 1000,
-        targetMargin: 45,
-      },
-    },
+    // coverage-packages.html:250
+    no: '04',
+    title: 'Distribution on Instagram',
+    desc: 'The reach engine. How the show actually travels — on the Darz channel and, where it counts, co-published onto your own grid.',
   },
   {
-    // :13430
-    name: 'Complete Media Partnership',
-    purpose: 'End-to-end media coverage across the run of the show.',
-    lines: [
-      { service: 'Exhibition listing', count: 1 },
-      { service: 'Editorial article', count: 2 },
-      { service: 'Social media post', count: 6 },
-      { service: 'Short-form video production', count: 2 },
-      { service: 'Darz channel distribution', count: 1 },
-    ],
-    counts: { articles: 2, posts: 6, videos: 2, stories: 6 },
-    overrides: {
-      onsite: true,
-      internal: {
-        internalCost: 1600,
-        externalCost: 300,
-        minFee: 2600,
-        recFee: 4500,
-        targetMargin: 42,
-      },
-    },
-  },
-  {
-    // :13431
-    name: 'Curatorial & Content Partnership',
-    purpose: 'Curatorial framing plus the content to present it.',
-    lines: [
-      { service: 'Exhibition concept development', count: 1 },
-      { service: 'Exhibition text & wall texts', count: 1 },
-      { service: 'Artist & artwork selection', count: 1 },
-      { service: 'Editorial article', count: 1 },
-      { service: 'Short-form video production', count: 1 },
-    ],
-    counts: { articles: 1, videos: 1 },
-    overrides: {
-      onsite: true,
-      internal: {
-        internalCost: 2100,
-        externalCost: 200,
-        minFee: 3400,
-        recFee: 5800,
-        targetMargin: 45,
-      },
-    },
-  },
-  {
-    // :13432
-    name: 'Full Project Documentation & Archive',
-    purpose: 'Complete documentation with a lasting Darz archive.',
-    lines: [
-      { service: 'Professional artwork documentation', count: 2 },
-      { service: 'Installation photography', count: 10 },
-      { service: 'Short-form video production', count: 2 },
-      { service: 'Archive creation & handoff', count: 1 },
-    ],
-    counts: { photos: 20, videos: 2 },
-    overrides: {
-      onsite: true,
-      internal: {
-        internalCost: 1800,
-        externalCost: 300,
-        minFee: 2900,
-        recFee: 4800,
-        targetMargin: 40,
-      },
-      // the only template that keeps the archive for good
-      archiveDuration: 'Permanent',
-    },
-  },
-  {
-    // :13433
-    name: 'International English-Language Package',
-    purpose: 'English-language presentation for international reach.',
-    lines: [
-      { service: 'English-language translation', count: 3 },
-      { service: 'Artist interview (written)', count: 1 },
-      { service: 'Editorial article', count: 1 },
-      { service: 'Darz channel distribution', count: 1 },
-    ],
-    counts: { articles: 2, interviews: 1 },
-    overrides: {
-      internal: {
-        internalCost: 780,
-        externalCost: 0,
-        minFee: 1300,
-        recFee: 2200,
-        targetMargin: 45,
-      },
-      usageRights: 'Darz international channels; full English rights.',
-    },
+    // coverage-packages.html:258
+    no: '05',
+    title: 'Amplification & Collector Reach',
+    desc: 'Beyond the public feed — targeted reach and direct lines to collectors.',
   },
 ];
 
-/* ── checklist templates (:13444-13447) ─────────────────────────────────── */
+/** The 5 coverage programmes, DERIVED from the groups and the catalogue
+ * above — so a package can never name a line the catalogue does not have, and
+ * can never miss one its group does. Each line is count 1: a count is per
+ * show and there is nothing real to copy. */
+export const STANDARD_PACKAGES: readonly StandardPackage[] = COVERAGE_GROUPS.map((g) => ({
+  name: g.title,
+  purpose: g.desc,
+  // by GROUP, not by source: §02's "Artist interview" is the priced exhibition
+  // row (see its comment), so a programme keeps all of its services
+  lines: STANDARD_SERVICES.filter((s) => s.group === g.no).map((s) => ({
+    service: s.name,
+    count: 1,
+  })),
+  counts: {},
+  overrides: { internal: zeroInternal() },
+}));
+
+/* ── checklist templates (`darz-studio.html`:13444-13447) ───────────────── */
 
 export interface StandardChecklist {
+  /** The old `stage` key — all four are real `projects.stage` values, so they
+   * carry over unchanged. */
   name: string;
-  /** The old `stage` key — all four are real `projects.stage` values, so
-   * they carry over unchanged. */
   stage: ProjectStage;
   items: readonly string[];
 }
 
-/** :13444-13447, in the old file's order. */
+/** The one part of the old `projSeedIfEmpty` seed that stays: these are
+ * workflow, not pricing, so nothing about them was invented and nothing about
+ * them changes. :13444-13447, in the old file's order. */
 export const STANDARD_CHECKLISTS: readonly StandardChecklist[] = [
   {
     name: 'Proposal checklist',
@@ -651,13 +875,16 @@ export const STANDARD_SET_COUNTS = {
   services: STANDARD_SERVICES.length,
   packages: STANDARD_PACKAGES.length,
   checklists: STANDARD_CHECKLISTS.length,
+  /** How many service lines arrive with no price, so the desk can say it
+   * rather than let a 0 read as "free". */
+  unpriced: UNPRICED_SERVICES.length,
 };
 
 /* ── the plan (idempotency by name) ─────────────────────────────────────── */
 
 /** The one name rule every plan and every lookup uses: trimmed, case-folded.
  * (The old panel matched deliverables the same way, `_doApplyPackage`
- * :14006.) */
+ * `darz-studio.html`:14006.) */
 export function nameKey(s: string): string {
   return s.trim().toLowerCase();
 }
@@ -693,7 +920,7 @@ function plan<T extends { name: string }>(
 
 /** Never duplicates and never overwrites: a name already in the catalogue is
  * skipped, whatever its price — so a half-finished run resumes by clicking
- * again, and an edited line is left alone. */
+ * again, and a line the owner has since priced is left alone. */
 export function planServices(existing: readonly NamedRow[]): StandardPlan<StandardService> {
   return plan(STANDARD_SERVICES, existing);
 }
@@ -710,24 +937,37 @@ export function planChecklists(
 
 /* ── API bodies ─────────────────────────────────────────────────────────── */
 
-/** `POST …/service-catalog/`. The money fields are `Format: decimal`, so the
+/**
+ * `POST …/service-catalog/`. The money fields are `Format: decimal`, so the
  * wire wants strings (the service editor sends them the same way,
  * `PackagesPage.saveSvc`). `currency` is the caller's — `STANDARD_CURRENCY`
- * when the options serve it, the desk's default otherwise. */
+ * when the options serve it, the desk's default otherwise.
+ *
+ * An unpriced line (`price: null`) is sent as `'0'`: the backend's `price` is
+ * a non-null decimal defaulting to 0 and there is no "unpriced" flag to send,
+ * so a 0 in the catalogue means "not priced yet" (`UNPRICED_SERVICES` is
+ * which ones, and the desk says how many). `internal_cost` is `'0'` on every
+ * line for the same reason — Darz has no internal cost recorded for these.
+ *
+ * What does NOT go on the wire: `about`, `flow`, `time` and `need`.
+ * `ProjectServiceCatalogItem` has no description field (G-PROJ-8), so only
+ * the NAME of a service reaches the catalogue.
+ */
 export function serviceInput(s: StandardService, currency: string): ServiceCatalogItemInput {
   return {
     name: s.name,
     category: s.category,
     unit: s.unit,
     internal_cost: String(s.internalCost),
-    price: String(s.price),
+    price: String(s.price ?? 0),
     currency: currency as ServiceCatalogItemInput['currency'],
   };
 }
 
 /** Index the real catalogue for `packageInput` / `missingServices`: keyed by
  * `nameKey`, so a template's named line finds the id the API gave the row.
- * First row wins, so a later duplicate name never steals the link. */
+ * First row wins, so a later duplicate name never steals the link — which is
+ * also why `NAME_COLLISIONS` matters. */
 export function serviceIdIndex(
   rows: readonly { id: string; name: string }[],
 ): Map<string, string> {
@@ -751,8 +991,9 @@ export function missingServices(p: StandardPackage, idByName: Map<string, string
 
 /**
  * `POST …/packages/`. The template's own values over `blankPackage()` — the
- * :13954 defaults the old `pkg()` base is (:13424) — so a field the old
- * `extra` did not set keeps exactly the old default.
+ * `darz-studio.html`:13954 defaults — so a field the template does not set
+ * keeps exactly that default. The five groups set one thing: a zeroed
+ * `internal` block (`zeroInternal`), because their fee is quoted per show.
  *
  * A line whose service is not in the index is DROPPED (a dangling id would
  * make the card read "(removed service)" and the apply write a deliverable
