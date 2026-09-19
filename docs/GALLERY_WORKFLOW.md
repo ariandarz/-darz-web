@@ -69,12 +69,16 @@ rather than leaving it to be noticed on the invoice.
 - **The backend**: an admin read of the exhibition catalogue (or the menu as data, so the _starting_
   prices become editable); a re-issue for a lost link; the pricelist file served to the desk; a
   `description` field on a catalogue line; `?search=` on partners.
-- **The owner**: the 20 unpriced coverage services carry no price yet — they read "not priced yet"
-  and are quoted per show until one is set.
+- **The owner**: the 20 unpriced coverage services carry no price yet — they read "quoted per show"
+  until one is set. **Darz's own coverage menus carry no prices at all** (`coverage-packages.html`,
+  `darz-studio.html`'s `COV_CHK`), so there is nothing real to seed them from and no figure this app
+  should invent. **Galleries › Exhibition Services › "Price them all in one pass"** puts every one
+  of them in a single column to type down.
 
 **Ruled 2026-09-19:** the four look-alike pairs (Installation photography / Exhibition Photo
 Coverage · Video walkthrough / Video Documentation · Artist interview / Artist Interview ·
 Collector network push / Darz Listing) **are one service each**. Each is a single catalogue row on
 the exhibition side, which is both the name the gallery's portal shows and the name the composer
 joins prices by. No price was invented by the merge. A workspace seeded before the ruling still
-holds the folded rows; the Packages desk names them and the owner deletes them.
+holds the folded rows; the Packages desk names them and **"Tidy them up"** re-points the
+programmes onto the merged services and then deletes the rows, in that order (`tidyUp.ts`).

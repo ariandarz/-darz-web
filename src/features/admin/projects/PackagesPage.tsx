@@ -80,6 +80,7 @@ import type {
   ChecklistTemplateAdmin,
   Choice,
   PackageTemplateAdmin,
+  PackageTemplatePatch,
   PageQuery,
   Paginated,
   ProjectAdmin,
@@ -132,6 +133,7 @@ import {
   serviceIdIndex,
   serviceInput,
 } from './standardSet';
+import { describeTidy, hasWork, planTidy } from './tidyUp';
 import '../admin.css';
 
 const CONFLICT_PROJECT =
@@ -1002,6 +1004,8 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
   const [step, setStep] = useState<SeedStep | null>(null);
   const [report, setReport] = useState<SeedReport | null>(null);
   const [busy, setBusy] = useState(false);
+  /** What the tidy is doing, while it does it. '' when it is not running. */
+  const [tidying, setTidying] = useState('');
 
   // all three lists are read WHOLE (each is server-paginated, and a name
   // already there on page 3 must still be skipped)
@@ -1056,6 +1060,8 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
   // before the 2026-09-19 ruling wrote both sides); read from the same fresh
   // walk, so it can never be named off a stale catalogue
   const stale = supersededRows(fresh ? (tpl.services ?? []) : []);
+  // the two-step plan behind "Tidy them up", from the same fresh walk
+  const tidy = planTidy(fresh ? (tpl.services ?? []) : [], fresh ? (tpl.packages ?? []) : []);
   const plans = {
     services: planServices(fresh ? (tpl.services ?? []) : []),
     packages: planPackages(fresh ? (tpl.packages ?? []) : []),
@@ -1098,6 +1104,43 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
 
   /** Sequential — there is no bulk endpoint, and a package needs the ids of
    * the lines written before it. A failure stops the run where it is. */
+
+  /**
+   * Re-point, then delete — never the other way round, or a programme is left
+   * holding a line whose service no longer exists. Stops on the first failure
+   * and says where it stopped, so a half-done tidy can be finished by pressing
+   * again (both halves are idempotent: a re-point that already landed is a
+   * no-op, and a delete of a row that is gone is reported and skipped).
+   */
+  const runTidy = async () => {
+    if (busy || !hasWork(tidy)) return;
+    setBusy(true);
+    try {
+      for (const p of tidy.repoint) {
+        setTidying(`Moving ${p.name}…`);
+        await projectsAdmin.updatePackage(p.id, {
+          lines: p.lines,
+          expected_version: p.version,
+        } as PackageTemplatePatch);
+      }
+      for (const r of tidy.remove) {
+        setTidying(`Deleting “${r.name}”…`);
+        await projectsAdmin.deleteService(r.id);
+      }
+      setGen((g) => g + 1); // re-read, so the card shows what is now true
+    } catch (err) {
+      setTpl((cur) => ({
+        ...cur,
+        error:
+          (err instanceof Error ? err.message : 'The tidy did not finish.') +
+          ' Nothing after that point was changed — press again to carry on.',
+      }));
+    } finally {
+      setTidying('');
+      setBusy(false);
+    }
+  };
+
   const run = async () => {
     if (busy || !ready) return;
     setBusy(true);
@@ -1243,14 +1286,28 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
       {/* A workspace seeded before that ruling still holds the folded rows as
           their own lines: the seed only ever adds. Name them; deleting one is
           the owner's click on its own row, never this card's. */}
+      {/* A workspace seeded before the ruling holds the folded rows, and its
+          programmes still point at them. Tidying is one action rather than an
+          instruction, because the ORDER matters: re-point, then delete
+          (`tidyUp.ts`). */}
       {stale.length > 0 && (
-        <p className="dzp-mut" role="note">
-          This workspace still has {stale.length === 1 ? 'a line' : `${stale.length} lines`}{' '}
-          from before that ruling — {joinWords(stale.map((r) => `“${r.name}”`))}.{' '}
-          {stale.length === 1 ? 'It is' : 'They are'} no longer part of the standard set;
-          delete {stale.length === 1 ? 'it' : 'them'} from the catalogue above when the
-          programmes no longer point at {stale.length === 1 ? 'it' : 'them'}.
-        </p>
+        <>
+          <p className="dzp-mut" role="note">
+            This workspace still has {stale.length === 1 ? 'a line' : `${stale.length} lines`}{' '}
+            from before that ruling — {joinWords(stale.map((r) => `“${r.name}”`))}.{' '}
+            {describeTidy(tidy)}
+          </p>
+          <div className="dzp-acts" style={{ marginTop: 6 }}>
+            <button
+              type="button"
+              className="dzp-btn"
+              disabled={busy || !hasWork(tidy)}
+              onClick={() => void runTidy()}
+            >
+              {busy && tidying ? tidying : 'Tidy them up'}
+            </button>
+          </div>
+        </>
       )}
       {!ready && !tpl.error && <p className="dz-state">Loading…</p>}
       {ready && (

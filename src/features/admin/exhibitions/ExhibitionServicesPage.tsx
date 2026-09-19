@@ -62,6 +62,9 @@ export function ExhibitionServicesPage() {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [removing, setRemoving] = useState<LibraryService | null>(null);
+  /** The bulk pricing pass: id -> the price as typed. null = not in it. */
+  const [pass, setPass] = useState<Record<string, string> | null>(null);
+  const [saving, setSaving] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
@@ -100,7 +103,8 @@ export function ExhibitionServicesPage() {
     });
   const currency = libraryCurrency(services, 'TMN');
   const currencyLabel = choiceLabel(options, 'currency', currency) || currency;
-  const unpriced = services.filter((s) => s.price === null).length;
+  const unpricedRows = useMemo(() => services.filter((x) => x.price === null), [services]);
+  const unpriced = unpricedRows.length;
 
   const save = async (draft: {
     id?: string;
@@ -134,6 +138,45 @@ export function ExhibitionServicesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'That did not save.');
     } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * The pricing pass writes only the rows actually typed into, one at a time,
+   * so a rejection names the service it happened on and everything before it
+   * still stands. Pressing Save again carries on from there — the rows that
+   * landed are no longer unpriced, so they are not in the pass any more.
+   */
+  const savePass = async () => {
+    if (!pass || busy) return;
+    const todo = unpricedRows.filter(
+      (x) => (pass[x.id] ?? '').trim() !== '' && num(pass[x.id]) > 0,
+    );
+    if (!todo.length) {
+      setPass(null);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      for (const x of todo) {
+        setSaving(`Pricing ${x.name}…`);
+        await projectsAdmin.updateService(x.id, {
+          price: String(num(pass[x.id])),
+          expected_version: x.version,
+        });
+      }
+      setPass(null);
+      load();
+    } catch (err) {
+      setError(
+        (err instanceof Error ? err.message : 'That did not save.') +
+          ' The prices before it were saved — press Save again to carry on.',
+      );
+      load();
+    } finally {
+      setSaving('');
       setBusy(false);
     }
   };
@@ -240,12 +283,35 @@ export function ExhibitionServicesPage() {
         </div>
       )}
 
-      {rows && unpriced > 0 && (
+      {/* Pricing twenty services one Edit at a time is sixty clicks. This is
+          one pass: every unpriced service in a column, type down it, save
+          once. Only the ones actually typed into are written. */}
+      {rows && unpriced > 0 && !pass && (
         <p className="dzx-note">
           {unpriced} {unpriced === 1 ? 'service is' : 'services are'} not priced yet — they
           read “quoted per show” on a document until you set a price. A price of 0 is stored as
-          not priced, never as free.
+          not priced, never as free.{' '}
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => setPass(Object.fromEntries(unpricedRows.map((x) => [x.id, ''])))}
+          >
+            Price them all in one pass →
+          </button>
         </p>
+      )}
+
+      {pass && (
+        <PricingPass
+          services={unpricedRows}
+          values={pass}
+          currencyLabel={currencyLabel}
+          busy={busy}
+          saving={saving}
+          onChange={(id, v) => setPass({ ...pass, [id]: v })}
+          onCancel={() => setPass(null)}
+          onSave={() => void savePass()}
+        />
       )}
 
       {packages.length > 0 && (
@@ -298,6 +364,78 @@ export function ExhibitionServicesPage() {
         />
       )}
     </DeskPage>
+  );
+}
+
+/**
+ * Every unpriced service in one column. Typing down it and saving once is the
+ * difference between one pass and sixty clicks — and a blank stays blank, so
+ * a half-finished pass prices what was filled and leaves the rest alone.
+ */
+function PricingPass({
+  services,
+  values,
+  currencyLabel,
+  busy,
+  saving,
+  onChange,
+  onSave,
+  onCancel,
+}: {
+  services: LibraryService[];
+  values: Record<string, string>;
+  currencyLabel: string;
+  busy: boolean;
+  saving: string;
+  onChange: (id: string, value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const filled = services.filter((s) => (values[s.id] ?? '').trim() !== '').length;
+  return (
+    <section className="dzx-pass">
+      <div className="dzx-passh">
+        <b>Price them all</b>
+        <span className="dzx-mut">
+          in {currencyLabel} · leave one blank to keep it quoted per show
+        </span>
+      </div>
+      <div className="dzx-list">
+        {services.map((s) => (
+          <div className="dzx-row" key={s.id}>
+            <div className="dzx-rowmain">
+              <div className="dzx-rowt">{s.name}</div>
+              {s.description && <div className="dzx-rowd">{s.description}</div>}
+            </div>
+            <div className="dzx-rowp">
+              <input
+                className="dzx-input dzx-price"
+                aria-label={`Price for ${s.name}`}
+                inputMode="numeric"
+                placeholder="Quoted per show"
+                value={values[s.id] ?? ''}
+                onChange={(e) => onChange(s.id, e.target.value)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="ad-rowacts" style={{ marginTop: 10 }}>
+        <button
+          type="button"
+          className="ad-rowbtn is-primary"
+          disabled={busy || filled === 0}
+          onClick={onSave}
+        >
+          {busy
+            ? saving || 'Saving…'
+            : `Save ${filled || 'no'} price${filled === 1 ? '' : 's'}`}
+        </button>
+        <button type="button" className="ad-rowbtn" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </section>
   );
 }
 
