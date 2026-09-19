@@ -649,10 +649,17 @@ export function PackagesPage() {
                     <span style={{ flex: 1, fontSize: 12, color: 'var(--ink)' }}>
                       {x.name} <span className="dzp-mut">· {x.unit || 'piece'}</span>
                     </span>
+                    {/* A line Darz has not priced yet stores 0, and "0 TMN"
+                        reads as free — it is not, it is unquoted. Say which
+                        (the same rule the programme cards follow). The
+                        internal cost keeps its figure: 0 cost is a real
+                        statement, and the card above says none is recorded. */}
                     <span className="dzp-mut" style={{ flex: '0 0 auto' }}>
-                      {canMoney
-                        ? `cost ${projMoney(x.internal_cost, x.currency || cur)} · ${projMoney(x.price, x.currency || cur)}`
-                        : projMoney(x.price, x.currency || cur)}
+                      {projN(x.price) > 0
+                        ? canMoney
+                          ? `cost ${projMoney(x.internal_cost, x.currency || cur)} · ${projMoney(x.price, x.currency || cur)}`
+                          : projMoney(x.price, x.currency || cur)
+                        : 'not priced yet'}
                     </span>
                     <button
                       type="button"

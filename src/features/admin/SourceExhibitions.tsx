@@ -16,9 +16,13 @@ import { money, lineTotals, seedLines } from './exhibitionForm';
 export function ExhibitionsSection({
   linkId,
   options,
+  onRows,
 }: {
   linkId: string;
   options: OptionsMap | null;
+  /** The loaded shows, handed up so the page's documents section can gather
+   * each show's documents without fetching the shows a second time. */
+  onRows?: (rows: ExhibitionAdmin[]) => void;
 }) {
   const { galleryAdmin } = useApi();
   const [rows, setRows] = useState<ExhibitionAdmin[] | null>(null);
@@ -29,11 +33,14 @@ export function ExhibitionsSection({
 
   const load = useCallback(() => {
     galleryAdmin.exhibitions({ link: linkId, per_page: 50 }).then(
-      (p) => setRows(p.results),
+      (p) => {
+        setRows(p.results);
+        onRows?.(p.results);
+      },
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load the shows.'),
     );
-  }, [galleryAdmin, linkId]);
+  }, [galleryAdmin, linkId, onRows]);
   useEffect(load, [load]);
 
   const create = async () => {

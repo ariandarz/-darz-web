@@ -502,6 +502,12 @@ export type GalleryLinkAdmin = Schemas['GalleryLink'];
  * saw). `funnel_status` is the Darz-set override; blank derives live. */
 export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
 
+/** A pricelist a partner sent from the portal — `GalleryPricelistSerializer`
+ * (`title`, `notes`, `created_at`). The file behind it is stored
+ * (`GalleryPricelist.object_key`) but not serialized, so the desk can name
+ * the submission and not open it (G-PORT-14). */
+export type GalleryPricelistAdmin = Schemas['GalleryPricelist'];
+
 /** A portal submission in the review queue — approving an availability /
  * price / correction update applies it to the artwork through the real
  * catalog services; the other kinds record intent only. */

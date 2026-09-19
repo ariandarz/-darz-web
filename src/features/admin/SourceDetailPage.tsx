@@ -23,9 +23,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
-import type { Choice, GalleryLinkAdmin, GalleryLinkArtwork } from '../../api/types';
+import type {
+  Choice,
+  ExhibitionAdmin,
+  GalleryLinkAdmin,
+  GalleryLinkArtwork,
+} from '../../api/types';
 import { ConfirmDialog, DeskBanner, DeskPage, Picker, type PickItem } from './kit';
 import { ExhibitionsSection, MessagesSection } from './SourceExhibitions';
+import { DocumentsSection, PricelistsSection } from './SourceDocuments';
 import './admin.css';
 
 export function SourceDetailPage() {
@@ -37,6 +43,9 @@ export function SourceDetailPage() {
   const [link, setLink] = useState<GalleryLinkAdmin | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // the shows, loaded once by the Exhibition Services section and reused by
+  // the documents section rather than fetched twice
+  const [shows, setShows] = useState<ExhibitionAdmin[] | null>(null);
 
   const types = choices(options, 'gallery.source_type');
   const stages = choices(options, 'gallery.funnel_stage');
@@ -137,6 +146,18 @@ export function SourceDetailPage() {
             )}
           </div>
         </div>
+        {/* Found live 2026-09-19: if a partner loses their link there is no
+            way back — the backend has no re-issue and no PATCH on a link
+            (`apps/gallery/urls.py`: GET + DELETE only), and issuing a new
+            partner would leave their works, shows and thread behind on the
+            old record. Say so here rather than letting an admin hunt for a
+            button that does not exist. Recorded as G-PORT-13. */}
+        <p className="ad-dsec-foot">
+          Lost the link? It cannot be re-sent or reset from here — there is no re-issue in the
+          backend yet (G-PORT-13). Until there is, the only safe move is to send the partner a
+          fresh pair from a new record and move their works across; disabling this one closes
+          the old door.
+        </p>
       </section>
 
       {/* ---- the funnel switches (Phase 12) ---- */}
@@ -181,7 +202,11 @@ export function SourceDetailPage() {
       <WorksSection linkId={link.id} stages={stages} />
 
       {/* ---- Exhibition Services (Phase 10b — the desk half) ---- */}
-      <ExhibitionsSection linkId={link.id} options={options} />
+      <ExhibitionsSection linkId={link.id} options={options} onRows={setShows} />
+
+      {/* ---- what has passed between us, both ways ---- */}
+      <DocumentsSection linkId={link.id} shows={shows} />
+      <PricelistsSection linkId={link.id} />
 
       {/* ---- the portal's Q&A thread, from this side ---- */}
       <MessagesSection linkId={link.id} />
