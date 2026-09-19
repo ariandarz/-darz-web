@@ -35,7 +35,11 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'npx vite preview --outDir dist-e2e --port 4173 --strictPort',
+      // --host 127.0.0.1: on newer Node the bare preview binds localhost as
+      // ::1 only, and the ipv4 health URL + Chromium then get refused (the
+      // second CI failure's exact shape — both servers printed ready, the
+      // 127.0.0.1 checks never went green)
+      command: 'npx vite preview --outDir dist-e2e --host 127.0.0.1 --port 4173 --strictPort',
       url: 'http://127.0.0.1:4173/',
       reuseExistingServer: false,
       timeout: 60_000,

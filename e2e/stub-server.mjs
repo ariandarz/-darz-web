@@ -129,6 +129,7 @@ const server = http.createServer((req, res) => {
   );
 });
 
-server.listen(PORT, () => {
+// 127.0.0.1 explicitly — the health URL and the browser both dial ipv4
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`[e2e-stub] listening on :${PORT}`);
 });
