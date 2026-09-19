@@ -6,7 +6,7 @@
  * time a Projects view opened (`projSeedIfEmpty`, `darz-studio.html`
  * :13381-13451): 34 service-catalogue lines (:13386-13420), 8 package
  * templates (the shared `pkg()` defaults at :13424, the templates at
- * :13426-13433), a rate card (:13437-13442) and 4 checklist templates
+ * :13426-13433), a rate card (:13437-13440) and 4 checklist templates
  * (:13444-13447). Every value below is copied from those lines exactly —
  * names, units, internal costs, prices, purposes, counts, internal pricing,
  * payment stages and checklist items, including the "&" and "/" in names and
@@ -33,13 +33,13 @@
  *   channel (media), "English-language translation" is neither media nor
  *   production work (other).
  *
- * WHAT DOES NOT PORT. The rate card itself (:13437-13442 — the six hourly
+ * WHAT DOES NOT PORT. The rate card itself (:13437-13440 — the six hourly
  * rates, contingency 10%, min margin 20%, target margin 40% and the ten
  * multipliers, all at 1.0) has no backend field to live in, and under D21 the
  * catalogue's own prices and internal costs ARE the rates: the calculator
  * prices from the catalogue (`calcQuote`, `projectForm.ts`), not from hours ×
  * a rate. The desk says so once, on the card that offers this action. Its
- * currency (`cur:'USD'`, :13441) is the one part that survives, as
+ * currency (`cur:'USD'`, :13440) is the one part that survives, as
  * `STANDARD_CURRENCY` — the currency every seeded line is priced in.
  *
  * Everything here is pure: no React, no API calls, no clock, no `id`s. The
@@ -374,7 +374,7 @@ export const STANDARD_SERVICES: readonly StandardService[] = [
   },
 ];
 
-/** :13441 `cur:'USD'` — the only part of the old rate card that survives:
+/** :13440 `cur:'USD'` — the only part of the old rate card that survives:
  * the currency its prices were quoted in. The desk passes it to
  * `serviceInput` after checking it against the `currency` options. */
 export const STANDARD_CURRENCY = 'USD';

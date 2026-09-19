@@ -507,7 +507,6 @@ export function PackagesPage() {
 
             {canMoney && stdOpen && (
               <StandardSetCard
-                catalogue={svcWalk.rows}
                 onCancel={() => setStdOpen(false)}
                 onDone={() => {
                   // the panel's list and the package grid re-read, so the new
@@ -872,10 +871,12 @@ function joinWords(parts: string[]): string {
 }
 
 /** The tick labels — every count comes from the data module, never typed out
- * here. The service lines are "the rate card" because under D21 that is what
- * the catalogue now is. */
+ * here. The service lines are named plainly: the note below the ticks is where
+ * the card says that these prices ARE the rates now (D21), and calling the
+ * tick "the rate card" read as a contradiction of the same note's "the rate
+ * card itself doesn't come across". */
 const SEED_TICKS: Record<SeedKind, string> = {
-  services: `The rate card · ${countText('services', STANDARD_SET_COUNTS.services)}`,
+  services: countText('services', STANDARD_SET_COUNTS.services),
   packages: countText('packages', STANDARD_SET_COUNTS.packages),
   checklists: countText('checklists', STANDARD_SET_COUNTS.checklists),
 };
@@ -942,16 +943,7 @@ function failureText(r: SeedReport): string {
  * local-store ids and do not exist here); one whose line is missing is named
  * in the report instead of being created short of its scope.
  */
-function StandardSetCard({
-  catalogue,
-  onCancel,
-  onDone,
-}: {
-  /** The panel's own walk — null until it has arrived. */
-  catalogue: ServiceCatalogItemAdmin[] | null;
-  onCancel: () => void;
-  onDone: () => void;
-}) {
+function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: () => void }) {
   const { projectsAdmin } = useApi();
   const options = useOptions();
   const [tick, setTick] = useState<SeedTicks>({
@@ -960,31 +952,42 @@ function StandardSetCard({
     checklists: true,
   });
   const [gen, setGen] = useState(0);
+  // The card reads all THREE lists itself, under one key. The panel has its
+  // own catalogue walk, but a plan must never mix a fresh read of one list
+  // with a stale read of another: after a run both the panel's walk and this
+  // one are in flight, and a plan built on the pre-run catalogue would offer
+  // to create everything a second time. `key === gen` is the whole test
+  // (the `Walk<T>` pattern of `ProjectPick`, :190).
   const [tpl, setTpl] = useState<{
+    key: number;
+    services: ServiceCatalogItemAdmin[] | null;
     packages: PackageTemplateAdmin[] | null;
     checklists: ChecklistTemplateAdmin[] | null;
     error: string | null;
-  }>({ packages: null, checklists: null, error: null });
+  }>({ key: -1, services: null, packages: null, checklists: null, error: null });
   const [step, setStep] = useState<SeedStep | null>(null);
   const [report, setReport] = useState<SeedReport | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // both template lists are read WHOLE (the grid is server-paginated, and a
-  // name already there on page 3 must still be skipped). The last rows stay
-  // on screen while the re-walk after a run is in flight.
+  // all three lists are read WHOLE (each is server-paginated, and a name
+  // already there on page 3 must still be skipped)
   useEffect(() => {
     let alive = true;
     Promise.all([
+      walkServices(projectsAdmin),
       walkPages((page) => projectsAdmin.packages({ page, per_page: 100 })),
       walkPages((page) => projectsAdmin.checklists({ page, per_page: 100 })),
     ]).then(
-      ([packages, checklists]) => alive && setTpl({ packages, checklists, error: null }),
+      ([services, packages, checklists]) =>
+        alive && setTpl({ key: gen, services, packages, checklists, error: null }),
       (err: unknown) =>
         alive &&
         setTpl({
+          key: gen,
+          services: null,
           packages: null,
           checklists: null,
-          error: err instanceof Error ? err.message : 'Could not load the templates.',
+          error: err instanceof Error ? err.message : 'Could not read what is already there.',
         }),
     );
     return () => {
@@ -992,7 +995,7 @@ function StandardSetCard({
     };
   }, [projectsAdmin, gen]);
 
-  // :13441 `cur:'USD'` — the old rate card's own currency, used when this
+  // :13440 `cur:'USD'` — the old rate card's own currency, used when this
   // backend serves it; the served list decides, so the enum is never assumed
   // (a workspace without USD gets the same numbers in its default currency,
   // and the card says so)
@@ -1001,13 +1004,40 @@ function StandardSetCard({
     ? STANDARD_CURRENCY
     : defaultCurrency(options) || STANDARD_CURRENCY;
 
+  // a plan is only shown when every list in it came back from THIS read
+  const fresh = tpl.key === gen;
   const plans = {
-    services: planServices(catalogue ?? []),
-    packages: planPackages(tpl.packages ?? []),
-    checklists: planChecklists(tpl.checklists ?? []),
+    services: planServices(fresh ? (tpl.services ?? []) : []),
+    packages: planPackages(fresh ? (tpl.packages ?? []) : []),
+    checklists: planChecklists(fresh ? (tpl.checklists ?? []) : []),
   };
-  const ready = catalogue !== null && tpl.packages !== null && tpl.checklists !== null;
-  const toAdd = SEED_KINDS.reduce((n, k) => n + (tick[k] ? plans[k].create.length : 0), 0);
+  const ready =
+    fresh &&
+    options !== null &&
+    tpl.services !== null &&
+    tpl.packages !== null &&
+    tpl.checklists !== null;
+
+  // a package is only creatable once every line it names can be resolved —
+  // against the catalogue as it will be when the run reaches the packages,
+  // so the lines this run would add count too. One that cannot is shown as
+  // waiting on its lines, not as "to add", because the run refuses to write
+  // a template short of its scope
+  const plannedIndex = serviceIdIndex([
+    ...(tpl.services ?? []),
+    ...(tick.services
+      ? plans.services.create.map((s, i) => ({ id: `planned-${i}`, name: s.name }))
+      : []),
+  ]);
+  const shortPackages = plans.packages.create.filter(
+    (p) => missingServices(p, plannedIndex).length > 0,
+  );
+  const creatable = {
+    services: plans.services.create.length,
+    packages: plans.packages.create.length - shortPackages.length,
+    checklists: plans.checklists.create.length,
+  };
+  const toAdd = SEED_KINDS.reduce((n, k) => n + (tick[k] ? creatable[k] : 0), 0);
 
   const toggle = (k: SeedKind, on: boolean) =>
     setTick((t) => {
@@ -1019,7 +1049,7 @@ function StandardSetCard({
   /** Sequential — there is no bulk endpoint, and a package needs the ids of
    * the lines written before it. A failure stops the run where it is. */
   const run = async () => {
-    if (busy || !ready || !catalogue) return;
+    if (busy || !ready) return;
     setBusy(true);
     setReport(null);
     const added: SeedCounts = { services: 0, packages: 0, checklists: 0 };
@@ -1099,11 +1129,17 @@ function StandardSetCard({
           {SEED_TICKS[k]}
         </label>
       ))}
-      {/* :13436-13441 — the old rate card has no field on this backend */}
+      {/* :13437-13440 — the old rate card has no field on this backend */}
       <p className="dzp-mut" role="note">
-        The rate card itself doesn’t come across: its hourly rates, contingency and margin
-        multipliers have nowhere to live here. These prices and internal costs are the rates
-        now — the calculator prices from them.
+        The rate card itself doesn’t come across: its six hourly rates, its contingency and
+        margin percentages and its ten multipliers have nowhere to live here. These prices and
+        internal costs are the rates now — the calculator prices from them.
+      </p>
+      {/* G-PROJ-4 — the narrowing an owner sees the moment the run finishes */}
+      <p className="dzp-mut" role="note">
+        The old panel filed these under seven categories and this backend serves four, so the
+        editorial lines join Media, content and documentation join Production, and project
+        management and translation join Other.
       </p>
       {seedCurrency !== STANDARD_CURRENCY && (
         <p className="dzp-mut" role="note">
@@ -1116,8 +1152,10 @@ function StandardSetCard({
         <div style={{ marginTop: 4 }}>
           {SEED_KINDS.filter((k) => tick[k]).map((k) => (
             <div className="dzp-mut" key={k}>
-              {SEED_TITLES[k]} · {plans[k].create.length} to add · {plans[k].skip.length}{' '}
-              already there
+              {SEED_TITLES[k]} · {creatable[k]} to add · {plans[k].skip.length} already there
+              {k === 'packages' && shortPackages.length > 0
+                ? ` · ${shortPackages.length} waiting on service lines this run will not add`
+                : ''}
             </div>
           ))}
         </div>

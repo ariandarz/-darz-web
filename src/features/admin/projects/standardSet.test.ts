@@ -45,7 +45,7 @@ describe('the set itself', () => {
     expect(STANDARD_SET_COUNTS).toEqual({ services: 34, packages: 8, checklists: 4 });
   });
 
-  it('prices in the old rate card’s own currency (:13441)', () => {
+  it('prices in the old rate card’s own currency (:13440)', () => {
     expect(STANDARD_CURRENCY).toBe('USD');
   });
 
