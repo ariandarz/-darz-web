@@ -5,6 +5,21 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Tidy up the superseded rows, and price them all in one pass
+
+- **"Tidy them up"** on the standard-set card does what was an instruction: re-points every package
+  line naming a superseded row onto the service it was merged into (collapsing a duplicate if the
+  programme held both sides), **then** deletes the rows. That order is the whole point — deleting
+  first leaves a programme holding a line whose service no longer exists — so it is `tidyUp.ts`,
+  planned and tested, not three calls in a click handler. A row whose merged partner is missing is
+  left alone and said out loud rather than stranding its lines.
+- **"Price them all in one pass"** on the library: every unpriced service in one column, type down
+  it, save once. Only the boxes actually filled are written; a blank stays "quoted per show". Saves
+  one at a time, so a rejection names the service and everything before it stands.
+- **No prices were invented.** Darz's coverage menus carry none (checked `coverage-packages.html`
+  and `darz-studio.html`'s `COV_CHK` — money appears nowhere in either), so there is no real figure
+  to seed and the owner types theirs in.
+
 ## 2026-09-19 — Exhibition Services, on its own, and one page to an issued document
 
 - **Its own section** (`/admin/exhibition-services`): one list — name, what it covers, price —

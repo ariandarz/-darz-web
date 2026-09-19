@@ -647,3 +647,27 @@ textarea.dzx-input {
   border-top: 1px solid var(--hair);
   border-radius: 0;
 }
+
+/* ── the pricing pass ──────────────────────────────────────────────────────
+   Every unpriced service in one column. Sits between the note that offered it
+   and the packages, in the same frame as a group's list. */
+
+.dzx-pass {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 14px;
+  margin-top: 12px;
+}
+.dzx-passh {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.dzx-pass .dzx-list {
+  border-radius: 10px;
+}
