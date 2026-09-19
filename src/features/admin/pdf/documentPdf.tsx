@@ -123,6 +123,7 @@ const st = StyleSheet.create({
   lineMain: { flexGrow: 1, flexBasis: 0 },
   lineT: { fontSize: 10, fontWeight: 600, color: INK },
   lineD: { fontSize: 8.6, color: LBL, marginTop: 1 },
+  lineQ: { fontSize: 8, color: '#9A9A9A', marginTop: 2 },
   lineP: { fontSize: 10, fontWeight: 600, color: INK },
   totals: { alignSelf: 'flex-end', width: 200, marginTop: 10 },
   totRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2.5 },
@@ -185,7 +186,17 @@ export interface DocumentPdfFields {
     project?: string;
   };
   billed_to?: string;
-  lines?: Array<{ title?: string; description?: string; price?: string; currency?: string }>;
+  lines?: Array<{
+    title?: string;
+    description?: string;
+    /** The line's own amount (quantity × unit price), already grouped. */
+    price?: string;
+    currency?: string;
+    /** Whole units. Printed only when more than one — "1 ×" is noise. */
+    qty?: number;
+    /** The price of ONE unit, already grouped. Printed beside `qty`. */
+    unit_price?: string;
+  }>;
   currency?: string;
   subtotal?: number;
   discount?: number;
@@ -282,6 +293,15 @@ export function DarzDocument({
             <View style={st.lineMain}>
               <Text style={st.lineT}>{l.title ?? ''}</Text>
               {l.description ? <Text style={st.lineD}>{l.description}</Text> : null}
+              {/* Only a real multiple earns a line of its own: printing
+                  "1 × 700,000" beside 700,000 says nothing twice. */}
+              {(l.qty ?? 1) > 1 && l.unit_price ? (
+                <Text style={st.lineQ}>
+                  {l.qty} ×{' '}
+                  {SYM[String(l.currency ?? '').toUpperCase()] ?? `${l.currency ?? ''} `}
+                  {l.unit_price}
+                </Text>
+              ) : null}
             </View>
             <Text style={st.lineP}>
               {l.price

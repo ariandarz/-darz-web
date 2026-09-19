@@ -5,6 +5,31 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Exhibition Services, on its own, and one page to an issued document
+
+- **Its own section** (`/admin/exhibition-services`): one list — name, what it covers, price —
+  edited in place, with the programmes under it. The price list is no longer three tabs deep inside
+  Projects, and it is still the same rows every proposal is priced from.
+- **`/admin/issue`** replaces composing-then-a-modal-per-kind: pick the show (client, dates and
+  venue fill themselves) · proposal or invoice, reference numbered for you · services from the
+  library, price and description filled · quantity, price, discount, note, payment terms · the
+  document beside it as you type · one button that saves the package, renders the PDF and files it.
+- **Quantity** is new (G-PORT-16): it rides the document, where the client reads it, because the
+  service line has no field for it. The compose desk keeps the request, the package and the
+  document history, and hands off to the one page rather than growing a modal.
+
+## 2026-09-19 — The four look-alike pairs are one service each (owner's ruling)
+
+- "Installation photography" / Exhibition Photo Coverage · "Video walkthrough / reel" / Video
+  Documentation · "Artist interview" / Artist Interview · "Collector network push" / Darz Listing.
+  Each pair is now ONE catalogue row, on the exhibition side — the name the gallery's portal shows,
+  and the one `priceList.ts` joins a package's prices by. 27 service lines, 20 unpriced.
+- No price was invented by the merge: three keep the Toman price the exhibition line already had,
+  and Darz Listing stays quoted-on-request because neither side carried one. `MERGED_SERVICES`
+  records what was folded into what; the five programmes keep the same line counts.
+- A workspace seeded before the ruling still holds the folded rows — the seed only ever adds — so
+  the desk names them (`supersededRows`) and leaves deleting to the owner.
+
 ## 2026-09-19 — The gallery workflow pass: one price list, and nothing sent into a void
 
 - Walked the whole admin↔gallery chain live and fixed what it found. **The composer now prices a

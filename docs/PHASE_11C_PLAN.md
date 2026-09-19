@@ -18,16 +18,16 @@ are known going in (the first build step will confirm).
 
 ## The map
 
-| Old tab (`:13580`) | New route | Serves from |
-|---|---|---|
-| Dashboard (`projDash`) | `/admin/projects` | `GET /projects/admin/projects/dashboard/` |
-| Projects (`projList`) | `/admin/projects/list` (+`/new`, `/:id`) | projects CRUD |
-| Pipeline (`projPipeline`) | `/admin/projects/pipeline` | projects list grouped by `stage`; moves via `POST …/{id}/stage/` |
-| Packages (`projPackages`) | `/admin/projects/packages` | packages CRUD |
-| Proposal (`projProposal`) | `/admin/projects/:id` § proposal | the project's own fields + applied package |
-| Calculator (`projCalc`) | `/admin/projects/calculator` | service catalog (the rate card) |
-| Partners (`projPartners`) | `/admin/projects/partners` | partner orgs CRUD |
-| Reports (`projReports`) | `/admin/projects/reports` | `GET /projects/admin/projects/reports/` |
+| Old tab (`:13580`)        | New route                                | Serves from                                                      |
+| ------------------------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| Dashboard (`projDash`)    | `/admin/projects`                        | `GET /projects/admin/projects/dashboard/`                        |
+| Projects (`projList`)     | `/admin/projects/list` (+`/new`, `/:id`) | projects CRUD                                                    |
+| Pipeline (`projPipeline`) | `/admin/projects/pipeline`               | projects list grouped by `stage`; moves via `POST …/{id}/stage/` |
+| Packages (`projPackages`) | `/admin/projects/packages`               | packages CRUD                                                    |
+| Proposal (`projProposal`) | `/admin/projects/:id` § proposal         | the project's own fields + applied package                       |
+| Calculator (`projCalc`)   | `/admin/projects/calculator`             | service catalog (the rate card)                                  |
+| Partners (`projPartners`) | `/admin/projects/partners`               | partner orgs CRUD                                                |
+| Reports (`projReports`)   | `/admin/projects/reports`                | `GET /projects/admin/projects/reports/`                          |
 
 ## Hybrid-rule calls (content vs mechanics)
 
@@ -73,7 +73,7 @@ class is the truth to mirror).
 ## Open questions for the owner
 
 - ~~**D21** — the calculator's rate card provenance.~~ **Resolved 2026-09-19:** the catalogue carries Darz's
-  real services in Toman (the 8 priced exhibition services + the 22 other coverage services, unpriced),
+  real services in Toman (the 8 priced exhibition services + the 19 other coverage services, unpriced; four coverage lines were merged into the priced service they named, on the owner's ruling of 2026-09-19),
   loaded by an owner-only action; the old demo figures were invented and do not port.
 - Whether Projects outranks the **Gallery Portal surface** in build order — the portal closes
   a loop whose admin half already shipped; Projects is a whole new territory. The §6 order

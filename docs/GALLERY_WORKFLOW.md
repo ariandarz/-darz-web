@@ -18,8 +18,8 @@ everything Darz quotes, and a paper trail either side can point at.
 | 5   | Gallery | portal › Pricelists                             | Sends a pricelist file.                                                                                          |
 | 6   | Gallery | portal › Exhibitions                            | Starts a show, ticks the services it wants, sends it.                                                            |
 | 7   | Darz    | the partner page, or Dashboard › Exhibitions    | Sees the request — the dashboard tile links straight to the queue.                                               |
-| 8   | Darz    | the composer                                    | The package opens **priced from the service catalogue**, edits it, approves.                                     |
-| 9   | Darz    | the composer                                    | Publishes to the portal, then issues the proposal and the invoice (created, rendered and confirmed in one step). |
+| 8 | Darz | the composer | The package opens **priced from the service catalogue**, edits it, approves, publishes to the portal. |
+| 9 | Darz | **Issue a document** | One page: the show, proposal or invoice, services from the library, quantity and terms, the document on screen as it will be read, one button to issue it. |
 | 10  | Gallery | portal › Exhibitions                            | Sees the priced package and the documents; accepts/signs by name.                                                |
 | 11  | Darz    | the partner page                                | Every document issued to this partner, and every pricelist they sent, in one place.                              |
 
@@ -30,9 +30,10 @@ There are two price lists and they are not the same thing, which matters:
 - **The portal's starting menu** — `darzmarket-api/apps/gallery/exhibition_catalogue.py`, a Python
   constant. It is what a gallery sees _before_ Darz has composed anything. **Nothing in the panel
   can change it** (G-PORT-12b); that needs the backend.
-- **The service catalogue** — `/projects/admin/service-catalog/`, real rows, one click to edit at
-  Projects › Packages › Service catalogue. **This is the price list for everything Darz sends.** The
-  composer reads it (`priceList.ts`), and the calculator and the package templates already did.
+- **The service catalogue** — real rows, one click to edit at **Galleries › Exhibition Services**
+  (its own section since 2026-09-19; the Projects desk still reads the same rows). **This is the
+  price list for everything Darz sends.** The composer reads it (`priceList.ts`), the issue page
+  builds from it, and the calculator and the package templates already did.
 
 So: edit a price there, and the next package, proposal and invoice follow. The gallery sees Darz's
 price the moment a package is composed. Prices are expected to change — the catalogue is where.
@@ -68,7 +69,12 @@ rather than leaving it to be noticed on the invoice.
 - **The backend**: an admin read of the exhibition catalogue (or the menu as data, so the _starting_
   prices become editable); a re-issue for a lost link; the pricelist file served to the desk; a
   `description` field on a catalogue line; `?search=` on partners.
-- **The owner**: the 23 unpriced coverage services carry no price yet, and three look-alike pairs
-  (Installation photography / Exhibition Photo Coverage · Video walkthrough / Video Documentation ·
-  Collector network push / Darz Listing) are either one service or two — a business call, not one
-  this app should guess.
+- **The owner**: the 20 unpriced coverage services carry no price yet — they read "not priced yet"
+  and are quoted per show until one is set.
+
+**Ruled 2026-09-19:** the four look-alike pairs (Installation photography / Exhibition Photo
+Coverage · Video walkthrough / Video Documentation · Artist interview / Artist Interview ·
+Collector network push / Darz Listing) **are one service each**. Each is a single catalogue row on
+the exhibition side, which is both the name the gallery's portal shows and the name the composer
+joins prices by. No price was invented by the merge. A workspace seeded before the ruling still
+holds the folded rows; the Packages desk names them and the owner deletes them.

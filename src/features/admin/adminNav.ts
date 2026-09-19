@@ -182,6 +182,22 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         'the gallery slice of Sources & Partners; the per-gallery workspace rides the portal step.',
       ),
       tab('sources', 'Sources & Partners', '/admin/sources', 'ready', '12·4'),
+      tab(
+        'exhservices',
+        'Exhibition Services',
+        '/admin/exhibition-services',
+        'ready',
+        '12·A',
+        'the price list every proposal and invoice is built from — its own section on the owner’s instruction, 2026-09-19.',
+      ),
+      tab(
+        'issue',
+        'Issue a document',
+        '/admin/issue',
+        'ready',
+        '12·A',
+        'one page from choosing the show to the issued PDF.',
+      ),
     ],
   },
   {

@@ -10,7 +10,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  NEAR_DUPLICATES,
+  MERGED_SERVICES,
+  SUPERSEDED_NAMES,
+  supersededRows,
   NAME_COLLISIONS,
   STANDARD_CHECKLISTS,
   STANDARD_CURRENCY,
@@ -56,12 +58,12 @@ const COVERAGE: ReadonlyArray<[string, number]> = [
 const svc = (name: string) => STANDARD_SERVICES.find((s) => s.name === name)!;
 
 describe('the set itself', () => {
-  it('is 30 real services, 5 programmes and 4 checklists', () => {
-    expect(STANDARD_SERVICES).toHaveLength(30);
+  it('is 27 real services, 5 programmes and 4 checklists', () => {
+    expect(STANDARD_SERVICES).toHaveLength(27);
     expect(STANDARD_PACKAGES).toHaveLength(5);
     expect(STANDARD_CHECKLISTS).toHaveLength(4);
     expect(STANDARD_SET_COUNTS).toEqual({
-      services: 30,
+      services: 27,
       packages: 5,
       checklists: 4,
       unpriced: UNPRICED_SERVICES.length,
@@ -73,8 +75,15 @@ describe('the set itself', () => {
   });
 
   it('comes from the two real sources and nowhere else', () => {
+    // 8 exhibition + 19 coverage = 27. The coverage menu lists 23; four of its
+    // lines named a service the exhibition catalogue already priced, and the
+    // owner ruled those pairs one service (MERGED_SERVICES), so the four are
+    // rows on the exhibition side and the coverage-only count is 23 - 4.
     expect(STANDARD_SERVICES.filter((s) => s.source === 'exhibition')).toHaveLength(8);
-    expect(STANDARD_SERVICES.filter((s) => s.source === 'coverage')).toHaveLength(22);
+    expect(STANDARD_SERVICES.filter((s) => s.source === 'coverage')).toHaveLength(19);
+    expect(STANDARD_SERVICES.filter((s) => s.source === 'exhibition' && s.group)).toHaveLength(
+      MERGED_SERVICES.length,
+    );
   });
 
   it('keeps every line traceable to where it came from', () => {
@@ -122,7 +131,7 @@ describe('the prices are Darz’s, not invented', () => {
   it('leaves every coverage-only line unpriced — the menu is quoted per show', () => {
     for (const s of STANDARD_SERVICES.filter((x) => x.source === 'coverage'))
       expect(s.price, s.name).toBeNull();
-    expect(UNPRICED_SERVICES).toHaveLength(23); // 22 coverage-only + Darz Listing
+    expect(UNPRICED_SERVICES).toHaveLength(20); // 19 coverage-only + Darz Listing
   });
 
   it('invents no internal cost — none is written down anywhere', () => {
@@ -141,15 +150,48 @@ describe('the look-alike services', () => {
     expect(both[0].flow, 'keeps the coverage menu’s own wording').toBeTruthy();
   });
 
-  it('flags the other three instead of merging them or copying a price', () => {
-    expect(NEAR_DUPLICATES).toHaveLength(3);
-    for (const d of NEAR_DUPLICATES) {
-      const cov = svc(d.coverage);
-      const exh = svc(d.exhibition);
-      expect(cov?.source, d.coverage).toBe('coverage');
-      expect(exh?.source, d.exhibition).toBe('exhibition');
-      expect(cov?.price, `${d.coverage} must stay unpriced`).toBeNull();
-      expect(sameName(d.coverage, d.exhibition), 'different names, so not forced').toBe(false);
+  // The owner ruled on 2026-09-19 that all four pairs are one service.
+  it('keeps ONE row per merged pair, on the side the portal names', () => {
+    expect(MERGED_SERVICES).toHaveLength(4);
+    for (const m of MERGED_SERVICES) {
+      const kept = svc(m.kept);
+      expect(kept, `${m.kept} must survive the merge`).toBeDefined();
+      expect(kept?.source, 'the surviving side is the exhibition line').toBe('exhibition');
+      expect(
+        kept?.serviceKey,
+        'priceList.ts joins by this — folding the other way would break pricing',
+      ).toBeTruthy();
+      expect(kept?.group, `${m.kept} takes the folded line's group`).toBeTruthy();
+      expect(kept?.flow, `${m.kept} keeps the coverage menu's own wording`).toBeTruthy();
+      expect(
+        STANDARD_SERVICES.some((x) => sameName(x.name, m.folded) && !sameName(x.name, m.kept)),
+        `${m.folded} must no longer be its own row`,
+      ).toBe(false);
+    }
+  });
+
+  it('invents no price while merging — each pair keeps the priced side as it was', () => {
+    expect(svc('Exhibition Photo Coverage')?.price).toBe(700000);
+    expect(svc('Video Documentation')?.price).toBe(10000000);
+    expect(svc('Artist Interview')?.price).toBe(8000000);
+    // neither side of this pair had one, so the merge does not produce one
+    expect(svc('Darz Listing')?.price).toBeNull();
+  });
+
+  it('finds the rows a workspace seeded before the ruling still holds', () => {
+    const before = [
+      { name: 'Installation photography' },
+      { name: 'exhibition photo coverage' }, // the surviving name, oddly cased
+      { name: 'Something Darz added by hand' },
+    ];
+    expect(supersededRows(before).map((r) => r.name)).toEqual(['Installation photography']);
+    expect(supersededRows([])).toEqual([]);
+    // every folded name is one the standard set no longer carries
+    for (const n of SUPERSEDED_NAMES) {
+      const still = STANDARD_SERVICES.filter((x) => sameName(x.name, n));
+      // "Artist interview" folds onto a name that only differs in case, so it
+      // resolves to the surviving row rather than to nothing
+      for (const row of still) expect(row.source).toBe('exhibition');
     }
   });
 });
@@ -241,11 +283,11 @@ describe('the plan (idempotency by name)', () => {
       'Curatorial essay',
       'Exhibition Photo Coverage',
     ]);
-    expect(plan.create).toHaveLength(28);
+    expect(plan.create).toHaveLength(25);
   });
 
   it('plans everything against an empty workspace and nothing against a full one', () => {
-    expect(planServices([]).create).toHaveLength(30);
+    expect(planServices([]).create).toHaveLength(27);
     expect(planServices(STANDARD_SERVICES).create).toHaveLength(0);
     expect(planPackages([]).create).toHaveLength(5);
     expect(planPackages(STANDARD_PACKAGES).create).toHaveLength(0);
