@@ -20,7 +20,7 @@
  * `compose` REPLACES all lines server-side, so the editor always writes the
  * whole package — there is no per-line PATCH to drift against.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type {
@@ -28,6 +28,7 @@ import type {
   ExhibitionAdmin,
   GalleryLinkAdmin,
   PortalCatalogueEntry,
+  ServiceCatalogItemAdmin,
 } from '../../api/types';
 import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
 import {
@@ -44,6 +45,7 @@ import {
   type ExhibitionDocKind,
   type LineDraft,
 } from './exhibitionForm';
+import { asCatalogueEntries, priceExhibitionServices, priceListSummary } from './priceList';
 import { choices, choiceLabel, fmtDate } from '../portal/portalForm';
 import './admin.css';
 
@@ -51,20 +53,27 @@ const BANK_KEY = 'darz_desk_bank_details'; // per-device convenience; the record
 
 export function ExhibitionComposePage() {
   const { id: linkId = '', eventId = '' } = useParams();
-  const { galleryAdmin, documentsAdmin } = useApi();
+  const { galleryAdmin, documentsAdmin, projectsAdmin } = useApi();
   const options = useOptions();
   const navigate = useNavigate();
 
   const [ev, setEv] = useState<ExhibitionAdmin | null>(null);
   const [link, setLink] = useState<GalleryLinkAdmin | null>(null);
-  const [catalogue, setCatalogue] = useState<PortalCatalogueEntry[]>([]);
   const [docs, setDocs] = useState<DocumentAdmin[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   // the editor state — seeded once per loaded event version
-  const [lines, setLines] = useState<LineDraft[] | null>(null);
+  const [lines, setLinesState] = useState<LineDraft[] | null>(null);
+  /** Set the moment the admin touches a line. The seeder below re-runs when a
+   * better price list or a fuller services menu arrives, and must never
+   * overwrite what has been typed since. */
+  const edited = useRef(false);
+  const setLines = useCallback((next: LineDraft[]) => {
+    edited.current = true;
+    setLinesState(next);
+  }, []);
   const [currency, setCurrency] = useState('');
   const [discount, setDiscount] = useState('');
   const [adminNote, setAdminNote] = useState('');
@@ -74,44 +83,103 @@ export function ExhibitionComposePage() {
   const currencies = choices(options, 'currency');
   const lineStatuses = choices(options, 'gallery.exhibition_line_status');
 
-  const load = useCallback(async () => {
-    try {
-      const [event, docsPage] = await Promise.all([
+  // A promise chain rather than `await` in an effect — the desk's own idiom,
+  // and what keeps oxlint's set-state-in-effect rule satisfied.
+  const load = useCallback(
+    () =>
+      Promise.all([
         galleryAdmin.exhibition(eventId),
         galleryAdmin.exhibitionDocuments(eventId),
-      ]);
-      setEv(event);
-      setDocs(docsPage.results);
-      setCurrency(event.currency || 'TMN');
-      setDiscount(event.discount || '');
-      setAdminNote(event.admin_note || '');
-      galleryAdmin.link(event.link).then(setLink, () => undefined);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load the exhibition.');
-    }
-  }, [galleryAdmin, eventId]);
+      ]).then(
+        ([event, docsPage]) => {
+          setEv(event);
+          setDocs(docsPage.results);
+          setCurrency(event.currency || 'TMN');
+          setDiscount(event.discount || '');
+          setAdminNote(event.admin_note || '');
+          galleryAdmin.link(event.link).then(setLink, () => undefined);
+        },
+        (err: unknown) =>
+          setError(err instanceof Error ? err.message : 'Could not load the exhibition.'),
+      ),
+    [galleryAdmin, eventId],
+  );
   useEffect(() => {
     void load();
   }, [load]);
 
-  // The services menu the desk offers = `gallery.exhibition_service` from
-  // /api/options/ — {value,label} pairs only. The FULL catalogue (default
-  // prices + descriptions) is served solely through the token+PIN portal
-  // endpoint, so the desk seeds unpriced, description-less drafts and the
-  // admin types both — pricing IS the desk's job ("Darz prices"), and the
-  // missing admin catalogue endpoint is recorded as G-PORT-12.
+  // The services menu the desk offers. The portal's own catalogue endpoint
+  // (prices + descriptions) is token+PIN-gated and has no admin twin
+  // (G-PORT-12), so the desk builds the menu itself:
+  //   · the KEYS stay `gallery.exhibition_service` from /api/options/ —
+  //     the wire values the portal and the backend agree on;
+  //   · the PRICES come from the service catalogue an admin can edit
+  //     (`/projects/admin/service-catalog/`, D21), joined by name.
+  // Before this the desk seeded every line blank and Darz retyped a number
+  // the gallery had already been shown — see `priceList.ts` for why that is
+  // the one thing here worth being careful about.
+  const [listRows, setListRows] = useState<ServiceCatalogItemAdmin[] | null>(null);
   useEffect(() => {
-    const svc = choices(options, 'gallery.exhibition_service');
-    setCatalogue(
-      svc.map((c) => ({ key: c.value, title: c.label, description: '', default_price: null })),
+    projectsAdmin.services({ per_page: 100 }).then(
+      (page) => setListRows(page.results),
+      () => setListRows([]), // a price list is an improvement, never a gate
     );
-  }, [options]);
+  }, [projectsAdmin]);
 
-  // seed the editor whenever a fresh event arrives
+  const priced = useMemo(
+    () => (listRows === null ? null : priceExhibitionServices(listRows, currency)),
+    [listRows, currency],
+  );
+
+  // Derived, not stored: the menu is a pure function of the served keys and
+  // the price list, and storing it would only add a render and a way to go
+  // stale. The served keys are the truth about what may be SENT — a service
+  // the price list knows but /api/options/ no longer serves is not offered,
+  // because the backend would reject the key. The list only decorates.
+  const catalogue: PortalCatalogueEntry[] = useMemo(() => {
+    const known = new Map((priced ?? []).map((p) => [p.key, p]));
+    return asCatalogueEntries(
+      choices(options, 'gallery.exhibition_service').map(
+        (c) =>
+          known.get(c.value) ?? {
+            key: c.value,
+            title: c.label,
+            description: '',
+            price: null,
+            origin: 'missing' as const,
+          },
+      ),
+    );
+  }, [options, priced]);
+
+  // Seed the editor from the event and the priced menu. Both arrive on their
+  // own schedule — the event from one request, the price list from another,
+  // the service keys from /api/options/ — and the currency the list is read
+  // in only exists once the event has loaded. So this re-seeds whenever a
+  // BETTER menu arrives (signature below), not merely when one appears, and
+  // stops the moment the admin has typed. Getting this wrong showed up live
+  // as a package that opened blank when the price list won the race.
+  const menuKey = useMemo(
+    () => catalogue.map((c) => `${c.key}:${c.default_price ?? ''}`).join('|'),
+    [catalogue],
+  );
+  const seedKey = ev ? `${ev.id}:${ev.version}:${menuKey}` : null;
+  const seededFor = useRef<string | null>(null);
   useEffect(() => {
-    if (ev) setLines(seedLines(ev, catalogue));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ev?.id, ev?.version, catalogue.length]);
+    if (!ev || seedKey === null || priced === null) return; // the list has not answered yet
+    if (seededFor.current === seedKey || edited.current) return;
+    seededFor.current = seedKey;
+    setLinesState(seedLines(ev, catalogue));
+  }, [ev, seedKey, priced, catalogue]);
+
+  // A different event — or the same one saved, which bumps its version — is a
+  // clean slate: after `compose` the server's own lines ARE the truth, so the
+  // guard must let them through.
+  const evStamp = ev ? `${ev.id}:${ev.version}` : '';
+  useEffect(() => {
+    edited.current = false;
+    seededFor.current = null;
+  }, [evStamp]);
 
   const totals = useMemo(
     () =>
@@ -232,6 +300,22 @@ export function ExhibitionComposePage() {
           <h2 className="ad-dsec-t">The package</h2>
           <span className="ad-dsec-n">Darz prices; a declined line never counts</span>
         </div>
+
+        {/* Where the numbers came from. Said out loud because the join is by
+            NAME — rename a row in the catalogue and its price stops arriving
+            here, which would otherwise look like the desk losing it. */}
+        {priced && priceListSummary(priced, currency) && (
+          <p className="ad-pricelist-note">
+            {priceListSummary(priced, currency)}{' '}
+            <button
+              type="button"
+              className="ad-ghostbtn"
+              onClick={() => navigate('/admin/projects/packages?catalogue=1')}
+            >
+              Open the service catalogue →
+            </button>
+          </p>
+        )}
 
         <div className="ad-card">
           {lines.map((l, i) => (

@@ -39,10 +39,12 @@ import {
   DeskPage,
   DataTable,
   Pager,
+  SearchFilter,
   ShownOnceSecret,
   type Column,
 } from './kit';
 import { ExhibitionsQueue } from './ExhibitionsQueue';
+import { invitationMessage, reminderMessage } from './galleryInvite';
 import { describeUpdate } from './exhibitionForm';
 import './admin.css';
 
@@ -78,20 +80,52 @@ export function SourcesPage() {
   }, [galleryAdmin, typeParam]);
   useEffect(loadLinks, [loadLinks]);
 
-  // the reminder banner's number — the pending queue's own total
+  // The reminder banner's number, AND who it is waiting on. One call for the
+  // whole table: `GalleryUpdate` carries its `link`, so the rows can say
+  // which partner is waiting without a request per row. Added 2026-09-19 —
+  // the list used to show `feat_funnel` (an internal switch) where the state
+  // of the relationship belongs.
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [waiting, setWaiting] = useState<Map<string, number>>(new Map());
   const loadPending = useCallback(() => {
-    galleryAdmin.updates({ status: 'pending', per_page: 1 }).then(
-      (page) => setPendingCount(page.pagination.total_count),
-      () => setPendingCount(null),
+    galleryAdmin.updates({ status: 'pending', per_page: 100 }).then(
+      (page) => {
+        setPendingCount(page.pagination.total_count);
+        const by = new Map<string, number>();
+        for (const u of page.results) by.set(u.link, (by.get(u.link) ?? 0) + 1);
+        setWaiting(by);
+      },
+      () => {
+        setPendingCount(null);
+        setWaiting(new Map());
+      },
     );
   }, [galleryAdmin]);
   useEffect(loadPending, [loadPending]);
 
+  // Search is over the loaded page (the desk asks for 100 partners at a
+  // time), matching name, contact and email the way an admin would think to
+  // look for one. Server-side search is G-PORT-15.
+  const [query, setQuery] = useState('');
+  const needle = query.trim().toLowerCase();
+  const shown = !links
+    ? null
+    : !needle
+      ? links
+      : links.filter((l) =>
+          [l.name, l.contact_name, l.contact_email, l.contact_phone]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(needle)),
+        );
+
   const [issuing, setIssuing] = useState(false);
-  const [issued, setIssued] = useState<{ name: string; token: string; pin: string } | null>(
-    null,
-  );
+  const [issued, setIssued] = useState<{
+    id: string;
+    name: string;
+    token: string;
+    pin: string;
+    contactName: string;
+  } | null>(null);
 
   const columns: ReadonlyArray<Column<GalleryLinkAdmin>> = [
     {
@@ -129,14 +163,18 @@ export function SourcesPage() {
       ),
     },
     {
-      key: 'funnel',
-      header: 'Funnel',
-      cell: (l) =>
-        l.feat_funnel ? (
-          <span className="ad-cellsub">on{l.feat_funnel_activity ? ' + activity' : ''}</span>
+      key: 'waiting',
+      header: 'Waiting',
+      cell: (l) => {
+        const n = waiting.get(l.id) ?? 0;
+        return n > 0 ? (
+          <span className="ad-badge-attn">
+            {n} update{n === 1 ? '' : 's'}
+          </span>
         ) : (
-          <span className="ad-cellsub">off</span>
-        ),
+          <span className="ad-cellsub">—</span>
+        );
+      },
     },
     {
       key: 'since',
@@ -187,25 +225,33 @@ export function SourcesPage() {
       }
       toolbar={
         view === 'partners' ? (
-          <label className="ad-filter">
-            <span className="ad-filter-l">Type</span>
-            <select
-              value={typeParam ?? ''}
-              onChange={(e) => {
-                const next = new URLSearchParams(params);
-                if (e.target.value) next.set('type', e.target.value);
-                else next.delete('type');
-                setParams(next);
-              }}
-            >
-              <option value="">All partners</option>
-              {types.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <>
+            <SearchFilter
+              label="Find a partner"
+              placeholder="Name, contact or email…"
+              value={query}
+              onChange={(v) => setQuery(v ?? '')}
+            />
+            <label className="ad-filter">
+              <span className="ad-filter-l">Type</span>
+              <select
+                value={typeParam ?? ''}
+                onChange={(e) => {
+                  const next = new URLSearchParams(params);
+                  if (e.target.value) next.set('type', e.target.value);
+                  else next.delete('type');
+                  setParams(next);
+                }}
+              >
+                <option value="">All partners</option>
+                {types.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
         ) : undefined
       }
     >
@@ -241,10 +287,15 @@ export function SourcesPage() {
             value={`${window.location.origin}/portal/${issued.token}`}
             hint="The partner's no-login portal address. Send it with the PIN below — the pair shows only this once."
           />
-          <ShownOnceSecret
-            label="Portal PIN"
-            value={issued.pin}
-            onDismiss={() => setIssued(null)}
+          <ShownOnceSecret label="Portal PIN" value={issued.pin} />
+          {/* The two boxes above are the credentials; this is the message.
+              Added 2026-09-19: an admin was otherwise writing the covering
+              note from scratch for every partner, and this is the one moment
+              the link exists to put in it (G-PORT-13). */}
+          <InviteCard
+            issued={issued}
+            onOpen={() => navigate(`/admin/sources/${issued.id}`)}
+            onDone={() => setIssued(null)}
           />
         </>
       )}
@@ -254,9 +305,9 @@ export function SourcesPage() {
           types={types}
           initialType={typeParam}
           onClose={() => setIssuing(false)}
-          onIssued={(name, token, pin) => {
+          onIssued={(next) => {
             setIssuing(false);
-            setIssued({ name, token, pin });
+            setIssued(next);
             loadLinks();
           }}
         />
@@ -268,21 +319,114 @@ export function SourcesPage() {
           linkNames={new Map((links ?? []).map((l) => [l.id, l.name]))}
         />
       ) : view === 'partners' ? (
-        !links && !error ? (
+        !shown && !error ? (
           <p className="dz-state">Loading…</p>
-        ) : links && links.length === 0 ? (
+        ) : shown && shown.length === 0 ? (
           <p className="dz-state">
-            {typeParam
-              ? 'No partners of this type yet.'
-              : 'No partners yet — issue the first.'}
+            {needle
+              ? `No partner matches “${query.trim()}”.`
+              : typeParam
+                ? 'No partners of this type yet.'
+                : 'No partners yet — issue the first.'}
           </p>
-        ) : links ? (
-          <DataTable label="Partners" rows={links} columns={columns} rowKey={(l) => l.id} />
+        ) : shown ? (
+          <DataTable label="Partners" rows={shown} columns={columns} rowKey={(l) => l.id} />
         ) : null
       ) : (
         <UpdatesQueue kinds={kinds} onReviewed={loadPending} />
       )}
     </DeskPage>
+  );
+}
+
+/**
+ * The covering message, ready to send. The credentials above are the
+ * shown-once contract; this is what a partner actually receives — the old
+ * panel kept it as a template rather than retyping it per partner
+ * (`darz-studio.html:36197-36198`, ported in `galleryInvite.ts`).
+ *
+ * The textarea is editable and selectable, so a blocked clipboard is never a
+ * dead end and an admin can adjust a line before sending.
+ */
+function InviteCard({
+  issued,
+  onOpen,
+  onDone,
+}: {
+  issued: { id: string; name: string; token: string; pin: string; contactName: string };
+  onOpen: () => void;
+  onDone: () => void;
+}) {
+  const parts = {
+    name: issued.name,
+    contactName: issued.contactName,
+    url: `${window.location.origin}/portal/${issued.token}`,
+    pin: issued.pin,
+  };
+  const [kind, setKind] = useState<'invitation' | 'reminder'>('invitation');
+  const [text, setText] = useState(() => invitationMessage(parts));
+  const [copied, setCopied] = useState(false);
+
+  const pick = (next: 'invitation' | 'reminder') => {
+    setKind(next);
+    setText(next === 'invitation' ? invitationMessage(parts) : reminderMessage(parts));
+    setCopied(false);
+  };
+
+  return (
+    <div className="ad-card ad-form ad-invite">
+      <div className="ad-form-h">Send it to {issued.name}</div>
+      <p className="ad-secret-hint">
+        The link and code are already in the message. Copy it into WhatsApp, an email or a
+        message — this is the only moment the link can be put in one.
+      </p>
+      <div className="ad-invite-kinds">
+        <button
+          type="button"
+          className={`ad-rowbtn${kind === 'invitation' ? ' is-on' : ''}`}
+          onClick={() => pick('invitation')}
+        >
+          Invitation
+        </button>
+        <button
+          type="button"
+          className={`ad-rowbtn${kind === 'reminder' ? ' is-on' : ''}`}
+          onClick={() => pick('reminder')}
+        >
+          Reminder
+        </button>
+      </div>
+      <textarea
+        className="ad-invite-text"
+        aria-label="The message to send"
+        rows={14}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setCopied(false);
+        }}
+      />
+      <div className="ad-rowacts">
+        <button
+          type="button"
+          className="ad-rowbtn is-primary"
+          onClick={() =>
+            void navigator.clipboard
+              ?.writeText(text)
+              .then(() => setCopied(true))
+              .catch(() => setCopied(false))
+          }
+        >
+          {copied ? 'Copied' : 'Copy the message'}
+        </button>
+        <button type="button" className="ad-rowbtn" onClick={onOpen}>
+          Open {issued.name} →
+        </button>
+        <button type="button" className="ad-rowbtn" onClick={onDone}>
+          Done — I have sent it
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -495,7 +639,13 @@ function IssueForm({
   types: Choice[];
   initialType?: string;
   onClose: () => void;
-  onIssued: (name: string, token: string, pin: string) => void;
+  onIssued: (issued: {
+    id: string;
+    name: string;
+    token: string;
+    pin: string;
+    contactName: string;
+  }) => void;
 }) {
   const { galleryAdmin } = useApi();
   const [sourceType, setSourceType] = useState(initialType ?? 'gallery');
@@ -522,7 +672,13 @@ function IssueForm({
         contact_email: contactEmail.trim(),
         contact_phone: contactPhone.trim(),
       });
-      onIssued(out.link.name, out.token, out.pin);
+      onIssued({
+        id: out.link.id,
+        name: out.link.name,
+        token: out.token,
+        pin: out.pin,
+        contactName: out.link.contact_name ?? '',
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not issue the link.');
     } finally {

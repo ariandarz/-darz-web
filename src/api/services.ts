@@ -66,6 +66,7 @@ import type {
   DocumentQuery,
   DocumentVersionAdmin,
   GalleryLinkAdmin,
+  GalleryPricelistAdmin,
   GalleryLinkArtwork,
   GalleryUpdateAdmin,
   BidderRegistrationAdmin,
@@ -880,6 +881,18 @@ export class GalleryAdminService extends ResourceService {
   }
   rejectUpdate(id: string, note = '') {
     return this.create<GalleryUpdateAdmin>(`/updates/${id}/reject/`, { note });
+  }
+
+  /** The pricelists this partner sent through the portal. The serializer
+   * carries `title`/`notes`/`created_at` only — the stored file itself is
+   * NOT served to the desk (`GalleryPricelist.object_key` is not in
+   * `GalleryPricelistSerializer`), so the desk can say one arrived and when,
+   * and cannot open it. Recorded as G-PORT-14. */
+  linkPricelists(linkId: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<GalleryPricelistAdmin>(
+      `/links/${linkId}/pricelists/`,
+      query as RequestOptions['query'],
+    );
   }
 
   /** The link's Q&A thread — the admin side of the portal's Messages tab.

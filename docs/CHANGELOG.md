@@ -5,6 +5,19 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — The gallery workflow pass: one price list, and nothing sent into a void
+
+- Walked the whole admin↔gallery chain live and fixed what it found. **The composer now prices a
+  package from the service catalogue an admin can edit** (`priceList.ts`) — it used to open blank
+  although the gallery had already been shown the price, so Darz retyped from memory (G-PORT-12).
+  It never converts a currency and says on screen how many lines carried over.
+- **A pricelist a gallery sends now reaches the desk** (nothing in this app had ever read them back,
+  G-PORT-14); the partner page also lists every proposal and invoice issued to them, across shows.
+- Issuing a link hands over a **ready-to-send invitation** (the old panel's own templates,
+  `darz-studio.html:36197-36198`) and a way straight into the partner; the partner list gained
+  search and a **Waiting** column in place of an internal switch; dashboard tiles are links; a lost
+  link and an unpriced line now say what they are instead of "0 TMN" and nothing. G-PORT-13/15.
+
 ## 2026-09-19 — D21 resolved: the catalogue carries Darz's real services, in Toman
 
 - "Add the standard set" (owner-only, idempotent) writes the 8 priced exhibition services with their
@@ -299,6 +312,7 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 - **Images** — one fit-not-crop rule on every artwork image (`catalogue.css` `.card .img img`).
 - Schema regenerated from backend Phase 19.3; 17 test files / 98 tests. Details and owner flags:
   `docs/V0_1_SCOPE.md`.
+
 ## 2026-09-11 — Design pass: the Market App shell + every screen re-skinned to the design package
 
 Source of truth is now the Market App design-system handoff package (`darzstudio.art`
@@ -374,9 +388,10 @@ ported from `aucPill`, app.html ~6258) wired into the lot rows + lot detail; `au
 `.aucpill*` + `.dz-anotif*` + the feed rows (source lines cited). 12 new tests (80 total);
 typecheck / lint / format / build clean. Verified end-to-end in-browser (two notifications for a real
 collector): the banner shows the newest unread with the right accent, the feed lists both with pills
-+ "Lot N" (proves BE-7), and marking one read updates the hero count, the mark-all count and swaps
-the banner to the next unread — all off one shared polled controller. Frontend PR
-`phase-8-auctions-notifications`; backend PR `phase-11.3-auctions-notifications`.
+
+- "Lot N" (proves BE-7), and marking one read updates the hero count, the mark-all count and swaps
+  the banner to the next unread — all off one shared polled controller. Frontend PR
+  `phase-8-auctions-notifications`; backend PR `phase-11.3-auctions-notifications`.
 
 ## 2026-09-10 — Phase 8 step 2: auctions — Conditions of Sale + paddle registration + place/raise bid
 

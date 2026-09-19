@@ -98,15 +98,15 @@ function Tiles({
       </Section>
 
       <Section title="Today">
-        <Tile label="Requests" value={today.requests_created} />
+        <Tile label="Requests" value={today.requests_created} to="/admin/requests" />
         <Tile label="New collectors" value={today.collectors_created} />
         <Tile label="Collector sign-ins" value={today.collector_logins} />
         <Tile label="Bids" value={today.bids_placed} />
       </Section>
 
       <Section title="Collectors">
-        <Tile label="Total" value={collectors.total} />
-        <Tile label="Active" value={collectors.active} />
+        <Tile label="Total" value={collectors.total} to="/admin/collectors" />
+        <Tile label="Active" value={collectors.active} to="/admin/collectors" />
       </Section>
 
       <Section title="Catalogue" note={`${catalogue.total} works`}>
@@ -117,13 +117,23 @@ function Tiles({
       </Section>
 
       <Section title="Auctions">
-        <Tile label="Live now" value={auctions.live_now} />
-        <Tile label="Scheduled" value={auctions.scheduled} />
-        <Tile label="Registrations pending" value={auctions.registrations_pending} accent />
+        <Tile label="Live now" value={auctions.live_now} to="/admin/auctions" />
+        <Tile label="Scheduled" value={auctions.scheduled} to="/admin/auctions" />
+        <Tile
+          label="Registrations pending"
+          value={auctions.registrations_pending}
+          to="/admin/auction-registrations"
+          accent
+        />
       </Section>
 
       <Section title="Exhibitions">
-        <Tile label="Awaiting review" value={exhibitions.pending_review} accent />
+        <Tile
+          label="Awaiting review"
+          value={exhibitions.pending_review}
+          to="/admin/sources?view=exhibitions"
+          accent
+        />
       </Section>
     </>
   );
