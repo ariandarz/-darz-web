@@ -1289,7 +1289,13 @@ export class ProjectsAdminService extends ResourceService {
 
   // --- projects ------------------------------------------------------------
   projects(query: ProjectQuery = {}) {
-    return this.list<ProjectAdmin>('/projects/', query as RequestOptions['query']);
+    // Django's BooleanField accepts `True`/`False` (and 1/0), not the
+    // lowercase pair the endpoint documents — normalised here so no desk
+    // has to know (G-PROJ-6).
+    const { archived, ...rest } = query;
+    const wire: Record<string, unknown> =
+      archived === undefined ? rest : { ...rest, archived: archived ? 'True' : 'False' };
+    return this.list<ProjectAdmin>('/projects/', wire as RequestOptions['query']);
   }
   project(id: string) {
     return this.retrieve<ProjectAdmin>(`/projects/${id}/`);

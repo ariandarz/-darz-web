@@ -869,13 +869,17 @@ export type ChecklistTemplatePatch = Partial<ChecklistTemplateInput> & {
 };
 
 /** `ProjectFilterSet` — search on name/no/client_name/venue; exact status,
- * stage, category, archived; ordering `created|-created|name|-name`. */
+ * stage, category, archived; ordering `created|-created|name|-name`.
+ * `archived` is a boolean here and the service spells it `True`/`False` on
+ * the wire: the filter hands the raw string to Django's BooleanField, which
+ * 400s on the lowercase `true`/`false` the endpoint's own docs name
+ * (found live; G-PROJ-6). */
 export interface ProjectQuery {
   search?: string;
   status?: string;
   stage?: string;
   category?: string;
-  archived?: 'true' | 'false';
+  archived?: boolean;
   ordering?: 'created' | '-created' | 'name' | '-name';
   page?: number;
   per_page?: number;
