@@ -47,18 +47,25 @@ export type RegistrationStatus = Schemas['BidderRegistrationStatusEnum'];
 export type AuctionNotification = Schemas['Notification'];
 export type NotificationKind = Schemas['NotificationKindEnum'];
 
-/** External auction-house result — market-intelligence comparables, read-only
- * for collectors (Phase 8 step 4). Backend has ~10 fields; the old app's
- * Records tab showed more (image, medium, estimates, hammer-vs-realized …) —
- * see `docs/PHASE_8_API_GAPS.md`. */
+/** External auction-house result — market-intelligence comparables. Widened
+ * in backend Phase 11-admin (BE-R1…R3 closed the Phase 8 gap list): image,
+ * medium, estimates, hammer vs realized, sections, highlights. One
+ * serializer for collector read and admin CRUD — nothing on it is
+ * confidential; `artist_display_name` is the label to show. Admin PATCH is
+ * plain (no lock input). */
 export type AuctionRecord = Schemas['AuctionRecord'];
 
-/** `GET /api/auctions/records/` params. */
+/** `GET /api/auctions(/admin)/records/` params. */
 export interface AuctionRecordQuery {
   search?: string;
   /** `sale_date` | `-sale_date` | `price_amount` | `-price_amount` (+ created_at) */
   ordering?: string;
   artist?: string;
+  /** past | upcoming | live — the old Records tab's own sections (BE-R6). */
+  section?: string;
+  /** admin-only (BE-R4): sold | unsold | passed | withdrawn | pending. */
+  status?: string;
+  is_highlight?: string;
   per_page?: number;
   page?: number;
 }

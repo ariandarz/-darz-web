@@ -815,8 +815,17 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       Channels lot-state broadcast.)
 - [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
-      returns in a later pass. **Auction Records desk** (external results DB, full CRUD served)
-      is the next catalogue-adjacent build. — `Sale` has no source axis (G-SALE-4); auction settlement
+      returns in a later pass.
+- [x] **Step 6 — Auction Records desk** ✅ 2026-09-19 (overnight run) — `/admin/auction-records`
+      (+`/new|:id`): the widened external-results DB (backend Phase 11-admin, BE-R1…R6) as a full
+      desk — search + the Past/Upcoming/Live sections + the admin-only status filter; rows with
+      the linked-artist-beats-raw label, realized-beats-hammer-beats-price money line, ★
+      highlights; a four-section editor over the serializer's whole field set (year is free text
+      — "c. 2005" is real data). The old tab's import machinery and archive browser are dead
+      architecture (the Import desk's CSV path covers bulk entry). Verified live: create with a
+      linked artist → row anatomy → section filter → search by house → edit round-trip
+      (unstar). The collector browse requires collector auth (its 401 to a bare probe is the
+      permission working). — `Sale` has no source axis (G-SALE-4); auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 

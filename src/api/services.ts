@@ -923,6 +923,26 @@ export class AuctionsAdminService extends ResourceService {
     });
   }
 
+  /** The external results DB — `?status=` is admin-only (the collector list
+   * reads status only as a field). */
+  records(query: AuctionRecordQuery = {}) {
+    return this.list<AuctionRecord>('/records/', query as RequestOptions['query']);
+  }
+  record(id: string) {
+    return this.retrieve<AuctionRecord>(`/records/${id}/`);
+  }
+  createRecord(body: Partial<AuctionRecord>) {
+    return this.create<AuctionRecord>('/records/', body);
+  }
+  updateRecord(id: string, body: Partial<AuctionRecord>) {
+    return this.client.send<AuctionRecord>('PATCH', `${this.basePath}/records/${id}/`, {
+      body,
+    });
+  }
+  deleteRecord(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/records/${id}/`);
+  }
+
   registrations(
     query: { auction?: string; status?: string; page?: number; per_page?: number } = {},
   ) {

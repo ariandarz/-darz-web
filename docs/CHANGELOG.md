@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 12 Step 6: the Auction Records desk
+
+- `/admin/auction-records` (+editor): the widened comparables DB as a desk — sections, search,
+  status, highlights, and a four-section editor over the whole serializer. The old import
+  machinery stays dead architecture; CSV bulk entry lives in the Import desk.
+
 ## 2026-09-19 — Phase 12 Step 5: Auctions admin — Live Auctions + Register to Bid
 
 - `/admin/auctions` (+detail): create, the Phase-35 invite-only card, lots with the confidential

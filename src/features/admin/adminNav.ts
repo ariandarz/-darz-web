@@ -258,10 +258,10 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'records',
         'Auction Records',
-        null,
+        '/admin/auction-records',
         'ready',
-        '12+',
-        'the external results DB (full CRUD served) — its own desk next.',
+        '12·6',
+        'the external results DB, full CRUD.',
       ),
       tab(
         'aucReg',

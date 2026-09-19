@@ -272,6 +272,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'docInvoices',
       'docFiles',
       'auctions',
+      'records',
       'aucReg',
       'users',
       'activity',
