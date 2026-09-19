@@ -28,10 +28,18 @@ import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
 import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
 import { ArtistsPage } from './features/admin/ArtistsPage';
+import { AuctionAdminDetailPage } from './features/admin/AuctionAdminDetailPage';
+import { AccountingPage } from './features/admin/AccountingPage';
+import { AuctionsAdminPage } from './features/admin/AuctionsAdminPage';
+import { RegistrationsPage } from './features/admin/RegistrationsPage';
+import { RecordEditorPage } from './features/admin/RecordEditorPage';
+import { RecordsAdminPage } from './features/admin/RecordsAdminPage';
 import { DocumentDetailPage } from './features/admin/DocumentDetailPage';
 import { DocumentsPage } from './features/admin/DocumentsPage';
 import { PublishedPage } from './features/admin/PublishedPage';
 import { SaleDetailPage } from './features/admin/SaleDetailPage';
+import { SourceDetailPage } from './features/admin/SourceDetailPage';
+import { SourcesPage } from './features/admin/SourcesPage';
 import { SalesPage } from './features/admin/SalesPage';
 import { ArtworkEditorPage } from './features/admin/ArtworkEditorPage';
 import { ArtworksPage } from './features/admin/ArtworksPage';
@@ -272,6 +280,14 @@ export function AppRoutes() {
         <Route path="/admin/documents" element={<DocumentsPage />} />
         <Route path="/admin/documents/:id" element={<DocumentDetailPage />} />
         <Route path="/admin/published" element={<PublishedPage />} />
+        <Route path="/admin/auctions" element={<AuctionsAdminPage />} />
+        <Route path="/admin/auctions/:id" element={<AuctionAdminDetailPage />} />
+        <Route path="/admin/auction-registrations" element={<RegistrationsPage />} />
+        <Route path="/admin/auction-records" element={<RecordsAdminPage />} />
+        <Route path="/admin/auction-records/new" element={<RecordEditorPage />} />
+        <Route path="/admin/auction-records/:id" element={<RecordEditorPage />} />
+        <Route path="/admin/sources" element={<SourcesPage />} />
+        <Route path="/admin/sources/:id" element={<SourceDetailPage />} />
         <Route path="/admin/sales" element={<SalesPage />} />
         <Route path="/admin/sales/:id" element={<SaleDetailPage />} />
         <Route path="/admin/collectors" element={<CollectorsPage />} />
@@ -292,6 +308,14 @@ export function AppRoutes() {
           element={
             <RequireOwner title="Team">
               <TeamPage />
+            </RequireOwner>
+          }
+        />
+        <Route
+          path="/admin/accounting"
+          element={
+            <RequireOwner title="Accounting">
+              <AccountingPage />
             </RequireOwner>
           }
         />

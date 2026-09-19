@@ -47,18 +47,25 @@ export type RegistrationStatus = Schemas['BidderRegistrationStatusEnum'];
 export type AuctionNotification = Schemas['Notification'];
 export type NotificationKind = Schemas['NotificationKindEnum'];
 
-/** External auction-house result — market-intelligence comparables, read-only
- * for collectors (Phase 8 step 4). Backend has ~10 fields; the old app's
- * Records tab showed more (image, medium, estimates, hammer-vs-realized …) —
- * see `docs/PHASE_8_API_GAPS.md`. */
+/** External auction-house result — market-intelligence comparables. Widened
+ * in backend Phase 11-admin (BE-R1…R3 closed the Phase 8 gap list): image,
+ * medium, estimates, hammer vs realized, sections, highlights. One
+ * serializer for collector read and admin CRUD — nothing on it is
+ * confidential; `artist_display_name` is the label to show. Admin PATCH is
+ * plain (no lock input). */
 export type AuctionRecord = Schemas['AuctionRecord'];
 
-/** `GET /api/auctions/records/` params. */
+/** `GET /api/auctions(/admin)/records/` params. */
 export interface AuctionRecordQuery {
   search?: string;
   /** `sale_date` | `-sale_date` | `price_amount` | `-price_amount` (+ created_at) */
   ordering?: string;
   artist?: string;
+  /** past | upcoming | live — the old Records tab's own sections (BE-R6). */
+  section?: string;
+  /** admin-only (BE-R4): sold | unsold | passed | withdrawn | pending. */
+  status?: string;
+  is_highlight?: string;
   per_page?: number;
   page?: number;
 }
@@ -481,4 +488,72 @@ export interface DocumentQuery {
   kind?: string;
   page?: number;
   per_page?: number;
+}
+
+/** A source link — `GalleryLinkSerializer` (backend Phase 10/12): one
+ * gallery / dealer / artist / collector who shares works with Darz, plus
+ * their no-login portal (token + PIN, revealed ONCE at issue — the same
+ * shown-once contract as access keys). `feat_funnel` /
+ * `feat_funnel_activity` are the per-link sales-funnel display toggles. */
+export type GalleryLinkAdmin = Schemas['GalleryLink'];
+
+/** One assigned work on a link — the portal reads this SNAPSHOT, never the
+ * live artwork (a later edit must not retroactively change what a source
+ * saw). `funnel_status` is the Darz-set override; blank derives live. */
+export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
+
+/** A portal submission in the review queue — approving an availability /
+ * price / correction update applies it to the artwork through the real
+ * catalog services; the other kinds record intent only. */
+export type GalleryUpdateAdmin = Schemas['GalleryUpdate'];
+
+/** Admin lot — `LotAdminSerializer`: the collector shape PLUS the
+ * confidential `reserve_amount` and `leading_bidder`, with the artwork as a
+ * bare uuid. Lots are create-only (no PATCH — G-AUC-2); they move through
+ * `go-live` and `close` (+`?force=` sells under reserve). */
+export type LotAdmin = Schemas['LotAdmin'];
+
+/** A paddle request — `BidderRegistrationAdminSerializer`. Approving assigns
+ * the auction's next sequential paddle number server-side. */
+export type BidderRegistrationAdmin = Schemas['BidderRegistrationAdmin'];
+
+/** A ledger entry — `LedgerEntrySerializer` (backend Phase 11's accounting,
+ * owner-only end to end). Four books (Darz · Koocheh · Personal · Expenses
+ * Arian — the old app's own ledgers), income/expense, seven statuses, the
+ * manual-FX fields and the sale labels. `book` is immutable after create. */
+export type LedgerEntryAdmin = Schemas['LedgerEntry'];
+
+export interface LedgerQuery {
+  book?: string;
+  entry_type?: string;
+  status?: string;
+  category?: string;
+  person?: string;
+  position?: string;
+  /** YYYY-MM */
+  month?: string;
+  page?: number;
+  per_page?: number;
+}
+
+/** `GET /accounting/admin/ledger/summary/?book=&month=` — the old
+ * `acctSummary` served: per-currency buckets, never summed across
+ * currencies, plus the manual-rate converted-income view (`acctConv`). */
+export interface LedgerSummary {
+  book: string;
+  month: string;
+  currencies: string[];
+  by_currency: Record<
+    string,
+    {
+      currency: string;
+      income: string;
+      expense: string;
+      salaries: string;
+      pending: string;
+      net: string;
+      count: number;
+    }
+  >;
+  converted_income: Record<string, string>;
 }

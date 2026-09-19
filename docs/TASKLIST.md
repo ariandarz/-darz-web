@@ -788,7 +788,54 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       query-aware (three tabs, one pathname) without regressing filtered desks. History and the
       Builder stay marked with reasons (G-DOC-2, D18). Verified live: the full lifecycle
       draft→PDF→confirm→sign, fields persistence, kind tabs lighting right, versions rendering.
-- [ ] **Step 4 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+- [x] **Step 4 — Galleries & Sources: partners + the Source Updates queue** ✅ 2026-09-18
+      (overnight run) — `/admin/sources` (`sourcesView()`, `darz-studio.html:27288`; the Galleries
+      tab opens the gallery slice): the partner roster with the `source_type` axis, issue → the
+      ONE-TIME token+PIN reveal (the serializer's own contract, ShownOnceSecret ×2), the ported
+      reminder banner ("n source updates awaiting your review → Review them"), and the queue as
+      the desk's second half (segment) — approve/reject with the note, the confirm naming what
+      approval DOES per kind (availability/price/correction apply to the artwork; the rest record
+      intent). `/admin/sources/:id`: record + enable/disable, the Phase-12 funnel switches (the
+      model's "never a collector identity" promise kept on the copy), and the snapshot works list
+      — assign via the kit Picker, remove, per-work funnel-stage override. Verified live end to
+      end INCLUDING the portal side: a real `POST /portal/{token}/updates/` with the issued
+      token+PIN (201) → banner → queue → approve; disable → the portal answers 401.
+- [x] **Step 5 — Auctions admin: Live Auctions + Register to Bid** ✅ 2026-09-19 (overnight
+      run) — `/admin/auctions` (`auctionsView()`, `darz-studio.html:31677`: search + status
+      filter, ＋ New auction on the create serializer's exact fields) and `/admin/auctions/:id`:
+      the no-edit record (G-AUC-1 stated), the Phase-35 **invite-only card** (switch + invited
+      collectors via the kit Picker — "an uninvited collector never sees the sale"), and the lots
+      desk — create with the confidential reserve (shown only here), **Go live** (the artwork
+      transitions to Reserved server-side), **Close / Close early** (the found-live rule: `force`
+      bypasses the END TIME, never the reserve — the confirm says the whole rule).
+      `/admin/auction-registrations`: the paddle queue with the ported action titles; approving
+      assigns the next sequential paddle number. G-AUC-1…3 recorded. Verified live end to end:
+      create → invite → lot → go-live → artwork Reserved → queue resolve → approve → paddle #1 →
+      close early → passed → artwork back to Available. (Redis joined the local stack for the
+      Channels lot-state broadcast.)
+- [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+      is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
+      returns in a later pass.
+- [x] **Step 7 — Accounting: the four-ledger books** ✅ 2026-09-19 (overnight run) —
+      `/admin/accounting` (owner-only end to end, the backend's own `IsOwner`): the four books
+      (Darz · Koocheh · Personal · Expenses Arian) as a segment, the per-currency summary strip
+      (`acctSummary` served — income/expense/net/pending/salaries, NEVER summed across
+      currencies, plus the manual-rate converted-income view), the month/type/status filters,
+      and entry CRUD over the write serializer's whole set (essentials + manual FX + sale
+      labels; `book` immutable on edit, said on the form). Deals, attachments/receipts, the
+      Arian review and the settlement follow as their own step. Verified live: income + expense
+      land, the strip nets 38,000 USD, books are separate worlds, edit flips the pill, and a
+      standard admin meets the refusal card.
+- [x] **Step 6 — Auction Records desk** ✅ 2026-09-19 (overnight run) — `/admin/auction-records`
+      (+`/new|:id`): the widened external-results DB (backend Phase 11-admin, BE-R1…R6) as a full
+      desk — search + the Past/Upcoming/Live sections + the admin-only status filter; rows with
+      the linked-artist-beats-raw label, realized-beats-hammer-beats-price money line, ★
+      highlights; a four-section editor over the serializer's whole field set (year is free text
+      — "c. 2005" is real data). The old tab's import machinery and archive browser are dead
+      architecture (the Import desk's CSV path covers bulk entry). Verified live: create with a
+      linked artist → row anatomy → section filter → search by house → edit round-trip
+      (unstar). The collector browse requires collector auth (its 401 to a bare probe is the
+      permission working). — `Sale` has no source axis (G-SALE-4); auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 
@@ -815,6 +862,14 @@ surface before building each. Ordered by V1 relevance:
 - [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
 
 ## Phase 13 — Testing
+
+- [x] **The E2E harness — stub tier in CI, real-backend tier local** ✅ 2026-09-18 (overnight
+      run) — `e2e/smoke.spec.ts` (@playwright/test) walks gate → team sign-in → panel → a desk
+      against `e2e/stub-server.mjs` (the envelope + canned boot routes + empty lists, so every
+      desk must survive an empty backend); a second `e2e` job in `quality.yml` runs it with its
+      own Chromium. The real-backend tier is deliberately local-only — `e2e/README.md` states the
+      two tiers' claims and the rule of thumb (a new desk gets its real-backend walk before it
+      ships; the smoke only grows with the boot/shell contract).
 
 - [ ] Component tests for shared/base components
 - [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)

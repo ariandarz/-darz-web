@@ -65,6 +65,14 @@ import type {
   DocumentAdmin,
   DocumentQuery,
   DocumentVersionAdmin,
+  GalleryLinkAdmin,
+  GalleryLinkArtwork,
+  GalleryUpdateAdmin,
+  BidderRegistrationAdmin,
+  LotAdmin,
+  LedgerEntryAdmin,
+  LedgerQuery,
+  LedgerSummary,
 } from './types';
 
 export abstract class ResourceService {
@@ -739,6 +747,253 @@ export class DocumentsAdminService extends ResourceService {
       `/documents/${id}/versions/`,
       query as RequestOptions['query'],
     );
+  }
+}
+
+/** `/api/gallery/admin/` — the source-link half of the gallery loop
+ * (backend Phase 10/12): issue (one-time token+PIN reveal), enable/disable,
+ * the per-link funnel toggles, the assigned-works snapshot, and the Source
+ * Updates review queue. The portal itself (`/gallery/portal/{token}/`) is a
+ * separate surface. */
+export class GalleryAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/gallery/admin');
+  }
+
+  links(query: { source_type?: string; page?: number; per_page?: number } = {}) {
+    return this.list<GalleryLinkAdmin>('/links/', query as RequestOptions['query']);
+  }
+  link(id: string) {
+    return this.retrieve<GalleryLinkAdmin>(`/links/${id}/`);
+  }
+  /** One-time reveal — the plaintext token/PIN are never retrievable again
+   * (the serializer's own words). The ShownOnceSecret contract. */
+  issueLink(body: {
+    source_type: string;
+    name: string;
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    expires_at?: string | null;
+  }) {
+    return this.create<{ link: GalleryLinkAdmin; token: string; pin: string }>(
+      '/links/',
+      body,
+    );
+  }
+  enableLink(id: string) {
+    return this.create<GalleryLinkAdmin>(`/links/${id}/enable/`);
+  }
+  disableLink(id: string) {
+    return this.create<GalleryLinkAdmin>(`/links/${id}/disable/`);
+  }
+  setLinkFeatures(
+    id: string,
+    features: { feat_funnel?: boolean; feat_funnel_activity?: boolean },
+  ) {
+    return this.client.send<GalleryLinkAdmin>(
+      'POST',
+      `${this.basePath}/links/${id}/features/`,
+      {
+        body: features,
+      },
+    );
+  }
+
+  linkArtworks(linkId: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<GalleryLinkArtwork>(
+      `/links/${linkId}/artworks/`,
+      query as RequestOptions['query'],
+    );
+  }
+  assignArtwork(linkId: string, artworkId: string) {
+    return this.create<GalleryLinkArtwork>(`/links/${linkId}/artworks/`, {
+      artwork: artworkId,
+    });
+  }
+  removeArtwork(linkId: string, assignmentId: string) {
+    return this.client.send<void>(
+      'DELETE',
+      `${this.basePath}/links/${linkId}/artworks/${assignmentId}/`,
+    );
+  }
+  /** '' clears the override — the portal derives the stage again. */
+  setFunnelOverride(linkId: string, assignmentId: string, funnelStatus: string) {
+    return this.create<GalleryLinkArtwork>(
+      `/links/${linkId}/artworks/${assignmentId}/funnel/`,
+      { funnel_status: funnelStatus },
+    );
+  }
+
+  updates(
+    query: {
+      link?: string;
+      kind?: string;
+      status?: string;
+      page?: number;
+      per_page?: number;
+    } = {},
+  ) {
+    return this.list<GalleryUpdateAdmin>('/updates/', query as RequestOptions['query']);
+  }
+  approveUpdate(id: string, note = '') {
+    return this.create<GalleryUpdateAdmin>(`/updates/${id}/approve/`, { note });
+  }
+  rejectUpdate(id: string, note = '') {
+    return this.create<GalleryUpdateAdmin>(`/updates/${id}/reject/`, { note });
+  }
+}
+
+/** `/api/auctions/admin/` — the auction house's desks (backend Phase 8/35):
+ * auctions (create; detail is GET/DELETE — no edit endpoint, G-AUC-1), the
+ * Phase-35 invite-only list, lots (create-only + go-live/close), and the
+ * paddle-registration queue. The external results DB (`/records/`) waits for
+ * its own desk. */
+export class AuctionsAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/auctions/admin');
+  }
+
+  auctions(query: { page?: number; per_page?: number } = {}) {
+    return this.list<Auction>('/auctions/', query as RequestOptions['query']);
+  }
+  auction(id: string) {
+    return this.retrieve<Auction>(`/auctions/${id}/`);
+  }
+  createAuction(body: {
+    title: string;
+    description?: string;
+    currency: string;
+    starts_at: string;
+    ends_at: string;
+  }) {
+    return this.create<Auction>('/auctions/', body);
+  }
+  deleteAuction(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/auctions/${id}/`);
+  }
+  /** Phase 35 — "Make an auction private": an uninvited collector never sees
+   * it and cannot register a paddle. */
+  inviteList(id: string) {
+    return this.retrieve<{
+      invite_only: boolean;
+      invited_collectors: Array<{ id: string; display_name: string }>;
+    }>(`/auctions/${id}/invite-only/`);
+  }
+  setInviteOnly(id: string, inviteOnly: boolean, invitedCollectorIds: string[]) {
+    return this.create<{
+      invite_only: boolean;
+      invited_collectors: Array<{ id: string; display_name: string }>;
+    }>(`/auctions/${id}/invite-only/`, {
+      invite_only: inviteOnly,
+      invited_collector_ids: invitedCollectorIds,
+    });
+  }
+
+  lots(auctionId: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<LotAdmin>(
+      `/auctions/${auctionId}/lots/`,
+      query as RequestOptions['query'],
+    );
+  }
+  createLot(body: {
+    auction: string;
+    artwork: string;
+    lot_number: number;
+    opening_amount: string;
+    reserve_amount?: string | null;
+    low_estimate?: string | null;
+    high_estimate?: string | null;
+    premium_pct?: string;
+    currency: string;
+    starts_at: string;
+    ends_at: string;
+    soft_close_sec?: number;
+  }) {
+    return this.create<LotAdmin>(`/auctions/${body.auction}/lots/`, body);
+  }
+  /** scheduled → live; the artwork transitions to Reserved server-side. */
+  goLive(lotId: string) {
+    return this.create<LotAdmin>(`/lots/${lotId}/go-live/`);
+  }
+  /** Sells or passes by the engine's own rules (a sale needs bids AND the
+   * reserve met — force never overrides that); `force` closes EARLY, before
+   * the lot's scheduled end ("Lot has not reached its end time yet." is the
+   * plain close's refusal, found live). */
+  closeLot(lotId: string, force = false) {
+    return this.client.send<LotAdmin>('POST', `${this.basePath}/lots/${lotId}/close/`, {
+      query: force ? { force: 'true' } : undefined,
+    });
+  }
+
+  /** The external results DB — `?status=` is admin-only (the collector list
+   * reads status only as a field). */
+  records(query: AuctionRecordQuery = {}) {
+    return this.list<AuctionRecord>('/records/', query as RequestOptions['query']);
+  }
+  record(id: string) {
+    return this.retrieve<AuctionRecord>(`/records/${id}/`);
+  }
+  createRecord(body: Partial<AuctionRecord>) {
+    return this.create<AuctionRecord>('/records/', body);
+  }
+  updateRecord(id: string, body: Partial<AuctionRecord>) {
+    return this.client.send<AuctionRecord>('PATCH', `${this.basePath}/records/${id}/`, {
+      body,
+    });
+  }
+  deleteRecord(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/records/${id}/`);
+  }
+
+  registrations(
+    query: { auction?: string; status?: string; page?: number; per_page?: number } = {},
+  ) {
+    return this.list<BidderRegistrationAdmin>(
+      '/registrations/',
+      query as RequestOptions['query'],
+    );
+  }
+  /** "Approve — the collector is told they are registered" (the old title);
+   * assigns the auction's next sequential paddle number. */
+  approveRegistration(id: string) {
+    return this.create<BidderRegistrationAdmin>(`/registrations/${id}/approve/`);
+  }
+  rejectRegistration(id: string) {
+    return this.create<BidderRegistrationAdmin>(`/registrations/${id}/reject/`);
+  }
+}
+
+/** `/api/accounting/admin/` — the owner's books (backend Phase 11,
+ * owner-only end to end): the four-ledger entry CRUD, the per-currency
+ * summary, and — later steps — private deals, attachments, the Arian
+ * review, the settlement. */
+export class AccountingAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/accounting/admin');
+  }
+
+  ledger(query: LedgerQuery = {}) {
+    return this.list<LedgerEntryAdmin>('/ledger/', query as RequestOptions['query']);
+  }
+  createEntry(body: Record<string, unknown>) {
+    return this.create<LedgerEntryAdmin>('/ledger/', body);
+  }
+  updateEntry(id: string, body: Record<string, unknown>) {
+    return this.client.send<LedgerEntryAdmin>('PATCH', `${this.basePath}/ledger/${id}/`, {
+      body,
+    });
+  }
+  deleteEntry(id: string) {
+    return this.client.send<void>('DELETE', `${this.basePath}/ledger/${id}/`);
+  }
+  /** Per-currency income/expense/net/pending/salaries — currencies are never
+   * summed together (the service's own rule). */
+  ledgerSummary(book: string, month?: string) {
+    return this.retrieve<LedgerSummary>('/ledger/summary/', {
+      book,
+      ...(month ? { month } : {}),
+    } as RequestOptions['query']);
   }
 }
 

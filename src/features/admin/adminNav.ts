@@ -173,8 +173,15 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'galleries',
     label: 'Galleries',
     tabs: [
-      tab('galleries', 'Galleries', null, 'ready', '10', 'gallery admin, 22 routes.'),
-      tab('sources', 'Sources & Partners', null, 'ready', '10'),
+      tab(
+        'galleries',
+        'Galleries',
+        '/admin/sources?type=gallery',
+        'ready',
+        '12·4',
+        'the gallery slice of Sources & Partners; the per-gallery workspace rides the portal step.',
+      ),
+      tab('sources', 'Sources & Partners', '/admin/sources', 'ready', '12·4'),
     ],
   },
   {
@@ -240,9 +247,30 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'auctions',
     label: 'Auctions',
     tabs: [
-      tab('auctions', 'Live Auctions', null, 'ready', '7', 'auctions admin, 12 routes.'),
-      tab('records', 'Auction Records', null, 'ready', '7'),
-      tab('aucReg', 'Register to Bid', null, 'ready', '7', 'Paddle registrations queue.'),
+      tab(
+        'auctions',
+        'Live Auctions',
+        '/admin/auctions',
+        'ready',
+        '12·5',
+        'auctions admin, 12 routes.',
+      ),
+      tab(
+        'records',
+        'Auction Records',
+        '/admin/auction-records',
+        'ready',
+        '12·6',
+        'the external results DB, full CRUD.',
+      ),
+      tab(
+        'aucReg',
+        'Register to Bid',
+        '/admin/auction-registrations',
+        'ready',
+        '12·5',
+        'Paddle registrations queue.',
+      ),
     ],
   },
   {
@@ -440,10 +468,10 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'accounting',
         'Accounting',
-        null,
+        '/admin/accounting',
         'ready',
-        '11',
-        'accounting admin, 15 routes (4 ledgers + Private Deals).',
+        '12·7',
+        'the four-ledger books; deals/attachments/settlement follow.',
       ),
       tab(
         'automations',

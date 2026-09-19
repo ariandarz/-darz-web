@@ -5,6 +5,38 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Phase 12 Step 7: Accounting — the four-ledger books
+
+- `/admin/accounting` (owner-only): the four books as a segment, the per-currency summary strip
+  (never summed across currencies), month/type/status filters, entry CRUD with manual FX and
+  sale labels. Deals/attachments/settlement follow as their own step.
+
+## 2026-09-19 — Phase 12 Step 6: the Auction Records desk
+
+- `/admin/auction-records` (+editor): the widened comparables DB as a desk — sections, search,
+  status, highlights, and a four-section editor over the whole serializer. The old import
+  machinery stays dead architecture; CSV bulk entry lives in the Import desk.
+
+## 2026-09-19 — Phase 12 Step 5: Auctions admin — Live Auctions + Register to Bid
+
+- `/admin/auctions` (+detail): create, the Phase-35 invite-only card, lots with the confidential
+  reserve, Go live (artwork → Reserved), Close/Close early (force bypasses the end time, never
+  the reserve — found live). `/admin/auction-registrations`: the paddle queue; approval assigns
+  the next sequential number. G-AUC-1…3 recorded.
+
+## 2026-09-18 — Phase 12 Step 4: Galleries & Sources — partners + Source Updates
+
+- `/admin/sources` (+detail): the partner roster, issue with the one-time token+PIN reveal,
+  enable/disable, funnel switches, the snapshot works list with assign/remove/stage override,
+  and the Source Updates queue (approve applies availability/price/correction to the artwork).
+  Verified live including a real portal-side submission with the issued credentials.
+
+## 2026-09-18 — Phase 13: the E2E harness (stub tier in CI)
+
+- `e2e/`: a Playwright smoke over the production build against a canned envelope stub
+  (boot → gate → team sign-in → panel → a desk; empty lists everywhere else), plus a second
+  CI job with its own Chromium. The real-backend tier stays local by design (`e2e/README.md`).
+
 ## 2026-09-18 — Phase 12 Step 3: Documents — Library/Proposals/Invoices + lifecycle
 
 - `/admin/documents` (+`?kind=` tabs) and the record page: create, draft-only edit with a JSON
