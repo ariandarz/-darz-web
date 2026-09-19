@@ -30,6 +30,7 @@ import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
 import { ArtistsPage } from './features/admin/ArtistsPage';
 import { AuctionAdminDetailPage } from './features/admin/AuctionAdminDetailPage';
 import { AccountingPage } from './features/admin/AccountingPage';
+import { DealEditorPage } from './features/admin/DealEditorPage';
 import { AuctionsAdminPage } from './features/admin/AuctionsAdminPage';
 import { RegistrationsPage } from './features/admin/RegistrationsPage';
 import { RecordEditorPage } from './features/admin/RecordEditorPage';
@@ -316,6 +317,22 @@ export function AppRoutes() {
           element={
             <RequireOwner title="Accounting">
               <AccountingPage />
+            </RequireOwner>
+          }
+        />
+        <Route
+          path="/admin/accounting/deals/new"
+          element={
+            <RequireOwner title="Accounting">
+              <DealEditorPage />
+            </RequireOwner>
+          }
+        />
+        <Route
+          path="/admin/accounting/deals/:id"
+          element={
+            <RequireOwner title="Accounting">
+              <DealEditorPage />
             </RequireOwner>
           }
         />

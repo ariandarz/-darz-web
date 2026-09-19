@@ -20,7 +20,8 @@ commit. The default rule — open the PR and stop — is back in force as of thi
 | #49 | Phase 12 Step 1 — **Artworks Database + editor + Artists** | merged |
 | #50 | Phase 12 Step 2 — Published works + Market Sales | merged |
 | #51 | Phase 12 Step 3 — Documents (Library/Proposals/Invoices + lifecycle + share links) | merged |
-| #52 | Phase 13 **E2E harness** (CI tier) + Phase 12 Steps 4–7: **Galleries & Sources**, **Auctions admin + paddle queue**, **Auction Records**, **Accounting ledgers** | open — driving to green, will merge under the overnight instruction if CI passes before you wake |
+| #52 | Phase 13 **E2E harness** (CI tier) + Phase 12 Steps 4–7: **Galleries & Sources**, **Auctions admin + paddle queue**, **Auction Records**, **Accounting ledgers** | merged (both jobs green) |
+| #53 | Phase 12 Step 8 — **Private Deals** (+ slotted receipts) | **left open for you** — the default rule is back in force |
 
 Full detail per step: `docs/TASKLIST.md` (Phases 11b/12/13 sections) and `docs/CHANGELOG.md`.
 The whole admin: 14 groups / 55 tabs — **every desk with a served backend is now live** except

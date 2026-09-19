@@ -826,6 +826,17 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       Arian review and the settlement follow as their own step. Verified live: income + expense
       land, the strip nets 38,000 USD, books are separate worlds, edit flips the pill, and a
       standard admin meets the refusal card.
+- [x] **Step 8 — Accounting: Private Deals + receipts** ✅ built 2026-09-19 (PR #53, left open —
+      the overnight merge window closed with #52) — the Accounting desk gains the Books | Private
+      Deals segment; `/admin/accounting?view=deals` lists with stage/payment/month filters, the
+      per-currency deals summary under the same filters, and rows carrying the serializer's own
+      `calc` line (net · remaining — `pdealCalc` served, never client math).
+      `/admin/accounting/deals/new|:id`: the old panel's widest form — the deal · the work ·
+      buyer · seller · commission & payment · the 15-amount money grid (each amount with its own
+      currency) · follow-up · deal FX — plus the calc card and slotted attachment uploads with
+      served links. Unset choice fields are omitted from the write (a '' would 400). Verified
+      live: create → calc nets the Darz share and the remaining · receipt upload · row/summary
+      math · month include/exclude.
 - [x] **Step 6 — Auction Records desk** ✅ 2026-09-19 (overnight run) — `/admin/auction-records`
       (+`/new|:id`): the widened external-results DB (backend Phase 11-admin, BE-R1…R6) as a full
       desk — search + the Past/Upcoming/Live sections + the admin-only status filter; rows with
