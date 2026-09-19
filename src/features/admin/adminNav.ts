@@ -317,30 +317,51 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     key: 'projects',
     label: 'Projects',
     folded: true,
+    // Eight sub-tabs in the old panel (:13580-13587); seven are desks here.
+    // The record and its stage moves ride `/admin/projects/:id`, reached from
+    // the list, the board and the dashboard cards, not from the navbar.
     tabs: [
-      tab('projDash', 'Dashboard', null, 'ready', '11c'),
-      tab('projList', 'Projects', null, 'ready', '11c'),
+      tab(
+        'projDash',
+        'Dashboard',
+        '/admin/projects',
+        'ready',
+        '11c',
+        'GET /projects/admin/projects/dashboard/ — Delayed and Awaiting-approval ' +
+          'read the stage sub-state, which the API does not accept yet (G-PROJ-3).',
+      ),
+      tab('projList', 'Projects', '/admin/projects/list', 'ready', '11c'),
       tab(
         'projPipeline',
         'Pipeline',
-        null,
+        '/admin/projects/pipeline',
         'ready',
         '11c',
-        '17 stages; the status label is derived server-side.',
+        '17 stages; the status label is derived server-side (G-PROJ-2: not settable).',
       ),
-      tab('projPackages', 'Packages', null, 'ready', '11c'),
+      tab('projPackages', 'Packages', '/admin/projects/packages', 'ready', '11c'),
       tab(
         'projProposal',
         'Proposal',
         null,
-        'none',
+        'partial',
         '11c',
-        'Proposal Builder composition is NOT built on the backend either — it ' +
-          'would reuse documents.Document once scoped.',
+        'No separate desk: the client proposal issues from the project record ' +
+          '(Proposal section) as a documents.Document (kind proposal) rendered ' +
+          'client-side like the exhibition documents. The old Proposal Builder ' +
+          '(the free-form document editor, :14647) is not ported.',
       ),
-      tab('projCalc', 'Calculator', null, 'ready', '11c'),
-      tab('projPartners', 'Partners', null, 'ready', '11c'),
-      tab('projReports', 'Reports', null, 'ready', '11c'),
+      tab(
+        'projCalc',
+        'Calculator',
+        '/admin/projects/calculator',
+        'ready',
+        '11c',
+        'Prices from the service catalogue (D21) — the old client-side rate card ' +
+          'has no backend.',
+      ),
+      tab('projPartners', 'Partners', '/admin/projects/partners', 'ready', '11c'),
+      tab('projReports', 'Reports', '/admin/projects/reports', 'ready', '11c'),
     ],
   },
   {
