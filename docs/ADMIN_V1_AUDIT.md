@@ -503,7 +503,7 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 | ~~**TD-6**~~ | ~~8 unused service methods … delete or wire.~~ **Resolved 2026-09-21 — none were dead code.** Three are unbuilt old-panel buttons (**G-DEL-1**), one is a destructive action the old panel never had, one waits on a hidden v0.1 screen, and `RecommendationService` is a whole unbuilt surface. All eight now say in a comment why they have no caller. |
 | ~~**TD-7**~~ | ~~3 lint warnings.~~ **Closed 2026-09-21** — and one was a real bug: `AuctionEventPage` had no countdown timer at all, so its "2d 23h" froze at mount. Both auction pages now take the time from `useNow`. Lint: **0 warnings**. |
 | **TD-8** | **`admin.css` is 3,389 lines in one file.** It is well-commented and cited, but it is now the second-largest file in the repo. Consider splitting per desk group as the kit did for components. |
-| **TD-9** | ~~**No admin E2E coverage.**~~ **Partly closed 2026-09-21** (#66, after this audit was written): `e2e/` now boots the production build against a stub server in CI, and one of its three tests *does* open a desk — "a desk renders its empty state against an empty backend". What remains is **breadth, not existence**: 3 smoke tests across 52 admin routes, with the real-backend walks still local and manual. |
+| ~~**TD-9**~~ | ~~**No admin E2E coverage.**~~ **Closed for the stub tier, 2026-09-22.** #66 added `e2e/`; `desks.spec.ts` now walks **every** built desk that needs no id (35 routes, one sign-in), asserting each one's own heading, a surviving shell and no thrown error — 38 E2E tests in total. Its first run found **three blank desks**, two of them already on `main`; see §9a. What remains is the real-backend tier, which is local and manual by design (`e2e/README.md`). |
 
 ### Can safely postpone
 
@@ -512,6 +512,32 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 | **TD-10** | `standardSet.ts` (1,042 lines) ships Darz's service catalogue as frontend data. It is a *seeder* that writes through the API, and it is documented as such — but the prices now live in two places. |
 | **TD-11** | App Design appears in two nav groups (Market App and Operations). Ported faithfully from the old panel (`:11730`, `:11764`); `findTab` returns the first match. A fact, not a bug. |
 | **TD-12** | `PackagesPage.tsx` (1,499) and `ProjectPage.tsx` (1,563) are large. Projects is optional for V1, so leave them. |
+
+### 9a · What the first full desk walk found (2026-09-22)
+
+Running every desk for the first time — which nothing in this repo had ever
+done — found **three routes rendering a completely blank page**. Two had
+shipped to `main` in #64/#68. None was visible to the 443 logic tests, and none
+needed real data to reproduce: only something that opens the page.
+
+| Route | Cause | Class |
+| --- | --- | --- |
+| `/admin/accounting` | `.length` on an undefined `currencies` — the desk guarded `summary &&`, which passes for *any* object | trusted response shape |
+| `/admin/projects` | `responsibility_by_member is not iterable` | trusted response shape |
+| `/admin/accounting/deals/new` | a `<Route>` nested inside **another route's `element`** | routing |
+
+The third is the worst of them and was not a shape problem at all: the nesting
+also meant **`/admin/accounting/entries/:id` was never registered**, so Phase
+2's ledger-entry detail — one of that phase's headline deliverables, with its
+own payment-status setter and receipt upload — was **unreachable from any URL**
+from the day it shipped.
+
+The first two are the third and fourth instances of one mistake (after the
+`AdminLayout` fragment and the facets crash), so the fix was made at two
+levels: `normaliseLedgerSummary` / the `readMembers` guard where they happened,
+and `DeskBoundary` under the desk `<Outlet>` so that the *next* one degrades to
+a legible message with the navbar intact instead of a white page. The boundary
+does not replace normalising a response; it makes a miss survivable.
 
 ### Risks
 
@@ -616,8 +642,54 @@ Dependency-ordered. The desk kit exists, so each phase is assembly.
   3. The audit said "8 unused service methods … delete or wire"; none were deleted. Each
      now carries a comment saying why it has no caller, so the next reader does not
      re-flag it.
-- **Still open in this phase:** the desk-by-desk comparison against the Phase 0 captures
-  (the DoD proper), TD-8 (`admin.css` is one 3,700-line file) and TD-9 (no admin E2E).
+- **The DoD, 2026-09-22 — partly met, and honestly:** the comparison became possible for the
+  first time by signing into the panel against the **E2E stub server** rather than a real
+  backend, which sidesteps the blocker that the only local team login's password is
+  recorded nowhere. On that footing:
+  - **All 35 built desks were opened and now render clean** — and three did not; see §9a.
+    That walk is now `e2e/desks.spec.ts`, so it is a gate rather than an afternoon.
+  - **Compared against their captures in detail:** Dashboard (`01`), Requests (`13`),
+    Artworks Database (`02`), Collectors (`11`). Fixes:
+    - **The desk subtitle, checked across the whole panel rather than desk by desk.**
+      The old panel puts a line under the heading on ten-odd desks; of the ones this
+      port has built, **three had dropped it** — Dashboard (`dsh-sub`), Requests
+      (`req-sub`) and Collectors (`:32612`). All three restored verbatim, except
+      Requests' count clause, which is not faked (the only number that desk has is
+      filter-scoped, so "N open" would change when you touch a dropdown). The Projects
+      desks had all kept theirs; Calculator and Data Health carry *adapted* subtitles
+      with the adaptation stated, which is right, not a gap.
+    - **Artworks Database:** every difference from the capture was already recorded in
+      its file header with a reason **except three comments that had gone stale**,
+      still saying the Year/Source/Market-App filters have no server param — which G-2
+      shipped in #66. Corrected in all three places.
+    - **Collectors:** "Notify collectors" is absent and is **blocked, not overlooked** —
+      the old button is Web Push, and no endpoint publishes the VAPID key (G-P13-1).
+      Now stated in the desk's header instead of being silently missing.
+    - **The panel's surface was wrong on every desk** — found by screenshotting desks
+      against their captures, and invisible in source. `.dz-page` carries
+      `background: var(--card)` and `min-height: 100%`, right for the collector app and
+      wrong here twice: the `min-height` is **inert** (nothing above it has a height for
+      the percentage to resolve against), so the surface ended with the CONTENT and every
+      desk shorter than the window drew a horizontal seam where the darker body showed
+      through; and a desk keeping the 1040px reading column painted its background only
+      that wide, so a form desk had 200px darker gutters down both sides. The old panel is
+      one uniform charcoal edge to edge. The paint now belongs to `.ad-shell`, which fills
+      the viewport; `.ad-page` is transparent. Verified in both skins, and the collector
+      app is untouched.
+  - **Not yet compared capture-by-capture:** the remaining ~27 desks. They render and are
+    covered by the walk; their pixel-level comparison is what is left of this phase.
+    Two desks are one difference short of done, both **recorded, not fixed**:
+    - **Documents** — the old sub-tabs include **Create** and **Pricelists & saved items**,
+      which this port does not have and, unlike its other omissions, does not say why.
+    - **Market App** — its header says the old desk's every-published-work tile "stays
+      unavailable until G-CAT-2's `is_published` filter exists". **That filter now exists**
+      (`published`, backend G-2, #66) — but only on `ArtworkAdminFilterSet`, and this desk
+      deliberately reads the *collector* catalogue so it gets images and resolved artists.
+      So the tile is now **buildable at a cost** (a second call to the admin list, or
+      moving the desk onto it and losing the images), rather than blocked. That is a scope
+      decision, not a bug, which is why it is here and not in the diff.
+- **Still open in this phase:** that remaining comparison, and TD-8 (`admin.css` is one
+  3,700-line file).
 
 ### Phase 6b — the deletes the old panel has (½ day) · **needs G-DEL-1 approved**
 

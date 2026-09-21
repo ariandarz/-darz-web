@@ -65,6 +65,7 @@ import {
 } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ConflictError, ValidationError } from '../../../api/errors';
+import { asArray } from '../../../api/shapes';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
 import type {
   Choice,
@@ -201,7 +202,7 @@ function patchFrom(
 ): Omit<ProjectPatch, 'expected_version'> {
   let orgIds = Array.from(new Set(d.lanes.map((l) => l.orgId).filter(Boolean)));
   if (known) orgIds = orgIds.filter((id) => known.some((o) => o.id === id));
-  const linked = p.partner_orgs.map((o) => o.id);
+  const linked = asArray<{ id: string }>(p.partner_orgs).map((o) => o.id);
   const body: Omit<ProjectPatch, 'expected_version'> = {
     name: d.name,
     client_name: d.client_name,

@@ -449,9 +449,11 @@ export type ArtistAdmin = Schemas['ArtistAdmin'];
  * collector catalogue: `search` over artist name/title/medium/dimensions,
  * exact `artist`(id)/`availability_status`/`currency`/`price_type`,
  * `medium` icontains, `ordering` year|-year|artist|-artist|price|-price
- * (price only within one currency — frontend rule). There is NO
- * `is_published` filter (G-CAT-2) and no `year`/`source` filter — the old
- * desk's Market-App/Year/Source dropdowns have no server counterpart yet. */
+ * (price only within one currency — frontend rule). The admin list adds
+ * `year`/`source`/`published`/`has_images` from `ArtworkAdminFilterSet`
+ * (backend G-2, 2026-09-21) — see the fields below; before that date the old
+ * desk's Market-App/Year/Source dropdowns had no server counterpart, which is
+ * what G-CAT-2 recorded. */
 export interface ArtworkAdminQuery {
   search?: string;
   artist?: string;

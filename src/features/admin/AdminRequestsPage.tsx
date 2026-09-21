@@ -317,6 +317,18 @@ export function AdminRequestsPage() {
         </>
       }
     >
+      {/* The old desk's line under the heading (`req-sub`), which this port had
+          dropped. Its descriptive half is verbatim; its count clause ("N open ·")
+          is NOT ported, and not faked: the only count this desk has is
+          `pagination.total_count`, which is scoped to the ACTIVE FILTERS and to
+          every status, so printing it as "open" would be a number that changes
+          when you touch a dropdown while claiming to mean something that does
+          not. The same reason the wait banner above says "on this page". */}
+      <p className="ad-desksub">
+        Every collector request, message &amp; action, organised by status so nothing is
+        missed.
+      </p>
+
       {waiting > 0 && (
         /* The old desk's own banner (`:29406`), with its own arithmetic: how
            many of the rows ON THIS PAGE have been sitting at their kind's

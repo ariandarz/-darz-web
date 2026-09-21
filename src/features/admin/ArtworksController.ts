@@ -5,9 +5,11 @@
  * `search` (artist name / title / medium / dimensions), exact `artist` (id) /
  * `availability_status` / `currency` / `price_type`, `medium` icontains,
  * `ordering` year|-year|artist|-artist|price|-price (no token = newest
- * published first). The old desk's Year / Source / Market-App-membership
- * filters have no server param (G-CAT-2) and are stated absences, not
- * dropped silently.
+ * published first), and — admin-only, since G-2 landed 2026-09-21 — `year`,
+ * `source`, `published` and `has_images` from `ArtworkAdminFilterSet`. The
+ * four the old desk had and this one still does not (completeness, size
+ * ranges, duplicate images, Gallery Portal) are named on the panel itself,
+ * not dropped silently.
  */
 import type { CatalogAdminService } from '../../api/services';
 import type { ArtworkAdmin, ArtworkAdminQuery, Paginated } from '../../api/types';

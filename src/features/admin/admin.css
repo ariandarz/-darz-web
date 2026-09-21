@@ -20,6 +20,34 @@
 .ad-shell {
   width: 100%;
   min-width: 0;
+
+  /* The panel's surface is the SHELL's, not the page's — and it fills the
+     viewport (fidelity pass, 2026-09-22).
+
+     `.dz-page` carries `background: var(--card)` and `min-height: 100%`, which
+     is right in the collector app and wrong here twice over. The `min-height`
+     is inert, because nothing above it has a height for the percentage to
+     resolve against — so the surface ended with the CONTENT, and every desk
+     shorter than the window drew a horizontal seam where the darker body
+     showed through (Documents, Artists, Team, Memberships, Access Requests…).
+     And a desk that keeps the 1040px reading column painted its background
+     only that wide, so a form desk had 200px darker gutters down both sides.
+
+     The old panel has one uniform charcoal from edge to edge — no seam either
+     way. Moving the paint up here is what makes that true, and it is a
+     difference only a rendered page shows: the source reads identically. */
+  min-height: 100vh;
+  background: var(--card);
+}
+html.dz-bw .ad-shell {
+  background: var(--bg);
+}
+/* …and the page inside it stops painting, or the two surfaces show their
+   join. Both selectors carry the specificity of the `.dz-page` rules they
+   override (`design/components.css`), rather than relying on file order. */
+.dz-page.ad-page,
+html.dz-bw .dz-page.ad-page {
+  background: transparent;
 }
 
 .ad-page {

@@ -2,7 +2,7 @@
 
 Two tiers, deliberately different in what they claim:
 
-## 1 · The stub tier (`smoke.spec.ts`) — runs in CI
+## 1 · The stub tier (`smoke.spec.ts` + `desks.spec.ts`) — runs in CI
 
 `npm run e2e` (builds first — `e2e:build` — then tests). Playwright boots
 the **production build** against
@@ -15,6 +15,19 @@ It proves: the app boots (providers, theme fetch, session resume), the
 collector gate renders, a team session reaches the panel, the shell and a
 desk render. It proves nothing about behaviour against real data — that is
 the point; it needs no backend and cannot rot with one.
+
+`desks.spec.ts` is the breadth half (TD-9): **every** built admin desk that
+needs no id — 35 of them — signs in once and is walked, each asserting its own
+heading, a surviving shell, and no thrown error. Worth knowing what the first
+run of it found, since it is the argument for keeping it: **three desks
+rendered a completely blank page**, two of them already released to `main` —
+`/admin/accounting` (`.length` on an undefined `currencies`), `/admin/projects`
+(`responsibility_by_member is not iterable`) and `/admin/accounting/deals/new`
+(a `<Route>` nested inside another route's `element`, which had also left
+`/admin/accounting/entries/:id` unregistered). 443 logic tests saw none of it.
+
+Adding a desk means adding its row to `DESKS`. If a desk's heading changes, the
+row is the one place to change.
 
 Locally, the pre-installed Chromium may not match `@playwright/test`'s
 pinned revision — point `PW_CHROMIUM` at it:
