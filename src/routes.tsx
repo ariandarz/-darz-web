@@ -361,14 +361,14 @@ export function AppRoutes() {
           element={
             <RequireOwner title="Accounting">
               <DealEditorPage />
-              <Route
-                path="/admin/accounting/entries/:id"
-                element={
-                  <RequireOwner title="Accounting">
-                    <LedgerEntryPage />
-                  </RequireOwner>
-                }
-              />
+            </RequireOwner>
+          }
+        />
+        <Route
+          path="/admin/accounting/entries/:id"
+          element={
+            <RequireOwner title="Accounting">
+              <LedgerEntryPage />
             </RequireOwner>
           }
         />

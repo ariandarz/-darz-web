@@ -48,12 +48,20 @@ pattern) and TD-7 (lint back to 0 warnings) landed together with the kit's `Desk
 **Open for the owner:** **G-DEL-1** (build the three deletes?) and **G-LOCK-1** (backend: lock the
 ledger?). G-1…G-6 are all decided.
 
-### What next (2026-09-21)
+**2026-09-22 — the first full desk walk.** Opening all 35 built desks (possible at last by
+signing in against the **E2E stub**, since the only local team login's password is recorded
+nowhere) found **three blank desks**, two already on `main` — including a nested `<Route>`
+that had left Phase 2's ledger-entry detail unreachable from any URL. Fixed, guarded by a new
+`DeskBoundary`, and turned into `e2e/desks.spec.ts` so it is a gate: **38 E2E tests, 466 unit
+tests**. Details in `docs/ADMIN_V1_AUDIT.md` §9a. **TD-9 is closed for the stub tier.**
+
+### What next (2026-09-21, revised 2026-09-22)
 
 1. **Finish Phase 6** — the DoD proper: compare each desk side by side with its Phase 0 capture
-   (`docs/ADMIN_SCREENS.md` is the map) and either fix or record every difference. This is the
-   only remaining check on the "pixel-perfect" claim, and it is now possible for the first time,
-   because the reference package did not exist before 2026-09-21.
+   (`docs/ADMIN_SCREENS.md` is the map) and either fix or record every difference. **Started
+   2026-09-22**: all 35 desks opened and rendering clean, three compared in detail (Dashboard,
+   Requests, Artworks Database) with their differences fixed or already recorded. The remaining
+   ~31 capture-by-capture comparisons are what is left.
 2. **Phase 6b** — the three deletes, once **G-DEL-1** is ruled.
 3. **Phase 5b** — the Database desk's four *hard* filters (completeness, size ranges, duplicate
    images, Gallery Portal). Backend work first; the desk already names them as unavailable.

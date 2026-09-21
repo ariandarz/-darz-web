@@ -5,6 +5,26 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-22 — Every desk was opened for the first time, and three were blank
+
+- **The walk.** Signing into the panel against the **E2E stub server** removed the blocker
+  that the only local team login's password is recorded nowhere — so all 35 built desks
+  could be opened. Three rendered a completely blank page, two of them already on `main`:
+  `/admin/accounting` (`.length` on an undefined `currencies`), `/admin/projects`
+  (`responsibility_by_member is not iterable`), and `/admin/accounting/deals/new` — a
+  `<Route>` nested inside another route's `element`, which had also left
+  **`/admin/accounting/entries/:id` unregistered**, so Phase 2's ledger-entry detail was
+  unreachable from any URL since the day it shipped.
+- **Fixed at two levels.** `normaliseLedgerSummary` and the `readMembers` guard where the
+  crashes happened (23 new unit tests, modelled on `artworkFacets`), and `DeskBoundary`
+  under the desk `<Outlet>` so the *next* one degrades to a legible message with the navbar
+  intact instead of a white page. Four instances of one mistake earned the floor under it.
+- **`e2e/desks.spec.ts`** turns the walk into a gate: every desk, its own heading, a
+  surviving shell, nothing thrown — 38 E2E tests. Verified by reverting a guard and watching
+  it fail. Plus the Phase 6 fidelity pass's first fixes: the Dashboard's and Requests'
+  missing subtitles (the only two the old panel has), and three comments that still denied
+  filters G-2 shipped.
+
 ## 2026-09-21 — The kit gets one way to say it worked, and one way to say it clashed
 
 - **Success (TD-4).** The old panel confirms a write in two places at once and both are ported:

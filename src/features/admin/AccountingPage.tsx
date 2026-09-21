@@ -33,6 +33,7 @@ import type {
 } from '../../api/types';
 import { ListController } from '../shared/ListController';
 import { useListController } from '../shared/useListController';
+import { normaliseLedgerSummary } from './ledgerSummary';
 import type { AccountingAdminService } from '../../api/services';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Segment } from '../../components';
@@ -86,7 +87,10 @@ export function AccountingPage() {
   const [summary, setSummary] = useState<LedgerSummary | null>(null);
   const loadSummary = useCallback(() => {
     accountingAdmin.ledgerSummary(book, state.query.month).then(
-      (s) => setSummary(s),
+      // `normaliseLedgerSummary`, not the raw body: a 200 with the wrong shape
+      // passes the `summary &&` guard below and then throws on `.length`,
+      // which blanks the WHOLE desk. See `ledgerSummary.ts`.
+      (s) => setSummary(normaliseLedgerSummary(s)),
       () => setSummary(null),
     );
   }, [accountingAdmin, book, state.query.month]);

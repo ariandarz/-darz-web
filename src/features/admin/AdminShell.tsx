@@ -35,6 +35,7 @@
  * (see the note in `admin.css`, and `docs/PHASE_11B_PLAN.md` D10).
  */
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { DeskBoundary } from './DeskBoundary';
 import { useApi, useSession } from '../../api/hooks';
 import {
   ADMIN_CHAT,
@@ -186,7 +187,13 @@ export function AdminShell() {
         </div>
       )}
 
-      <Outlet />
+      {/* The desk, behind the boundary that keeps a thrown render from taking
+          the navbar and every other desk down with it — see DeskBoundary for
+          the four times that happened. Keyed on the location so leaving a
+          broken desk clears it. */}
+      <DeskBoundary key={pathname}>
+        <Outlet />
+      </DeskBoundary>
     </div>
   );
 }
