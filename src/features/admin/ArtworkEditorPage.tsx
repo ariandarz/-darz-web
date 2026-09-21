@@ -39,7 +39,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
-import type { ArtistAdmin, ArtworkAdmin, ArtworkImageAdmin, Choice } from '../../api/types';
+import type {
+  ArtistAdmin,
+  ArtworkAdmin,
+  ArtworkImageAdmin,
+  ArtworkSelectionGrant,
+  Choice,
+} from '../../api/types';
 import {
   buildArtworkPayload,
   draftFromArtwork,
@@ -52,7 +58,7 @@ import {
   type ArtworkDraft,
 } from './artworkForm';
 import { StatusPill } from './ArtworksPage';
-import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
+import { ConfirmDialog, DeskBanner, DeskPage, Picker, type PickItem } from './kit';
 import './admin.css';
 
 export function ArtworkEditorPage() {
@@ -537,7 +543,184 @@ export function ArtworkEditorPage() {
       {/* ---- images (edit only — "save the artwork first", the old editor's
            own portal rule at :34129 applied to the image store) ---- */}
       {!isNew && id && <ImagesSection artworkId={id} />}
+
+      {/* ---- who may see it, when it is curated ---- */}
+      {!isNew && id && SELECTION_VISIBILITIES.includes(draft.visibility) && (
+        <SelectionGrantsSection artworkId={id} />
+      )}
     </DeskPage>
+  );
+}
+
+/** The two visibilities that make a work reachable only through a grant
+ * (`Artwork.VISIBILITY_*`, `apps/catalog/models.py:59-60`). On any other
+ * visibility a grant row would still exist but decide nothing, so the panel
+ * stays out of the way rather than implying it does something. */
+const SELECTION_VISIBILITIES = ['selected', 'private_selection'];
+
+/**
+ * SelectionGrantsSection — who can see this curated work.
+ *
+ * `GET/POST/DELETE /catalog/admin/artworks/{id}/selection-grants/`
+ * (backend Phase 24). A grant is per `(artwork, collector)`, and there are two
+ * ways one comes to exist:
+ *
+ *  - an admin grants it **here**, directly;
+ *  - a **Collector Club** selection (`/admin/club`) wants the pair, and its
+ *    save syncs the grant (`CollectorSelectionService._sync_grants`).
+ *
+ * The rows look identical either way — the API does not record which — and the
+ * section says so, because the difference matters for the one sharp edge here:
+ *
+ * **Revoking is unconditional.** It cuts the collector's access even when a
+ * selection still lists the pair, and that selection will NOT put it back: its
+ * sync only acts on pairs that entered or left the selection, so a pair that
+ * stayed in both is in neither delta. The club and this work then disagree
+ * until someone removes and re-adds the collector on the selection. That is
+ * the server's behaviour, not a UI choice, so the confirm says it plainly
+ * instead of letting an admin find out later.
+ *
+ * Granting is idempotent server-side (`get_or_create`, restoring a previously
+ * revoked row), and the response message distinguishes the two — it is shown
+ * rather than swallowed, so "Collector already has access" reads as the
+ * no-op it is.
+ */
+function SelectionGrantsSection({ artworkId }: { artworkId: string }) {
+  const { catalogAdmin, adminAccounts } = useApi();
+  const [grants, setGrants] = useState<ArtworkSelectionGrant[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<PickItem[]>([]);
+  const [revoking, setRevoking] = useState<ArtworkSelectionGrant | null>(null);
+
+  const load = useCallback(() => {
+    catalogAdmin.selectionGrants(artworkId).then(
+      (list) => setGrants(list),
+      (err: unknown) =>
+        setError(err instanceof Error ? err.message : 'Could not load who has access.'),
+    );
+  }, [catalogAdmin, artworkId]);
+  useEffect(load, [load]);
+
+  const grant = async () => {
+    const who = picked[0];
+    if (!who || busy) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await catalogAdmin.grantSelection(artworkId, who.id);
+      setPicked([]);
+      setNotice(`${who.label} can see this work.`);
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not grant access.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const revoke = async (g: ArtworkSelectionGrant) => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await catalogAdmin.revokeSelectionGrant(artworkId, g.id);
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not revoke access.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="ad-dsec">
+      <div className="ad-dsec-h">
+        <h2 className="ad-dsec-t">Who can see it</h2>
+        <span className="ad-dsec-n">
+          this work is curated, so only the collectors below reach it — from here, or from a
+          Collector Club selection
+        </span>
+      </div>
+
+      {error && <DeskBanner>{error}</DeskBanner>}
+      {notice && <p className="ad-deskintro">{notice}</p>}
+      {!grants && !error && <p className="dz-state">Loading…</p>}
+
+      {grants && (
+        <>
+          {grants.length === 0 ? (
+            <p className="dz-state">
+              Nobody yet — a curated work with no grants is visible to no collector at all.
+            </p>
+          ) : (
+            <ul className="ad-grantlist">
+              {grants.map((g) => (
+                <li key={g.id} className="ad-grantrow">
+                  <span className="ad-cellmain">{g.collector_display_name}</span>
+                  {g.note && <span className="ad-cellsub">{g.note}</span>}
+                  <button
+                    type="button"
+                    className="ad-rowbtn is-danger"
+                    disabled={busy}
+                    onClick={() => setRevoking(g)}
+                  >
+                    Revoke
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="ad-grantadd">
+            <Picker
+              label="Give a collector access"
+              placeholder="Search collectors — name, email, phone…"
+              picked={picked}
+              single
+              onChange={setPicked}
+              search={async (q) => {
+                const page = await adminAccounts.collectors({ search: q, per_page: 8 });
+                return page.results.map((c) => ({
+                  id: c.id,
+                  label: c.display_name || c.full_name || c.email || c.id,
+                }));
+              }}
+            />
+            <button
+              type="button"
+              className="ad-action"
+              disabled={busy || picked.length === 0}
+              onClick={() => void grant()}
+            >
+              Grant access
+            </button>
+          </div>
+        </>
+      )}
+
+      {revoking && (
+        <ConfirmDialog
+          message={
+            `Revoke ${revoking.collector_display_name}'s access to this work? ` +
+            'This cuts it even if a Collector Club selection still lists them — and that ' +
+            'selection will not restore it on its next save. To put it back, grant it here ' +
+            'again, or remove and re-add them on the selection.'
+          }
+          okLabel="Revoke"
+          danger
+          busy={busy}
+          onCancel={() => setRevoking(null)}
+          onConfirm={() => {
+            const g = revoking;
+            setRevoking(null);
+            void revoke(g);
+          }}
+        />
+      )}
+    </section>
   );
 }
 

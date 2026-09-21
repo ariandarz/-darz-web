@@ -37,6 +37,8 @@ import type { AccountingAdminService } from '../../api/services';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Segment } from '../../components';
 import { AccountingDeals } from './AccountingDeals';
+import { AccountingDuplicates } from './AccountingDuplicates';
+import { AccountingSettlement } from './AccountingSettlement';
 import {
   ConfirmDialog,
   DeskAction,
@@ -64,7 +66,7 @@ export function AccountingPage() {
   const options = useOptions();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const view = params.get('view') === 'deals' ? 'deals' : 'books';
+  const view = resolveView(params.get('view'));
 
   const books = choices(options, 'accounting.book');
   const types = choices(options, 'accounting.entry_type');
@@ -73,7 +75,12 @@ export function AccountingPage() {
   const { state, setQuery, setPage, reload } = useListController<
     LedgerEntryAdmin,
     LedgerQuery
-  >(() => new LedgerController(accountingAdmin, { book: 'darz' }));
+    /* The book is seeded from the URL so `?book=` is a real link — the entry
+       page's "back to the books" uses it to return to the book the entry is
+       in, and a book is shareable. Read once, at construction: the Segment
+       below is the only thing that changes it afterwards, and it writes the
+       param back. */
+  >(() => new LedgerController(accountingAdmin, { book: params.get('book') || 'darz' }));
   const book = state.query.book ?? 'darz';
 
   const [summary, setSummary] = useState<LedgerSummary | null>(null);
@@ -175,6 +182,14 @@ export function AccountingPage() {
       header: '',
       cell: (e) => (
         <span className="ad-rowacts">
+          <button
+            type="button"
+            className="ad-rowbtn"
+            onClick={() => navigate(`/admin/accounting/entries/${e.id}`)}
+            title="Receipts, payment status, and the Arian review"
+          >
+            Open
+          </button>
           <button type="button" className="ad-rowbtn" onClick={() => setEditing(e)}>
             Edit
           </button>
@@ -186,20 +201,24 @@ export function AccountingPage() {
     },
   ];
 
-  if (view === 'deals') {
+  if (view !== 'books') {
     return (
       <DeskPage
         title="Accounting"
         action={
           <span className="ad-rowacts">
             <ViewSeg view={view} setParams={setParams} />
-            <DeskAction onClick={() => navigate('/admin/accounting/deals/new')}>
-              ＋ New deal
-            </DeskAction>
+            {view === 'deals' && (
+              <DeskAction onClick={() => navigate('/admin/accounting/deals/new')}>
+                ＋ New deal
+              </DeskAction>
+            )}
           </span>
         }
       >
-        <AccountingDeals />
+        {view === 'deals' && <AccountingDeals />}
+        {view === 'duplicates' && <AccountingDuplicates />}
+        {view === 'settlement' && <AccountingSettlement />}
       </DeskPage>
     );
   }
@@ -245,7 +264,13 @@ export function AccountingPage() {
           label="Book"
           options={books.map((b) => ({ value: b.value, content: b.label }))}
           value={book}
-          onChange={(next) => setQuery({ book: next })}
+          onChange={(next) => {
+            setQuery({ book: next });
+            const p = new URLSearchParams(params);
+            if (next === 'darz') p.delete('book');
+            else p.set('book', next);
+            setParams(p);
+          }}
         />
       </div>
 
@@ -330,24 +355,37 @@ function ViewSeg({
   view,
   setParams,
 }: {
-  view: 'books' | 'deals';
+  view: AccountingView;
   setParams: (p: URLSearchParams) => void;
 }) {
   return (
-    <Segment<'books' | 'deals'>
-      label="Books or deals"
+    <Segment<AccountingView>
+      label="Accounting view"
       options={[
         { value: 'books', content: 'Books' },
         { value: 'deals', content: 'Private Deals' },
+        { value: 'duplicates', content: 'Duplicates' },
+        { value: 'settlement', content: 'Settlement' },
       ]}
       value={view}
       onChange={(v) => {
         const next = new URLSearchParams();
-        if (v === 'deals') next.set('view', 'deals');
+        if (v !== 'books') next.set('view', v);
         setParams(next);
       }}
     />
   );
+}
+
+/** The desk's four sub-tabs. The old desk's own sub-nav had the four books,
+ * Private deals and "Ownership settlement" as peers (`acctHead`); here the
+ * books are one view with a book Segment inside it, and the other three are
+ * peers of that. `duplicates` is new as a screen but not as a job — it is the
+ * Expenses-Arian review the old desk ran inline. */
+export type AccountingView = 'books' | 'deals' | 'duplicates' | 'settlement';
+
+function resolveView(raw: string | null): AccountingView {
+  return raw === 'deals' || raw === 'duplicates' || raw === 'settlement' ? raw : 'books';
 }
 
 function EntryForm({

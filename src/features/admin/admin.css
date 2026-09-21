@@ -3387,3 +3387,154 @@ html.dz-bw .dzp-chip {
   border-color: var(--ink);
   color: var(--ink);
 }
+
+/* ---- audit log (SettingsPage) -----------------------------------------
+   The old Settings tab's log row is `what` over `from → to`, with `by · when`
+   beside it (darz-studio.html:17085, `.a-row`/`.a-what`/`.a-chg`/`.a-meta`).
+   Here the four pieces are four table cells instead, so only the change list
+   inside one cell needs its own rule: one line per changed field, the field
+   name quiet and the values in mono so a uuid or a number lines up. */
+.ad-chglist {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ad-chg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+}
+.ad-chg-f {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.ad-chg-v {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink2);
+  word-break: break-word;
+}
+
+/* A desk's opening sentence, and the block a desk uses to say what it
+   deliberately does NOT carry. Both are quiet: they explain the desk, they are
+   not part of it. */
+.ad-deskintro {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink2);
+  margin: 0 0 12px;
+  max-width: 68ch;
+}
+.ad-deskintro code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.ad-noteblock {
+  border: 1px solid var(--hair);
+  border-left-width: 2px;
+  border-radius: 10px;
+  padding: 11px 14px;
+  margin: 0 0 14px;
+  background: var(--soft);
+  max-width: 68ch;
+}
+.ad-noteblock p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--ink2);
+}
+.ad-noteblock a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ad-deskacts {
+  margin: 0 0 12px;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---- selection grants (ArtworkEditorPage) ------------------------------
+   Who may see a curated work. A short list, not a table: it is usually two or
+   three names, and it sits inside the editor rather than being a desk. */
+.ad-grantlist {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ad-grantrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--card);
+}
+.ad-grantrow + .ad-grantrow {
+  border-top: 1px solid var(--hair2);
+}
+.ad-grantrow .ad-cellmain {
+  flex: 1;
+  min-width: 0;
+}
+.ad-grantrow .ad-cellsub {
+  display: inline;
+  flex: 2;
+  min-width: 0;
+}
+.ad-grantadd {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ad-grantadd .ad-picker {
+  flex: 1;
+  min-width: 260px;
+}
+
+/* ---- ledger entry page (receipts + Arian review) ------------------------ */
+.ad-formgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px 14px;
+  margin: 0 0 14px;
+}
+/* The file control beside the kind field. `.ad-imgadd` is a 150px-tall drop
+   zone sized for a grid of thumbnails; here it sits on one row next to a text
+   input, so it loses the height and keeps the dashed border that says
+   "drop / choose a file". */
+.ad-fileadd {
+  min-height: 0;
+  padding: 11px 16px;
+}
+
+/* ---- settlement worksheet (JSON state editor) --------------------------- */
+.ad-jsonedit {
+  width: 100%;
+  min-height: 340px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  tab-size: 2;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 12px 14px;
+  outline: none;
+}
+.ad-jsonedit:focus {
+  border-color: var(--ink);
+}
+.ad-jsonerr {
+  color: var(--accent);
+}

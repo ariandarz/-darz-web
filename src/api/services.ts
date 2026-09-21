@@ -112,6 +112,14 @@ import type {
   ChecklistTemplateInput,
   ChecklistTemplatePatch,
   PageQuery,
+  LedgerAttachment,
+  DealAttachment,
+  ArianReviewWrite,
+  SettlementWorksheet,
+  SettlementWorksheetVersion,
+  AuditLogEntry,
+  AuditLogQuery,
+  ArtworkSelectionGrant,
 } from './types';
 import type { PortalClient } from './PortalClient';
 
@@ -624,6 +632,29 @@ export class CatalogAdminService extends ResourceService {
     );
   }
 
+  /** Who may see this curated work — a plain array, not paginated.
+   *
+   * A grant is per `(artwork, collector)` and MORE THAN ONE selection can want
+   * the same pair, so a collector listed here is not necessarily reachable
+   * from any one selection, and removing them from a selection does not
+   * necessarily revoke the grant. `ClubPage` says so on screen; this service
+   * just reports what the server holds. */
+  selectionGrants(artworkId: string) {
+    return this.retrieve<ArtworkSelectionGrant[]>(`/artworks/${artworkId}/selection-grants/`);
+  }
+  grantSelection(artworkId: string, collector: string, note = '') {
+    return this.create<ArtworkSelectionGrant>(`/artworks/${artworkId}/selection-grants/`, {
+      collector,
+      note,
+    });
+  }
+  revokeSelectionGrant(artworkId: string, grantId: string) {
+    return this.client.send<void>(
+      'DELETE',
+      `${this.basePath}/artworks/${artworkId}/selection-grants/${grantId}/`,
+    );
+  }
+
   /** The admin artists roster — the backend list takes NO filters (G-CAT-3:
    * no search/ordering/works count), only pagination; the desk fetches a page
    * and searches client-side. */
@@ -1045,6 +1076,13 @@ export class AuctionsAdminService extends ResourceService {
     return this.create<LotAdmin>(`/auctions/${body.auction}/lots/`, body);
   }
   /** scheduled → live; the artwork transitions to Reserved server-side. */
+  /** One lot as the desk sees it — the admin tier, which carries the reserve
+   * and the internal fields the collector `Lot` omits. The event page lists
+   * lots already; this is for reading a single one back after an action. */
+  lot(lotId: string) {
+    return this.retrieve<LotAdmin>(`/lots/${lotId}/`);
+  }
+
   goLive(lotId: string) {
     return this.create<LotAdmin>(`/lots/${lotId}/go-live/`);
   }
@@ -1163,6 +1201,102 @@ export class AccountingAdminService extends ResourceService {
       book,
       ...(month ? { month } : {}),
     } as RequestOptions['query']);
+  }
+
+  entry(id: string) {
+    return this.retrieve<LedgerEntryAdmin>(`/ledger/${id}/`);
+  }
+
+  /** The payment-status setter, separate from the generic PATCH because the
+   * server treats it as its own audited action. */
+  setEntryStatus(id: string, status: string) {
+    return this.create<LedgerEntryAdmin>(`/ledger/${id}/status/`, { status });
+  }
+
+  /** Receipts on one entry. Uploading the first one flips the entry's
+   * read-only `has_receipt`, so a caller that shows that flag re-reads the
+   * row (or the list) rather than guessing. */
+  entryAttachments(id: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<LedgerAttachment>(
+      `/ledger/${id}/attachments/`,
+      query as RequestOptions['query'],
+    );
+  }
+  uploadEntryAttachment(id: string, file: File, kind?: string) {
+    const form = new FormData();
+    form.append('file', file);
+    if (kind) form.append('kind', kind);
+    return this.client.send<LedgerAttachment>(
+      'POST',
+      `${this.basePath}/ledger/${id}/attachments/`,
+      { body: form },
+    );
+  }
+  deleteEntryAttachment(entryId: string, attachmentId: string) {
+    return this.client.send<void>(
+      'DELETE',
+      `${this.basePath}/ledger/${entryId}/attachments/${attachmentId}/`,
+    );
+  }
+
+  /** The Expenses-Arian receipt review. Valid only for entries in the
+   * `arian_expenses` book — the server 400s elsewhere. Saving re-runs the
+   * duplicate scan and returns the whole entry back, `dup_status` included,
+   * which is why this answers a `LedgerEntryAdmin` and not the review. */
+  saveArianReview(id: string, body: ArianReviewWrite) {
+    return this.create<LedgerEntryAdmin>(`/ledger/${id}/review/`, body);
+  }
+  /** Entries the scan flagged as possible or confirmed duplicates. */
+  arianDuplicates(query: { page?: number; per_page?: number } = {}) {
+    return this.list<LedgerEntryAdmin>(
+      '/ledger/arian/duplicates/',
+      query as RequestOptions['query'],
+    );
+  }
+
+  /** The deal's files. Upload/delete are above; this is the read. */
+  dealAttachments(dealId: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<DealAttachment>(
+      `/deals/${dealId}/attachments/`,
+      query as RequestOptions['query'],
+    );
+  }
+
+  /** The ownership-settlement worksheet — a singleton, created empty on first
+   * read, so this never 404s. */
+  settlement() {
+    return this.retrieve<SettlementWorksheet>('/settlement/');
+  }
+  /** PUT, not PATCH: the server replaces `state` wholesale and snapshots the
+   * prior state as a version on the way, so a caller edits a copy of `state`
+   * and sends the whole thing back. */
+  saveSettlement(state: Record<string, unknown>, title?: string) {
+    return this.client.send<SettlementWorksheet>('PUT', `${this.basePath}/settlement/`, {
+      body: { state, ...(title ? { title } : {}) },
+    });
+  }
+  settlementVersions(query: { page?: number; per_page?: number } = {}) {
+    return this.list<SettlementWorksheetVersion>(
+      '/settlement/versions/',
+      query as RequestOptions['query'],
+    );
+  }
+}
+
+/** `/api/admin/` — the handful of admin routes that belong to `apps.core`
+ * rather than to a feature app. Today that is the audit log; App Design's
+ * routes live on `ThemeService` because they are the write half of a public
+ * read it already owns. */
+export class CoreAdminService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/admin');
+  }
+
+  /** `IsOwner`, read-only, newest first. `?action=` and `?entity_type=` are
+   * exact matches (`AuditLogFilterSet`, `apps/core/views.py:26`) — there is no
+   * search and no date range, so the desk offers exactly those two. */
+  auditLog(query: AuditLogQuery = {}) {
+    return this.list<AuditLogEntry>('/audit-log/', query as RequestOptions['query']);
   }
 }
 
