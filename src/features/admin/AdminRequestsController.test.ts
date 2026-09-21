@@ -60,6 +60,40 @@ describe('AdminRequestsController', () => {
     expect(c.getSnapshot().results).toHaveLength(1);
   });
 
+  it('passes the search term through, and drops it again when cleared', async () => {
+    const crm = fakeCrm();
+    const c = new AdminRequestsController(crm as never);
+
+    c.setQuery({ search: 'Sepehri' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(crm.adminRequests).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: 'Sepehri' }),
+    );
+
+    // The toolbar hands back `undefined` for an emptied box (the kit's own
+    // convention), and that has to reach the wire as "no filter" rather than
+    // as `search=`, which the backend would read as a term matching nothing.
+    c.setQuery({ search: undefined });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(crm.adminRequests).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: undefined }),
+    );
+  });
+
+  it('a new search starts at page 1, so results are never read under a stale page', async () => {
+    const crm = fakeCrm();
+    const c = new AdminRequestsController(crm as never);
+
+    c.setPage(4);
+    await new Promise((r) => setTimeout(r, 0));
+    c.setQuery({ search: 'Jane' });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(crm.adminRequests).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: 'Jane', page: 1 }),
+    );
+  });
+
   it('re-reads the page after a transition rather than guessing the new state', async () => {
     const crm = fakeCrm();
     const c = new AdminRequestsController(crm as never);

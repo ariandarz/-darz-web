@@ -169,8 +169,16 @@ export interface CollectorRequestQuery {
 /** Admin unified request feed params (`GET /api/crm/admin/requests/`).
  * `archived` filters `admin_archived` (Q13). */
 export interface AdminRequestQuery {
+  /** Case-insensitive, OR'd across the collector's display name, the artwork
+   * title and its artist's display name (backend G-5, 2026-09-21). Message
+   * bodies are **not** searched — a hit there would return a row whose visible
+   * columns contain nothing like the term, so it was left as its own decision. */
+  search?: string;
   kind?: string;
   status?: string;
+  /** Filterable, but there is no way to SET an assignee — `RequestAdmin` is
+   * read-only end to end and no endpoint assigns one — and the field comes
+   * back as a bare uuid with no name. See `AdminRequestsPage`'s header. */
   assignee?: string;
   archived?: boolean;
   per_page?: number;

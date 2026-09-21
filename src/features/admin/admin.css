@@ -3538,3 +3538,27 @@ html.dz-bw .dzp-chip {
 .ad-jsonerr {
   color: var(--accent);
 }
+
+/* ---- the request row's conversation link -------------------------------
+   The unread badge was already here; what it lacked was anywhere to go. The
+   whole cell is the target so a count of 2 and the words beside it are one
+   thing to hit, not two. */
+.ad-threadlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ad-threadlink:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ad-threadlink .ad-unread {
+  margin-left: 0;
+}
+.ad-threadlink:hover .ad-cellsub {
+  color: var(--ink);
+}

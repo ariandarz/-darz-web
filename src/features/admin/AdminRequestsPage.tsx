@@ -18,9 +18,50 @@
  * can never drift) — never a hardcoded label lookup (CLAUDE.md). The per-row
  * "Move to…" control uses that row's own `allowed_transitions`, so it only
  * ever offers a legal next status.
+ *
+ * ## Phase 1 (2026-09-21) — what the old desk had, and what could be ported
+ *
+ * `docs/ADMIN_V1_AUDIT.md` §6.3 measured this desk against the real old one
+ * (`darz-studio.html:29380`, capture `13-requests`) and found it thinner than
+ * recorded. Two of the differences are closed here; three cannot be, and
+ * saying which is the point of this block.
+ *
+ * **Closed:**
+ *
+ *  - **Search** (G-5, approved and served: `?search=` over collector name,
+ *    artwork title and artist name). This was the desk's real hole — the
+ *    busiest list in the panel, and the only one with no way to find a row.
+ *  - **The thread is reachable from the row.** The unread badge has always
+ *    been here; what was missing was anywhere to go with it, so an admin who
+ *    saw "2 unread" went to `/admin/chat` and found the row again. The count
+ *    is now the link, and it hands the row to `AdminThreadPage` as router
+ *    state — which also gives that page the collector name it otherwise
+ *    cannot look up (G-CHAT-1).
+ *
+ * **Not portable, and not stubbed:**
+ *
+ *  - **The All / Market / Auctions scope segment.** There is nothing to
+ *    split: `Request.KIND_CHOICES` is eight market actions, and auction bids
+ *    and paddle registrations are separate models with their own desks. The
+ *    old segment divided one undifferentiated activity array; this backend
+ *    made the division structural instead. A segment here could only ever
+ *    read "Auctions 0".
+ *  - **Archive.** `admin_archived` is readable and filterable (the toggle
+ *    below) but **read-only** — `RequestAdminSerializer` writes nothing, and
+ *    no endpoint sets it. Only Django admin can archive a request today. A
+ *    button would need a backend action first.
+ *  - **Assignee.** Same shape: filterable, never settable, and it comes back
+ *    as a bare uuid with no name, while the team-user list that could resolve
+ *    it is `IsOwner`. A filter whose values nobody can populate or read is
+ *    worse than none, so it is left out until assignment exists.
+ *
+ * **Not built by choice:** the old desk's red urgency band ("7 have been
+ * waiting too long") is **G-3**, still awaiting a decision — it needs a
+ * threshold nobody has set, and inventing one would put a made-up deadline in
+ * front of the team.
  */
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Segment } from '../../components';
 import { ActivityFeed } from './ActivityFeed';
 import { useApi } from '../../api/hooks';
@@ -33,7 +74,14 @@ import type {
 } from '../../api/types';
 import { useListController } from '../shared/useListController';
 import { AdminRequestsController } from './AdminRequestsController';
-import { DeskList, DeskPage, SelectFilter, ToggleFilter, type Column } from './kit';
+import {
+  DeskList,
+  DeskPage,
+  SearchFilter,
+  SelectFilter,
+  ToggleFilter,
+  type Column,
+} from './kit';
 import './admin.css';
 
 /** The kinds the collector flow can produce, plus the rest of the closed set. */
@@ -133,13 +181,32 @@ export function AdminRequestsPage() {
       cell: (r) => (
         <>
           {titleCase(r.status)}
-          {r.unread_count > 0 && (
-            <span className="ad-unread" title={`${r.unread_count} unread reply`}>
-              {r.unread_count}
-            </span>
-          )}
           {r.admin_archived && <span className="ad-archived-chip">Archived</span>}
         </>
+      ),
+    },
+    {
+      key: 'thread',
+      header: 'Conversation',
+      cell: (r) => (
+        /* `state={r}` is not decoration: there is no `GET /admin/requests/{id}/`,
+           so the thread page can only name the collector from a row handed to
+           it (G-CHAT-1). Arriving this way, it can. */
+        <Link to={`/admin/chat/${r.id}`} state={r} className="ad-threadlink">
+          {r.unread_count > 0 ? (
+            <>
+              <span
+                className="ad-unread"
+                title={`${r.unread_count} unread ${r.unread_count === 1 ? 'reply' : 'replies'}`}
+              >
+                {r.unread_count}
+              </span>
+              <span>{r.unread_count === 1 ? 'unread reply' : 'unread replies'}</span>
+            </>
+          ) : (
+            <span className="ad-cellsub">Open thread</span>
+          )}
+        </Link>
       ),
     },
     {
@@ -218,6 +285,12 @@ export function AdminRequestsPage() {
             label="Archived only"
             checked={state.query.archived ?? false}
             onChange={(on) => setQuery({ archived: on || undefined })}
+          />
+          <SearchFilter
+            label="Search"
+            value={state.query.search}
+            placeholder="Collector, artwork or artist…"
+            onChange={(search) => setQuery({ search })}
           />
         </>
       }
