@@ -17,6 +17,9 @@ export { FilterChips, type ActiveChip } from './FilterChips';
 export { Picker, type PickItem } from './Picker';
 export { ShownOnceSecret } from './ShownOnceSecret';
 export { resolveDeskView, deskBanner, type DeskView } from './deskState';
+// One way to say a write landed, one way to say it clashed (TD-4 / TD-5).
+export { DeskToast, DeskSave, ConflictBanner } from './feedback';
+export { useDeskToast, isConflict } from './feedbackState';
 // The pager is the catalogue's (a faithful port of app.html's .pager); desks
 // reach it through the kit so no desk imports across features by hand.
 export { Pager } from '../../catalogue/Pager';

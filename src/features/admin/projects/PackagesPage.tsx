@@ -93,6 +93,7 @@ import { useListController } from '../../shared/useListController';
 import { asAdminRole } from '../adminNav';
 import {
   ConfirmDialog,
+  ConflictBanner,
   DeskAction,
   DeskBanner,
   DeskPage,
@@ -135,11 +136,6 @@ import {
 } from './standardSet';
 import { describeTidy, hasWork, planTidy } from './tidyUp';
 import '../admin.css';
-
-const CONFLICT_PROJECT =
-  'Someone else saved this project in the meantime — reload to continue.';
-const CONFLICT_SERVICE =
-  'Someone else saved this service in the meantime — reload to continue.';
 
 class PackagesController extends ListController<PackageTemplateAdmin, PageQuery> {
   private readonly projects: ProjectsAdminService;
@@ -535,20 +531,15 @@ export function PackagesPage() {
                   Service catalogue · {svcDraft.id ? 'Edit service' : 'New service'}
                 </div>
                 {svcConflict && (
-                  <DeskBanner>
-                    {CONFLICT_SERVICE}{' '}
-                    <button
-                      type="button"
-                      className="dzp-btn sm"
-                      onClick={() => {
-                        setSvcConflict(false);
-                        setSvcDraft(null);
-                        setSvcGen((g) => g + 1);
-                      }}
-                    >
-                      Reload
-                    </button>
-                  </DeskBanner>
+                  <ConflictBanner
+                    noun="service"
+                    reloadClassName="dzp-btn sm"
+                    onReload={() => {
+                      setSvcConflict(false);
+                      setSvcDraft(null);
+                      setSvcGen((g) => g + 1);
+                    }}
+                  />
                 )}
                 {svcError && <DeskBanner>{svcError}</DeskBanner>}
                 <div className="dzp-form">
@@ -1442,19 +1433,14 @@ export function ProjectPick({
     <div style={{ marginTop: 10 }}>
       <div className="dzp-fl">{prompt}</div>
       {conflict && (
-        <DeskBanner>
-          {CONFLICT_PROJECT}{' '}
-          <button
-            type="button"
-            className="dzp-btn sm"
-            onClick={() => {
-              setConflict(false);
-              setGen((g) => g + 1);
-            }}
-          >
-            Reload
-          </button>
-        </DeskBanner>
+        <ConflictBanner
+          noun="project"
+          reloadClassName="dzp-btn sm"
+          onReload={() => {
+            setConflict(false);
+            setGen((g) => g + 1);
+          }}
+        />
       )}
       {error && <DeskBanner>{error}</DeskBanner>}
       {current?.error && <DeskBanner>{current.error}</DeskBanner>}

@@ -44,7 +44,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ConflictError } from '../../../api/errors';
 import { useApi, useOptions } from '../../../api/hooks';
 import type { Choice, ProjectAdmin, ProjectStage } from '../../../api/types';
-import { DeskAction, DeskBanner, DeskPage, SearchFilter, ToggleFilter } from '../kit';
+import {
+  ConflictBanner,
+  DeskAction,
+  DeskBanner,
+  DeskPage,
+  SearchFilter,
+  ToggleFilter,
+} from '../kit';
 import {
   choices,
   clientName,
@@ -57,8 +64,6 @@ import {
   type ProjFlag,
 } from './projectForm';
 import '../admin.css';
-
-const CONFLICT = 'Someone else saved this project in the meantime — reload to continue.';
 
 /** The board's search haystack (:13684): no · name · client · city. */
 function hay(p: ProjectAdmin): string {
@@ -194,12 +199,7 @@ export function ProjectPipelinePage() {
 
       <div className="dzp">
         {conflict && (
-          <DeskBanner>
-            {CONFLICT}{' '}
-            <button type="button" className="dzp-btn sm" onClick={reloadBoard}>
-              Reload
-            </button>
-          </DeskBanner>
+          <ConflictBanner noun="project" onReload={reloadBoard} reloadClassName="dzp-btn sm" />
         )}
         {actionError && <DeskBanner>{actionError}</DeskBanner>}
         {current?.error && <DeskBanner>{current.error}</DeskBanner>}
