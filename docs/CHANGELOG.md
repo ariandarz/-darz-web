@@ -31,6 +31,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
   `artwork.images` off an artwork that was not there — and unlike a desk, a collector route
   has **no boundary under it**. Fixed; an equivalent boundary for the collector shell is
   left as a recommendation, since it puts new copy in front of collectors.
+- **The panel's surface was wrong on every desk**, and only a screenshot could show it:
+  `.dz-page`'s `min-height: 100%` is inert under the admin shell, so the desk surface ended
+  with the content and left a horizontal seam on every short desk — and a 1040px form desk
+  painted only that wide, leaving darker gutters. The old panel is uniform edge to edge. The
+  surface is now the shell's and fills the viewport.
 - **`e2e/desks.spec.ts` + `e2e/collector.spec.ts`** turn the walk into a gate: every desk, its
   own heading, a surviving shell, nothing thrown — **71 E2E tests** across desks, detail routes
   and the collector app. Verified by reverting a guard and watching it fail. Plus the Phase 6 fidelity pass's first fixes: the

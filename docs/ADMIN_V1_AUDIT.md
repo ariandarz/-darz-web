@@ -665,8 +665,22 @@ Dependency-ordered. The desk kit exists, so each phase is assembly.
     - **Collectors:** "Notify collectors" is absent and is **blocked, not overlooked** —
       the old button is Web Push, and no endpoint publishes the VAPID key (G-P13-1).
       Now stated in the desk's header instead of being silently missing.
-  - **Not yet compared capture-by-capture:** the remaining ~31 desks. They render and are
+    - **The panel's surface was wrong on every desk** — found by screenshotting desks
+      against their captures, and invisible in source. `.dz-page` carries
+      `background: var(--card)` and `min-height: 100%`, right for the collector app and
+      wrong here twice: the `min-height` is **inert** (nothing above it has a height for
+      the percentage to resolve against), so the surface ended with the CONTENT and every
+      desk shorter than the window drew a horizontal seam where the darker body showed
+      through; and a desk keeping the 1040px reading column painted its background only
+      that wide, so a form desk had 200px darker gutters down both sides. The old panel is
+      one uniform charcoal edge to edge. The paint now belongs to `.ad-shell`, which fills
+      the viewport; `.ad-page` is transparent. Verified in both skins, and the collector
+      app is untouched.
+  - **Not yet compared capture-by-capture:** the remaining ~27 desks. They render and are
     covered by the walk; their pixel-level comparison is what is left of this phase.
+    Documents is one difference short of done — the old desk's sub-tabs include **Create**
+    and **Pricelists & saved items**, which this port does not have and does not currently
+    say why.
 - **Still open in this phase:** that remaining comparison, and TD-8 (`admin.css` is one
   3,700-line file).
 
