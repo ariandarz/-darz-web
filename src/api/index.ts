@@ -17,6 +17,7 @@ import {
   ProjectsAdminService,
   AuctionsAdminService,
   AccountingAdminService,
+  CoreAdminService,
   AuthService,
   CatalogService,
   CrmService,
@@ -74,6 +75,7 @@ export class DarzApi {
   readonly projectsAdmin: ProjectsAdminService;
   readonly auctionsAdmin: AuctionsAdminService;
   readonly accountingAdmin: AccountingAdminService;
+  readonly coreAdmin: CoreAdminService;
   /** The no-login partner portal — its own unauthenticated client. */
   readonly portal: GalleryPortalService;
 
@@ -96,6 +98,7 @@ export class DarzApi {
     this.projectsAdmin = new ProjectsAdminService(this.client);
     this.auctionsAdmin = new AuctionsAdminService(this.client);
     this.accountingAdmin = new AccountingAdminService(this.client);
+    this.coreAdmin = new CoreAdminService(this.client);
     this.portal = new GalleryPortalService(new PortalClient(baseUrl));
   }
 }

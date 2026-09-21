@@ -295,6 +295,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'health',
       'team',
       'accounting',
+      'settings',
       'memberships',
       'system',
     ]);
