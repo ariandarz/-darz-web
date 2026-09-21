@@ -204,6 +204,7 @@ export function AccountingPage() {
   if (view !== 'books') {
     return (
       <DeskPage
+        wide
         title="Accounting"
         action={
           <span className="ad-rowacts">
@@ -225,6 +226,7 @@ export function AccountingPage() {
 
   return (
     <DeskPage
+      wide
       title="Accounting"
       action={
         <span className="ad-rowacts">

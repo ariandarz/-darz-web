@@ -191,6 +191,7 @@ export function MembershipsPage() {
 
   return (
     <DeskPage
+      wide
       title="Memberships"
       action={<DeskAction onClick={() => setCreating(true)}>＋ New membership</DeskAction>}
       toolbar={

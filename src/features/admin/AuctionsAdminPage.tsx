@@ -122,6 +122,7 @@ export function AuctionsAdminPage() {
 
   return (
     <DeskPage
+      wide
       title="Live Auctions"
       action={<DeskAction onClick={() => setCreating(true)}>＋ New auction</DeskAction>}
       toolbar={

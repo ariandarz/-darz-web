@@ -199,6 +199,7 @@ export function SourcesPage() {
 
   return (
     <DeskPage
+      wide
       title="Galleries & Sources"
       action={
         <span className="ad-rowacts">

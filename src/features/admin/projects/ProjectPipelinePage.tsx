@@ -166,6 +166,7 @@ export function ProjectPipelinePage() {
 
   return (
     <DeskPage
+      wide
       title="Pipeline"
       action={
         // :13696

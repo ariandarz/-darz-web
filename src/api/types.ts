@@ -460,8 +460,30 @@ export interface ArtworkAdminQuery {
   price_type?: string;
   medium?: string;
   ordering?: string;
+  /* ── admin-only (backend G-2, 2026-09-21) ─────────────────────────────
+   * On `ArtworkAdminFilterSet`, a subclass the admin view alone applies —
+   * `source` is internal and `published` is meaningless on the public
+   * collector list, so neither is reachable there. */
+  /** Exact year. Repeats widen to IN, as the old desk's multi-year pick did. */
+  year?: string | string[];
+  /** Exact `source_name` — the gallery or dealer the work came through. */
+  source?: string;
+  /** The old "Market App: in the app / not in the app". */
+  published?: boolean;
+  /** The old "Images: with / without". */
+  has_images?: boolean;
   page?: number;
   per_page?: number;
+}
+
+/** `GET /catalog/admin/artworks/facets/` — the Year and Source dropdown
+ * vocabularies, computed over the same filtered queryset the list would
+ * return, so the options narrow as the other filters do. The old desk built
+ * both client-side from the whole in-memory library; a paginated list cannot,
+ * which is why this endpoint exists. */
+export interface ArtworkFacets {
+  years: number[];
+  sources: string[];
 }
 
 /** A sale — `SaleAdminSerializer` (backend Phase 7 sales admin). `artwork` /

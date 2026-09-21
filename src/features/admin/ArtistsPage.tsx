@@ -173,6 +173,7 @@ export function ArtistsPage() {
 
   return (
     <DeskPage
+      wide
       title="Artists"
       action={<DeskAction onClick={() => setEditing('new')}>＋ New artist</DeskAction>}
       toolbar={

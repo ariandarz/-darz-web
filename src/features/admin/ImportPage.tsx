@@ -157,7 +157,7 @@ export function ImportPage() {
   ];
 
   return (
-    <DeskPage title="Import artworks">
+    <DeskPage wide title="Import artworks">
       {/* :29708, verbatim */}
       <p className="ad-desksub">
         Imports land in <b>Review</b> first — edit, then confirm into the Database. Nothing

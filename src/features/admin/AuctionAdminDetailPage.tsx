@@ -58,7 +58,7 @@ export function AuctionAdminDetailPage() {
 
   if (!auction) {
     return (
-      <DeskPage title="Auction">
+      <DeskPage wide title="Auction">
         {error ? <DeskBanner>{error}</DeskBanner> : <p className="dz-state">Loading…</p>}
       </DeskPage>
     );
@@ -66,6 +66,7 @@ export function AuctionAdminDetailPage() {
 
   return (
     <DeskPage
+      wide
       title={auction.title}
       action={<AuctionPill status={auction.status} label={label(statuses, auction.status)} />}
     >

@@ -233,6 +233,7 @@ export function AdminRequestsPage() {
   if (view === 'activity') {
     return (
       <DeskPage
+        wide
         title="Requests & Activity"
         action={
           <Segment<'requests' | 'activity'>
@@ -253,6 +254,7 @@ export function AdminRequestsPage() {
 
   return (
     <DeskPage
+      wide
       title="Requests & Activity"
       action={
         <Segment<'requests' | 'activity'>
