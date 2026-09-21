@@ -60,9 +60,11 @@ surface on every desk that no amount of source-reading could show. All fixed, an
    images, Gallery Portal). Backend work first; the desk already names them as unavailable.
 3. **TD-8** — `admin.css` is one ~3,800-line file. Splitting it is safe now that the E2E walk
    exists, but there is no *visual* regression baseline, so split in small steps and screenshot.
-4. **TD-3** — `IssueDocumentPage` keeps the payee bank details in `localStorage`, so a second
-   admin issuing an invoice gets blanks. Belongs under `theme.*` or its own endpoint; needs a
-   small decision on which.
+4. **TD-3** — `src/features/admin/exhibitions/IssueDocumentPage.tsx` (`readBank`/`saveBank`)
+   keeps the payee bank details in `localStorage`, so a second admin issuing an invoice gets
+   blanks and a cleared browser loses them. Belongs under `theme.*` or its own endpoint; needs a
+   small decision on which. *(The audit's TD-3 row gives the path as
+   `IssueDocumentPage.tsx` at the admin root — it is one folder deeper.)*
 5. **Two recorded fidelity findings** that are scope decisions rather than fixes: the Documents
    desk is missing the old **Create** and **Pricelists & saved items** sub-tabs without saying
    why; and the Market App's every-published-work tile is no longer blocked (G-2 shipped

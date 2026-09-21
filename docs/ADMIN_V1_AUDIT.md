@@ -496,7 +496,7 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 | --- | --- | --- |
 | **TD-1** | **`npm run build` and `npm run typecheck` fail on macOS and Windows** | `src/features/profile/Acquisitions.tsx` (component) and `src/features/profile/acquisitions.ts` (helpers) differ only in case. On a case-insensitive filesystem TS resolves `import { Acquisitions } from './Acquisitions'` to the *helper* module: `TS2724` + `TS1261`. CI runs Ubuntu, so it is **green in CI and red on every Mac** — the exact failure mode the repo's own CI comment warns about. Fix: rename one module (e.g. `acquisitions.ts` → `acquisitionRows.ts`). ~3 lines. |
 | **TD-2** | **`main` is 72 commits behind `development`** | Anyone auditing, branching from, or deploying `main` gets a one-page admin panel. Release or document the gap. |
-| **TD-3** | **Bank details in `localStorage`** | `IssueDocumentPage.tsx` `readBank`/`saveBank` keep the payee account holder, bank, card and IBAN per-device. A second admin issuing an invoice gets blanks; a cleared browser loses them. Belongs under `theme.*` (App Design) or its own endpoint. |
+| **TD-3** | **Bank details in `localStorage`** | `exhibitions/IssueDocumentPage.tsx` (the path this row first gave was one folder too shallow) `readBank`/`saveBank` keep the payee account holder, bank, card and IBAN per-device. A second admin issuing an invoice gets blanks; a cleared browser loses them. Belongs under `theme.*` (App Design) or its own endpoint. |
 
 ### Recommended cleanup
 
