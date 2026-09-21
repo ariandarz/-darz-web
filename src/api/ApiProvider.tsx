@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ApiContext } from './apiContext';
 import { api as defaultApi, DarzApi } from './index';
 import { applyRuntimeFeatures } from '../features/shell/features';
+import { applyOwnerSettings } from '../features/shell/ownerSettings';
 
 export function ApiProvider({
   children,
@@ -32,7 +33,12 @@ export function ApiProvider({
     // build-time flags stand (docs/ADMIN_ARCHITECTURE.md §4).
     const theme = api.theme
       .publicTheme()
-      .then((t) => applyRuntimeFeatures((t.theme as Record<string, unknown> | null)?.features))
+      .then((t) => {
+        const theme = t.theme as Record<string, unknown> | null;
+        applyRuntimeFeatures(theme?.features);
+        // The non-feature half of the same object — see `ownerSettings.ts`.
+        applyOwnerSettings(theme);
+      })
       .catch(() => {});
     Promise.allSettled([api.session.resume(), theme]).then(() => {
       if (!cancelled) setResuming(false);

@@ -3535,8 +3535,13 @@ html.dz-bw .dzp-chip {
 .ad-jsonedit:focus {
   border-color: var(--ink);
 }
+/* `--bad-ink`, not `--accent`: tokens.css re-points `--accent` to the INK at
+   runtime (app.html:2996's own behaviour), so an error rendered in it is
+   indistinguishable from body text — and invisible AS an error in Black mode,
+   where --accent and --ink are the same value. The destructive colour lives on
+   --danger / --bad-ink; `.ad-rowbtn.is-danger` already uses it. */
 .ad-jsonerr {
-  color: var(--accent);
+  color: var(--bad-ink);
 }
 
 /* ---- the request row's conversation link -------------------------------
@@ -3630,4 +3635,52 @@ html.dz-bw .dzp-chip {
   color: var(--ink2);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* ---- G-3: how long a request has been waiting -------------------------
+   The old desk's time-aware status dot (darz-studio.html:21251-21264): a
+   small mark before the date, red once a request has sat at its arrival
+   status past the threshold. Ported as four states rather than the old six —
+   "replied" and the done/closed split have no field on this backend, which
+   `requestUrgency.ts` explains. */
+.ad-urg {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: 1px;
+  background: var(--hair);
+}
+.ad-urg.is-new {
+  background: var(--ink3);
+}
+.ad-urg.is-progress {
+  background: var(--ink);
+}
+.ad-urg.is-resolved {
+  background: #1f9d57;
+}
+.ad-urg.is-waiting {
+  /* the old dot's #C0453E, as the mode-aware token — see the note on
+     `.ad-jsonerr` for why this is not `--accent` */
+  background: var(--bad-ink);
+}
+
+/* The banner over the table. Quiet by construction: it states a count and
+   what the count means, and it is page-scoped because the API has no age
+   filter — a feed-wide total would be a number this desk cannot compute. */
+.ad-waitbanner {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--hair);
+  border-left: 2px solid var(--bad-ink);
+  border-radius: 10px;
+  background: var(--soft);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink2);
+}
+.ad-waitbanner strong {
+  color: var(--ink);
 }

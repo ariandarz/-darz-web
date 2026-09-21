@@ -82,6 +82,7 @@ import {
   ToggleFilter,
   type Column,
 } from './kit';
+import { ageLabel, countWaiting, requestUrgency, waitHours } from './requestUrgency';
 import './admin.css';
 
 /** The kinds the collector flow can produce, plus the rest of the closed set. */
@@ -136,6 +137,12 @@ export function AdminRequestsPage() {
   }, [options]);
 
   const statusByKind = requestStatusByKind(choices);
+  /* `crm.request_initial_status` — each kind's "just arrived" state, published
+     by the backend so the urgency rule never has to guess (G-DASH-1). Null
+     until options land, which `requestUrgency` treats as "cannot tell", never
+     as "new". */
+  const initialByKind =
+    (choices?.['crm.request_initial_status'] as Record<string, string> | undefined) ?? null;
   // The filter dropdown: scoped to the selected kind's own vocabulary once one
   // is chosen, else every status across every kind (deduped).
   const filterStatuses = state.query.kind
@@ -156,12 +163,25 @@ export function AdminRequestsPage() {
     }
   };
 
+  const waiting = countWaiting(state.results, initialByKind);
+
   const columns: ReadonlyArray<Column<AdminRequest>> = [
     {
       key: 'when',
       header: 'When',
       className: 'ad-when',
-      cell: (r) => whenLabel(r.created_at),
+      cell: (r) => {
+        const u = requestUrgency(r, initialByKind);
+        return (
+          <>
+            <span className={`ad-urg is-${u.key}`} title={u.label} aria-label={u.label} />
+            {whenLabel(r.created_at)}
+            {u.key === 'waiting' && (
+              <span className="ad-cellsub">{ageLabel(r.created_at)}</span>
+            )}
+          </>
+        );
+      },
     },
     {
       key: 'kind',
@@ -297,6 +317,21 @@ export function AdminRequestsPage() {
         </>
       }
     >
+      {waiting > 0 && (
+        /* The old desk's own banner (`:29406`), with its own arithmetic: how
+           many of the rows ON THIS PAGE have been sitting at their kind's
+           arrival status longer than the threshold. Page-scoped and said so —
+           the API has no age filter, so a total across the feed would be a
+           number this desk cannot actually compute. */
+        <p className="ad-waitbanner" role="status">
+          <strong>
+            {waiting} {waiting === 1 ? 'request has' : 'requests have'} been waiting longer
+            than {waitHours()}h
+          </strong>{' '}
+          on this page — they are still at the status they arrived in.
+        </p>
+      )}
+
       <DeskList
         label="Requests"
         status={state.status}

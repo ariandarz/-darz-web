@@ -15,16 +15,20 @@
  * login history, remove — lives on the detail (`/admin/collectors/:id`), the
  * modern-mechanics form of the old `colDetail(id)` workspace.
  *
- * **Not ported, flagged (G-COL-1 / G-COL-2, `docs/ADMIN_ARCHITECTURE.md` §2):**
- *  - the overview strip (Collectors · VIP · Active 30d · Engaged, `:32634`) —
- *    computed client-side from the full roster in the old app; the roster here
- *    is paginated and no aggregate endpoint exists (the Dashboard's Collectors
- *    section carries total/active, which is what Phase 29 chose to serve);
- *  - the "Recently active" / "Most purchases" sorts (`:32626-32630`) — they
- *    rank by activity/purchase rollups the list endpoint does not carry;
- *    `ordering` serves name and created only.
+ * **The overview strip is back** (G-4, approved 2026-09-21) — with three of
+ * the old four tiles, from three `per_page: 1` counts rather than a new
+ * endpoint. `collectorTiles.ts` carries which two of the old tiles could not
+ * be rebuilt and why; the short version is that **Active 30d** and **Engaged**
+ * need a last-activity rollup per collector that no list row and no aggregate
+ * endpoint provides, so the third tile is **Active** — access rather than
+ * behaviour — and says so rather than borrowing the old tile's name.
+ *
+ * **Still not ported, flagged (G-COL-2, `docs/ADMIN_ARCHITECTURE.md` §2):**
+ * the "Recently active" / "Most purchases" sorts (`:32626-32630`) — they rank
+ * by the same activity/purchase rollups; `ordering` serves name and created
+ * only.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
@@ -32,6 +36,7 @@ import type { Choice, CollectorAdmin, CollectorAdminQuery } from '../../api/type
 import { useListController } from '../shared/useListController';
 import { CollectorForm } from './CollectorForm';
 import { CollectorsController } from './CollectorsController';
+import { EMPTY_COUNTS, collectorTiles, type CollectorCounts } from './collectorTiles';
 import {
   DeskAction,
   DeskList,
@@ -58,6 +63,30 @@ export function CollectorsPage() {
   const { state, setQuery, setPage } = useListController<CollectorAdmin, CollectorAdminQuery>(
     () => new CollectorsController(adminAccounts),
   );
+
+  /* Three counts, read once. Deliberately NOT re-read when the desk's filters
+     change: the old strip was computed from the full roster so the totals stay
+     true whatever is filtered below (`:32632`). `per_page: 1` because only
+     `pagination.total_count` is wanted — the row itself is discarded. */
+  const [counts, setCounts] = useState<CollectorCounts>(EMPTY_COUNTS);
+  useEffect(() => {
+    let alive = true;
+    const count = (query: CollectorAdminQuery) =>
+      adminAccounts
+        .collectors({ ...query, per_page: 1 })
+        .then((page) => page.pagination.total_count)
+        .catch(() => null);
+    void Promise.all([
+      count({}),
+      count({ tier: 'vip' }),
+      count({ access_status: 'active' }),
+    ]).then(([total, vip, active]) => {
+      if (alive) setCounts({ total, vip, active });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [adminAccounts]);
 
   const tiers = choices(options, 'accounts.collector_tier');
   const statuses = choices(options, 'accounts.collector_access_status');
@@ -172,6 +201,20 @@ export function CollectorsPage() {
           }}
         />
       )}
+
+      {/* `:32634`'s overview strip. The tiles read the whole roster, not the
+          filtered page — see `collectorTiles.ts`. */}
+      <div className="ad-tiles ad-tiles-sales">
+        {collectorTiles(counts).map((t) => (
+          <div key={t.key} className="ad-tile">
+            <span className="ad-tile-v">{t.value}</span>
+            <span className="ad-tile-l">
+              {t.label}
+              {t.note ? ` · ${t.note}` : ''}
+            </span>
+          </div>
+        ))}
+      </div>
 
       <DeskList
         label="Collectors"
