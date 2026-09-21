@@ -43,6 +43,7 @@ import type {
   Choice,
 } from '../../api/types';
 import { useListController } from '../shared/useListController';
+import { EMPTY_FACETS, normaliseFacets } from './artworkFacets';
 import { ArtworksController } from './ArtworksController';
 import {
   ConfirmDialog,
@@ -234,15 +235,18 @@ export function ArtworksPage() {
      picking a source narrows the Year list to that source's years, the way
      the old desk's client-side `dbUniq` did over the whole library. The query
      is serialised as the dependency so an identical re-render does not refetch. */
-  const [facets, setFacets] = useState<ArtworkFacets>({ years: [], sources: [] });
+  const [facets, setFacets] = useState<ArtworkFacets>(EMPTY_FACETS);
   const facetKey = JSON.stringify(q);
   useEffect(() => {
     let alive = true;
     catalogAdmin.artworkFacets(q).then(
-      (f) => alive && setFacets(f),
+      // `normaliseFacets`, not the raw body: a 200 with the wrong shape used
+      // to throw during render and take the whole desk down, blank. See its
+      // module docstring.
+      (f) => alive && setFacets(normaliseFacets(f)),
       // A desk that lists fine but cannot offer a dropdown is still usable;
       // an error banner over a working table would not be.
-      () => alive && setFacets({ years: [], sources: [] }),
+      () => alive && setFacets(EMPTY_FACETS),
     );
     return () => {
       alive = false;
