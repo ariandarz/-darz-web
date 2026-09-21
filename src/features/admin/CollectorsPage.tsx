@@ -27,6 +27,16 @@
  * the "Recently active" / "Most purchases" sorts (`:32626-32630`) — they rank
  * by the same activity/purchase rollups; `ordering` serves name and created
  * only.
+ *
+ * **"Notify collectors" (`:32614`) is missing and blocked, not overlooked.**
+ * The old button is "Web Push with preset messages + recipient choice" — and
+ * push is the one collector feature this app cannot ship at all: no endpoint
+ * publishes the VAPID public key (**G-P13-1**, re-checked 2026-09-18), so
+ * there is nothing to subscribe a browser with. A button that opened a
+ * composer which could never send is worse than its absence; this note is the
+ * absence, stated. The heading is "Collectors" rather than the old
+ * "Collectors · CRM" for the same reason the nav says Collectors: "CRM" named
+ * a desk group in the old panel that this one reaches by tabs.
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -191,6 +201,14 @@ export function CollectorsPage() {
         </>
       }
     >
+      {/* `:32612`'s line under the heading, verbatim. The fidelity pass found
+          this desk was one of three that had dropped the old panel's own
+          subtitle. */}
+      <p className="ad-desksub">
+        Every collector as a file — open one to view &amp; edit all their details, purchases,
+        pricelists and activity.
+      </p>
+
       {creating && (
         <CollectorForm
           title="New collector"

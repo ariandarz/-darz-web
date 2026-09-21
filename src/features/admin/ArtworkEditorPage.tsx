@@ -38,6 +38,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
+import { asArray } from '../../api/shapes';
 import type { OptionsMap } from '../../api/services';
 import type {
   ArtistAdmin,
@@ -58,7 +59,18 @@ import {
   type ArtworkDraft,
 } from './artworkForm';
 import { StatusPill } from './ArtworksPage';
-import { ConfirmDialog, DeskBanner, DeskPage, Picker, type PickItem } from './kit';
+import {
+  ConfirmDialog,
+  ConflictBanner,
+  DeskBanner,
+  DeskPage,
+  DeskSave,
+  DeskToast,
+  Picker,
+  isConflict,
+  useDeskToast,
+  type PickItem,
+} from './kit';
 import './admin.css';
 
 export function ArtworkEditorPage() {
@@ -74,7 +86,9 @@ export function ArtworkEditorPage() {
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { say, message } = useDeskToast();
 
   const load = useCallback(() => {
     if (isNew) return;
@@ -127,6 +141,7 @@ export function ArtworkEditorPage() {
     }
     setBusy(true);
     setError(null);
+    setConflict(false);
     try {
       const body = buildArtworkPayload(draft);
       if (isNew) {
@@ -139,9 +154,14 @@ export function ArtworkEditorPage() {
         });
         setArtwork(updated);
         setDraft(draftFromArtwork(updated));
+        say('Artwork saved ✓');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
+      // The editor sends `expected_version`, so a second curator saving the
+      // same work is a 409 — its own thing, not "could not save" (TD-5).
+      if (isConflict(err)) setConflict(true);
+      else setError(err instanceof Error ? err.message : 'Could not save.');
+      throw err;
     } finally {
       setBusy(false);
     }
@@ -217,6 +237,15 @@ export function ArtworkEditorPage() {
         </button>
       </p>
 
+      {conflict && (
+        <ConflictBanner
+          noun="artwork"
+          onReload={() => {
+            setConflict(false);
+            load();
+          }}
+        />
+      )}
       {error && <DeskBanner>{error}</DeskBanner>}
 
       {/* ---- status & reach (edit only — a new artwork starts internal) ---- */}
@@ -528,15 +557,10 @@ export function ArtworkEditorPage() {
         )}
 
         <div className="ad-form-a">
-          <button
-            type="button"
-            className="ad-action"
-            disabled={busy}
-            onClick={() => void save()}
-          >
+          <DeskSave className="ad-action" busy={busy} savedLabel="Saved" onClick={save}>
             {/* :34180 */}
             {isNew ? 'Create artwork' : 'Save changes'}
-          </button>
+          </DeskSave>
         </div>
       </div>
 
@@ -548,6 +572,8 @@ export function ArtworkEditorPage() {
       {!isNew && id && SELECTION_VISIBILITIES.includes(draft.visibility) && (
         <SelectionGrantsSection artworkId={id} />
       )}
+
+      <DeskToast message={message} />
     </DeskPage>
   );
 }
@@ -596,7 +622,7 @@ function SelectionGrantsSection({ artworkId }: { artworkId: string }) {
 
   const load = useCallback(() => {
     catalogAdmin.selectionGrants(artworkId).then(
-      (list) => setGrants(list),
+      (list) => setGrants(asArray(list)),
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load who has access.'),
     );
@@ -737,7 +763,8 @@ function ImagesSection({ artworkId }: { artworkId: string }) {
 
   const load = useCallback(() => {
     catalogAdmin.artworkImages(artworkId).then(
-      (list) => setImages(list),
+      // a bare-array endpoint; an envelope here used to blank the editor
+      (list) => setImages(asArray(list)),
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load the images.'),
     );

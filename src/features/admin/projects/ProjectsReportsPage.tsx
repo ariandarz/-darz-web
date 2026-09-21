@@ -62,7 +62,7 @@ import type {
   ProjectReportRow,
 } from '../../../api/types';
 import { asAdminRole } from '../adminNav';
-import { ConfirmDialog, DeskBanner, DeskPage } from '../kit';
+import { ConfirmDialog, ConflictBanner, DeskBanner, DeskPage } from '../kit';
 import {
   asChecklistStrings,
   asDeliverables,
@@ -75,7 +75,6 @@ import {
 } from './projectForm';
 import '../admin.css';
 
-const CONFLICT = 'Someone else saved this template in the meantime — reload to continue.';
 const DAY_MS = 86400000; // projDayMs(), :13285
 
 /* ── the old desk's own inline styles, kept where it had them ───────────── */
@@ -328,12 +327,7 @@ export function ProjectsReportsPage() {
 
       <div className="dzp">
         {conflict && (
-          <DeskBanner>
-            {CONFLICT}{' '}
-            <button type="button" className="dzp-btn sm" onClick={reloadAll}>
-              Reload
-            </button>
-          </DeskBanner>
+          <ConflictBanner noun="template" onReload={reloadAll} reloadClassName="dzp-btn sm" />
         )}
         {actionError && <DeskBanner>{actionError}</DeskBanner>}
         {note && (

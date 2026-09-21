@@ -65,6 +65,7 @@ import {
 } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ConflictError, ValidationError } from '../../../api/errors';
+import { asArray } from '../../../api/shapes';
 import { useApi, useOptions, useSession } from '../../../api/hooks';
 import type {
   Choice,
@@ -76,7 +77,7 @@ import type {
   ProjectStage,
 } from '../../../api/types';
 import { asAdminRole } from '../adminNav';
-import { ConfirmDialog, DeskBanner, DeskPage } from '../kit';
+import { ConfirmDialog, ConflictBanner, DeskBanner, DeskPage } from '../kit';
 import {
   DARZ_ROLE_DETAIL,
   DELIV_CLASSES,
@@ -201,7 +202,7 @@ function patchFrom(
 ): Omit<ProjectPatch, 'expected_version'> {
   let orgIds = Array.from(new Set(d.lanes.map((l) => l.orgId).filter(Boolean)));
   if (known) orgIds = orgIds.filter((id) => known.some((o) => o.id === id));
-  const linked = p.partner_orgs.map((o) => o.id);
+  const linked = asArray<{ id: string }>(p.partner_orgs).map((o) => o.id);
   const body: Omit<ProjectPatch, 'expected_version'> = {
     name: d.name,
     client_name: d.client_name,
@@ -526,20 +527,15 @@ function ProjectRecord({ id }: { id: string }) {
 
           {error && <DeskBanner>{error}</DeskBanner>}
           {conflict && (
-            <DeskBanner>
-              Someone else saved this project in the meantime — reload to continue.{' '}
-              <button
-                type="button"
-                className="dzp-btn sm"
-                onClick={() => {
-                  setConflict(false);
-                  setGen((g) => g + 1);
-                  void load();
-                }}
-              >
-                Reload
-              </button>
-            </DeskBanner>
+            <ConflictBanner
+              noun="project"
+              reloadClassName="dzp-btn sm"
+              onReload={() => {
+                setConflict(false);
+                setGen((g) => g + 1);
+                void load();
+              }}
+            />
           )}
           {note && (
             <p className="dzp-mut" role="status">

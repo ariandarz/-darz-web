@@ -50,6 +50,13 @@ export function DashboardPage() {
         </button>
       }
     >
+      {/* `dsh-sub` (`darz-studio.html:21332`) — one of only two desk subtitles
+          in the whole old panel (the other is Requests), and this port had
+          dropped both. Verbatim. */}
+      <p className="ad-desksub">
+        Your control room — every request, message and auction action in one place.
+      </p>
+
       {error && <DeskBanner>{error}</DeskBanner>}
       {!summary && !error && <p className="dz-state">Loading…</p>}
       {summary && <Tiles summary={summary} options={options} />}

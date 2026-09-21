@@ -31,10 +31,15 @@ import { useApi } from '../../api/hooks';
 import type { ArtistAdmin } from '../../api/types';
 import {
   ConfirmDialog,
+  ConflictBanner,
   DeskAction,
   DeskBanner,
   DeskPage,
+  DeskSave,
+  DeskToast,
   DataTable,
+  isConflict,
+  useDeskToast,
   type Column,
 } from './kit';
 import './admin.css';
@@ -54,6 +59,7 @@ export function ArtistsPage() {
   const [editing, setEditing] = useState<ArtistAdmin | null | 'new'>(null);
   const [removing, setRemoving] = useState<ArtistAdmin | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { say, message } = useDeskToast();
 
   const load = useCallback(() => {
     catalogAdmin.artists({ per_page: 500 }).then(
@@ -88,8 +94,18 @@ export function ArtistsPage() {
     try {
       await catalogAdmin.updateArtist(artist.id, { bio, expected_version: artist.version });
       load();
+      say('Intro saved ✓');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save the intro.');
+      // The reload was already right — it is the sentence that was generic.
+      // A 409 here means the roster on screen is behind, not that the intro
+      // was bad, and the reload below is the fix rather than a retry (TD-5).
+      setError(
+        isConflict(err)
+          ? 'Someone else saved this artist in the meantime — the roster has been reloaded.'
+          : err instanceof Error
+            ? err.message
+            : 'Could not save the intro.',
+      );
       load();
     } finally {
       setBusyId(null);
@@ -206,9 +222,10 @@ export function ArtistsPage() {
         <ArtistForm
           existing={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
-          onSaved={() => {
+          onSaved={(said) => {
             setEditing(null);
             load();
+            say(said);
           }}
         />
       )}
@@ -244,6 +261,8 @@ export function ArtistsPage() {
           }}
         />
       )}
+
+      <DeskToast message={message} />
     </DeskPage>
   );
 }
@@ -258,7 +277,8 @@ function ArtistForm({
 }: {
   existing: ArtistAdmin | null;
   onClose: () => void;
-  onSaved: () => void;
+  /** Called with the words for the desk's toast, so the form does not own one. */
+  onSaved: (said: string) => void;
 }) {
   const { catalogAdmin } = useApi();
   const [name, setName] = useState(existing?.display_name ?? '');
@@ -274,6 +294,7 @@ function ArtistForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
 
   const save = async () => {
     if (busy) return;
@@ -302,9 +323,11 @@ function ArtistForm({
       } else {
         await catalogAdmin.createArtist(body);
       }
-      onSaved();
+      onSaved(existing ? 'Artist saved ✓' : 'Artist created ✓');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
+      if (isConflict(err)) setConflict(true);
+      else setError(err instanceof Error ? err.message : 'Could not save.');
+      throw err;
     } finally {
       setBusy(false);
     }
@@ -354,6 +377,15 @@ function ArtistForm({
           />
         </label>
       </div>
+      {conflict && (
+        <ConflictBanner
+          noun="artist"
+          onReload={() => {
+            setConflict(false);
+            onClose();
+          }}
+        />
+      )}
       {error && (
         <p className="dz-state err" role="alert">
           {error}
@@ -363,14 +395,9 @@ function ArtistForm({
         <button type="button" className="ad-ghostbtn" onClick={onClose} disabled={busy}>
           Cancel
         </button>
-        <button
-          type="button"
-          className="ad-action"
-          onClick={() => void save()}
-          disabled={busy}
-        >
+        <DeskSave className="ad-action" busy={busy} onClick={save}>
           {existing ? 'Save artist' : 'Create artist'}
-        </button>
+        </DeskSave>
       </div>
     </div>
   );

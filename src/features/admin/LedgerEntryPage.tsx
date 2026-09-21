@@ -36,7 +36,7 @@ import type {
   LedgerAttachment,
   LedgerEntryAdmin,
 } from '../../api/types';
-import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
+import { ConfirmDialog, DeskBanner, DeskPage, DeskSave, DeskToast, useDeskToast } from './kit';
 import './admin.css';
 
 /** The one book whose entries carry the receipt-review extension
@@ -52,8 +52,8 @@ export function LedgerEntryPage() {
 
   const [entry, setEntry] = useState<LedgerEntryAdmin | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { say, message } = useDeskToast();
 
   const load = useCallback(() => {
     if (!id) return;
@@ -73,11 +73,12 @@ export function LedgerEntryPage() {
     if (!id || busy || !status) return;
     setBusy(true);
     setError(null);
-    setNotice(null);
     try {
       const updated = await accountingAdmin.setEntryStatus(id, status);
       setEntry(updated);
-      setNotice(`Status is now ${labelOf(statuses, status)}.`);
+      // Was a `notice` line that stayed on the page; the panel's own way of
+      // saying a write landed is the toast (TD-4).
+      say(`Status is now ${labelOf(statuses, status)} ✓`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not change the status.');
     } finally {
@@ -125,7 +126,6 @@ export function LedgerEntryPage() {
       </p>
 
       {error && <DeskBanner>{error}</DeskBanner>}
-      {notice && <p className="ad-deskintro">{notice}</p>}
 
       <section className="ad-dsec">
         <div className="ad-dsec-h">
@@ -161,8 +161,11 @@ export function LedgerEntryPage() {
           entry={entry}
           options={options}
           onSaved={setEntry}
+          onSaid={say}
         />
       )}
+
+      <DeskToast message={message} />
     </DeskPage>
   );
 }
@@ -332,10 +335,13 @@ function ArianReviewSection({
   entry,
   options,
   onSaved,
+  onSaid,
 }: {
   entry: LedgerEntryAdmin;
   options: OptionsMap | null;
   onSaved: (e: LedgerEntryAdmin) => void;
+  /** The desk's toast — the section confirms where every other desk does. */
+  onSaid: (message: string) => void;
 }) {
   const { accountingAdmin } = useApi();
   // Typed non-nullable by the generator, actually null outside this book.
@@ -349,7 +355,6 @@ function ArianReviewSection({
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   const dupStatuses = choices(options, 'accounting.arian_dup_status');
   const acctStatuses = choices(options, 'accounting.arian_acct_status');
@@ -360,7 +365,6 @@ function ArianReviewSection({
     if (busy) return;
     setBusy(true);
     setError(null);
-    setSaved(false);
     try {
       // Only non-empty values — the serializer's fields are all optional and
       // an empty string is a real value for some of them.
@@ -371,9 +375,10 @@ function ArianReviewSection({
         body as ArianReviewWrite,
       );
       onSaved(updated);
-      setSaved(true);
+      onSaid('Review saved ✓');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not save the review.');
+      throw err; // `DeskSave` flashes only on a write that landed
     } finally {
       setBusy(false);
     }
@@ -398,7 +403,6 @@ function ArianReviewSection({
         </p>
       )}
       {error && <DeskBanner>{error}</DeskBanner>}
-      {saved && <p className="ad-deskintro">Saved.</p>}
 
       <div className="ad-formgrid">
         <Field label="Payment purpose" value={d.purpose} onChange={(v) => set('purpose', v)} />
@@ -445,14 +449,9 @@ function ArianReviewSection({
       </div>
 
       <div className="ad-rowacts ad-deskacts">
-        <button
-          type="button"
-          className="ad-action"
-          disabled={busy}
-          onClick={() => void save()}
-        >
+        <DeskSave className="ad-action" busy={busy} savedLabel="Review saved" onClick={save}>
           Save review
-        </button>
+        </DeskSave>
       </div>
     </section>
   );

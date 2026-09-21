@@ -20,6 +20,34 @@
 .ad-shell {
   width: 100%;
   min-width: 0;
+
+  /* The panel's surface is the SHELL's, not the page's — and it fills the
+     viewport (fidelity pass, 2026-09-22).
+
+     `.dz-page` carries `background: var(--card)` and `min-height: 100%`, which
+     is right in the collector app and wrong here twice over. The `min-height`
+     is inert, because nothing above it has a height for the percentage to
+     resolve against — so the surface ended with the CONTENT, and every desk
+     shorter than the window drew a horizontal seam where the darker body
+     showed through (Documents, Artists, Team, Memberships, Access Requests…).
+     And a desk that keeps the 1040px reading column painted its background
+     only that wide, so a form desk had 200px darker gutters down both sides.
+
+     The old panel has one uniform charcoal from edge to edge — no seam either
+     way. Moving the paint up here is what makes that true, and it is a
+     difference only a rendered page shows: the source reads identically. */
+  min-height: 100vh;
+  background: var(--card);
+}
+html.dz-bw .ad-shell {
+  background: var(--bg);
+}
+/* …and the page inside it stops painting, or the two surfaces show their
+   join. Both selectors carry the specificity of the `.dz-page` rules they
+   override (`design/components.css`), rather than relying on file order. */
+.dz-page.ad-page,
+html.dz-bw .dz-page.ad-page {
+  background: transparent;
 }
 
 .ad-page {
@@ -3683,4 +3711,85 @@ html.dz-bw .dzp-chip {
 }
 .ad-waitbanner strong {
   color: var(--ink);
+}
+
+/* =============================================================================
+   Saying it worked — the panel's two confirmations (TD-4).
+
+   The old panel confirms a write in two places at once, and both are ported
+   here because they answer different questions: the toast says WHAT happened,
+   the button says THAT IT was your click that did it.
+
+     1. `.dz-toast` (`darz-studio.html:370-372`) — a centred charcoal card with
+        the seam along its top edge, shown for ~1.8s. Note it is NOT the
+        collector app's `.toast` (app.html:1246), which is a bottom pill: two
+        surfaces, two shipped recipes, and the admin one belongs to the admin.
+
+     2. `.dz-saved` (`:196-202`, the v510 "Darz Saved confirmation") — the Save
+        button itself turns Darz green and reads "✓ Saved" for ~2s. In the old
+        file a delegated listener found every Save button on the page; here the
+        kit's `DeskSave` is that listener's equivalent, because a desk is
+        assembled from the kit rather than from loose buttons.
+
+   The flash keeps the button's own background — v631's rule in the old file,
+   in its own words: "only the text + a hairline border turn a subtle green as
+   the confirmation signal. No green fill box."
+
+   Colours: the old file needs two values (#1F9D57, and #5fcf94 under
+   `html.dz-admindark`) because its admin darkens the button underneath. Here
+   `.ad-action` is `--ctl-bg` (#26262e), which tokens.css fixes for BOTH skins —
+   "the primary action is charcoal in both" — so the green over it should not
+   move either, and `--ok` is the old light value exactly. Hence one rule and
+   no mode override: `--ok-ink` (#1f7a4d / #5fd99a) is the mode-aware pair, and
+   its light end would only dim the text against a background that never
+   lightened. Checked in the browser in both modes rather than read off the
+   file — which is also how the wrong token got caught.
+   ========================================================================== */
+.dz-toast {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  background: #0a0a0a;
+  color: #fff;
+  padding: 10px 17px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  letter-spacing: 0.012em;
+  max-width: min(340px, calc(100vw - 32px));
+  text-align: center;
+  box-shadow: 0 18px 50px rgba(10, 10, 10, 0.34);
+  opacity: 0;
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+  pointer-events: none;
+  z-index: 100060;
+}
+.dz-toast::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  right: 13px;
+  top: 0;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+  opacity: 0.9;
+}
+.dz-toast.show {
+  opacity: 0.97;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.dz-saved,
+button.dz-saved {
+  background-image: none;
+  border-color: var(--ok);
+  color: var(--ok);
+  box-shadow: none;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
 }

@@ -61,6 +61,7 @@ import { ListController } from '../../shared/ListController';
 import { useListController } from '../../shared/useListController';
 import {
   ConfirmDialog,
+  ConflictBanner,
   DeskAction,
   DeskBanner,
   DeskPage,
@@ -81,8 +82,6 @@ import {
   type PartnerLane,
 } from './projectForm';
 import '../admin.css';
-
-const CONFLICT = 'Someone else saved this partner in the meantime — reload to continue.';
 
 class PartnersController extends ListController<PartnerOrgAdmin, PartnerOrgQuery> {
   private readonly projects: ProjectsAdminService;
@@ -312,12 +311,7 @@ export function ProjectPartnersPage() {
 
       <div className="dzp">
         {conflict && (
-          <DeskBanner>
-            {CONFLICT}{' '}
-            <button type="button" className="dzp-btn sm" onClick={reloadAll}>
-              Reload
-            </button>
-          </DeskBanner>
+          <ConflictBanner noun="partner" onReload={reloadAll} reloadClassName="dzp-btn sm" />
         )}
         {banner && <DeskBanner>{banner}</DeskBanner>}
         {walk.error && <DeskBanner>{walk.error}</DeskBanner>}

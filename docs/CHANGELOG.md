@@ -5,6 +5,58 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-22 — Every desk was opened for the first time, and three were blank
+
+- **The walk.** Signing into the panel against the **E2E stub server** removed the blocker
+  that the only local team login's password is recorded nowhere — so all 35 built desks
+  could be opened. Three rendered a completely blank page, two of them already on `main`:
+  `/admin/accounting` (`.length` on an undefined `currencies`), `/admin/projects`
+  (`responsibility_by_member is not iterable`), and `/admin/accounting/deals/new` — a
+  `<Route>` nested inside another route's `element`, which had also left
+  **`/admin/accounting/entries/:id` unregistered**, so Phase 2's ledger-entry detail was
+  unreachable from any URL since the day it shipped.
+- **Fixed at two levels.** `normaliseLedgerSummary` and the `readMembers` guard where the
+  crashes happened (23 new unit tests, modelled on `artworkFacets`), and `DeskBoundary`
+  under the desk `<Outlet>` so the *next* one degrades to a legible message with the navbar
+  intact instead of a white page. Four instances of one mistake earned the floor under it.
+- **Then the 15 `:id` routes**, which found three more of the same crash — the artwork
+  editor's image store and its selection grants (both **bare-array** endpoints the stub was
+  answering with an envelope), the auction invite list (thrown inside a `.then()`, so the
+  panel hung on "loading" instead of reaching its error handler) and a project's partner
+  orgs. Two were caught by the new boundary rather than blanking. Seven instances of one
+  mistake earned `asArray` in `src/api/shapes.ts`, and the stub now states the real shape of
+  the two endpoints it was misreporting.
+- **Then the collector app**, never walked before either, where the eighth instance was the
+  worst: `/auctions/lots/:id` was a **white screen**, because `primaryImage` read
+  `artwork.images` off an artwork that was not there — and unlike a desk, a collector route
+  has **no boundary under it**. Fixed; an equivalent boundary for the collector shell is
+  left as a recommendation, since it puts new copy in front of collectors.
+- **The panel's surface was wrong on every desk**, and only a screenshot could show it:
+  `.dz-page`'s `min-height: 100%` is inert under the admin shell, so the desk surface ended
+  with the content and left a horizontal seam on every short desk — and a 1040px form desk
+  painted only that wide, leaving darker gutters. The old panel is uniform edge to edge. The
+  surface is now the shell's and fills the viewport.
+- **`e2e/desks.spec.ts` + `e2e/collector.spec.ts`** turn the walk into a gate: every desk, its
+  own heading, a surviving shell, nothing thrown — **71 E2E tests** across desks, detail routes
+  and the collector app. Verified by reverting a guard and watching it fail. Plus the Phase 6 fidelity pass's first fixes: the
+  missing subtitles on Dashboard, Requests and Collectors, and three comments that still
+  denied filters G-2 shipped.
+
+## 2026-09-21 — The kit gets one way to say it worked, and one way to say it clashed
+
+- **Success (TD-4).** The old panel confirms a write in two places at once and both are ported:
+  `.dz-toast` (`darz-studio.html:370-372`, the admin's centred card — not the collector app's
+  bottom pill) and the v510/v631 `.dz-saved` flash, where the Save button itself turns green and
+  reads "✓ Saved" for 2s while keeping its own background. `DeskSave` flashes only when the write
+  **resolves**; a button congratulating you on a failed save is the one lie it must never tell.
+- **Conflict (TD-5).** `ConflictBanner`, taken verbatim from the six Projects desks that had each
+  written the sentence independently, now shared by all six and added to five more. Two
+  corrections to the audit: Accounting and Records **cannot 409** — they are last-write-wins
+  (**G-LOCK-1**) — and TD-6's "8 dead service methods" are not dead; three are buttons the old
+  panel ships and this port never built (**G-DEL-1**).
+- **Lint back to 0 (TD-7)**, one of the three a real bug: `AuctionEventPage` had no countdown
+  timer at all, so "2d 23h" froze at mount. Both auction pages now use `useNow`.
+
 ## 2026-09-19 — Tidy up the superseded rows, and price them all in one pass
 
 - **"Tidy them up"** on the standard-set card does what was an instruction: re-points every package

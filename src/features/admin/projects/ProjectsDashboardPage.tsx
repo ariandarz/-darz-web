@@ -30,42 +30,9 @@ import { useApi, useSession } from '../../../api/hooks';
 import type { ProjectDashboard } from '../../../api/types';
 import { asAdminRole } from '../adminNav';
 import { DeskAction, DeskBanner, DeskPage } from '../kit';
-import { DASH_CARDS, type Quick } from './projectForm';
+import { DASH_CARDS } from './projectForm';
+import { cardCount, readMembers } from './projectsDashboard';
 import '../admin.css';
-
-interface Member {
-  member: string;
-  active: number;
-}
-
-/** `responsibility_by_member` is typed as loose dicts on the wire; the
- * backend writes `{member, active_count}` (`services.py:267`). Sorted by
- * count, top five — the old `members.slice(0,5)` (:13601). */
-function readMembers(dash: ProjectDashboard): Member[] {
-  const out: Member[] = [];
-  for (const row of dash.responsibility_by_member) {
-    const member = String(row.member ?? '').trim();
-    if (!member) continue;
-    out.push({ member, active: Number(row.active_count) || 0 });
-  }
-  return out.sort((a, b) => b.active - a.active).slice(0, 5);
-}
-
-/** The count behind each card (:13605-13610), from the server's summary. */
-function cardCount(dash: ProjectDashboard, q: Quick): number {
-  switch (q) {
-    case 'active':
-      return dash.active_count;
-    case 'delayed':
-      return dash.delayed_count;
-    case 'approval':
-      return dash.awaiting_approval_count;
-    case 'deliverables':
-      return dash.next_deliverables_count;
-    case 'unpaid':
-      return dash.unpaid_count;
-  }
-}
 
 export function ProjectsDashboardPage() {
   const { projectsAdmin } = useApi();

@@ -22,8 +22,11 @@
  * **Not ported, stated (hybrid rule + gaps):**
  *  - thumbnails — the admin list row carries no images (G-CAT-1), so the
  *    Work cell is textual; images live on the editor;
- *  - the Year / Source / "Market App: shown|hidden" filters — no server
- *    param (G-CAT-2);
+ *  - ~~the Year / Source / "Market App: shown|hidden" filters~~ — **shipped
+ *    2026-09-21 with G-2**, over the new `/catalog/admin/artworks/facets/`
+ *    endpoint, so Year and Source are narrowing dropdowns rather than the free
+ *    text G-CAT-2 once forced. This line said otherwise until the fidelity
+ *    pass read it against the desk it describes;
  *  - bulk selection & its action groups (`:26723`) — documents, auctions
  *    and portals are later phases; a bar of dead buttons is worse than a
  *    stated absence (the D15 rule). Bulk status/publish returns with it;

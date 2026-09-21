@@ -30,6 +30,14 @@ const paginatedEmpty = envelope({
   results: [],
 });
 
+const ME_COLLECTOR = {
+  principal: 'collector',
+  id: '00000000-0000-4000-8000-0000000000c0',
+  display_name: 'E2E Collector',
+  tier: 'standard',
+  access_status: 'active',
+};
+
 const ME = {
   principal: 'team',
   id: '00000000-0000-4000-8000-0000000000e2',
@@ -76,13 +84,37 @@ const SUMMARY = {
   exhibitions: { pending_review: 0 },
 };
 
-const TOKENS = { access: 'e2e-access', refresh: 'e2e-refresh' };
+/**
+ * A sign-in answers the token for ITS principal, and `/auth/me/` reads the
+ * principal back out of the bearer token. That keeps the stub stateless, which
+ * matters more here than it looks: Playwright runs spec files in parallel
+ * workers against ONE stub, so a remembered "last login" leaks across them —
+ * the collector walk signing in made the panel walk's owner-only desks answer
+ * 403, which is a test failure with no bug behind it. The token IS the
+ * session; nothing needs to be remembered.
+ */
+const TOKENS = {
+  team: { access: 'e2e-team', refresh: 'e2e-team-r' },
+  collector: { access: 'e2e-collector', refresh: 'e2e-collector-r' },
+};
+
+/** Which principal the caller is holding a token for. A refresh POST carries
+ * the refresh token in its BODY rather than the header, so both are checked by
+ * the caller that knows which it has. */
+function bearerIsCollector(req) {
+  const auth = req.headers.authorization || '';
+  return auth.includes('e2e-collector');
+}
 
 const routes = {
   'GET /api/app-theme/': () => envelope({ theme: {} }),
-  'POST /api/auth/team/login/': () => envelope(TOKENS),
-  'POST /api/auth/token/refresh/': () => envelope(TOKENS),
-  'GET /api/auth/me/': () => envelope(ME),
+  'POST /api/auth/team/login/': () => envelope(TOKENS.team),
+  // The collector gate's own sign-in — first name + access key, the credential
+  // model D4 kept (`docs/PHASE_24_35_PLAN.md`).
+  'POST /api/auth/collector/login/': () => envelope(TOKENS.collector),
+  'POST /api/auth/token/refresh/': (req) =>
+    envelope(bearerIsCollector(req) ? TOKENS.collector : TOKENS.team),
+  'GET /api/auth/me/': (req) => envelope(bearerIsCollector(req) ? ME_COLLECTOR : ME),
   'GET /api/options/': () => envelope(OPTIONS),
   // the REAL path: DashboardService = '/dashboard' + '/admin/summary/'.
   // The route said '/api/admin/summary/' until PR #54 — the summary then
@@ -105,6 +137,26 @@ const routes = {
     }),
 };
 
+/**
+ * Routes whose path carries an id, matched by pattern. Same job as the facets
+ * entry above: **not every GET answers a paginated envelope**, and a stub that
+ * pretends they all do is lying about the API rather than simplifying it.
+ *
+ * `artworkImages` and `artworkSelectionGrants` are `retrieve<X[]>` — a BARE
+ * ARRAY — so a desk doing `images.map(...)` got an object and threw. The desks
+ * now guard (`asArray`), and these entries stop the stub from being the one
+ * telling the lie.
+ */
+const patterns = [
+  [/^\/api\/catalog\/admin\/artworks\/[^/]+\/images\/$/, 'GET', () => envelope([])],
+  [/^\/api\/catalog\/admin\/artworks\/[^/]+\/selection-grants\/$/, 'GET', () => envelope([])],
+  [
+    /^\/api\/projects\/admin\/projects\/reports\/$/,
+    'GET',
+    () => envelope({ deliverables: [] }),
+  ],
+];
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const key = `${req.method} ${url.pathname}`;
@@ -121,8 +173,15 @@ const server = http.createServer((req, res) => {
   }
   if (hit) {
     res.writeHead(200);
-    res.end(JSON.stringify(hit()));
+    res.end(JSON.stringify(hit(req)));
     return;
+  }
+  for (const [re, method, answer] of patterns) {
+    if (req.method === method && re.test(url.pathname)) {
+      res.writeHead(200);
+      res.end(JSON.stringify(answer()));
+      return;
+    }
   }
   if (req.method === 'GET') {
     // any list-shaped desk read renders its empty state
