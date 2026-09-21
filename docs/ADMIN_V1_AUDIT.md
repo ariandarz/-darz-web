@@ -58,7 +58,12 @@ They are reachable, just not as their own navbar entries.
 catalogue leftovers (lot detail, selection grants). Everything else is either shipped or genuinely
 backend-blocked.
 
-**The one thing that is *not* in good shape is not code — it is the UI reference.** See §6 and G-1.
+**The one thing that was *not* in good shape was not code — it was the UI reference.** There was no
+design package for the panel, so "pixel-perfect" had nothing to be measured against. **Closed
+2026-09-21:** `../DarzStudio/design/admin-panel/` now carries 52 screens of the live old panel in
+four device/mode combinations, and [`docs/ADMIN_SCREENS.md`](ADMIN_SCREENS.md) maps every desk to
+its reference. See §6.3 — and note the three findings the captures forced, which no amount of
+reading the source had produced.
 
 ---
 
@@ -328,6 +333,34 @@ repo is a line citation, not a picture. That is good discipline and it is not su
 `darz-studio.html` to produce `design/admin-panel/screenshots/` + a tokens sheet. One day of work
 that makes every later fidelity claim checkable instead of assertable.
 
+> ### ✅ Closed, 2026-09-21 — `../DarzStudio/design/admin-panel/`
+>
+> The package now exists: **52 screens × desktop/mobile × dark/light**, captured offline from the
+> live panel by a re-runnable Playwright harness, with a seeded review device so no desk renders an
+> empty state. `docs/ADMIN_SCREENS.md` maps every tab in `adminNav.ts` to its capture.
+>
+> **Three things the captures changed about the sections above** — each found by looking, which is
+> the whole point:
+>
+> 1. **§6.2 row 7 understates the Requests desk.** The old desk is not "the new toolbar plus a
+>    search box". It is *card*-based, with a search box, a **STATUS** segment carrying live counts
+>    (All 27 · Needs reply 10 · In progress 5 · Completed 12), a **SCOPE** segment
+>    (All · Auctions · Market), a **FILTER BY TYPE** panel of per-kind cards each showing
+>    `needs-reply / total`, and a red urgency banner — *"10 requests need your reply · 7 have been
+>    waiting too long — shown first, in red"*. The new desk is a seven-column table with three
+>    selects. The gap is wider than recorded, which strengthens **G-3** and **G-5**.
+>    Reference: `13-requests`, `13-requests-full`.
+> 2. **§6.2 row 1's dark-mode note was too hard on the port.** `platformSettings.theme
+>    .forceDarkAdmin` defaults **ON** (`:16750`), which pins the old panel to charcoal *and removes
+>    the Light/Dark toggle from its header*. So the shipped panel is dark-only unless the owner
+>    changes a setting — and `admin.css` mapping onto this app's Paper/Black tokens with no second
+>    toggle is **closer** to shipped behaviour than the audit implied, not further from it.
+> 3. **G-4 is confirmed in detail.** The old Collectors desk shows the 4-tile strip
+>    (Collectors · VIP · Active 30d · Engaged), then search + tier + sort, then a *card* per
+>    collector with a serif name, a tier pill, a 3-metric strip (Purchases · Activity · Pricelists),
+>    a green freshness dot with "Last active …", and a "＋ Generate password" row.
+>    Reference: `11-collectors`, `12-collector-detail`.
+
 ---
 
 ## 7 · Missing V1 work
@@ -456,14 +489,19 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 
 Dependency-ordered. The desk kit exists, so each phase is assembly.
 
-### Phase 0 — Foundations (½–1 day) · no approval needed
+### Phase 0 — Foundations (½–1 day) · no approval needed · ✅ **done 2026-09-21**
 
 - **Goal:** unblock local development and make fidelity measurable.
-- **Work:** fix TD-1 (rename the case-colliding module); capture the admin reference package — run the old `capture-screens.mjs` harness against `darz-studio.html` into `design/admin-panel/screenshots/{desktop,mobile}/{light,dark}/` plus a tokens sheet; add a short `ADMIN_SCREENS.md` indexing which capture each desk is compared against.
+- **Work:** fix TD-1 (rename the case-colliding module); capture the admin reference package — run the old `capture-screens.mjs` harness against `darz-studio.html` into `design/admin-panel/screenshots/{desktop,mobile}/{light,dark}/`; add a short `ADMIN_SCREENS.md` indexing which capture each desk is compared against.
 - **Reuse:** the harness and package layout already exist for the Market App.
 - **API:** none. **Backend dep:** none. **Permissions:** none.
 - **DoD:** `npm run build` green on macOS; every built desk has a named reference capture.
 - **Complexity:** Low. **Depends on:** nothing.
+- **Outcome:** TD-1 fixed (#61). `../DarzStudio/design/admin-panel/` carries the harness, the seed
+  and 52 screens × 4 combinations; [`docs/ADMIN_SCREENS.md`](ADMIN_SCREENS.md) is the map. Nine
+  rows have no capture and each says why — seven are backend-blocked desks, two
+  (Exhibition Services, Issue a document) have no old-panel page because they are new routes over
+  old content. The three corrections the captures forced are in §6.3.
 
 ### Phase 1 — Requests desk parity (1–2 days) · **needs G-5 approved**
 
