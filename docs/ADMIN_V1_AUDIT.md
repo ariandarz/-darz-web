@@ -678,9 +678,16 @@ Dependency-ordered. The desk kit exists, so each phase is assembly.
       app is untouched.
   - **Not yet compared capture-by-capture:** the remaining ~27 desks. They render and are
     covered by the walk; their pixel-level comparison is what is left of this phase.
-    Documents is one difference short of done — the old desk's sub-tabs include **Create**
-    and **Pricelists & saved items**, which this port does not have and does not currently
-    say why.
+    Two desks are one difference short of done, both **recorded, not fixed**:
+    - **Documents** — the old sub-tabs include **Create** and **Pricelists & saved items**,
+      which this port does not have and, unlike its other omissions, does not say why.
+    - **Market App** — its header says the old desk's every-published-work tile "stays
+      unavailable until G-CAT-2's `is_published` filter exists". **That filter now exists**
+      (`published`, backend G-2, #66) — but only on `ArtworkAdminFilterSet`, and this desk
+      deliberately reads the *collector* catalogue so it gets images and resolved artists.
+      So the tile is now **buildable at a cost** (a second call to the admin list, or
+      moving the desk onto it and losing the images), rather than blocked. That is a scope
+      decision, not a bug, which is why it is here and not in the diff.
 - **Still open in this phase:** that remaining comparison, and TD-8 (`admin.css` is one
   3,700-line file).
 
