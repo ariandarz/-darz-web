@@ -67,6 +67,37 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/access-requests', 'Access Requests'],
 ];
 
+/**
+ * The `:id` routes. They get no entity from the stub — an unmatched GET is an
+ * empty envelope — so what is asserted is narrower than above: the page must
+ * not THROW, whatever it was handed. That is the claim worth making, because
+ * it is the one these routes kept failing: probing them the first time found
+ * three more of the same crash (the artwork editor's image store and selection
+ * grants, the auction invite list, a project's linked partner orgs), two of
+ * which the new `DeskBoundary` caught rather than blanking. There is no
+ * heading to match on because several of these pages legitimately render a
+ * loading or error state instead.
+ */
+const DETAIL_ID = '00000000-0000-4000-8000-00000000beef';
+const DETAIL_ROUTES: readonly string[] = [
+  '/admin/chat/:id',
+  '/admin/artworks/:id',
+  '/admin/documents/:id',
+  '/admin/auctions/:id',
+  '/admin/auction-records/:id',
+  '/admin/sources/:id',
+  '/admin/issue/:id',
+  '/admin/sales/:id',
+  '/admin/collectors/:id',
+  '/admin/import/:id',
+  // reachable only since the nested-<Route> fix — it had never been registered
+  '/admin/accounting/entries/:id',
+  '/admin/accounting/deals/:id',
+  '/admin/projects/:id',
+  '/admin/projects/:id/report',
+  '/admin/projects/packages/:id',
+];
+
 test.describe.configure({ mode: 'serial' });
 
 let page: Page;
@@ -108,6 +139,17 @@ for (const [route, heading] of DESKS) {
     // caught, which is better than a blank page and still a failure here.
     await expect(page.getByText('This desk could not be drawn')).toHaveCount(0);
 
+    expect(thrown, `page errors on ${route}`).toEqual([]);
+  });
+}
+
+for (const route of DETAIL_ROUTES) {
+  test(`${route} survives an entity it cannot read`, async () => {
+    thrown = [];
+    await page.goto(route.replace(':id', DETAIL_ID));
+
+    await expect(page.locator('.ad-tabs')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('This desk could not be drawn')).toHaveCount(0);
     expect(thrown, `page errors on ${route}`).toEqual([]);
   });
 }

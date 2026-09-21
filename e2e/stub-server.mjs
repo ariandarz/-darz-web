@@ -105,6 +105,26 @@ const routes = {
     }),
 };
 
+/**
+ * Routes whose path carries an id, matched by pattern. Same job as the facets
+ * entry above: **not every GET answers a paginated envelope**, and a stub that
+ * pretends they all do is lying about the API rather than simplifying it.
+ *
+ * `artworkImages` and `artworkSelectionGrants` are `retrieve<X[]>` — a BARE
+ * ARRAY — so a desk doing `images.map(...)` got an object and threw. The desks
+ * now guard (`asArray`), and these entries stop the stub from being the one
+ * telling the lie.
+ */
+const patterns = [
+  [/^\/api\/catalog\/admin\/artworks\/[^/]+\/images\/$/, 'GET', () => envelope([])],
+  [/^\/api\/catalog\/admin\/artworks\/[^/]+\/selection-grants\/$/, 'GET', () => envelope([])],
+  [
+    /^\/api\/projects\/admin\/projects\/reports\/$/,
+    'GET',
+    () => envelope({ deliverables: [] }),
+  ],
+];
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const key = `${req.method} ${url.pathname}`;
@@ -123,6 +143,13 @@ const server = http.createServer((req, res) => {
     res.writeHead(200);
     res.end(JSON.stringify(hit()));
     return;
+  }
+  for (const [re, method, answer] of patterns) {
+    if (req.method === method && re.test(url.pathname)) {
+      res.writeHead(200);
+      res.end(JSON.stringify(answer()));
+      return;
+    }
   }
   if (req.method === 'GET') {
     // any list-shaped desk read renders its empty state

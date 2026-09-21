@@ -19,11 +19,18 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
   crashes happened (23 new unit tests, modelled on `artworkFacets`), and `DeskBoundary`
   under the desk `<Outlet>` so the *next* one degrades to a legible message with the navbar
   intact instead of a white page. Four instances of one mistake earned the floor under it.
+- **Then the 15 `:id` routes**, which found three more of the same crash — the artwork
+  editor's image store and its selection grants (both **bare-array** endpoints the stub was
+  answering with an envelope), the auction invite list (thrown inside a `.then()`, so the
+  panel hung on "loading" instead of reaching its error handler) and a project's partner
+  orgs. Two were caught by the new boundary rather than blanking. Seven instances of one
+  mistake earned `asArray` in `src/api/shapes.ts`, and the stub now states the real shape of
+  the two endpoints it was misreporting.
 - **`e2e/desks.spec.ts`** turns the walk into a gate: every desk, its own heading, a
-  surviving shell, nothing thrown — 38 E2E tests. Verified by reverting a guard and watching
-  it fail. Plus the Phase 6 fidelity pass's first fixes: the Dashboard's and Requests'
-  missing subtitles (the only two the old panel has), and three comments that still denied
-  filters G-2 shipped.
+  surviving shell, nothing thrown — **53 E2E tests** with the detail routes. Verified by
+  reverting a guard and watching it fail. Plus the Phase 6 fidelity pass's first fixes: the
+  missing subtitles on Dashboard, Requests and Collectors, and three comments that still
+  denied filters G-2 shipped.
 
 ## 2026-09-21 — The kit gets one way to say it worked, and one way to say it clashed
 

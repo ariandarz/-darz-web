@@ -38,6 +38,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
+import { asArray } from '../../api/shapes';
 import type { OptionsMap } from '../../api/services';
 import type {
   ArtistAdmin,
@@ -621,7 +622,7 @@ function SelectionGrantsSection({ artworkId }: { artworkId: string }) {
 
   const load = useCallback(() => {
     catalogAdmin.selectionGrants(artworkId).then(
-      (list) => setGrants(list),
+      (list) => setGrants(asArray(list)),
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load who has access.'),
     );
@@ -762,7 +763,8 @@ function ImagesSection({ artworkId }: { artworkId: string }) {
 
   const load = useCallback(() => {
     catalogAdmin.artworkImages(artworkId).then(
-      (list) => setImages(list),
+      // a bare-array endpoint; an envelope here used to blank the editor
+      (list) => setImages(asArray(list)),
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load the images.'),
     );

@@ -23,6 +23,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
+import { asArray } from '../../api/shapes';
 import type { OptionsMap } from '../../api/services';
 import type { Auction, Choice, LotAdmin } from '../../api/types';
 import { AuctionPill } from './AuctionsAdminPage';
@@ -131,7 +132,12 @@ function InviteCard({ auctionId }: { auctionId: string }) {
       (data) => {
         if (!alive) return;
         setInviteOnly(data.invite_only);
-        setInvited(data.invited_collectors.map((c) => ({ id: c.id, label: c.display_name })));
+        setInvited(
+          asArray<{ id: string; display_name: string }>(data.invited_collectors).map((c) => ({
+            id: c.id,
+            label: c.display_name,
+          })),
+        );
         setLoaded(true);
       },
       (err: unknown) =>
@@ -153,7 +159,12 @@ function InviteCard({ auctionId }: { auctionId: string }) {
         nextInvited.map((p) => p.id),
       );
       setInviteOnly(data.invite_only);
-      setInvited(data.invited_collectors.map((c) => ({ id: c.id, label: c.display_name })));
+      setInvited(
+        asArray<{ id: string; display_name: string }>(data.invited_collectors).map((c) => ({
+          id: c.id,
+          label: c.display_name,
+        })),
+      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not save the invite list.');
     } finally {
