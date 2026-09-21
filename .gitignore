@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+# Phase 13 E2E artifacts
+dist-e2e
+playwright-report
+test-results

@@ -30,8 +30,9 @@ Before that, the Market App design pass (PR #15, branch `claude/darz-web-fronten
 was merged to `development` on 2026-09-17 on the owner's instruction ("land the design pass") and
 `main` was brought level the same day, the way the v0.1 release was (the PR #17 / #18 pattern). Its
 merge commit's tree is the gated PR head: typecheck clean · lint 3 pre-existing warnings · 98/98
-tests · format · build. Two entry points `development` had are unlinked in the merged result — an
-**owner decision**, recorded under "Design pass" below.
+tests · format · build. Two entry points `development` had are unlinked in the merged result;
+researched 2026-09-18 and narrowed to **one** open owner decision (`/artists`) — recorded under
+"Design pass" below.
 
 **Eleven merged remote branches are still present.** Each is `ahead:0` against `development`, so
 every commit on them is already in `development` and deleting the ref loses nothing:
@@ -102,11 +103,13 @@ below, a whole panel's worth of API with no frontend UI.
    seeded local backend in CI (heavier, honest) or stub the API at the network layer (lighter,
    less honest). Suggested: stub for the render/routing assertions, plus a small real-backend
    smoke set.
-3. Owner decision on the two unlinked entry points (artist index `/artists`,
-   `/auctions/notifications`) — see "Design pass" below; then one small PR either way. A third,
-   newer one sits beside them: **the team sign-in has no link either.** `/admin/login` is reachable
-   only by typing the URL or being redirected there from the desk, because `app.html` renders no
-   entry point for its own team card (see Phase 7 below). One line if the owner wants it.
+3. Owner decision on **one** unlinked entry point — the artist index `/artists`. Researched
+   2026-09-18 (see "Design pass" below for the evidence): the old app's own artist list is
+   orphaned the same way, so the question is whether to **add** an entry point it never had, not
+   whether to restore one this port dropped. Recommendation: accept deep-link only. The other two
+   that used to sit on this line are closed — `/auctions/notifications` is reachable from
+   `AuctionBanner`, and `/admin/login` is correctly unlinked because the old admin is a separate
+   application file.
 4. Unblock the deploy (Phase 14) — **still blocked; narrowed to a Vercel team role, 2026-09-18.**
    There is no `darz-web` project on the team (it holds only `darzstudio-art` and `koocheh-web`).
    **Both** creation paths were tried and fail identically:
@@ -282,14 +285,29 @@ Re-skinned every collector screen to the `darzstudio.art` `design/market-app/` h
       Settings screens, `LayoutController`, Send Inquiry); **the design pass owns the skin** (tokens,
       shell chrome, catalogue / detail / artist / auctions / lot / gate styling, Dropdown / Segment).
       Surfaces not ported (no backend) are listed in `docs/API_INTEGRATION_GAPS.md` § Design-pass flags.
-- [ ] **Owner decision — two entry points `development` had that the merged result lacks** (the
-      routes exist; nothing links to them): (1) the **artist index** `/artists` — the catalogue hero's
-      Saved / Auctions / Artists pills were dropped per the package, and no screen links to the index
-      now (deep-link only, and it is live in v0.1; Saved is reachable from Profile, Auctions has its
-      nav tab when on); (2) **`/auctions/notifications`** — its link lived in the design pass's
-      Profile → Auctions tab, which the merge replaced with v0.1's Profile (matters only with
-      `VITE_FEATURE_SET=full`). Options: restore the pills, add an Artists entry where the package
-      places one, or accept deep-link only. Not changed without a decision (faithful-port rule).
+- [ ] **Owner decision — the artist index `/artists` has no entry point.** Researched against
+      `app.html` 2026-09-18; the other two "missing links" resolved to **no change needed** and are
+      recorded below rather than left open.
+      1. **`/artists` — the one real question, and the old app has the same hole.** `artistsView()`
+         exists (`app.html:5319`) with live search and sort handlers (`DZ.artSearch`/`DZ.artSort`,
+         `:11497-11498`), so it was plainly meant to be reachable — but **nothing enters it**. The
+         hash router's section table `SEC` (`:3577`) has keys for market / auctions / records /
+         highlights / profile / settings / saved / stories / insights and **no `artists`**, and
+         `render()` (`:5701`) does `else if(tab==='artists'){ if(currentArtist)artistView(currentArtist);
+         else market(); }` — landing on the artists tab with no artist selected shows the **Market**.
+         Its only two callers are its own search/sort handlers and the records-archive repaint. So
+         this repo's orphaned `/artists` is a *faithful* reproduction of an entry point the old app
+         lost, not a porting miss. `/artists/:id` (detail) is reachable from five places and is
+         fine. **The decision is therefore not "restore a link" but "add one the old app never
+         had".** Options: accept deep-link only (faithful, my recommendation), restore the
+         catalogue hero's Artists pill the design package dropped, or place an entry where the
+         package would put one. Not changed without a decision (faithful-port rule).
+      2. **`/auctions/notifications` — not missing.** `AuctionBanner.tsx:43` navigates there for a
+         notification with no lot. Reachable, and hidden in v0.1 anyway (`features.auctions` off).
+         No change.
+      3. **`/admin/login` — correctly unlinked.** The old admin is a **separate application file**
+         (`darz-studio.html`), never linked from the collector app. A collector-facing link to the
+         team gate would be an invention and a mild disclosure. No change.
 
 ## Phase 3 — Typed API client + auth ✅ (branch `phase-3-api-client`)
 
@@ -558,10 +576,24 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       2026-09-17 — `apps.notifications` has no `GET` for it); push delivery itself is ready
       (Phase 13), but the frontend can't complete the browser subscribe handshake without the key.
 
-## Phase 10 — Gallery Update Portal (frontend) ✅ backend ready (Phase 12 A+B merged)
+## Phase 10 — Gallery Update Portal (frontend) ✅ done 2026-09-19
 
-- [ ] No-login token+PIN portal: load state, submit updates, pricelist/Q&A
-- [ ] Admin review/approve desk UI
+- [x] No-login token+PIN portal (`/portal/:token`, 2026-09-19): gate → works + one-submission
+      updates (the payload keys `GalleryUpdateService.approve` auto-applies) → funnel Status
+      (feat_funnel) → pricelist upload (real multipart) → messages → Exhibition Services
+      (create/pick/submit → composed package → document acceptance). Ported from
+      `gallery-update.html` (build 914); gaps recorded as **G-PORT-1…11**
+      (`docs/ADMIN_ARCHITECTURE.md` §2). Live-verified full-circle both ways (step15: 37 checks).
+- [x] Admin review/approve desk UI — shipped with Phase 11b (the Sources & Partners desk); the
+      issue reveal now hands over the ready-to-send `/portal/{token}` address.
+- [x] **Phase 10b — the desk half + documents (2026-09-19, Portal V1 order):** the Exhibitions
+      queue (third face of Sources), the per-partner shows + Q&A thread on the partner page, the
+      composer (`/admin/sources/:id/exhibitions/:eventId` — request → priced package → approve →
+      publish), and one-click proposal/invoice issue: create → client-rendered PDF
+      (@react-pdf/renderer, brand TTFs bundled, golden-fixture design, D18 resolved) → upload →
+      confirm, references per `doc-reference.js` (`DARZ-PRO/SINV-YYYY-NNNN`, highest-seen + 1).
+      The updates queue now reads in words (was → now, raw payload behind a fold). Live-verified
+      full circle both ways (step16: 22 checks; PDFs read back and inspected).
 
 ## Phase 11 — Admin: Marketing Hub, AI Tagging, Document Builder, Accounting ✅ backend ready
 
@@ -574,7 +606,13 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [ ] Accounting desk UI (4 ledger books + Private Deals) — real Django permission scope replaces
       the old passkey hack; don't rebuild the passkey pattern in the frontend
 
-## Phase 11b — Admin: Owner Panel (Collectors, Memberships, Team, Dashboard, App Design, Activity, Projects, Data Health, Import) ✅ backend ready 2026-09-17
+## Phase 11b — Admin: Owner Panel ✅ backend ready 2026-09-17 · **plan confirmed 2026-09-18 → `docs/PHASE_11B_PLAN.md`** · Step 0 + the desk kit done
+
+> **The panel is bigger than this phase.** `docs/ADMIN_ARCHITECTURE.md` (2026-09-18) is the whole
+> admin as one system — **14 groups, 55 tabs**, of which Phase 11b is 11. It carries the
+> port-vs-modernise rule the owner set, the desk kit's contract, the owner-controlled feature-flag
+> architecture (§4), the Document Studio (§5), and the build order for everything else. Read it
+> before starting any admin work outside this phase.
 
 New since the last `TASKLIST.md` pass — the client asked to prioritize finishing "the panel" (the old
 `darz-studio.html` admin app). Backend audited every old panel tab against existing `admin/*` routes
@@ -583,59 +621,247 @@ any frontend UI yet.** No API gaps were recorded for these — each is a plain a
 faithfully scoped, real HTTP-verified. Old-panel tab names in parens for continuity with the design
 package/faithful-port research.
 
-- [ ] **Collectors desk** (old panel "Collectors" tab) — list/search/filter (tier, access_status) +
-      create/edit/soft-delete + issue/revoke access keys (plaintext key shown once on issue, never
-      re-fetchable — the UI must warn "copy this now").
-      `GET/POST /api/auth/admin/collectors/`, `GET/PATCH/DELETE .../{id}/`,
-      `GET/POST .../{id}/access-keys/`, `POST /api/auth/admin/access-keys/{id}/revoke/`.
-- [ ] **Collector Activity feed** (old panel "Collector Activity" tab) — read-only, filter by
-      collector/kind/artwork. `GET /api/crm/admin/activity/`.
-- [ ] **Dashboard** (old panel "Dashboard" tab, scoped to V1 essentials — see the backend doc for
-      what didn't port: perf/analytics charts, cloud-sync banners) — requests-needing-attention per
-      kind, today's activity, collector/catalogue/auction totals, pending exhibition reviews.
-      `GET /api/dashboard/admin/summary/`.
-- [ ] **Memberships desk** (old panel "Memberships" tab, owner-only) — issue (auto-generates a
-      `DZ-<plan>-<6 chars>` code or accepts a custom one)/list/edit/renew (+1 month)/remove. Records
-      a WhatsApp contact + private notes for manual outreach — **no payment processing anywhere**,
-      same as the old desk's own on-screen copy. `GET/POST /api/auth/admin/membership-codes/`,
-      `GET/PATCH/DELETE .../{id}/`, `POST .../{id}/renew/`.
-- [ ] **Team logins desk** (old panel "👥 Team logins", owner-only) — issue (generates a password
-      shown once)/list/edit (name/email/role/is_active)/remove. Cannot deactivate/remove your own
-      account (the API 400s it — surface that as a disabled control, not just an error toast).
-      `GET/POST /api/auth/admin/team-users/`, `GET/PATCH/DELETE .../{id}/`.
-- [ ] **App Design** (old panel "App Design" tab) — publish the live theme (freeform JSON — colors,
-      layout, dark mode, stats strip, social links, per-page buttons; no fixed schema, the frontend
-      defines what keys it reads), reset to factory defaults, save/list/activate/delete named
-      version checkpoints. The **public** read (`GET /api/app-theme/`, `AllowAny`) is what the
-      Market App itself should read for its live design — **this closes several "no theme/settings
-      endpoint" gaps already recorded in `docs/API_INTEGRATION_GAPS.md`'s "Still open" section**:
-      the WhatsApp chat number, hero copy, About text, social links, `shipNote`, and Terms/Privacy
-      text can all now live under `theme.*` keys instead of being hardcoded. Update that doc's
-      "Still open" bullet once this lands.
-      `GET/PUT /api/admin/app-theme/`, `POST .../reset/`, `GET/POST .../versions/`,
-      `POST .../versions/{id}/activate/`, `DELETE .../versions/{id}/`.
-- [ ] **Projects desk** (old panel "Projects" — Dashboard/List/Pipeline/Packages/Proposal/Calculator/
-      Partners/Reports sub-tabs) — full pipeline CRUD: create/edit/archive a project, drag/move
-      through 17 stages (auto-derives the status label — don't compute it client-side), partner
-      orgs, service catalog, package templates, checklist templates, file attachments, the
-      dashboard priority-queue tiles, the deliverables-roll-up report. **Not built on the backend**
-      (flagged, not silently dropped): the Proposal Builder's document composition — defer that
-      sub-tab until it's scoped (would reuse `documents.Document` like the gallery portal's
-      exhibition proposals). Endpoints under `/api/projects/admin/` — see `darzmarket-api`
-      `docs/TASKLIST.md` Phase 23 for the full list (projects/partners/service-catalog/packages/
-      checklists, each list+detail; projects also get `/stage/`, `/dashboard/`, `/reports/`,
-      `/attachments/`).
-- [ ] **Data Health** (old panel "Data Health" tab, scoped down — see the backend doc: most of the
-      old desk's checks diagnosed the old app's own client-sync architecture, which doesn't exist
-      here) — three real checks: duplicate images, incomplete records, published-but-hidden works.
-      `GET /api/catalog/admin/data-health/`.
-- [ ] **Import desk** (old panel "Import" tab) — CSV/PDF/paste/image parsing **stays frontend**
-      (client-side, e.g. a CSV-column-mapper and pdf.js page extraction, same as the old app); the
-      backend only stages the parsed rows for review/edit and confirms them into real artworks
-      (reusing the existing artwork-create validation — a row that fails is flagged with its error,
-      never silently dropped, and doesn't block the rest of the batch).
-      `GET/POST /api/catalog/admin/import/batches/`, `GET .../{id}/`, `POST .../{id}/confirm/`,
-      `POST .../{id}/discard/`, `PATCH .../{batch_id}/rows/{id}/`, `POST .../rows/{id}/reject/`.
+> **Read `docs/PHASE_11B_PLAN.md` before starting any item below.** It is the working contract
+> (Steps 0-7, decisions D9-D16, waiting on the owner). Three things it establishes that the list
+> below got wrong, found by reading `darz-studio.html` rather than the backend's tab names:
+>
+> 1. **These desks are not siblings.** The old panel is a **two-tier navbar with sixteen groups**
+>    (`darz-studio.html:11721-11779`), and Phase 11b's desks are scattered across five of them.
+>    Import sits beside Database under *Artworks*; Data Health sits under *Operations*; App Design
+>    appears in **two** groups. Building them as standalone top-level pages would invent an
+>    information architecture the old panel does not have. **The panel shell is Step 0** and every
+>    other step depends on it.
+> 2. **Two desks are missing from the list below** (it predates backend Phases 34 and 35):
+>    **Access Requests** (`systemView`, `:33115`) — the review queue for the requests the collector
+>    gate now sends, so every request submitted through the form shipped in the last round is
+>    currently invisible outside Django admin — and **Collector Club** (`clubView`, `:33740`),
+>    backed by Phase 35's `crm.CollectorSelection`. A third, **Access keys** (`accessView`,
+>    `:33029`), exists in the old panel as its own owner-only desk as well as folded into
+>    Collectors below.
+> 3. **There is no approved design package for the panel.** `design/market-app/` covers the Market
+>    App only; there is no `design/admin/`. So `darz-studio.html`'s own shipped CSS *is* the spec,
+>    which raises rather than lowers the bar on CLAUDE.md rule 5 — there is no reference capture to
+>    compare a panel screen against.
+
+- [x] **Panel shell** (Step 0 — prerequisite for every desk below) ✅ 2026-09-18 — the old panel's
+      two-tier navbar ported as data (`adminNav.ts` ← `darz-studio.html:11721-11803`: groups,
+      labels, the `OWNER_ONLY` list, and the explicit "THE OWNER ALWAYS SEES EVERY TAB" rule at
+      `:11794`), an `AdminShell` replacing the scaffolding `AdminLayout`/`.ad-bar`, the `/admin`
+      route tree clamping to the first page a role can open (`:11815`), and a `RequireOwner`
+      rendering the old panel's own refusal card (`:33030`) rather than redirecting. Only the groups
+      this phase builds are registered; an unbuilt tab carries `path: null` so nothing renders it —
+      **absent, not stubbed** (D9). Verified live as both roles in both skins. 158 tests (+17).
+      `RequireOwner` has no caller until Step 2 lands the first owner-only desk.
+- [x] **Collectors desk** ✅ 2026-09-18 (old panel "Collectors" tab, `users()` :32610) —
+      list/search/filter/sort over the server's own `CollectorFilterSet` + create/edit
+      (optimistic-lock `version`, 409 surfaces) + soft-delete, and a per-collector workspace
+      (`/admin/collectors/:id`) holding the record, the keys (issue → `ShownOnceSecret`, revoke,
+      the three extend buttons, `expCell`'s Never/Expired/today/nd-left cell :33042) and the Phase
+      33 sign-in log. The overview strip and activity/purchase sorts are **not ported** — the
+      roster is paginated and no aggregate/rollup endpoint exists (G-COL-1/2). Live-verified full
+      circle: an issued key signed a real collector in at the gate.
+- [x] **Access Requests desk** ✅ 2026-09-18 (`systemView` :33115, `accReqPanel` :33006) —
+      owner-only (`RequireOwner`'s first caller; a standard admin gets the :33116 refusal card and
+      no Access Management group). Pending cards with the verbatim copy, sub-line, empty state and
+      "{n} pending" badge; approve = tier picker + confirm → the once-shown key (§2.3 deviation);
+      **D13 honoured** — the old composed note is PATCHed onto the new collector. Decline confirm
+      verbatim (:37370). Live-verified: approve created the collector (tier landed), queue shrank,
+      note present.
+- [x] **Collector Activity feed** ✅ 2026-09-18 (old panel "Collector Activity" tab) — read-only
+      view/save/search/login log over `GET /api/crm/admin/activity/`, as the second half of the
+      "Requests & Activity" tab (a segment switches the halves — the old `activity()` page mixed
+      them in one scroll; same content, one modern surface). Kind filter from `crm.activity_kind`;
+      a collector's workspace deep-links into their own slice (`?view=activity&collector=`).
+      Live-verified: 10 real rows including the session's own logins.
+- [!] **Access keys desk** (old panel "Access", owner-only, `darz-studio.html:33029`) — the
+      roster-wide view (every key across collectors, expiring-soon review list, logins-today
+      counter) is **blocked by G-KEY-1**: keys are only listed per collector
+      (`GET .../collectors/{id}/access-keys/`); no all-keys endpoint exists and paging every
+      collector to build one client-side would not scale. The per-collector half (issue/revoke/
+      extend/expiry cell/sign-ins) shipped inside the Collectors workspace 2026-09-18. Needs a
+      `GET /api/auth/admin/access-keys/` list to build the desk proper.
+- [ ] **Access Requests desk** (old panel "Access Request", owner-only, `:33115`, panel
+      `accReqPanel()` `:33006`) — **missing from this list until 2026-09-18**; backend Phase 34
+      shipped it after the list was written, so every request submitted through the "Request access"
+      form this repo shipped in the last round is currently invisible outside Django admin. Pending
+      cards (name · date · contact · city · "heard via" · referral · the quoted `why`) with Issue
+      key / Decline. Note the **deviation** (plan §2.3): the old "Issue key" opened the full
+      editable key modal pre-filled from the request; the API's approve takes one optional `tier`,
+      derives the collector and returns the plaintext key once.
+      `GET /api/auth/admin/access-requests/`, `POST .../{id}/approve/`, `POST .../{id}/decline/`.
+- [x] **Collector Club desk** ✅ 2026-09-18 (old panel "Collector Club", `clubView` :33740) —
+      selection cards with the PRIVATE badge, works count, invited badges ("no collectors yet"),
+      note and created date (:33743-33759); the editor is name · note · search-backed work and
+      collector pickers (the old in-memory tile wall does not survive a paginated catalogue). The
+      Phase 35 overlap rule is stated in the delete confirm — a grant only lifts when no other
+      selection still wants the pair. G-CLUB-1: the nested serializer carries no image, so the card
+      cover is the old fallback gradient, always. Live-verified: a created selection granted an
+      imported work to a collector (sync confirmed; the work stays off the chip only because it is
+      unpublished — the recorded `is_published` rule).
+- [x] **Dashboard** ✅ 2026-09-18 (old panel "Dashboard" tab, scoped to V1 essentials — perf/
+      analytics charts and cloud-sync banners didn't port, per backend Phase 29) — requests-needing-
+      attention per kind (each tile opens **exactly the rows it counted**, :21349's rule; the
+      initial-status link leans on G-DASH-1, recorded), today's activity, collector/catalogue/
+      auction totals, pending exhibition reviews. `GET /api/dashboard/admin/summary/`. Live-verified
+      tile → filtered desk (1 counted → 1 listed).
+- [x] **Chat desk** ✅ 2026-09-18 (old panel's Chat Dashboard, `darz-studio.html:40528`; its own
+      top-row tab beside Dashboard, :11099) — conversation list (avatar initial · name · context ·
+      unread · date, :40448) + thread with composer over the shared `MessageThreadController`
+      (collector's `ThreadController` and admin's `AdminThreadController` are two bindings of one
+      machine; seen-marking flipped per :40547). Copy verbatim: "← All", "No messages yet…",
+      "Write a message to {name}…", "Sent to the collector ✓". AI Monitor / mode / assignee /
+      conversation-status / Clear / client-side search **not ported — no backend** (G-CHAT-1/2
+      recorded). Live-verified: send lands as a team bubble, seen marks on open.
+- [x] **Memberships desk** ✅ 2026-09-18 (old panel "Memberships" tab, owner-only,
+      `membershipsView` :33306) — issue (blank code auto-generates `DZ-<plan>-<6>`), search/plan/
+      status filters (the server's own filterset), edit (version lock), renew (+1 month from
+      max(expiry, today), server-side `membRenew`), remove behind a confirm; the wa.me WhatsApp
+      link (:33322), monospace code cell, and the dot + Active/Expired/Inactive + days status cell
+      (:33318, over `expiryParts`). "No payment processing anywhere" kept on screen. Plans are the
+      collector tiers — the backend's own Phase 30 deviation from `MEMB_PLANS`, flagged in the page
+      header. Live-verified: issue → auto code + wa.me link; renew → "29d left".
+- [x] **Team logins desk** ✅ 2026-09-18 (old panel "👥 Team logins", owner-only) — issue
+      (password shown once → `ShownOnceSecret`), search/role filter, edit name/email/role/active,
+      remove; self-deactivate/self-remove surfaced as **disabled controls with the reason**, as this
+      list asked. The old `teamView`'s surrounding Workspace suite (tasks · notes · time · contacts,
+      :19420) is client-local in the old app with no backend here — G-TEAM-1, stated on the desk.
+      Live-verified full circle: the shown-once password signed the new standard admin in, who
+      lands on /admin with no gold groups.
+- [~] **App Design** (old panel "App Design" tab) — **the switches half shipped 2026-09-18**: the
+      desk (`/admin/design`, reachable from both its old groups) edits the typed `FeatureFlags`
+      table and publishes it as `theme.features`; the Market App reads the public
+      `GET /api/app-theme/` on boot (alongside `session.resume()`, before first paint) and merges
+      validated switches over the `VITE_FEATURE_SET` floor — a dead endpoint can never dark-screen
+      the app, `market` cannot be switched off, non-boolean/unknown keys are refused
+      (`resolveFeatureFlags`, tested). Save vs "Save version" kept distinct (the old desk's two
+      buttons); versions list/Activate/Delete + Reset. Live-verified: Records off → the collector's
+      `/records` clamps to `/`; Reset restores; Activate re-applies a checkpoint.
+      **Still open** `[ ]`: the `theme.copy`/`contact`/`social` keys (WhatsApp number, hero copy,
+      About, shipNote, Terms/Privacy — the `API_INTEGRATION_GAPS.md` "Still open" items) land with
+      their collector-side consumers, D17's key names from the old `app_theme` payload; and the old
+      desk's fonts/colour/per-page-button editors, deliberately not built until something reads
+      those keys (an editor for keys with no consumer lies about what Save does).
+- [x] **Projects desk** ✅ 2026-09-19 — **Phase 11c** (`docs/PHASE_11C_PLAN.md`, all four steps in
+      one PR): the seven desks under `/admin/projects…` (dashboard · list · pipeline · packages +
+      service catalogue · calculator · partners · reports) plus the record (`/:id` — stage rail,
+      the nine old sections, server-side attachments, the Proposal section) and the print report.
+      Stage moves call `/stage/` (the status label is derived server-side, G-PROJ-2); the
+      calculator prices from the catalogue (D21); the client proposal issues as a
+      `documents.Document` (kind `proposal`) through the Phase 10b renderer. Not ported, stated:
+      the old Proposal Builder (`:14647`), the client-side rate card, the seeds; the stage
+      sub-state cannot be written (G-PROJ-3). Gaps **G-PROJ-1…5** in `ADMIN_ARCHITECTURE.md` §2.
+      Live-verified on the real backend (see the PR).
+- [x] **Data Health** ✅ 2026-09-18 (old panel "Data Health" tab, `healthView` :26360, scoped
+      down) — the three surviving checks rendered with counts, first-50 items and an explicit
+      "…and n more"; the desk says on screen why the other five did not port (they diagnosed the
+      old client-sync architecture). Live-verified against the dev DB's real findings.
+- [~] **Import desk** (old panel "Import" tab, `importView` :29703) — **CSV + Paste shipped
+      2026-09-18** (owner decision D15): a tested RFC-4180 reader + column-mapper guessing headers
+      onto `ArtworkAdminSerializer`'s own field names (`artist_name_raw` carries the artist as
+      text), the verbatim "Imports land in Review first…" rule on screen, the staged-batch review
+      (edit rows as JSON, reject, confirm, discard), per-row errors surfaced. Live-verified: a
+      pasted CSV staged 2 rows and Confirm created 2 real artworks with zero errors. **Still open**
+      `[ ]`: the PDF-catalogue and Images tiles (pdf.js + upload wiring) — stated on the desk as
+      absent, not shown as dead buttons.
+
+## Phase 12 — The catalogue core (build order §6 step 5: Artworks · Artists · Market App · Sales)
+
+The most-used desks, over backend Phase 7's admin CRUD. `docs/ADMIN_ARCHITECTURE.md` §6-§7 carries
+the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
+
+- [x] **Step 1 — Artworks Database + Artists** ✅ 2026-09-18 (overnight run) — `/admin/artworks`
+      (`databaseView()`, `:26605`: search + filters + the removable-chip row, ✓ APP per-work
+      publish toggle (`dbAppBox`, `:23957`), status pills (`:8791`), Edit/Remove) and
+      `/admin/artworks/:id|new` (`editArt`, `:34065`: guarded transitions from the ported
+      `AVAILABILITY_TRANSITIONS` table, provenance rows with the old storage contract, per-work
+      collector actions on `crm.collector_action`, the multi-image store — multipart upload via a
+      `FormData`-aware `HttpClient`, primary, soft remove) + `/admin/artists` (`artistsView()`,
+      `:33522`: roster, client-side search per G-CAT-3, INLINE intro edit, CRUD with
+      `expected_version`). 212 tests (+11). Verified live end to end — including a real image
+      upload through moto-S3 standing in for MinIO (dl.min.io is egress-blocked; moto serves
+      signed URLs the browser loads).
+- [x] **Step 2 — Published works + Market Sales** ✅ 2026-09-18 (overnight run) —
+      `/admin/published` (`marketView()`, `workspaces-runtime.js:533`: the public catalogue slice
+      with images, search, "Remove from Market App", the hidden-by-a-gap tile from Data Health;
+      found live that the collector list serves `visible_all` only — the tile says "in the public
+      catalogue" and the private layer points at the Club) and `/admin/sales` + `/admin/sales/:id`
+      (`DZSales`, `darz-studio.html:12517`: per-status stat tiles from pagination totals, ＋ New
+      deal with kit `Picker`s — promoted from the Club editor — the guarded linear chain, the two
+      setters, and the R7 draft-only terms lock, said on the card). `SALE_TRANSITIONS` ported +
+      tested; `useSaleRefs` resolves the row's bare uuids (G-SALE-3). Gaps G-SALE-1…5 + G-CAT-9
+      recorded. 215 tests (+3). Verified live end to end (18 checks) — publish/unpublish full
+      circle across the two desks, deal create→confirm→lock, payment setter, list resolution.
+- [x] **Step 3 — Documents: Library · Proposals · Invoices + the record's lifecycle** ✅
+      2026-09-18 (overnight run) — `/admin/documents` (+`?kind=` — the old sticky sub-tab as
+      routes, `documentsView()`, `workspaces-runtime.js:507`) and `/admin/documents/:id`: create
+      (freeform kind + ref + visibility + owner-lock), draft-only editing with a validated JSON
+      fields editor, **PDF upload on the backend's own client-renders-server-stores contract**
+      (multipart; a version snapshot per upload), confirm (needs a PDF, locks) → sign → archive,
+      and **Copy link** sharing (D19's share-by-link, live). The shell's sub-tabs became
+      query-aware (three tabs, one pathname) without regressing filtered desks. History and the
+      Builder stay marked with reasons (G-DOC-2, D18). Verified live: the full lifecycle
+      draft→PDF→confirm→sign, fields persistence, kind tabs lighting right, versions rendering.
+- [x] **Step 4 — Galleries & Sources: partners + the Source Updates queue** ✅ 2026-09-18
+      (overnight run) — `/admin/sources` (`sourcesView()`, `darz-studio.html:27288`; the Galleries
+      tab opens the gallery slice): the partner roster with the `source_type` axis, issue → the
+      ONE-TIME token+PIN reveal (the serializer's own contract, ShownOnceSecret ×2), the ported
+      reminder banner ("n source updates awaiting your review → Review them"), and the queue as
+      the desk's second half (segment) — approve/reject with the note, the confirm naming what
+      approval DOES per kind (availability/price/correction apply to the artwork; the rest record
+      intent). `/admin/sources/:id`: record + enable/disable, the Phase-12 funnel switches (the
+      model's "never a collector identity" promise kept on the copy), and the snapshot works list
+      — assign via the kit Picker, remove, per-work funnel-stage override. Verified live end to
+      end INCLUDING the portal side: a real `POST /portal/{token}/updates/` with the issued
+      token+PIN (201) → banner → queue → approve; disable → the portal answers 401.
+- [x] **Step 5 — Auctions admin: Live Auctions + Register to Bid** ✅ 2026-09-19 (overnight
+      run) — `/admin/auctions` (`auctionsView()`, `darz-studio.html:31677`: search + status
+      filter, ＋ New auction on the create serializer's exact fields) and `/admin/auctions/:id`:
+      the no-edit record (G-AUC-1 stated), the Phase-35 **invite-only card** (switch + invited
+      collectors via the kit Picker — "an uninvited collector never sees the sale"), and the lots
+      desk — create with the confidential reserve (shown only here), **Go live** (the artwork
+      transitions to Reserved server-side), **Close / Close early** (the found-live rule: `force`
+      bypasses the END TIME, never the reserve — the confirm says the whole rule).
+      `/admin/auction-registrations`: the paddle queue with the ported action titles; approving
+      assigns the next sequential paddle number. G-AUC-1…3 recorded. Verified live end to end:
+      create → invite → lot → go-live → artwork Reserved → queue resolve → approve → paddle #1 →
+      close early → passed → artwork back to Available. (Redis joined the local stack for the
+      Channels lot-state broadcast.)
+- [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+      is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
+      returns in a later pass.
+- [x] **Step 7 — Accounting: the four-ledger books** ✅ 2026-09-19 (overnight run) —
+      `/admin/accounting` (owner-only end to end, the backend's own `IsOwner`): the four books
+      (Darz · Koocheh · Personal · Expenses Arian) as a segment, the per-currency summary strip
+      (`acctSummary` served — income/expense/net/pending/salaries, NEVER summed across
+      currencies, plus the manual-rate converted-income view), the month/type/status filters,
+      and entry CRUD over the write serializer's whole set (essentials + manual FX + sale
+      labels; `book` immutable on edit, said on the form). Deals, attachments/receipts, the
+      Arian review and the settlement follow as their own step. Verified live: income + expense
+      land, the strip nets 38,000 USD, books are separate worlds, edit flips the pill, and a
+      standard admin meets the refusal card.
+- [x] **Step 8 — Accounting: Private Deals + receipts** ✅ built 2026-09-19 (PR #53, left open —
+      the overnight merge window closed with #52) — the Accounting desk gains the Books | Private
+      Deals segment; `/admin/accounting?view=deals` lists with stage/payment/month filters, the
+      per-currency deals summary under the same filters, and rows carrying the serializer's own
+      `calc` line (net · remaining — `pdealCalc` served, never client math).
+      `/admin/accounting/deals/new|:id`: the old panel's widest form — the deal · the work ·
+      buyer · seller · commission & payment · the 15-amount money grid (each amount with its own
+      currency) · follow-up · deal FX — plus the calc card and slotted attachment uploads with
+      served links. Unset choice fields are omitted from the write (a '' would 400). Verified
+      live: create → calc nets the Darz share and the remaining · receipt upload · row/summary
+      math · month include/exclude.
+- [x] **Step 6 — Auction Records desk** ✅ 2026-09-19 (overnight run) — `/admin/auction-records`
+      (+`/new|:id`): the widened external-results DB (backend Phase 11-admin, BE-R1…R6) as a full
+      desk — search + the Past/Upcoming/Live sections + the admin-only status filter; rows with
+      the linked-artist-beats-raw label, realized-beats-hammer-beats-price money line, ★
+      highlights; a four-section editor over the serializer's whole field set (year is free text
+      — "c. 2005" is real data). The old tab's import machinery and archive browser are dead
+      architecture (the Import desk's CSV path covers bulk entry). Verified live: create with a
+      linked artist → row anatomy → section filter → search by house → edit round-trip
+      (unstar). The collector browse requires collector auth (its 401 to a bare probe is the
+      permission working). — `Sale` has no source axis (G-SALE-4); auction settlement
+      is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
+      returns in a later pass.
 
 ## Phases 12+ — Parity-gap surfaces (match backend Phases 20-26) `[!]` each blocked on its backend phase
 
@@ -654,12 +880,20 @@ surface before building each. Ordered by V1 relevance:
 - [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — still
       not built.
 - [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — still not built.
-- [ ] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
-      full faithful port. See the new "Phase 11b" section below for the real endpoint list — this
-      bullet stays only as the Phases-12+ cross-reference.
+- [x] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
+      full faithful port. Data Health + Import shipped in Phase 11b, Projects in Phase 11c
+      (2026-09-19) — this bullet stays only as the Phases-12+ cross-reference.
 - [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
 
 ## Phase 13 — Testing
+
+- [x] **The E2E harness — stub tier in CI, real-backend tier local** ✅ 2026-09-18 (overnight
+      run) — `e2e/smoke.spec.ts` (@playwright/test) walks gate → team sign-in → panel → a desk
+      against `e2e/stub-server.mjs` (the envelope + canned boot routes + empty lists, so every
+      desk must survive an empty backend); a second `e2e` job in `quality.yml` runs it with its
+      own Chromium. The real-backend tier is deliberately local-only — `e2e/README.md` states the
+      two tiers' claims and the rule of thumb (a new desk gets its real-backend walk before it
+      ships; the smoke only grows with the boot/shell contract).
 
 - [ ] Component tests for shared/base components
 - [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)

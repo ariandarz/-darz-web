@@ -7,6 +7,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ApiContext } from './apiContext';
 import { api as defaultApi, DarzApi } from './index';
+import { applyRuntimeFeatures } from '../features/shell/features';
+import { applyOwnerSettings } from '../features/shell/ownerSettings';
 
 export function ApiProvider({
   children,
@@ -24,7 +26,21 @@ export function ApiProvider({
   useEffect(() => {
     if (!resume) return;
     let cancelled = false;
-    api.session.resume().finally(() => {
+    // The theme rides alongside the session resume: the owner's runtime
+    // switches (`theme.features`) must be in place before the first paint, or
+    // the nav/routes would flash the build-time set and then reshuffle. Both
+    // are awaited together; a failed theme fetch applies nothing and the
+    // build-time flags stand (docs/ADMIN_ARCHITECTURE.md §4).
+    const theme = api.theme
+      .publicTheme()
+      .then((t) => {
+        const theme = t.theme as Record<string, unknown> | null;
+        applyRuntimeFeatures(theme?.features);
+        // The non-feature half of the same object — see `ownerSettings.ts`.
+        applyOwnerSettings(theme);
+      })
+      .catch(() => {});
+    Promise.allSettled([api.session.resume(), theme]).then(() => {
       if (!cancelled) setResuming(false);
     });
     return () => {

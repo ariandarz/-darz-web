@@ -10,9 +10,15 @@
  * `theme.chatAI` / `theme.storiesShow` for the rest — but as ONE typed table
  * read by the nav, the route table, the artwork detail and the profile.
  *
- * Only the code reads this. There is no runtime/owner toggle yet (the old
- * app's is Admin → Owner Settings; the new backend has no equivalent), which is
- * why the set is chosen by a build-time env var rather than an API call.
+ * Only the code reads this **today**, and the set is chosen by a build-time env
+ * var. That is about to change, and the note that used to sit here — "the new
+ * backend has no equivalent" — is no longer true: backend Phase 32's
+ * `core.AppTheme` is a freeform JSON singleton with a public `GET /api/app-theme/`
+ * (`AllowAny`, readable before sign-in), named version checkpoints, and no fixed
+ * schema on either side. That is the same shape the old app's owner settings
+ * had, so this table moves to `theme.features`, read at boot, with
+ * `VITE_FEATURE_SET` kept as the fallback when the fetch fails — a dead theme
+ * endpoint must never dark-screen the app. See `docs/ADMIN_ARCHITECTURE.md` §4.
  *
  * `VITE_FEATURE_SET` — `v0.1` (default when unset) or `full`. See `.env.example`.
  */
@@ -62,6 +68,9 @@ export interface FeatureFlags {
   /** The admin desk (`/admin/*`) — a team-principal surface, never in the
    * collector nav. */
   adminDesk: boolean;
+  /** The no-login partner portal (`/portal/:token`, Phase 14) — the gallery
+   * loop's outward half. Token+PIN gated server-side, never in any nav. */
+  galleryPortal: boolean;
 }
 
 const V0_1: FeatureFlags = {
@@ -85,6 +94,7 @@ const V0_1: FeatureFlags = {
   membership: false,
   push: false,
   adminDesk: true,
+  galleryPortal: true,
 };
 
 const FULL: FeatureFlags = {
@@ -122,7 +132,46 @@ export function resolveFeatureSet(raw: unknown): FeatureSet {
 
 /** Which set this build runs — the one place the environment is read. */
 export const FEATURE_SET: FeatureSet = resolveFeatureSet(import.meta.env.VITE_FEATURE_SET);
-export const features: FeatureFlags = FEATURE_SETS[FEATURE_SET];
+export const features: FeatureFlags = { ...FEATURE_SETS[FEATURE_SET] };
+
+/**
+ * The owner's runtime switches — `theme.features` from the public
+ * `GET /api/app-theme/` — merged over the build-time set. Pure, so the merge
+ * rules are testable:
+ *
+ *  - only keys the table already has are read (an unknown key in the stored
+ *    JSON is someone's typo, not a new feature);
+ *  - only literal booleans are honoured (`"false"` the string would otherwise
+ *    switch a feature ON);
+ *  - `market` cannot be switched off — the catalogue is the app, and its type
+ *    is the literal `true` for that reason.
+ */
+export function resolveFeatureFlags(base: FeatureFlags, raw: unknown): FeatureFlags {
+  const next = { ...base };
+  if (raw && typeof raw === 'object') {
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (key === 'market' || !(key in next)) continue;
+      if (typeof value !== 'boolean') continue;
+      (next as unknown as Record<string, boolean>)[key] = value;
+    }
+  }
+  next.market = true;
+  return next;
+}
+
+/**
+ * Apply the owner's switches to the live table, **in place**. `features` is a
+ * const imported by the nav, the route table, the artwork detail and the
+ * profile; mutating its properties once, before first paint (`ApiProvider`
+ * blocks render until the theme fetch settles alongside `session.resume()`),
+ * updates every reader without threading a provider through all of them. A
+ * failed fetch applies nothing, so `VITE_FEATURE_SET` stays the floor — a dead
+ * theme endpoint can never dark-screen the app (`docs/ADMIN_ARCHITECTURE.md`
+ * §4).
+ */
+export function applyRuntimeFeatures(rawThemeFeatures: unknown): void {
+  Object.assign(features, resolveFeatureFlags(features, rawThemeFeatures));
+}
 
 /**
  * The route prefixes a feature owns. A hidden feature's routes redirect to
@@ -137,6 +186,7 @@ export const FEATURE_ROUTES: ReadonlyArray<[keyof FeatureFlags, string]> = [
   ['profile', '/profile'],
   ['settings', '/settings'],
   ['adminDesk', '/admin'],
+  ['galleryPortal', '/portal'],
 ];
 
 /** True when `path` belongs to a feature that is switched off. */

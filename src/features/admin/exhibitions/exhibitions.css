@@ -1,0 +1,673 @@
+/**
+ * Exhibition Services — the library and the one-page issue flow.
+ *
+ * Its own stylesheet because it is its own section (the owner's ask), and
+ * because the desk's `.ad-*` recipes are built for tables of records while
+ * these two screens are a list and a form beside a document. Everything here
+ * is the desk's own tokens — no new colours, no new type scale.
+ */
+
+/* ── the library list ──────────────────────────────────────────────────── */
+
+.dzx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--hair);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.dzx-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--card);
+}
+.dzx-row.is-editing {
+  background: var(--soft);
+}
+.dzx-rowmain {
+  flex: 1;
+  min-width: 0;
+}
+.dzx-rowt {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.dzx-rowd {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink2);
+  margin-top: 3px;
+}
+.dzx-rowp {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.dzx-rowacts {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.dzx-mut {
+  font-size: 11.5px;
+  color: var(--ink3);
+}
+
+.dzx-note {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ink3);
+  margin: 12px 2px 0;
+}
+
+.dzx-sec {
+  margin-top: 26px;
+}
+.dzx-sub {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ink3);
+  margin: 0 2px 10px;
+}
+.dzx-sect {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0 0 6px;
+}
+.dzx-pkg {
+  padding: 12px 14px;
+  background: var(--card);
+}
+.dzx-pkgh {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+/* ── inputs, shared by both screens ────────────────────────────────────── */
+
+.dzx-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.dzx-input:focus {
+  outline: none;
+  border-color: var(--ink3);
+}
+textarea.dzx-input {
+  resize: vertical;
+  line-height: 1.55;
+}
+.dzx-price,
+.dzx-qty,
+.dzx-ref {
+  width: auto;
+  flex: 0 0 auto;
+}
+.dzx-qty {
+  width: 56px;
+  text-align: center;
+}
+.dzx-price {
+  width: 130px;
+  text-align: right;
+}
+.dzx-ref {
+  width: 190px;
+}
+
+/* ── the one-page issue flow ───────────────────────────────────────────── */
+
+.dzx-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.dzx-form {
+  min-width: 0;
+}
+
+.dzx-step {
+  border-top: 1px solid var(--hair);
+  padding: 16px 0;
+}
+.dzx-step:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+.dzx-steph {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.dzx-stepn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1px solid var(--hair);
+  font-size: 10.5px;
+  color: var(--ink3);
+}
+.dzx-stept {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  font-weight: 600;
+}
+
+.dzx-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.dzx-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.dzx-kind {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink3);
+  cursor: pointer;
+}
+.dzx-kind.is-on {
+  border-color: var(--ink);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* One service, two rows: what it is and what it costs on the first, the
+   description that prints on the document underneath. A grid rather than
+   nested flexes, so the price column lines up down the whole list. */
+.dzx-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px 118px 92px 30px;
+  grid-template-areas:
+    'title qty price amount remove'
+    'desc  desc desc  desc   .';
+  gap: 6px 8px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.dzx-t {
+  grid-area: title;
+}
+.dzx-line .dzx-qty {
+  grid-area: qty;
+  width: 100%;
+}
+.dzx-line .dzx-price {
+  grid-area: price;
+  width: 100%;
+}
+.dzx-desc {
+  grid-area: desc;
+  font-size: 11.5px;
+  min-height: 34px;
+}
+.dzx-lineamt {
+  grid-area: amount;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.dzx-x {
+  grid-area: remove;
+  padding: 4px 6px;
+}
+
+.dzx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dzx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.dzx-field > span {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+.dzx-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  color: var(--ink);
+  align-self: end;
+  padding-bottom: 6px;
+}
+.dzx-total {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dzx-issue {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--hair);
+  padding-top: 16px;
+}
+.dzx-issuebtn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 26px;
+  border-radius: 10px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  cursor: pointer;
+}
+.dzx-issuebtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ── the preview ───────────────────────────────────────────────────────── */
+
+/* The document itself: always light, because the client's copy is. It is a
+   twin of `documentPdf.tsx`, block for block, so it reads as the paper does
+   whichever skin the desk is wearing. */
+.dzd {
+  background: #fff;
+  color: #0a0a0a;
+  padding: 30px 32px 36px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.dzd-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.dzd-wm {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: #0a0a0a;
+}
+.dzd-wm b {
+  font-weight: 700;
+}
+.dzd-meta {
+  text-align: right;
+}
+.dzd-kicker {
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  margin-bottom: 6px;
+}
+.dzd-metarow {
+  font-size: 9px;
+  color: #6a6a6a;
+}
+.dzd-metak {
+  color: #9a9a9a;
+}
+.dzd-metav {
+  color: #0a0a0a;
+  margin-left: 6px;
+}
+.dzd-seam {
+  height: 2px;
+  margin: 14px 0 18px;
+  background: linear-gradient(90deg, #ff2d95, #00c8ff);
+}
+.dzd-h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 23px;
+  font-weight: 400;
+  margin: 0 0 3px;
+  color: #0a0a0a;
+}
+.dzd-sub {
+  font-size: 10px;
+  color: #6a6a6a;
+  margin-bottom: 16px;
+}
+.dzd-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  margin-bottom: 20px;
+}
+.dzd-factk {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+}
+.dzd-factv {
+  font-size: 10px;
+  color: #0a0a0a;
+}
+.dzd-sec {
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  border-bottom: 1px solid #e8e8e8;
+  padding-bottom: 5px;
+  margin: 20px 0 10px;
+}
+.dzd-empty {
+  font-size: 10px;
+  color: #9a9a9a;
+  font-style: italic;
+  padding: 6px 0;
+}
+.dzd-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+.dzd-linet {
+  font-size: 11px;
+  color: #0a0a0a;
+}
+.dzd-lined {
+  font-size: 9px;
+  color: #6a6a6a;
+  margin-top: 2px;
+}
+.dzd-lineq {
+  font-size: 8.5px;
+  color: #9a9a9a;
+  margin-top: 2px;
+}
+.dzd-linep {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: #0a0a0a;
+  white-space: nowrap;
+}
+.dzd-totals {
+  margin: 16px 0 0;
+  margin-left: auto;
+  width: 60%;
+  min-width: 190px;
+}
+.dzd-totrow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #6a6a6a;
+  padding: 3px 0;
+}
+.dzd-grand {
+  border-top: 1px solid #0a0a0a;
+  margin-top: 5px;
+  padding-top: 7px;
+  font-size: 13px;
+  color: #0a0a0a;
+  font-weight: 600;
+}
+.dzd-note {
+  margin-top: 20px;
+}
+.dzd-notek {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  margin-bottom: 3px;
+}
+.dzd-notev {
+  font-size: 10px;
+  color: #3a3a3a;
+  white-space: pre-wrap;
+}
+
+.dzx-preview {
+  position: sticky;
+  top: 16px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+}
+.dzx-previewh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 8px 10px 8px 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.dzx-paper {
+  max-height: 76vh;
+  overflow: auto;
+  background: #fff;
+}
+
+/* ── the picker ────────────────────────────────────────────────────────── */
+
+.dzx-picker {
+  max-width: 620px;
+  max-height: 80vh;
+  overflow: auto;
+}
+.dzx-pickh {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 14px 0 4px;
+}
+.dzx-pick {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  padding: 9px 2px;
+  cursor: pointer;
+}
+.dzx-pick:hover {
+  background: var(--soft);
+}
+.dzx-pickt {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── what an issued document says ──────────────────────────────────────── */
+
+.dzx-done {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 22px 24px;
+  max-width: 620px;
+}
+.dzx-donet {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.dzx-done p {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink2);
+  margin: 0 0 16px;
+}
+
+/* ── narrow: the preview goes under the form, never beside it ──────────── */
+
+@media (max-width: 1080px) {
+  .dzx-split {
+    grid-template-columns: 1fr;
+  }
+  .dzx-preview {
+    position: static;
+  }
+  .dzx-paper {
+    max-height: 60vh;
+  }
+}
+
+@media (max-width: 640px) {
+  .dzx-row {
+    flex-wrap: wrap;
+  }
+  /* narrow: the line stacks, and the amount sits under the price */
+  .dzx-line {
+    grid-template-columns: minmax(0, 1fr) 54px 30px;
+    grid-template-areas:
+      'title  qty    remove'
+      'price  price  amount'
+      'desc   desc   desc';
+  }
+  .dzx-lineamt {
+    text-align: right;
+  }
+}
+
+/* ── the library, folded ───────────────────────────────────────────────────
+   27 services in one column is a screen you scroll rather than read (the
+   owner, 2026-09-19), so each programme is a fold that opens on its header.
+   A search opens every group that matches — a hit behind a closed fold is
+   worse than a long list. */
+
+.dzx-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dzx-group {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card);
+}
+.dzx-grouph {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 12px 14px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.dzx-grouph:hover {
+  background: var(--soft);
+}
+.dzx-groupt {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dzx-caret {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--ink3);
+  transition: transform 0.12s ease;
+}
+.dzx-caret.is-open {
+  transform: rotate(90deg);
+}
+/* inside a fold the list has no border of its own — the fold is the frame */
+.dzx-group .dzx-list {
+  border: 0;
+  border-top: 1px solid var(--hair);
+  border-radius: 0;
+}
+
+/* ── the pricing pass ──────────────────────────────────────────────────────
+   Every unpriced service in one column. Sits between the note that offered it
+   and the packages, in the same frame as a group's list. */
+
+.dzx-pass {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 14px;
+  margin-top: 12px;
+}
+.dzx-passh {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.dzx-pass .dzx-list {
+  border-radius: 10px;
+}

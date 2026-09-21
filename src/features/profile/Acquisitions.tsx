@@ -20,7 +20,7 @@ import type { Artwork, CollectorRequest } from '../../api/types';
 import { primaryImage } from '../catalogue/format';
 import { workLine } from '../requests/RequestController';
 import { MKT_RAIL, statusMeta } from '../requests/status';
-import { ACQUISITION_LABEL, isAcquisition } from './acquisitions';
+import { ACQUISITION_LABEL, isAcquisition } from './acquisitionRows';
 import './profile.css';
 
 /** app.html:9692 — at most ten. */

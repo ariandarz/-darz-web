@@ -21,7 +21,8 @@ export interface RequestOptions {
     string,
     string | number | boolean | Array<string | number> | null | undefined
   >;
-  /** JSON body */
+  /** JSON body — or a `FormData` for a multipart upload, which is passed
+   * through untouched (the browser sets the boundary header). */
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
@@ -103,7 +104,8 @@ export class HttpClient {
     const url = this.baseUrl + path + this.queryString(opts.query);
 
     const headers = new Headers({ Accept: 'application/json', ...opts.headers });
-    if (opts.body !== undefined) headers.set('Content-Type', 'application/json');
+    const multipart = opts.body instanceof FormData;
+    if (opts.body !== undefined && !multipart) headers.set('Content-Type', 'application/json');
     await this.decorate(method, path, headers);
 
     let response: Response;
@@ -111,7 +113,11 @@ export class HttpClient {
       response = await fetch(url, {
         method,
         headers,
-        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+        body: multipart
+          ? (opts.body as FormData)
+          : opts.body !== undefined
+            ? JSON.stringify(opts.body)
+            : undefined,
         signal: opts.signal,
       });
     } catch (cause) {

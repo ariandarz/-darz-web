@@ -4,8 +4,12 @@
  * arrives here, filterable by kind, status and archived, with a per-row
  * status transition. This is the "Admin receives the action" end of flow 1.
  *
- * Chrome ported from `darzstudio.art` `darz-studio.html`: `.ad-h`, `.ad-toolbar`,
- * `.ad-card` + `.ad-tbl` (see admin.css for the per-block line citations).
+ * Assembled from the desk kit (`./kit`) rather than hand-built chrome: the
+ * page shell, the filter controls, the four-way loading/error/empty/rows body,
+ * the table and the pager all come from there. What is left here is what is
+ * actually this desk's — its columns, its filters' vocabulary, and the
+ * transition action. That is the shape every other desk in the panel takes;
+ * see `docs/ADMIN_ARCHITECTURE.md`.
  *
  * `collector`/`artwork` are nested objects now, not bare uuids
  * (`docs/FLOW_1_API_GAPS.md` G-F1-7) — the feed shows a real name and work
@@ -14,8 +18,52 @@
  * can never drift) — never a hardcoded label lookup (CLAUDE.md). The per-row
  * "Move to…" control uses that row's own `allowed_transitions`, so it only
  * ever offers a legal next status.
+ *
+ * ## Phase 1 (2026-09-21) — what the old desk had, and what could be ported
+ *
+ * `docs/ADMIN_V1_AUDIT.md` §6.3 measured this desk against the real old one
+ * (`darz-studio.html:29380`, capture `13-requests`) and found it thinner than
+ * recorded. Two of the differences are closed here; three cannot be, and
+ * saying which is the point of this block.
+ *
+ * **Closed:**
+ *
+ *  - **Search** (G-5, approved and served: `?search=` over collector name,
+ *    artwork title and artist name). This was the desk's real hole — the
+ *    busiest list in the panel, and the only one with no way to find a row.
+ *  - **The thread is reachable from the row.** The unread badge has always
+ *    been here; what was missing was anywhere to go with it, so an admin who
+ *    saw "2 unread" went to `/admin/chat` and found the row again. The count
+ *    is now the link, and it hands the row to `AdminThreadPage` as router
+ *    state — which also gives that page the collector name it otherwise
+ *    cannot look up (G-CHAT-1).
+ *
+ * **Not portable, and not stubbed:**
+ *
+ *  - **The All / Market / Auctions scope segment.** There is nothing to
+ *    split: `Request.KIND_CHOICES` is eight market actions, and auction bids
+ *    and paddle registrations are separate models with their own desks. The
+ *    old segment divided one undifferentiated activity array; this backend
+ *    made the division structural instead. A segment here could only ever
+ *    read "Auctions 0".
+ *  - **Archive.** `admin_archived` is readable and filterable (the toggle
+ *    below) but **read-only** — `RequestAdminSerializer` writes nothing, and
+ *    no endpoint sets it. Only Django admin can archive a request today. A
+ *    button would need a backend action first.
+ *  - **Assignee.** Same shape: filterable, never settable, and it comes back
+ *    as a bare uuid with no name, while the team-user list that could resolve
+ *    it is `IsOwner`. A filter whose values nobody can populate or read is
+ *    worse than none, so it is left out until assignment exists.
+ *
+ * **Not built by choice:** the old desk's red urgency band ("7 have been
+ * waiting too long") is **G-3**, still awaiting a decision — it needs a
+ * threshold nobody has set, and inventing one would put a made-up deadline in
+ * front of the team.
  */
 import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Segment } from '../../components';
+import { ActivityFeed } from './ActivityFeed';
 import { useApi } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type {
@@ -24,9 +72,17 @@ import type {
   Choice,
   RequestStatusByKind,
 } from '../../api/types';
-import { Pager } from '../catalogue/Pager';
 import { useListController } from '../shared/useListController';
 import { AdminRequestsController } from './AdminRequestsController';
+import {
+  DeskList,
+  DeskPage,
+  SearchFilter,
+  SelectFilter,
+  ToggleFilter,
+  type Column,
+} from './kit';
+import { ageLabel, countWaiting, requestUrgency, waitHours } from './requestUrgency';
 import './admin.css';
 
 /** The kinds the collector flow can produce, plus the rest of the closed set. */
@@ -43,10 +99,28 @@ const KINDS = [
 
 export function AdminRequestsPage() {
   const { crm, options } = useApi();
+  // The opening filter comes from the URL so a Dashboard tile lands on exactly
+  // the rows it counted — the old panel's own rule (`darz-studio.html:21349`,
+  // "a counter ALWAYS equals the list that opens when it is tapped"). Read once,
+  // as the controller's initial query: after that the controller owns the
+  // query, and re-reading it on every render would fight the user's filtering.
+  const [params] = useSearchParams();
+  // The tab is the old panel's "Requests & Activity" — one name, two halves.
+  // The segment switches them; ?view=activity (and ?collector=, from a
+  // collector's workspace) opens directly on the log half.
+  const [view, setView] = useState<'requests' | 'activity'>(
+    params.get('view') === 'activity' ? 'activity' : 'requests',
+  );
   const { state, setQuery, setPage, reload } = useListController<
     AdminRequest,
     AdminRequestQuery
-  >(() => new AdminRequestsController(crm));
+  >(
+    () =>
+      new AdminRequestsController(crm, {
+        kind: params.get('kind') ?? undefined,
+        status: params.get('status') ?? undefined,
+      }),
+  );
   const [choices, setChoices] = useState<OptionsMap | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -63,6 +137,12 @@ export function AdminRequestsPage() {
   }, [options]);
 
   const statusByKind = requestStatusByKind(choices);
+  /* `crm.request_initial_status` — each kind's "just arrived" state, published
+     by the backend so the urgency rule never has to guess (G-DASH-1). Null
+     until options land, which `requestUrgency` treats as "cannot tell", never
+     as "new". */
+  const initialByKind =
+    (choices?.['crm.request_initial_status'] as Record<string, string> | undefined) ?? null;
   // The filter dropdown: scoped to the selected kind's own vocabulary once one
   // is chosen, else every status across every kind (deduped).
   const filterStatuses = state.query.kind
@@ -83,115 +163,189 @@ export function AdminRequestsPage() {
     }
   };
 
-  return (
-    <div className="dz-page ad-page">
-      <h1 className="ad-h">Requests</h1>
+  const waiting = countWaiting(state.results, initialByKind);
 
-      <div className="ad-toolbar">
+  const columns: ReadonlyArray<Column<AdminRequest>> = [
+    {
+      key: 'when',
+      header: 'When',
+      className: 'ad-when',
+      cell: (r) => {
+        const u = requestUrgency(r, initialByKind);
+        return (
+          <>
+            <span className={`ad-urg is-${u.key}`} title={u.label} aria-label={u.label} />
+            {whenLabel(r.created_at)}
+            {u.key === 'waiting' && (
+              <span className="ad-cellsub">{ageLabel(r.created_at)}</span>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      key: 'kind',
+      header: 'Kind',
+      cell: (r) => <span className={`ad-chip ${r.kind}`}>{titleCase(r.kind)}</span>,
+    },
+    {
+      key: 'collector',
+      header: 'Collector',
+      cell: (r) => r.collector?.display_name ?? shortId(String(r.collector)),
+    },
+    { key: 'artwork', header: 'Artwork', cell: (r) => artworkLabel(r.artwork) },
+    { key: 'detail', header: 'Detail', cell: (r) => detailLine(r.detail) },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (r) => (
+        <>
+          {titleCase(r.status)}
+          {r.admin_archived && <span className="ad-archived-chip">Archived</span>}
+        </>
+      ),
+    },
+    {
+      key: 'thread',
+      header: 'Conversation',
+      cell: (r) => (
+        /* `state={r}` is not decoration: there is no `GET /admin/requests/{id}/`,
+           so the thread page can only name the collector from a row handed to
+           it (G-CHAT-1). Arriving this way, it can. */
+        <Link to={`/admin/chat/${r.id}`} state={r} className="ad-threadlink">
+          {r.unread_count > 0 ? (
+            <>
+              <span
+                className="ad-unread"
+                title={`${r.unread_count} unread ${r.unread_count === 1 ? 'reply' : 'replies'}`}
+              >
+                {r.unread_count}
+              </span>
+              <span>{r.unread_count === 1 ? 'unread reply' : 'unread replies'}</span>
+            </>
+          ) : (
+            <span className="ad-cellsub">Open thread</span>
+          )}
+        </Link>
+      ),
+    },
+    {
+      key: 'move',
+      header: 'Move to',
+      cell: (r) => (
         <select
-          value={state.query.kind ?? ''}
-          onChange={(e) => setQuery({ kind: e.target.value || undefined })}
-          aria-label="Filter by kind"
+          value=""
+          onChange={(e) => void transition(r.id, e.target.value)}
+          aria-label={`Move request ${shortId(r.id)} to another status`}
+          disabled={r.allowed_transitions.length === 0}
         >
-          <option value="">All kinds</option>
-          {KINDS.map((k) => (
-            <option key={k} value={k}>
-              {titleCase(k)}
+          <option value="">Move to…</option>
+          {r.allowed_transitions.map((value) => (
+            <option key={value} value={value}>
+              {statusLabel(statusByKind, r.kind, value)}
             </option>
           ))}
         </select>
-        <select
-          value={state.query.status ?? ''}
-          onChange={(e) => setQuery({ status: e.target.value || undefined })}
-          aria-label="Filter by status"
-        >
-          <option value="">All statuses</option>
-          {filterStatuses.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <label className="ad-archived-toggle">
-          <input
-            type="checkbox"
-            checked={state.query.archived ?? false}
-            onChange={(e) => setQuery({ archived: e.target.checked || undefined })}
+      ),
+    },
+  ];
+
+  if (view === 'activity') {
+    return (
+      <DeskPage
+        wide
+        title="Requests & Activity"
+        action={
+          <Segment<'requests' | 'activity'>
+            label="Requests or activity"
+            options={[
+              { value: 'requests', content: 'Requests' },
+              { value: 'activity', content: 'Activity' },
+            ]}
+            value={view}
+            onChange={setView}
           />
-          Archived only
-        </label>
-      </div>
+        }
+      >
+        <ActivityFeed crm={crm} initialCollector={params.get('collector') ?? undefined} />
+      </DeskPage>
+    );
+  }
 
-      {state.status === 'loading' && state.results.length === 0 && (
-        <p className="dz-state">Loading…</p>
-      )}
-      {state.status === 'error' && <p className="dz-state err">{state.error}</p>}
-      {actionError && <p className="dz-state err">{actionError}</p>}
-      {state.status !== 'loading' &&
-        state.status !== 'error' &&
-        state.results.length === 0 && (
-          <p className="dz-state">No requests match these filters.</p>
-        )}
-
-      {state.results.length > 0 && (
-        <div className="ad-card">
-          <div className="ad-scroll">
-            <table className="ad-tbl">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Kind</th>
-                  <th>Collector</th>
-                  <th>Artwork</th>
-                  <th>Detail</th>
-                  <th>Status</th>
-                  <th>Move to</th>
-                </tr>
-              </thead>
-              <tbody>
-                {state.results.map((r) => (
-                  <tr key={r.id}>
-                    <td className="ad-when">{whenLabel(r.created_at)}</td>
-                    <td>
-                      <span className={`ad-chip ${r.kind}`}>{titleCase(r.kind)}</span>
-                    </td>
-                    <td>{r.collector?.display_name ?? shortId(String(r.collector))}</td>
-                    <td>{artworkLabel(r.artwork)}</td>
-                    <td>{detailLine(r.detail)}</td>
-                    <td>
-                      {titleCase(r.status)}
-                      {r.unread_count > 0 && (
-                        <span className="ad-unread" title={`${r.unread_count} unread reply`}>
-                          {r.unread_count}
-                        </span>
-                      )}
-                      {r.admin_archived && <span className="ad-archived-chip">Archived</span>}
-                    </td>
-                    <td aria-busy={busyId === r.id || undefined}>
-                      <select
-                        value=""
-                        onChange={(e) => void transition(r.id, e.target.value)}
-                        aria-label={`Move request ${shortId(r.id)} to another status`}
-                        disabled={r.allowed_transitions.length === 0}
-                      >
-                        <option value="">Move to…</option>
-                        {r.allowed_transitions.map((value) => (
-                          <option key={value} value={value}>
-                            {statusLabel(statusByKind, r.kind, value)}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+  return (
+    <DeskPage
+      wide
+      title="Requests & Activity"
+      action={
+        <Segment<'requests' | 'activity'>
+          label="Requests or activity"
+          options={[
+            { value: 'requests', content: 'Requests' },
+            { value: 'activity', content: 'Activity' },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+      }
+      toolbar={
+        <>
+          <SelectFilter
+            label="Kind"
+            anyLabel="All kinds"
+            value={state.query.kind}
+            onChange={(kind) => setQuery({ kind })}
+            choices={KINDS.map((k) => ({ value: k, label: titleCase(k) }))}
+          />
+          <SelectFilter
+            label="Status"
+            anyLabel="All statuses"
+            value={state.query.status}
+            onChange={(status) => setQuery({ status })}
+            choices={filterStatuses}
+          />
+          <ToggleFilter
+            label="Archived only"
+            checked={state.query.archived ?? false}
+            onChange={(on) => setQuery({ archived: on || undefined })}
+          />
+          <SearchFilter
+            label="Search"
+            value={state.query.search}
+            placeholder="Collector, artwork or artist…"
+            onChange={(search) => setQuery({ search })}
+          />
+        </>
+      }
+    >
+      {waiting > 0 && (
+        /* The old desk's own banner (`:29406`), with its own arithmetic: how
+           many of the rows ON THIS PAGE have been sitting at their kind's
+           arrival status longer than the threshold. Page-scoped and said so —
+           the API has no age filter, so a total across the feed would be a
+           number this desk cannot actually compute. */
+        <p className="ad-waitbanner" role="status">
+          <strong>
+            {waiting} {waiting === 1 ? 'request has' : 'requests have'} been waiting longer
+            than {waitHours()}h
+          </strong>{' '}
+          on this page — they are still at the status they arrived in.
+        </p>
       )}
 
-      {state.pagination && <Pager pagination={state.pagination} onPage={setPage} />}
-    </div>
+      <DeskList
+        label="Requests"
+        status={state.status}
+        error={state.error}
+        actionError={actionError}
+        rows={state.results}
+        pagination={state.pagination}
+        onPage={setPage}
+        columns={columns}
+        rowKey={(r) => r.id}
+        busyKey={busyId}
+        empty="No requests match these filters."
+      />
+    </DeskPage>
   );
 }
 

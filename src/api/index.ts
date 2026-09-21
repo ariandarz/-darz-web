@@ -8,13 +8,26 @@
 import { ApiClient } from './ApiClient';
 import { AuthSession } from './AuthSession';
 import {
+  AdminAccountsService,
   AuctionService,
+  CatalogAdminService,
+  SalesAdminService,
+  DocumentsAdminService,
+  GalleryAdminService,
+  ProjectsAdminService,
+  AuctionsAdminService,
+  AccountingAdminService,
+  CoreAdminService,
   AuthService,
   CatalogService,
   CrmService,
+  DashboardService,
   OptionsService,
+  ThemeService,
   RecommendationService,
+  GalleryPortalService,
 } from './services';
+import { PortalClient } from './PortalClient';
 
 /** The API base URL comes from the environment only — no hardcoded fallback.
  * Set `VITE_API_BASE_URL` in `.env` (or `.env.local`); see `.env.example`. */
@@ -51,7 +64,20 @@ export class DarzApi {
   readonly crm: CrmService;
   readonly auctions: AuctionService;
   readonly recommendations: RecommendationService;
+  readonly adminAccounts: AdminAccountsService;
+  readonly dashboard: DashboardService;
   readonly options: OptionsService;
+  readonly theme: ThemeService;
+  readonly catalogAdmin: CatalogAdminService;
+  readonly salesAdmin: SalesAdminService;
+  readonly documentsAdmin: DocumentsAdminService;
+  readonly galleryAdmin: GalleryAdminService;
+  readonly projectsAdmin: ProjectsAdminService;
+  readonly auctionsAdmin: AuctionsAdminService;
+  readonly accountingAdmin: AccountingAdminService;
+  readonly coreAdmin: CoreAdminService;
+  /** The no-login partner portal — its own unauthenticated client. */
+  readonly portal: GalleryPortalService;
 
   constructor(baseUrl: string = resolveBaseUrl(), storage?: Storage | null) {
     this.session = new AuthSession(baseUrl, storage);
@@ -61,7 +87,19 @@ export class DarzApi {
     this.crm = new CrmService(this.client);
     this.auctions = new AuctionService(this.client);
     this.recommendations = new RecommendationService(this.client);
+    this.adminAccounts = new AdminAccountsService(this.client);
+    this.dashboard = new DashboardService(this.client);
     this.options = new OptionsService(this.client);
+    this.theme = new ThemeService(this.client);
+    this.catalogAdmin = new CatalogAdminService(this.client);
+    this.salesAdmin = new SalesAdminService(this.client);
+    this.documentsAdmin = new DocumentsAdminService(this.client);
+    this.galleryAdmin = new GalleryAdminService(this.client);
+    this.projectsAdmin = new ProjectsAdminService(this.client);
+    this.auctionsAdmin = new AuctionsAdminService(this.client);
+    this.accountingAdmin = new AccountingAdminService(this.client);
+    this.coreAdmin = new CoreAdminService(this.client);
+    this.portal = new GalleryPortalService(new PortalClient(baseUrl));
   }
 }
 

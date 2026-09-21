@@ -5,6 +5,236 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-19 — Tidy up the superseded rows, and price them all in one pass
+
+- **"Tidy them up"** on the standard-set card does what was an instruction: re-points every package
+  line naming a superseded row onto the service it was merged into (collapsing a duplicate if the
+  programme held both sides), **then** deletes the rows. That order is the whole point — deleting
+  first leaves a programme holding a line whose service no longer exists — so it is `tidyUp.ts`,
+  planned and tested, not three calls in a click handler. A row whose merged partner is missing is
+  left alone and said out loud rather than stranding its lines.
+- **"Price them all in one pass"** on the library: every unpriced service in one column, type down
+  it, save once. Only the boxes actually filled are written; a blank stays "quoted per show". Saves
+  one at a time, so a rejection names the service and everything before it stands.
+- **No prices were invented.** Darz's coverage menus carry none (checked `coverage-packages.html`
+  and `darz-studio.html`'s `COV_CHK` — money appears nowhere in either), so there is no real figure
+  to seed and the owner types theirs in.
+
+## 2026-09-19 — Exhibition Services, on its own, and one page to an issued document
+
+- **Its own section** (`/admin/exhibition-services`): one list — name, what it covers, price —
+  edited in place, with the programmes under it. The price list is no longer three tabs deep inside
+  Projects, and it is still the same rows every proposal is priced from.
+- **`/admin/issue`** replaces composing-then-a-modal-per-kind: pick the show (client, dates and
+  venue fill themselves) · proposal or invoice, reference numbered for you · services from the
+  library, price and description filled · quantity, price, discount, note, payment terms · the
+  document beside it as you type · one button that saves the package, renders the PDF and files it.
+- **Quantity** is new (G-PORT-16): it rides the document, where the client reads it, because the
+  service line has no field for it. The compose desk keeps the request, the package and the
+  document history, and hands off to the one page rather than growing a modal.
+
+## 2026-09-19 — The four look-alike pairs are one service each (owner's ruling)
+
+- "Installation photography" / Exhibition Photo Coverage · "Video walkthrough / reel" / Video
+  Documentation · "Artist interview" / Artist Interview · "Collector network push" / Darz Listing.
+  Each pair is now ONE catalogue row, on the exhibition side — the name the gallery's portal shows,
+  and the one `priceList.ts` joins a package's prices by. 27 service lines, 20 unpriced.
+- No price was invented by the merge: three keep the Toman price the exhibition line already had,
+  and Darz Listing stays quoted-on-request because neither side carried one. `MERGED_SERVICES`
+  records what was folded into what; the five programmes keep the same line counts.
+- A workspace seeded before the ruling still holds the folded rows — the seed only ever adds — so
+  the desk names them (`supersededRows`) and leaves deleting to the owner.
+
+## 2026-09-19 — The gallery workflow pass: one price list, and nothing sent into a void
+
+- Walked the whole admin↔gallery chain live and fixed what it found. **The composer now prices a
+  package from the service catalogue an admin can edit** (`priceList.ts`) — it used to open blank
+  although the gallery had already been shown the price, so Darz retyped from memory (G-PORT-12).
+  It never converts a currency and says on screen how many lines carried over.
+- **A pricelist a gallery sends now reaches the desk** (nothing in this app had ever read them back,
+  G-PORT-14); the partner page also lists every proposal and invoice issued to them, across shows.
+- Issuing a link hands over a **ready-to-send invitation** (the old panel's own templates,
+  `darz-studio.html:36197-36198`) and a way straight into the partner; the partner list gained
+  search and a **Waiting** column in place of an internal switch; dashboard tiles are links; a lost
+  link and an unpriced line now say what they are instead of "0 TMN" and nothing. G-PORT-13/15.
+
+## 2026-09-19 — D21 resolved: the catalogue carries Darz's real services, in Toman
+
+- "Add the standard set" (owner-only, idempotent) writes the 8 priced exhibition services with their
+  real Toman prices, the 22 other Exhibition Coverage services unpriced, the 5 coverage programmes and
+  the 4 checklists. The old `projSeedIfEmpty` USD figures were demo data and are gone. A project
+  proposal now chooses its currency and never invents a rate. Gaps G-PROJ-8/9.
+
+## 2026-09-19 — Phase 11c: Projects — the eight-tab group over backend Phase 31
+
+- Dashboard, list, record (stage rail, nine sections, attachments, one-click proposal), print
+  report, 17-stage board, packages + service catalogue, catalogue-priced calculator (D21),
+  partners with responsibility matrices, reports + checklist templates. Gaps G-PROJ-1…7.
+- Reviewed adversarially before the PR: the non-priced proposal prints no totals at all, the
+  PRO series is scanned across both proposal kinds, a deleted partner org can no longer wedge
+  a record's saves, and the desks share one page-walker and one client-name rule.
+
+## 2026-09-19 — Phase 10b: the desk half — Exhibitions queue, composer, one-click documents
+
+- The gallery loop closed from the desk side: requested shows queue into Sources, the composer
+  prices/approves/publishes, and proposals/invoices issue in one click — client-rendered brand
+  PDFs (golden-fixture design) uploaded + confirmed; the updates queue reads in words.
+
+## 2026-09-19 — Phase 10: the Gallery Portal (`/portal/:token`)
+
+- The no-login partner surface, ported from `gallery-update.html`: PIN gate, works + one-submission
+  updates (the payload keys approval auto-applies), funnel Status, pricelist upload, messages, and
+  the Exhibition Services workspace through to document acceptance. Gaps G-PORT-1…11 recorded.
+
+## 2026-09-19 — Phase 12 Step 8: Private Deals + receipts (PR #53, left open)
+
+- The Accounting desk's second half: the deals CRM with the server-computed per-deal calc and
+  per-currency summary, the 15-amount money grid, slotted receipt uploads with served links.
+
+## 2026-09-19 — Phase 12 Step 7: Accounting — the four-ledger books
+
+- `/admin/accounting` (owner-only): the four books as a segment, the per-currency summary strip
+  (never summed across currencies), month/type/status filters, entry CRUD with manual FX and
+  sale labels. Deals/attachments/settlement follow as their own step.
+
+## 2026-09-19 — Phase 12 Step 6: the Auction Records desk
+
+- `/admin/auction-records` (+editor): the widened comparables DB as a desk — sections, search,
+  status, highlights, and a four-section editor over the whole serializer. The old import
+  machinery stays dead architecture; CSV bulk entry lives in the Import desk.
+
+## 2026-09-19 — Phase 12 Step 5: Auctions admin — Live Auctions + Register to Bid
+
+- `/admin/auctions` (+detail): create, the Phase-35 invite-only card, lots with the confidential
+  reserve, Go live (artwork → Reserved), Close/Close early (force bypasses the end time, never
+  the reserve — found live). `/admin/auction-registrations`: the paddle queue; approval assigns
+  the next sequential number. G-AUC-1…3 recorded.
+
+## 2026-09-18 — Phase 12 Step 4: Galleries & Sources — partners + Source Updates
+
+- `/admin/sources` (+detail): the partner roster, issue with the one-time token+PIN reveal,
+  enable/disable, funnel switches, the snapshot works list with assign/remove/stage override,
+  and the Source Updates queue (approve applies availability/price/correction to the artwork).
+  Verified live including a real portal-side submission with the issued credentials.
+
+## 2026-09-18 — Phase 13: the E2E harness (stub tier in CI)
+
+- `e2e/`: a Playwright smoke over the production build against a canned envelope stub
+  (boot → gate → team sign-in → panel → a desk; empty lists everywhere else), plus a second
+  CI job with its own Chromium. The real-backend tier stays local by design (`e2e/README.md`).
+
+## 2026-09-18 — Phase 12 Step 3: Documents — Library/Proposals/Invoices + lifecycle
+
+- `/admin/documents` (+`?kind=` tabs) and the record page: create, draft-only edit with a JSON
+  fields editor, PDF upload (client-renders-server-stores; versioned), confirm→sign→archive,
+  Copy-link sharing (D19 live). Query-aware sub-tabs. G-DOC-2 recorded; the Builder waits on D18.
+
+## 2026-09-18 — Phase 12 Step 2: Published works + Market Sales
+
+- `/admin/published`: the Market App tab — the public catalogue slice with images, search,
+  Remove-from-app, and the hidden-by-a-gap tile (Data Health's own count). `/admin/sales`:
+  the deals ledger — stat tiles from per-status totals, ＋ New deal (kit Pickers), the guarded
+  linear chain, payment/delivery setters, R7 draft-only terms lock. G-SALE-1…5 recorded.
+
+## 2026-09-18 — Phase 12 Step 1: the catalogue core — Artworks Database + Artists
+
+- The panel's biggest desk (`databaseView()` ported onto Phase 7's admin CRUD): search + filter
+  toolbar with the old removable-chip row, the ✓ APP per-work publish toggle, status pills, and a
+  full editor — guarded status transitions, provenance rows, per-work collector actions, the real
+  multi-image store (multipart upload / primary / remove). Artists: roster + inline intro + CRUD.
+  Gaps G-CAT-1…8 recorded; verified live end to end (moto S3 standing in for MinIO).
+
+## 2026-09-18 — Phase 11b Step 6: Activity feed + Collector Club — the phase's desks complete
+
+- The "Requests & Activity" tab gains its second half: the read-only view/save/search/login log
+  (Phase 28) behind a segment, kind-filtered from options, deep-linkable from a collector's
+  workspace. The Collector Club (Phase 35): selection cards with the ported anatomy, search-backed
+  work/collector pickers, and the grant-overlap rule stated in the delete confirm. G-CLUB-1
+  recorded (no image on the nested serializer → the old fallback gradient, always).
+- Live-verified: 10 real activity rows; a created selection granted an imported work (sync
+  confirmed end to end). Every Phase 11b desk is now built except the G-KEY-1-blocked standalone
+  Access desk; App Design's copy keys and Import's PDF/Images remain as marked halves. 201 tests.
+
+## 2026-09-18 — Phase 11b Step 5: Data Health + Import (CSV + Paste)
+
+- Data Health: the three surviving checks with counts and first-50 items; the desk states why the
+  other five did not port. Import: a tested RFC-4180 reader + column mapper onto the serializer's
+  own fields, the verbatim Review-first rule, staged batches with JSON row edit / reject / confirm /
+  discard and per-row errors. PDF/Images tiles stated as absent (D15), not dead buttons.
+- Live-verified end to end: paste → mapper guessed all four columns → staged 2 rows → Confirm
+  created 2 real artworks through the real create path, zero errors. 201 tests (+5).
+
+## 2026-09-18 — Phase 11b Step 4: Memberships + Team logins
+
+- Memberships (owner-only): issue with auto `DZ-<plan>-<6>` codes, wa.me links, the :33318 status
+  cell over `expiryParts`, server-side renew (+1 month from max(expiry, today)), edit/remove. Plans
+  are the collector tiers — the backend's own Phase 30 deviation, flagged. "No payment processing
+  anywhere" kept on screen.
+- Team logins (owner-only): create → password shown once, search/role, edit, remove; self-guards as
+  disabled controls with the reason. The old Workspace suite around it has no backend (G-TEAM-1).
+  Live-verified full circle: the shown-once password signed the new admin in. 196 tests.
+
+## 2026-09-18 — Phase 11b Step 3: App Design — the owner controls the app
+
+- `/admin/design` (both its old groups) edits the typed FeatureFlags table and publishes it as
+  `theme.features`; the app reads the public `GET /api/app-theme/` on boot, before first paint,
+  merging validated switches over the `VITE_FEATURE_SET` floor (`resolveFeatureFlags`: unknown keys
+  and non-booleans refused, `market` unswitchable; fetch failure applies nothing).
+- Save vs "Save version" kept distinct; versions Activate/Delete; Reset to factory. Live-verified:
+  Records off → collector `/records` clamps to `/`; Reset restores; Activate re-applies. The old
+  desk's fonts/colours/button editors wait for their consumers (D17). 196 tests (+6).
+
+## 2026-09-18 — Phase 11b Step 2: Collectors + Access Requests
+
+- The Collectors roster (search/tier/access/sort = the server's own filterset), create/edit with the
+  version lock, and a per-collector workspace: record, keys (issue → shown-once, revoke, the three
+  extend buttons, expCell :33042 as a tested pure module) and the Phase 33 sign-in log. Overview
+  strip and activity sorts not ported — no aggregates served (G-COL-1/2); the owner Access desk is
+  blocked on a roster-wide key list (G-KEY-1).
+- The Access Requests review queue, owner-only (RequireOwner's first caller): verbatim cards/copy,
+  approve → tier + confirm → once-shown key, D13's note PATCHed onto the new collector, verbatim
+  decline confirm. Schema regenerated from the live backend (13,246 → 18,937 lines).
+  Live-verified full circle: an issued key signed a collector in. 190 tests (+5).
+
+## 2026-09-18 — Phase 11b Step 1: Dashboard + Chat
+
+- Dashboard over `GET /api/dashboard/admin/summary/`, keeping :21349's rule — a tile opens exactly
+  the rows it counted (`?kind=&status=` deep links; the requests desk reads its opening filter from
+  the URL; G-DASH-1 records the initial-status inference). Chat = the crm admin thread endpoints;
+  the thread machine now lives once in `MessageThreadController`, bound by collector and admin
+  subclasses with the seen direction flipped (:40547).
+- Old-pane AI Monitor/mode/assignee/status/Clear/search have no backend — flagged, G-CHAT-1/2.
+  Live-verified end to end. 185 tests (+6). Team gate lands on `/admin` now, not a hardcoded desk.
+
+## 2026-09-18 — The admin as one system: the full map + the desk kit
+
+- `docs/ADMIN_ARCHITECTURE.md` — all **14 groups / 55 tabs**, the owner's port-content /
+  modernise-mechanics rule, the desk kit contract, owner-controlled feature flags via `app-theme`
+  (§4), the one-Document-Studio answer (§5), and the build order. `adminNav.ts` now carries the
+  whole map with each tab's API state and owning phase, so doc and navbar cannot drift.
+- `features/admin/kit/` — DeskPage · DeskList · DataTable · filters · ConfirmDialog ·
+  ShownOnceSecret. `AdminRequestsPage` refactored onto it as the worked example. 179 tests (+21).
+
+## 2026-09-18 — Phase 11b Step 0: the panel shell
+
+- The old panel's two-tier navbar, ported as data (`adminNav.ts` ← darz-studio.html:11721-11803) and
+  rendered by `AdminShell`, which replaces the scaffolding `AdminLayout`/`.ad-bar`. All four of
+  `_dzRenderSubnav`'s rules ported: the More-row prefix, one-tab suppression, the no-group
+  Dashboard, the group eyebrow. `/admin` and unknown `/admin/...` clamp to the first page a role
+  can open (:11815), not to the collector Market.
+- Owner confirmed D9-D16 as recommended; D10 proved unnecessary — `admin.css` already maps the old
+  palette onto tokens, so both skins work from one rule set. Verified live, both roles, both skins.
+  158 tests (+17).
+
+## 2026-09-18 — Phase 11b plan drafted; entry-point question narrowed to one
+
+- `docs/PHASE_11B_PLAN.md` — Steps 0-7 over backend Phases 23 + 27-35, decisions D9-D16, waiting on
+  the owner. Read from `darz-studio.html`: the desks are **not** siblings (a two-tier navbar with
+  sixteen groups, so a panel shell is Step 0), two desks were missing from the task list (Access
+  Requests, Collector Club), and there is no approved design package for the panel.
+- `/auctions/notifications` and `/admin/login` closed as no-change; `/artists` is the one open
+  decision, and the old app's own artist list is orphaned the same way. G-P24-1 narrowed.
+
 ## 2026-09-18 — Phase 14: the deploy blocker narrowed to a Vercel role
 
 - Both creation paths fail identically — `create_git_project` (even link-only, `deploy:false`) and
@@ -122,6 +352,7 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 - **Images** — one fit-not-crop rule on every artwork image (`catalogue.css` `.card .img img`).
 - Schema regenerated from backend Phase 19.3; 17 test files / 98 tests. Details and owner flags:
   `docs/V0_1_SCOPE.md`.
+
 ## 2026-09-11 — Design pass: the Market App shell + every screen re-skinned to the design package
 
 Source of truth is now the Market App design-system handoff package (`darzstudio.art`
@@ -197,9 +428,10 @@ ported from `aucPill`, app.html ~6258) wired into the lot rows + lot detail; `au
 `.aucpill*` + `.dz-anotif*` + the feed rows (source lines cited). 12 new tests (80 total);
 typecheck / lint / format / build clean. Verified end-to-end in-browser (two notifications for a real
 collector): the banner shows the newest unread with the right accent, the feed lists both with pills
-+ "Lot N" (proves BE-7), and marking one read updates the hero count, the mark-all count and swaps
-the banner to the next unread — all off one shared polled controller. Frontend PR
-`phase-8-auctions-notifications`; backend PR `phase-11.3-auctions-notifications`.
+
+- "Lot N" (proves BE-7), and marking one read updates the hero count, the mark-all count and swaps
+  the banner to the next unread — all off one shared polled controller. Frontend PR
+  `phase-8-auctions-notifications`; backend PR `phase-11.3-auctions-notifications`.
 
 ## 2026-09-10 — Phase 8 step 2: auctions — Conditions of Sale + paddle registration + place/raise bid
 
