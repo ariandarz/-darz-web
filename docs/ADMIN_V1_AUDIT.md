@@ -649,12 +649,22 @@ Dependency-ordered. The desk kit exists, so each phase is assembly.
   - **All 35 built desks were opened and now render clean** — and three did not; see §9a.
     That walk is now `e2e/desks.spec.ts`, so it is a gate rather than an afternoon.
   - **Compared against their captures in detail:** Dashboard (`01`), Requests (`13`),
-    Artworks Database (`02`). Fixes: the Dashboard's and Requests' missing subtitles —
-    the only two desks in the whole old panel that have one, and this port had dropped
-    both. Every other difference on the Artworks desk was already recorded in its own
-    file header with a reason, **except** one that had gone stale: three comments still
-    said the Year/Source/Market-App filters had no server param, which G-2 shipped in
-    #66. Corrected.
+    Artworks Database (`02`), Collectors (`11`). Fixes:
+    - **The desk subtitle, checked across the whole panel rather than desk by desk.**
+      The old panel puts a line under the heading on ten-odd desks; of the ones this
+      port has built, **three had dropped it** — Dashboard (`dsh-sub`), Requests
+      (`req-sub`) and Collectors (`:32612`). All three restored verbatim, except
+      Requests' count clause, which is not faked (the only number that desk has is
+      filter-scoped, so "N open" would change when you touch a dropdown). The Projects
+      desks had all kept theirs; Calculator and Data Health carry *adapted* subtitles
+      with the adaptation stated, which is right, not a gap.
+    - **Artworks Database:** every difference from the capture was already recorded in
+      its file header with a reason **except three comments that had gone stale**,
+      still saying the Year/Source/Market-App filters have no server param — which G-2
+      shipped in #66. Corrected in all three places.
+    - **Collectors:** "Notify collectors" is absent and is **blocked, not overlooked** —
+      the old button is Web Push, and no endpoint publishes the VAPID key (G-P13-1).
+      Now stated in the desk's header instead of being silently missing.
   - **Not yet compared capture-by-capture:** the remaining ~31 desks. They render and are
     covered by the walk; their pixel-level comparison is what is left of this phase.
 - **Still open in this phase:** that remaining comparison, and TD-8 (`admin.css` is one
