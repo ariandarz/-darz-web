@@ -508,7 +508,10 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/accounting',
         'ready',
         '12·7',
-        'the four-ledger books; deals/attachments/settlement follow.',
+        'the four-ledger books, private deals, per-entry receipts and payment ' +
+          'status, the Expenses-Arian review and its duplicate queue, and the ' +
+          'settlement worksheet\u2019s state + version history. The old ' +
+          'settlement CALCULATOR is not ported (its own piece of work).',
       ),
       tab(
         'automations',
@@ -521,11 +524,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'settings',
         'Settings',
-        null,
+        '/admin/settings',
         'partial',
         '11',
-        'Audit log (GET /api/admin/audit-log/, IsOwner) is served; the rest of ' +
-          'the old Settings tab is owner preferences with no API.',
+        'Built as the audit log only (GET /api/admin/audit-log/, IsOwner). The ' +
+          'rest of the old Settings tab — the per-tab/per-role visibility ' +
+          'matrix, force-dark, the device passkey — has no API and is not ' +
+          'faked; the desk says so and points at Team and App Design, which ' +
+          'own the two halves that do exist here.',
       ),
       tab(
         'languages',

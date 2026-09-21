@@ -260,6 +260,32 @@ function LotsSection({ auction }: { auction: Auction }) {
     }
   };
 
+  /**
+   * Re-read ONE lot (`GET /auctions/admin/lots/{id}/`) and patch it in place.
+   *
+   * A live lot's bid count and current price move while an admin watches, and
+   * until now the only way to see that was `load()` — every lot, plus the
+   * artwork-name resolution that follows it, to learn one number. This is the
+   * row asking about itself.
+   *
+   * It is deliberately NOT a detail screen: the endpoint answers the same
+   * `LotAdminSerializer` the list does (`apps/auctions/views.py::admin_lot_detail`),
+   * so there is nothing on a lot that this table does not already show, and a
+   * page built to display it would be a screen invented to justify a route.
+   */
+  const refreshLot = async (lotId: string) => {
+    setBusyId(lotId);
+    setError(null);
+    try {
+      const fresh = await auctionsAdmin.lot(lotId);
+      setLots((prev) => prev?.map((l) => (l.id === fresh.id ? fresh : l)) ?? prev);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not re-read the lot.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const columns: ReadonlyArray<Column<LotAdmin>> = [
     { key: 'n', header: 'Lot', cell: (l) => <b>{l.lot_number}</b> },
     {
@@ -324,6 +350,17 @@ function LotsSection({ auction }: { auction: Auction }) {
               onClick={() => void act(l.id, () => auctionsAdmin.goLive(l.id))}
             >
               Go live
+            </button>
+          )}
+          {l.status === 'live' && (
+            <button
+              type="button"
+              className="ad-rowbtn"
+              disabled={busyId === l.id}
+              title="Re-read this lot — a live lot's bids move while you watch"
+              onClick={() => void refreshLot(l.id)}
+            >
+              Refresh
             </button>
           )}
           {l.status === 'live' &&

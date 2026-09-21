@@ -31,6 +31,7 @@ import { ArtistsPage } from './features/admin/ArtistsPage';
 import { AuctionAdminDetailPage } from './features/admin/AuctionAdminDetailPage';
 import { AccountingPage } from './features/admin/AccountingPage';
 import { DealEditorPage } from './features/admin/DealEditorPage';
+import { LedgerEntryPage } from './features/admin/LedgerEntryPage';
 import { AuctionsAdminPage } from './features/admin/AuctionsAdminPage';
 import { RegistrationsPage } from './features/admin/RegistrationsPage';
 import { RecordEditorPage } from './features/admin/RecordEditorPage';
@@ -58,6 +59,7 @@ import { ImportBatchPage } from './features/admin/ImportBatchPage';
 import { ImportPage } from './features/admin/ImportPage';
 import { MembershipsPage } from './features/admin/MembershipsPage';
 import { TeamPage } from './features/admin/TeamPage';
+import { SettingsPage as AdminSettingsPage } from './features/admin/SettingsPage';
 import { RequireOwner } from './features/admin/RequireOwner';
 import { AdminShell } from './features/admin/AdminShell';
 import { ProjectsDashboardPage } from './features/admin/projects/ProjectsDashboardPage';
@@ -339,6 +341,14 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="/admin/settings"
+          element={
+            <RequireOwner title="Settings">
+              <AdminSettingsPage />
+            </RequireOwner>
+          }
+        />
+        <Route
           path="/admin/accounting"
           element={
             <RequireOwner title="Accounting">
@@ -351,6 +361,14 @@ export function AppRoutes() {
           element={
             <RequireOwner title="Accounting">
               <DealEditorPage />
+              <Route
+                path="/admin/accounting/entries/:id"
+                element={
+                  <RequireOwner title="Accounting">
+                    <LedgerEntryPage />
+                  </RequireOwner>
+                }
+              />
             </RequireOwner>
           }
         />

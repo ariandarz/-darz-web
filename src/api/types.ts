@@ -610,6 +610,51 @@ export interface DealsSummary {
   count?: number;
 }
 
+/** A receipt / invoice on a ledger entry. Upload is multipart (`file` + an
+ * optional freeform `kind`); `file_url` is served by the backend, so the desk
+ * never builds a storage URL itself. Setting one flips the entry's own
+ * read-only `has_receipt`. */
+export type LedgerAttachment = Schemas['LedgerAttachment'];
+/** A file on a private deal. Same shape, but `slot` is a closed vocabulary
+ * (`accounting.deal_attachment_slot`) rather than freeform. */
+export type DealAttachment = Schemas['DealAttachment'];
+
+/** The Expenses-Arian receipt-review extension — `ArianReceiptReview`, a
+ * 1:1 on a ledger entry in that book only. `dup_status` is re-scanned by the
+ * server on every save, so the desk never computes it. */
+export type ArianReviewWrite = Schemas['ArianReviewWrite'];
+/** The stored review, as it rides on `LedgerEntry.arian_review`. The generated
+ * type is not nullable, but the field IS null on an entry outside the
+ * Expenses-Arian book (the extension is a 1:1 that only exists there), so
+ * every reader must treat it as optional. */
+export type ArianReceiptReview = Schemas['ArianReceiptReview'];
+
+/** The ownership-settlement worksheet: a single `slug: "default"` row whose
+ * `state` is freeform JSON (sheets → sections → rows, plus config), with an
+ * optimistic-lock `version` and explicit named snapshots. The old desk kept
+ * this in its own device-local store (`darz_settlement_v1`) inside an iframe;
+ * here it is one owner-only server record, which is the point of porting it. */
+export type SettlementWorksheet = Schemas['SettlementWorksheet'];
+export type SettlementWorksheetVersion = Schemas['SettlementWorksheetVersion'];
+
+/** `GET /api/admin/audit-log/` (backend Phase 33, `IsOwner`) — append-only,
+ * written by `apps.core.audit.record_audit` on every privileged mutation and
+ * never edited. `changes` is freeform JSON whose shape depends on `action`. */
+export type AuditLogEntry = Schemas['AuditLog'];
+
+export interface AuditLogQuery {
+  action?: string;
+  entity_type?: string;
+  page?: number;
+  per_page?: number;
+}
+
+/** `GET /catalog/admin/artworks/{id}/selection-grants/` — which collectors
+ * may see a curated ("selected") work. A grant is per `(artwork, collector)`
+ * and several selections can want the same pair, which is why revoking is
+ * the server's decision and not a row delete the desk can predict. */
+export type ArtworkSelectionGrant = Schemas['ArtworkSelectionGrant'];
+
 /* ─── Gallery Portal (Phase 14) — the no-login partner surface ─────────────
  * `/api/gallery/portal/{token}/…` — token in the path, PIN on every request
  * (`?pin=` on GET, a `pin` field on writes). Shapes mirror
