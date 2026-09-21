@@ -24,6 +24,7 @@ import {
 import { RegistrationBand } from './RegistrationBand';
 import { lotPills } from './status';
 import { useAuction, useAuctionPoster, useLots, useMyRegistration } from './useAuctions';
+import { useNow } from './useNow';
 
 const BACK_ICON = (
   <svg
@@ -81,6 +82,12 @@ export function AuctionEventPage() {
     }
   }, [auctionData]);
 
+  // The countdown's second hand, for the event and for every live lot below
+  // (TD-7). This page previously read `Date.now()` during render with no timer
+  // at all, so "2d 23h" was frozen at whatever it said when the page mounted.
+  // Hooks run before the early returns, hence the null-safe `active`.
+  const now = useNow(Boolean(auctionData) && auctionState(auctionData!) !== 'ended');
+
   if (auctionReq.status === 'loading') return <p className="dz-state">Loading…</p>;
   if (auctionReq.status === 'error') return <p className="dz-state err">{auctionReq.error}</p>;
   const auction = auctionReq.data;
@@ -89,7 +96,6 @@ export function AuctionEventPage() {
   const st = auctionState(auction);
   const lots = lotsReq.status === 'ok' ? lotsReq.data.results : [];
   const img = poster.status === 'ok' && poster.data ? primaryImage(poster.data) : null;
-  const now = Date.now();
   const cdShort =
     st === 'live'
       ? durationShort(new Date(auction.ends_at).getTime() - now)

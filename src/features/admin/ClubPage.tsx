@@ -25,7 +25,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
 import type { CollectorSelection } from '../../api/types';
-import { ConfirmDialog, DeskAction, DeskBanner, DeskPage, Picker, type PickItem } from './kit';
+import {
+  ConfirmDialog,
+  ConflictBanner,
+  DeskAction,
+  DeskBanner,
+  DeskPage,
+  DeskSave,
+  DeskToast,
+  Picker,
+  isConflict,
+  useDeskToast,
+  type PickItem,
+} from './kit';
 import './admin.css';
 
 export function ClubPage() {
@@ -43,6 +55,7 @@ export function ClubPage() {
     );
   }, [crm]);
   useEffect(load, [load]);
+  const { say, message } = useDeskToast();
 
   const remove = async (sel: CollectorSelection) => {
     setBusy(true);
@@ -80,9 +93,10 @@ export function ClubPage() {
         <SelectionEditor
           existing={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
-          onSaved={() => {
+          onSaved={(said) => {
             setEditing(null);
             load();
+            say(said);
           }}
         />
       )}
@@ -148,6 +162,8 @@ export function ClubPage() {
           }}
         />
       )}
+
+      <DeskToast message={message} />
     </DeskPage>
   );
 }
@@ -161,7 +177,8 @@ function SelectionEditor({
 }: {
   existing: CollectorSelection | null;
   onClose: () => void;
-  onSaved: () => void;
+  /** Called with the words for the desk's toast, so the editor owns none. */
+  onSaved: (said: string) => void;
 }) {
   const { crm, catalogAdmin, adminAccounts } = useApi();
   const [name, setName] = useState(existing?.name ?? '');
@@ -174,6 +191,7 @@ function SelectionEditor({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
 
   const save = async () => {
     if (busy) return;
@@ -198,9 +216,13 @@ function SelectionEditor({
       } else {
         await crm.createSelection(body);
       }
-      onSaved();
+      onSaved(existing ? 'Selection saved ✓' : 'Selection created ✓');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
+      // Two curators editing the same selection: the grants the other one
+      // added would be silently dropped by a retry, so say so (TD-5).
+      if (isConflict(err)) setConflict(true);
+      else setError(err instanceof Error ? err.message : 'Could not save.');
+      throw err;
     } finally {
       setBusy(false);
     }
@@ -252,6 +274,15 @@ function SelectionEditor({
         }}
       />
 
+      {conflict && (
+        <ConflictBanner
+          noun="selection"
+          onReload={() => {
+            setConflict(false);
+            onClose();
+          }}
+        />
+      )}
       {error && (
         <p className="dz-state err" role="alert">
           {error}
@@ -261,14 +292,9 @@ function SelectionEditor({
         <button type="button" className="ad-ghostbtn" onClick={onClose} disabled={busy}>
           Cancel
         </button>
-        <button
-          type="button"
-          className="ad-action"
-          onClick={() => void save()}
-          disabled={busy}
-        >
+        <DeskSave className="ad-action" busy={busy} onClick={save}>
           {existing ? 'Save selection' : 'Create selection'}
-        </button>
+        </DeskSave>
       </div>
     </div>
   );

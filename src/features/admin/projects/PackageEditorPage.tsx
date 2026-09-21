@@ -65,7 +65,7 @@ import type {
   ServiceCatalogItemAdmin,
 } from '../../../api/types';
 import { asAdminRole } from '../adminNav';
-import { DeskBanner, DeskPage } from '../kit';
+import { ConflictBanner, DeskBanner, DeskPage } from '../kit';
 import { ProjectPick } from './PackagesPage';
 import {
   applyPackage,
@@ -88,8 +88,6 @@ import {
   type PackagePaymentStage,
 } from './projectForm';
 import '../admin.css';
-
-const CONFLICT = 'Someone else saved this package in the meantime — reload to continue.';
 
 /* :13975 — the count fields, in order */
 const COUNT_KEYS = [
@@ -510,19 +508,14 @@ function PackageEditor({ id, custom }: { id: string; custom: boolean }) {
       <div className="dzp">
         {error && <DeskBanner>{error}</DeskBanner>}
         {conflict && (
-          <DeskBanner>
-            {CONFLICT}{' '}
-            <button
-              type="button"
-              className="dzp-btn sm"
-              onClick={() => {
-                setConflict(false);
-                void load();
-              }}
-            >
-              Reload
-            </button>
-          </DeskBanner>
+          <ConflictBanner
+            noun="package"
+            reloadClassName="dzp-btn sm"
+            onReload={() => {
+              setConflict(false);
+              void load();
+            }}
+          />
         )}
         {svcWalk.error && <DeskBanner>{svcWalk.error}</DeskBanner>}
         {note && (

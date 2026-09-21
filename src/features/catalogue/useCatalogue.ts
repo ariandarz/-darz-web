@@ -33,6 +33,11 @@ export function useResource<T>(fetcher: () => Promise<T>, deps: unknown[]): Asyn
     error: null,
   });
 
+  // The dependency list is the caller's own array, by design — this is the
+  // one-shot fetch every detail page keys on its route param. A linter cannot
+  // see through `deps` to check it, so both linters are told so here rather
+  // than leaving a permanent warning nobody can act on (TD-7).
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let alive = true;
     setState({ status: 'loading', data: null, error: null });

@@ -1,11 +1,78 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-18 (team sign-in released; `main` and `development` level) ·
-**Current focus:** **Phase 13 E2E over the whole v0.1 chain.** CI landed 2026-09-18
-(`.github/workflows/quality.yml`), so a gate finally exists; the E2E suite is what it still cannot
-see. The v0.1 loop
-itself is closed: the team sign-in shipped 2026-09-18 and a reply can now be sent from
-`/admin/requests` by a real team session. See "What next" just below.
+**Last updated:** 2026-09-21 (admin V1 plan: Phases 0-4, G-1…G-5 and most of Phase 6 shipped and
+released) · **Current focus:** **the admin panel's V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That
+document, not this one, is where the current line of work is planned; this file records what has
+landed and what is still open across the whole repo.
+
+**Read this before trusting the sections further down: everything from "The v0.1 loop is closed"
+onwards dates from 2026-09-18 or earlier and describes the collector app's v0.1 line** — including
+the "What next (2026-09-18)" list, whose items 2-6 are still open but whose framing predates all
+the admin work. It is true as history; it is not the current focus.
+
+---
+
+## Since 2026-09-19 — the admin panel (PRs #61-#68)
+
+`docs/ADMIN_V1_AUDIT.md` (2026-09-21) surveyed the whole panel against `darz-backend-api` and the
+old `darz-studio.html`, and produced a phased plan. Its headline finding: **the admin panel is
+built** — 111 files / 34k lines, 52 routes, 111 of 141 admin endpoints bound — and was ~80-85% of
+V1. What has shipped since:
+
+| PR | What |
+| --- | --- |
+| #61 | **TD-1** — the case-collision that broke `npm run build` on every Mac while CI stayed green. |
+| #62/#63 | The audit itself, and `docs/ADMIN_SCREENS.md`. |
+| #64 | **Phases 2-4** — Accounting completion (entry detail, receipts, the Arian duplicate queue, the settlement worksheet), `/admin/settings` as the audit log, and the catalogue edges. 10 of the 30 unbound endpoints. |
+| #65 | **Phase 1** — the Requests desk gets search (backend `darz-backend-api` #31) and its thread is reachable from the row. Three asks turned out **not portable** and are recorded as G-REQ-1…3 rather than stubbed. |
+| #66 | **G-1** (table desks use the screen — `<DeskPage wide>`, 18 desks) and **G-2** (the Database desk's four missing filters, over a new facets endpoint). |
+| #67 | **G-3** (how long a request has been waiting) and **G-4** (the Collectors overview strip). |
+| #68 | The release — `main` and `development` level again, closing **TD-2** (`main` had been 72 commits behind, i.e. a one-page admin panel). |
+
+**Phase 6 (the polish pass) is mostly done** — TD-4 (one success-feedback pattern), TD-5 (one 409
+pattern) and TD-7 (lint back to 0 warnings) landed together with the kit's `DeskToast` / `DeskSave` /
+`ConflictBanner`. Three things that work changed about the audit, all recorded there:
+
+- **TD-5 named two desks that cannot 409 at all.** The optimistic lock is enforced only in the
+  `catalog`, `accounts`, `projects`, `crm` and `sales` serializers — so the **ledger entry editor
+  and the auction-record editor are last-write-wins**, and two admins silently overwrite each
+  other with no error to catch. Backend gap **G-LOCK-1**; the frontend cannot fix it.
+- **TD-6's "8 dead service methods" were not dead.** Three are **buttons the old panel ships and
+  this port never built** (delete a deal, delete an auction, delete an issued document — the last
+  owner-only in the old panel, though the API here allows any standard admin). New finding
+  **G-DEL-1**, and **Phase 6b** is the half-day that builds them. Nothing was deleted; all eight
+  bindings now say in a comment why they have no caller.
+- **TD-7 hid a real bug**: `AuctionEventPage` read `Date.now()` during render with no timer at
+  all, so its countdown was frozen at whatever it said when the page mounted.
+
+**Open for the owner:** **G-DEL-1** (build the three deletes?) and **G-LOCK-1** (backend: lock the
+ledger?). G-1…G-6 are all decided.
+
+### What next (2026-09-21)
+
+1. **Finish Phase 6** — the DoD proper: compare each desk side by side with its Phase 0 capture
+   (`docs/ADMIN_SCREENS.md` is the map) and either fix or record every difference. This is the
+   only remaining check on the "pixel-perfect" claim, and it is now possible for the first time,
+   because the reference package did not exist before 2026-09-21.
+2. **Phase 6b** — the three deletes, once **G-DEL-1** is ruled.
+3. **Phase 5b** — the Database desk's four *hard* filters (completeness, size ranges, duplicate
+   images, Gallery Portal). Backend work first; the desk already names them as unavailable.
+4. **Phase 13 E2E — its first tier landed 2026-09-21** (in #66, `e2e/`), which closes both the
+   "biggest remaining gap" framing below *and* the decision it was waiting on: the answer was
+   **both tiers, split by what each can honestly claim.** The **stub tier** (`e2e/smoke.spec.ts`,
+   3 tests) runs the production build against a no-state node server in CI — it proves the app
+   boots, the collector gate renders, a team session reaches the panel, and a desk survives an
+   empty backend. The **real-backend tier** is local-only by design, because this repo's CI has no
+   backend checkout. So the suite is no longer "nothing renders a component" — the remaining gap
+   is **breadth**: 3 smoke tests across 52 admin routes, and the per-desk walks are still manual
+   (CLAUDE.md rule 5). That is what TD-9 now means.
+5. Then the older repo-wide items below — the Vercel role (item 4), backend G-F1-1, the hidden
+   collector features, and Phase 7 (Intelligence / Marketing / Document Builder) only if **G-6**
+   is ever reversed.
+
+---
+
+## Before that — the collector app's v0.1 line (2026-09-18 and earlier)
 
 **The v0.1 loop is closed.** `/admin/login` (`TeamLoginPage`) signs a team member in against
 `POST /api/auth/team/login/`; `RequireTeam` makes the admin desk a team-principal surface; the desk

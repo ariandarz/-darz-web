@@ -399,7 +399,14 @@ export class AuctionService extends ResourceService {
   }
 }
 
-/** `/api/recommendations/` — the admin-curated "Selected for you" batches. */
+/** `/api/recommendations/` — the admin-curated "Selected for you" batches.
+ *
+ * **Wholly unbound (TD-6).** Both methods, not a stray one: this is a whole
+ * collector surface with no screen yet, and it is NOT the curated set the
+ * catalogue's "Curated for You" chip shows — that one is
+ * `/catalog/artworks/selections/` (backend Phase 24). Which of the two the old
+ * app's "Selected for you" really was is an open question, so nothing here is
+ * deleted on the assumption that it is redundant. */
 export class RecommendationService extends ResourceService {
   constructor(client: ApiClient) {
     super(client, '/recommendations');
@@ -797,6 +804,11 @@ export class DocumentsAdminService extends ResourceService {
       body,
     });
   }
+  /** **Unbound — G-DEL-1.** The old panel's `dlDelDoc` (`:17913`) — OWNER ONLY
+   * there ("Only the owner can delete an issued document"), and its confirm
+   * names the cost: "…and all N versions? A version a gallery already holds
+   * cannot be un-sent." The API allows any standard admin; the UI, when built,
+   * should keep the old panel's stricter gate (TD-6). */
   deleteDocument(id: string) {
     return this.client.send<void>('DELETE', `${this.basePath}/documents/${id}/`);
   }
@@ -963,6 +975,11 @@ export class GalleryAdminService extends ResourceService {
       body,
     });
   }
+  /** **Unbound, and deliberately so.** Unlike the three deletes above, the old
+   * panel has no "delete exhibition" anywhere — adding the button would be
+   * inventing a destructive action this app was never approved to have. The
+   * binding is kept because the route is served and the service mirrors it
+   * (TD-6). */
   deleteExhibition(id: string) {
     return this.remove(`/exhibitions/${id}/`);
   }
@@ -1041,6 +1058,9 @@ export class AuctionsAdminService extends ResourceService {
   }) {
     return this.create<Auction>('/auctions/', body);
   }
+  /** **Unbound — G-DEL-1.** The old panel's `×` on an auction card, titled
+   * "Delete auction permanently" (`:31815`, confirm "Delete this auction?"),
+   * is not built here yet (TD-6). */
   deleteAuction(id: string) {
     return this.client.send<void>('DELETE', `${this.basePath}/auctions/${id}/`);
   }
@@ -1180,6 +1200,10 @@ export class AccountingAdminService extends ResourceService {
       body,
     });
   }
+  /** **Unbound — G-DEL-1.** The old panel has this button ("Delete deal",
+   * `darz-studio.html:12664`, confirming "Delete this deal? The collector's
+   * request/activity is not affected.") and this port has not built it, so the
+   * method is an unfinished port rather than dead code (TD-6). */
   deleteDeal(id: string) {
     return this.client.send<void>('DELETE', `${this.basePath}/deals/${id}/`);
   }
@@ -1407,6 +1431,9 @@ export class AuthService extends ResourceService {
   me(): Promise<Me> {
     return this.session.loadMe();
   }
+  /** **Unbound — waiting on its screen, not dead.** Membership redeem is a
+   * backend-ready collector item that v0.1 hid (`docs/TASKLIST.md`, "What
+   * next" item 6); this is the binding it will use (TD-6). */
   redeemMembership(code: string) {
     return this.create<{ plan: string; tier: string; redeemed_at: string }>(
       '/membership/redeem/',
@@ -1503,6 +1530,8 @@ export class ProjectsAdminService extends ResourceService {
   partners(query: PartnerOrgQuery = {}) {
     return this.list<PartnerOrgAdmin>('/partners/', query as RequestOptions['query']);
   }
+  /** **Unbound.** The partners list carries every field the desk shows, so
+   * nothing needs the single read; kept as the resource's own retrieve (TD-6). */
   partner(id: string) {
     return this.retrieve<PartnerOrgAdmin>(`/partners/${id}/`);
   }

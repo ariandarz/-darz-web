@@ -34,7 +34,7 @@ Measured:
 | Backend admin endpoints | **141** (of 191 total) |
 | **Bound in the frontend API layer** | **111 of 141 (79%)** |
 | Unused service methods (dead code) | 8 of 217 |
-| Tests | **386 passing**, 36 files |
+| Tests | **386 passing**, 36 files *(443 in 41 files as of 2026-09-21, plus the `e2e/` stub tier added in #66)* |
 | Lint | 0 errors, 3 warnings (all outside admin) |
 | Typecheck | **Fails on macOS only** — see TD-1 |
 
@@ -445,6 +445,42 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 - Three complete desks with ready APIs (14 + 5 + n endpoints) and no UI. They are the bulk of the remaining work and none of them is needed to run the v0.1 collector app.
 - **Decision needed:** build them in V1, or mark them post-V1 and close the panel at the operational desks?
 - **Recommendation:** **defer all three past V1.** Finish Accounting, the audit log, and the Requests-desk parity instead. Document Builder additionally needs D18 decided first.
+- **Decided 2026-09-21: defer all three.**
+
+### G-DEL-1 · Three deletes the old panel has and this port does not (found 2026-09-21)
+
+- **How it surfaced:** resolving TD-6 ("8 unused service methods — delete or wire"). Before
+  deleting a binding, each was checked against the old panel — and three of them are not
+  dead code at all, they are **buttons the old panel ships and this port never built**:
+
+  | Old panel | Its confirm | API here |
+  | --- | --- | --- |
+  | "Delete deal" (`:12664`) | "Delete this deal? The collector's request/activity is not affected." | `DELETE /accounting/admin/deals/{id}/` · `IsOwner` |
+  | `×` "Delete auction permanently" (`:31815`) | "Delete this auction?" | `DELETE /auctions/admin/auctions/{id}/` · `IsStandardAdminOrOwner` |
+  | `dlDelDoc` (`:17913`), **owner only** | "Delete this document and all N versions? A version a gallery already holds cannot be un-sent." | `DELETE /documents/admin/documents/{id}/` · `IsStandardAdminOrOwner` |
+
+- **Note the third row's mismatch:** the old panel gates document delete on the owner
+  ("Only the owner can delete an issued document"); the API here lets any standard admin
+  do it. The faithful port is the **stricter** gate — flagged rather than silently taking
+  the looser one.
+- **Decision needed:** build all three (Phase 6b), or leave the panel without them?
+- **Recommendation:** **build them**, with the old confirm copy verbatim and the owner
+  gate on documents. They are row actions over endpoints already bound, and their absence
+  means the only way to delete these records today is Django admin.
+- **Not in scope either way:** exhibitions. The old panel has no delete for them, so
+  adding one would be inventing a destructive action, not porting one.
+
+### G-LOCK-1 · Accounting and Auction Records are last-write-wins (found 2026-09-21)
+
+- **What:** `expected_version` is enforced in the `catalog`, `accounts`, `projects`, `crm`
+  and `sales` serializers only. The ledger entry editor and the auction-record editor send
+  no version and the server checks none, so two admins editing the same row silently
+  overwrite one another — the second save wins and the first person is never told.
+- **Frontend cannot fix this.** There is no 409 to catch; the write succeeds.
+- **Suggested solution:** backend — add the lock to `accounting` and `auctions` writes, the
+  way `sales` already does it. The UI change afterwards is one `expected_version` field and
+  the kit's `ConflictBanner`, both of which now exist.
+- **V1?** Judgement call: the ledger is the place where a silent overwrite costs real money.
 
 ---
 
@@ -462,12 +498,12 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 
 | # | Finding |
 | --- | --- |
-| **TD-4** | **Success feedback is inconsistent.** Toasts appear in 10 of ~50 desks; most writes are silent and confirm only by the list re-reading. Standardise on one pattern in the kit. |
-| **TD-5** | **Optimistic-lock handling is uneven.** 24 admin files reference `version`/`ConflictError`; several editors (Accounting, Sales detail, Records) do not surface a 409 distinctly from a generic error. The backend 409s on every versioned write. |
-| **TD-6** | **8 unused service methods** — `deleteDeal`, `deleteAuction`, `redeemMembership`, `deleteDocument`, `deleteExhibition`, `partner`, `dismiss`, `published`. Delete or wire. |
-| **TD-7** | **3 lint warnings** (all collector-side): `useCatalogue` `setState` in an un-deped effect; `Date.now()` during render in `AuctionEventPage` and `LotDetailPage`. |
+| ~~**TD-4**~~ | ~~Success feedback is inconsistent.~~ **Closed 2026-09-21** — `DeskToast` + `DeskSave` in the kit, ported from the old panel's `toast()` and its v510/v631 "✓ Saved" flash. |
+| ~~**TD-5**~~ | ~~Optimistic-lock handling is uneven.~~ **Closed 2026-09-21** — `ConflictBanner` in the kit; the six Projects desks share it and five more desks gained it. Two corrections: the backend does **not** 409 on every versioned write (only `catalog`/`accounts`/`projects`/`crm`/`sales` enforce it), so Accounting and Records were mis-listed here — see **G-LOCK-1**. |
+| ~~**TD-6**~~ | ~~8 unused service methods … delete or wire.~~ **Resolved 2026-09-21 — none were dead code.** Three are unbuilt old-panel buttons (**G-DEL-1**), one is a destructive action the old panel never had, one waits on a hidden v0.1 screen, and `RecommendationService` is a whole unbuilt surface. All eight now say in a comment why they have no caller. |
+| ~~**TD-7**~~ | ~~3 lint warnings.~~ **Closed 2026-09-21** — and one was a real bug: `AuctionEventPage` had no countdown timer at all, so its "2d 23h" froze at mount. Both auction pages now take the time from `useNow`. Lint: **0 warnings**. |
 | **TD-8** | **`admin.css` is 3,389 lines in one file.** It is well-commented and cited, but it is now the second-largest file in the repo. Consider splitting per desk group as the kit did for components. |
-| **TD-9** | **No admin E2E coverage.** 386 tests are pure logic tests; no test opens a desk against a running backend. The Phase 13 harness exists but the admin is not in it. |
+| **TD-9** | ~~**No admin E2E coverage.**~~ **Partly closed 2026-09-21** (#66, after this audit was written): `e2e/` now boots the production build against a stub server in CI, and one of its three tests *does* open a desk — "a desk renders its empty state against an empty backend". What remains is **breadth, not existence**: 3 smoke tests across 52 admin routes, with the real-backend walks still local and manual. |
 
 ### Can safely postpone
 
@@ -481,7 +517,7 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 
 - **R-1 — no visual reference.** §6.3. "Pixel-perfect" cannot currently be verified. Highest risk to the stated goal.
 - **R-2 — the deploy is blocked.** Frontend Phase 14 records the deploy waiting on a Vercel team role. The panel cannot be reviewed on a real device until that clears.
-- **R-3 — schema drift.** `src/api/schema.d.ts` is generated from a locally-running backend, never committed as a snapshot from elsewhere. If the generating backend is stale, types silently lie.
+- **R-3 — schema drift.** `src/api/schema.d.ts` is generated from a locally-running backend, never committed as a snapshot from elsewhere. If the generating backend is stale, types silently lie. **Confirmed stale, 2026-09-21:** the committed schema declares **no 409** on `/sales/admin/sales/{id}/`, `/catalog/admin/artworks/{id}/`, `/catalog/admin/artists/{id}/` or `/crm/admin/selections/{id}/`, yet all four call `enforce_version` and the sales view's own `@extend_schema` lists `409: ERROR_RESPONSE`. Anyone reading the generated types to decide whether a write can conflict would conclude — wrongly — that none of them can. Regenerate against a current backend.
 
 ---
 
@@ -555,12 +591,45 @@ Dependency-ordered. The desk kit exists, so each phase is assembly.
 - **DoD:** every added filter is server-side, chips render and clear individually, the URL round-trips.
 - **Complexity:** 5a Low · 5b Medium. **Depends on:** Phase 0, and the backend change landing first.
 
-### Phase 6 — UI polish pass (2–3 days) · **needs G-1 approved**
+### Phase 6 — UI polish pass (2–3 days) · **needs G-1 approved** · ◐ **mostly done 2026-09-21**
 
 - **Goal:** the fidelity pass, against the Phase 0 captures.
 - **Work:** the `wide` `DeskPage` variant for table desks; one success-feedback pattern in the kit (TD-4); consistent 409 handling (TD-5); delete the 8 dead service methods (TD-6); clear the 3 lint warnings (TD-7); Collectors overview strip if G-4 is approved.
 - **DoD:** every desk is compared side-by-side against its capture and each remaining difference is either fixed or recorded with a reason.
 - **Complexity:** Medium. **Depends on:** Phases 0–4.
+- **Outcome so far:** `wide` shipped with G-1 and the Collectors strip with G-4 (both 2026-09-21).
+  **TD-4 / TD-5 / TD-7 closed** in the same pass — the kit gained `DeskToast`,
+  `DeskSave` and `ConflictBanner` (`kit/feedback.tsx`, `kit/feedbackState.ts`), the old
+  panel's `.dz-toast` (`:370-372`) and v510/v631 `.dz-saved` (`:196-202`) ported with them,
+  and lint is back to **0 warnings**. Three things the work changed about this document:
+
+  1. **TD-5's list was wrong about two of its three desks.** Accounting and Records
+     **cannot 409 at all** — `expected_version` is enforced only in the `catalog`,
+     `accounts`, `projects`, `crm` and `sales` serializers, and `accounting` and
+     `auctions` are not among them. Their editors are **last-write-wins**: two admins on
+     the same ledger entry or auction record silently overwrite each other, with no
+     error to surface. That is a backend gap, recorded as **G-LOCK-1** in §8, and it is
+     why those two desks got the success half of this pass and not the conflict half.
+     The desks that really did lack it were Sales detail, the artwork editor, the artist
+     roster and its form, and the private-selection editor — all five now have it.
+  2. **TD-6 was not dead code.** See **G-DEL-1** in §8.
+  3. The audit said "8 unused service methods … delete or wire"; none were deleted. Each
+     now carries a comment saying why it has no caller, so the next reader does not
+     re-flag it.
+- **Still open in this phase:** the desk-by-desk comparison against the Phase 0 captures
+  (the DoD proper), TD-8 (`admin.css` is one 3,700-line file) and TD-9 (no admin E2E).
+
+### Phase 6b — the deletes the old panel has (½ day) · **needs G-DEL-1 approved**
+
+- **Goal:** build the three destructive row actions the old panel ships and this port
+  skipped — found by resolving TD-6, not by the original survey.
+- **Work:** delete a deal (`:12664`), delete an auction (`:31815`), delete an issued
+  document (`:17913`, owner-only there). Each is a row action over an endpoint the API
+  layer **already binds**, with `ConfirmDialog` already in the kit, and each has the old
+  panel's own confirm copy to port verbatim.
+- **Why it is its own step:** adding permanent-delete buttons to three desks is not a
+  polish pass, and the document one needs a ruling (below).
+- **Complexity:** Low. **Depends on:** Phase 6.
 
 ### Phase 7 — Deferred, on approval only
 
@@ -603,5 +672,7 @@ they are more work than everything else in this plan combined.
 | **G-3** | Request urgency / overdue colouring? | Yes, client-side, threshold as a `theme.*` key |
 | **G-4** | Collectors overview strip and card face? | Strip with the 2 answerable tiles; keep the table |
 | **G-5** | Search on the admin request feed? | **Yes — required for V1** |
-| **G-6** | Build Intelligence / Marketing / Document Builder in V1? | **No — defer all three** |
+| **G-6** | Build Intelligence / Marketing / Document Builder in V1? | **No — defer all three** ✅ *decided 2026-09-21: deferred* |
+| **G-DEL-1** | Build the three deletes the old panel has (deal · auction · document)? | **Yes**, old confirm copy verbatim, owner-gated on documents |
+| **G-LOCK-1** | Backend: put the optimistic lock on Accounting and Auction Records? | Yes for the ledger at least — a silent overwrite there costs money |
 | **D18** | Document Builder's PDF renderer | `@react-pdf/renderer`, after checking bundle cost |

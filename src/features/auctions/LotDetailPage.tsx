@@ -14,7 +14,7 @@
  * Registered → Bid → Leading → Won rail and the buyer's-premium note beyond
  * the spec row (flagged).
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Toast } from '../../components';
 import { primaryImage } from '../catalogue/format';
@@ -25,6 +25,7 @@ import { BidSheet } from './BidSheet';
 import { durationShort, formatMoney, lotStatusLabel } from './format';
 import { lotPills } from './status';
 import { useBidHistory, useLot, useMyRegistration } from './useAuctions';
+import { useNow } from './useNow';
 
 const SHIP_NOTE =
   'Delivery can be coordinated upon request. Final costs are confirmed before payment.';
@@ -101,13 +102,10 @@ export function LotDetailPage() {
   const [roomOpen, setRoomOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Re-render the countdown once a second while the lot is live.
-  const [, tick] = useState(0);
-  useEffect(() => {
-    if (lot?.status !== 'live') return;
-    const t = setInterval(() => tick((n) => n + 1), 1000);
-    return () => clearInterval(t);
-  }, [lot?.status]);
+  // The countdown ticks once a second while the lot is live (TD-7: this was a
+  // re-render counter with `Date.now()` read during render — same second hand,
+  // impure render, see `useNow`).
+  const now = useNow(lot?.status === 'live');
 
   const share = useCallback(async () => {
     const url = window.location.href;
@@ -142,7 +140,7 @@ export function LotDetailPage() {
       : '';
   const closed = lot.status === 'sold' || lot.status === 'passed';
   const left =
-    lot.status === 'live' ? durationShort(new Date(lot.ends_at).getTime() - Date.now()) : '';
+    lot.status === 'live' ? durationShort(new Date(lot.ends_at).getTime() - now) : '';
   const bids = history.status === 'ok' ? history.data.results : [];
   const canBid = lot.status === 'live' && reg.registration?.status === 'approved';
   const artistName = lot.artwork.artist?.display_name ?? 'Unknown artist';
