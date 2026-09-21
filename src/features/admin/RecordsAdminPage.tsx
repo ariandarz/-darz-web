@@ -150,6 +150,7 @@ export function RecordsAdminPage() {
 
   return (
     <DeskPage
+      wide
       title="Auction Records"
       action={
         <DeskAction onClick={() => navigate('/admin/auction-records/new')}>

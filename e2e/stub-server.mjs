@@ -90,6 +90,12 @@ const routes = {
   // `requests.new_by_kind`, which is what the overnight bimodal e2e runs
   // really were: the walk only passed when the assertions outran the fetch.
   'GET /api/dashboard/admin/summary/': () => envelope(SUMMARY),
+  // The Database desk's Year/Source dropdown vocabularies. Registered
+  // explicitly because the catch-all below answers a PAGINATED envelope, and
+  // a desk reading `{years, sources}` off that used to crash on `.map` of
+  // undefined — the desk now normalises (see `artworkFacets.ts`), and this
+  // route makes the stub tell the truth about the endpoint's real shape.
+  'GET /api/catalog/admin/artworks/facets/': () => envelope({ years: [], sources: [] }),
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
       healthy: true,

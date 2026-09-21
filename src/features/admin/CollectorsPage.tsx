@@ -125,6 +125,7 @@ export function CollectorsPage() {
 
   return (
     <DeskPage
+      wide
       title="Collectors"
       action={<DeskAction onClick={() => setCreating(true)}>＋ New collector</DeskAction>}
       toolbar={

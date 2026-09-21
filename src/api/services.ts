@@ -119,6 +119,7 @@ import type {
   SettlementWorksheetVersion,
   AuditLogEntry,
   AuditLogQuery,
+  ArtworkFacets,
   ArtworkSelectionGrant,
 } from './types';
 import type { PortalClient } from './PortalClient';
@@ -630,6 +631,14 @@ export class CatalogAdminService extends ResourceService {
       'DELETE',
       `${this.basePath}/artworks/${artworkId}/images/${imageId}/`,
     );
+  }
+
+  /** The Year and Source dropdown vocabularies for the Database desk. Takes
+   * the SAME query as `artworks()` so the options narrow with the filters —
+   * pass the live query, not an empty object, or the dropdowns will offer
+   * values that return nothing. */
+  artworkFacets(query: ArtworkAdminQuery = {}) {
+    return this.retrieve<ArtworkFacets>('/artworks/facets/', query as RequestOptions['query']);
   }
 
   /** Who may see this curated work — a plain array, not paginated.

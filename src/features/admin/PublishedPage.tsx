@@ -91,6 +91,7 @@ export function PublishedPage() {
 
   return (
     <DeskPage
+      wide
       title="Market App"
       action={
         <span className="ad-rowacts">

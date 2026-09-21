@@ -163,6 +163,7 @@ export function SalesPage() {
 
   return (
     <DeskPage
+      wide
       title="Market Sales"
       action={<DeskAction onClick={() => setCreating(true)}>＋ New deal</DeskAction>}
       toolbar={

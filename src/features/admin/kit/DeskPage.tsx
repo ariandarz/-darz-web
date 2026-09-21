@@ -20,6 +20,7 @@ export function DeskPage({
   title,
   action,
   toolbar,
+  wide = false,
   children,
 }: {
   title: ReactNode;
@@ -27,10 +28,25 @@ export function DeskPage({
   action?: ReactNode;
   /** Filters: see `filters.tsx`. Omitted entirely when a desk has none. */
   toolbar?: ReactNode;
+  /**
+   * Let the desk use the screen (**G-1**, approved 2026-09-21).
+   *
+   * `.ad-page` is a 1040px centred column, inherited from the collector app's
+   * page shell — which is right for a form and wrong for a table. The old
+   * panel is a full-width workspace, and the audit found this the single
+   * largest visual divergence from it: the Artworks Database has 13 columns
+   * and a column chooser, and it was scrolling horizontally inside a card on
+   * a 1440px screen with room to spare.
+   *
+   * So: **tables get the room, editors keep the column.** Reading a form at
+   * 1600px is worse, not better — the eye loses the line — which is why this
+   * is a per-desk choice and not a change to `.ad-page` itself.
+   */
+  wide?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="dz-page ad-page">
+    <div className={`dz-page ad-page${wide ? ' ad-page--wide' : ''}`}>
       <div className="ad-head">
         <h1 className="ad-h">{title}</h1>
         {action}

@@ -35,8 +35,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
-import type { ArtistAdmin, ArtworkAdmin, ArtworkAdminQuery, Choice } from '../../api/types';
+import type {
+  ArtistAdmin,
+  ArtworkAdmin,
+  ArtworkAdminQuery,
+  ArtworkFacets,
+  Choice,
+} from '../../api/types';
 import { useListController } from '../shared/useListController';
+import { EMPTY_FACETS, normaliseFacets } from './artworkFacets';
 import { ArtworksController } from './ArtworksController';
 import {
   ConfirmDialog,
@@ -223,6 +230,30 @@ export function ArtworksPage() {
   ];
 
   const q = state.query;
+  /* The Year and Source vocabularies. Re-read whenever the query changes,
+     because the endpoint computes them over the same filtered queryset — so
+     picking a source narrows the Year list to that source's years, the way
+     the old desk's client-side `dbUniq` did over the whole library. The query
+     is serialised as the dependency so an identical re-render does not refetch. */
+  const [facets, setFacets] = useState<ArtworkFacets>(EMPTY_FACETS);
+  const facetKey = JSON.stringify(q);
+  useEffect(() => {
+    let alive = true;
+    catalogAdmin.artworkFacets(q).then(
+      // `normaliseFacets`, not the raw body: a 200 with the wrong shape used
+      // to throw during render and take the whole desk down, blank. See its
+      // module docstring.
+      (f) => alive && setFacets(normaliseFacets(f)),
+      // A desk that lists fine but cannot offer a dropdown is still usable;
+      // an error banner over a working table would not be.
+      () => alive && setFacets(EMPTY_FACETS),
+    );
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- facetKey IS q
+  }, [catalogAdmin, facetKey]);
+
   const chips: ActiveChip[] = [];
   if (q.search)
     chips.push({
@@ -264,9 +295,34 @@ export function ArtworksPage() {
       label: `Medium: ${q.medium}`,
       onClear: () => setQuery({ medium: undefined }),
     });
+  if (q.year)
+    chips.push({
+      key: 'year',
+      label: `Year: ${q.year}`,
+      onClear: () => setQuery({ year: undefined }),
+    });
+  if (q.source)
+    chips.push({
+      key: 'source',
+      label: `Source: ${q.source}`,
+      onClear: () => setQuery({ source: undefined }),
+    });
+  if (q.published !== undefined)
+    chips.push({
+      key: 'published',
+      label: q.published ? 'In the app' : 'Not in the app',
+      onClear: () => setQuery({ published: undefined }),
+    });
+  if (q.has_images !== undefined)
+    chips.push({
+      key: 'has_images',
+      label: q.has_images ? 'With images' : 'Without images',
+      onClear: () => setQuery({ has_images: undefined }),
+    });
 
   return (
     <DeskPage
+      wide
       title="Artworks Database"
       action={
         <DeskAction onClick={() => navigate('/admin/artworks/new')}>＋ New artwork</DeskAction>
@@ -317,6 +373,7 @@ export function ArtworksPage() {
             // once a currency is filtered.
             choices={q.currency ? SORTS : SORTS.filter((s) => !priceSort(s.value))}
           />
+          <MoreFilters q={q} setQuery={setQuery} facets={facets} />
         </>
       }
     >
@@ -331,6 +388,10 @@ export function ArtworksPage() {
             currency: undefined,
             medium: undefined,
             ordering: undefined,
+            year: undefined,
+            source: undefined,
+            published: undefined,
+            has_images: undefined,
           })
         }
       />
@@ -396,6 +457,94 @@ function priceSort(token: string | undefined): boolean {
 
 function choices(options: OptionsMap | null, key: string): Choice[] {
   return (options?.[key] as Choice[] | undefined) ?? [];
+}
+
+/**
+ * The old desk's "More filters" disclosure (`darz-studio.html:26676`) — the
+ * secondary filters folded away so the toolbar's first line stays the three
+ * that get used constantly.
+ *
+ * Four of the old eight are here (backend G-2). The other four are **not**
+ * silently missing, they are listed on the panel as unavailable, because a
+ * disclosure that hides nothing is worse than one that explains what it hides:
+ *
+ *  - **Completeness** ("missing required fields", "without size/price/source")
+ *  - **Size** (presets, bigger/smaller than, a custom W×H range)
+ *  - **Duplicates (same image)**
+ *  - **Gallery Portal** membership
+ *
+ * Each needs real backend work — a dimension parser, an image hash, a portal
+ * join — rather than one filter line, which is why G-2 was scoped to these
+ * four first. The Data Health desk already answers the duplicate-image and
+ * incomplete-record questions as a report.
+ *
+ * It stays open while any of its filters is active (`:26676`'s own rule), so
+ * a narrowed list never hides why it is narrow.
+ */
+function MoreFilters({
+  q,
+  setQuery,
+  facets,
+}: {
+  q: ArtworkAdminQuery;
+  setQuery: (patch: Partial<ArtworkAdminQuery>) => void;
+  facets: ArtworkFacets;
+}) {
+  const active =
+    q.year !== undefined ||
+    q.source !== undefined ||
+    q.published !== undefined ||
+    q.has_images !== undefined;
+
+  return (
+    <details className="ad-morefilters" open={active || undefined}>
+      <summary>More filters</summary>
+      <div className="ad-morefilters-body">
+        <SelectFilter
+          label="Year"
+          anyLabel="All Years"
+          value={typeof q.year === 'string' ? q.year : undefined}
+          onChange={(year) => setQuery({ year })}
+          choices={facets.years.map((y) => ({ value: String(y), label: String(y) }))}
+        />
+        <SelectFilter
+          label="Source"
+          anyLabel="All Sources"
+          value={q.source}
+          onChange={(source) => setQuery({ source })}
+          choices={facets.sources.map((sName) => ({ value: sName, label: sName }))}
+        />
+        <SelectFilter
+          label="Market App"
+          anyLabel="Market App: all"
+          value={q.published === undefined ? undefined : String(q.published)}
+          onChange={(v) => setQuery({ published: v === undefined ? undefined : v === 'true' })}
+          choices={[
+            { value: 'true', label: 'In the app' },
+            { value: 'false', label: 'Not in the app' },
+          ]}
+        />
+        <SelectFilter
+          label="Images"
+          anyLabel="All artworks"
+          value={q.has_images === undefined ? undefined : String(q.has_images)}
+          onChange={(v) =>
+            setQuery({ has_images: v === undefined ? undefined : v === 'true' })
+          }
+          choices={[
+            { value: 'true', label: 'With images' },
+            { value: 'false', label: 'Without images' },
+          ]}
+        />
+      </div>
+      <p className="ad-morefilters-note">
+        The old desk also filtered by completeness, size range, duplicate images and Gallery
+        Portal. Each needs backend work rather than a filter line, so they are not here yet —{' '}
+        <a href="/admin/data-health">Data Health</a> answers the duplicate-image and
+        incomplete-record questions as a report meanwhile.
+      </p>
+    </details>
+  );
 }
 
 function label(list: Choice[], value: string): string {

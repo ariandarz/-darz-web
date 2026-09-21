@@ -171,6 +171,7 @@ export function RegistrationsPage() {
 
   return (
     <DeskPage
+      wide
       title="Register to Bid"
       toolbar={
         <>

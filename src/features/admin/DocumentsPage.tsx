@@ -137,6 +137,7 @@ export function DocumentsPage() {
 
   return (
     <DeskPage
+      wide
       title="Documents"
       action={<DeskAction onClick={() => setCreating(true)}>＋ New document</DeskAction>}
       toolbar={

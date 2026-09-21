@@ -150,6 +150,7 @@ export function TeamPage() {
 
   return (
     <DeskPage
+      wide
       title="Team"
       action={<DeskAction onClick={() => setCreating(true)}>＋ New login</DeskAction>}
       toolbar={

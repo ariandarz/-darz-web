@@ -135,6 +135,7 @@ export function SettingsPage() {
 
   return (
     <DeskPage
+      wide
       title="Settings"
       toolbar={
         <>
