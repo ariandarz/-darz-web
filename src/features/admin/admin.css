@@ -3703,9 +3703,19 @@ html.dz-bw .dzp-chip {
         kit's `DeskSave` is that listener's equivalent, because a desk is
         assembled from the kit rather than from loose buttons.
 
-   Colours: the old rule hard-codes #1F9D57 with an `html.dz-admindark`
-   override to #5fcf94. `--ok` is already #1f9d57 and mode-aware, so the two
-   rules collapse into one — the same mapping the rest of this file makes.
+   The flash keeps the button's own background — v631's rule in the old file,
+   in its own words: "only the text + a hairline border turn a subtle green as
+   the confirmation signal. No green fill box."
+
+   Colours: the old file needs two values (#1F9D57, and #5fcf94 under
+   `html.dz-admindark`) because its admin darkens the button underneath. Here
+   `.ad-action` is `--ctl-bg` (#26262e), which tokens.css fixes for BOTH skins —
+   "the primary action is charcoal in both" — so the green over it should not
+   move either, and `--ok` is the old light value exactly. Hence one rule and
+   no mode override: `--ok-ink` (#1f7a4d / #5fd99a) is the mode-aware pair, and
+   its light end would only dim the text against a background that never
+   lightened. Checked in the browser in both modes rather than read off the
+   file — which is also how the wrong token got caught.
    ========================================================================== */
 .dz-toast {
   position: fixed;

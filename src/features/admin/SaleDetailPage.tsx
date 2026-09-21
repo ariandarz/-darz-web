@@ -25,7 +25,15 @@ import type { Choice, SaleAdmin } from '../../api/types';
 import { SalePill } from './SalesPage';
 import { saleTermsLocked, saleTransitionTargets } from './saleForm';
 import { useSaleRefs } from './useSaleRefs';
-import { DeskBanner, DeskPage } from './kit';
+import {
+  ConflictBanner,
+  DeskBanner,
+  DeskPage,
+  DeskSave,
+  DeskToast,
+  isConflict,
+  useDeskToast,
+} from './kit';
 import './admin.css';
 
 export function SaleDetailPage() {
@@ -38,6 +46,7 @@ export function SaleDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const refs = useSaleRefs(sale ? [sale] : []);
+  const { say, message } = useDeskToast();
 
   const statuses = choices(options, 'sales.status');
   const payments = choices(options, 'sales.payment_status');
@@ -59,7 +68,12 @@ export function SaleDetailPage() {
     setError(null);
     try {
       setSale(await fn());
+      say('Deal updated ✓');
     } catch (err: unknown) {
+      // No conflict branch here, deliberately: the transition and the two
+      // status setters send no `expected_version` and the API declares only
+      // 400/404 on them (`apps/sales/views.py`). Only the terms PATCH below
+      // can 409, so only it carries the banner (TD-5).
       setError(err instanceof Error ? err.message : 'That did not go through.');
     } finally {
       setBusy(false);
@@ -197,7 +211,8 @@ export function SaleDetailPage() {
       </section>
 
       {/* ---- the commercial snapshot (draft-only, R7) ---- */}
-      <TermsCard sale={sale} locked={locked} onSaved={setSale} />
+      <TermsCard sale={sale} locked={locked} onSaved={setSale} onReload={load} onSaid={say} />
+      <DeskToast message={message} />
     </DeskPage>
   );
 }
@@ -216,10 +231,16 @@ function TermsCard({
   sale,
   locked,
   onSaved,
+  onReload,
+  onSaid,
 }: {
   sale: SaleAdmin;
   locked: boolean;
   onSaved: (s: SaleAdmin) => void;
+  /** Re-read the deal after a 409 — the other person's version. */
+  onReload: () => void;
+  /** The desk's toast, so the card confirms in the same place everything else does. */
+  onSaid: (message: string) => void;
 }) {
   const { salesAdmin } = useApi();
   const [price, setPrice] = useState(sale.agreed_price);
@@ -228,11 +249,13 @@ function TermsCard({
   const [fees, setFees] = useState(sale.fees_tax ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
 
   const save = async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
+    setConflict(false);
     try {
       onSaved(
         await salesAdmin.updateSale(sale.id, {
@@ -243,8 +266,12 @@ function TermsCard({
           expected_version: sale.version,
         }),
       );
+      onSaid('Terms saved ✓');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save the terms.');
+      if (isConflict(err)) setConflict(true);
+      else setError(err instanceof Error ? err.message : 'Could not save the terms.');
+      // `DeskSave` only flashes when the write resolves.
+      throw err;
     } finally {
       setBusy(false);
     }
@@ -299,6 +326,15 @@ function TermsCard({
             />
           </label>
         </div>
+        {conflict && (
+          <ConflictBanner
+            noun="deal"
+            onReload={() => {
+              setConflict(false);
+              onReload();
+            }}
+          />
+        )}
         {error && (
           <p className="dz-state err" role="alert">
             {error}
@@ -306,14 +342,14 @@ function TermsCard({
         )}
         {!locked && (
           <div className="ad-form-a">
-            <button
-              type="button"
+            <DeskSave
               className="ad-action"
-              disabled={busy}
-              onClick={() => void save()}
+              busy={busy}
+              savedLabel="Terms saved"
+              onClick={save}
             >
               Save terms
-            </button>
+            </DeskSave>
           </div>
         )}
       </div>

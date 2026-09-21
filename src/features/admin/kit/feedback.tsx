@@ -66,8 +66,12 @@ const FLASH_MS = 2000;
  *
  * `onClick` may be async — the flash waits for it and is skipped if it throws,
  * because a button that says "✓ Saved" after a failed write is the one lie a
- * confirmation must never tell. Errors are re-thrown, so the desk still handles
- * them exactly as it did.
+ * confirmation must never tell. The desk keeps its own error handling exactly
+ * as it was (every one of them already sets a banner in its own `catch`); a
+ * rejection reaching here only decides whether to flash, and is then let go,
+ * since a click handler has nowhere to throw to. So: a desk whose save can
+ * fail must still catch it — and then re-throw, or the button will congratulate
+ * the person on a write that did not happen.
  *
  * The flashing width is the button's own, measured at click (the old code's
  * `btn.style.minWidth`, `:43753`), so the toolbar does not jump as the label
@@ -103,7 +107,11 @@ export function DeskSave({
 
   const run = async (e: MouseEvent<HTMLButtonElement>) => {
     const width = e.currentTarget.offsetWidth;
-    await onClick();
+    try {
+      await onClick();
+    } catch {
+      return; // the desk has already said what went wrong; don't claim a save
+    }
     setFlashWidth(width || 0);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setFlashWidth(null), FLASH_MS);
@@ -115,7 +123,7 @@ export function DeskSave({
       type="button"
       className={cx(className, saved && 'dz-saved')}
       style={flashWidth ? { minWidth: flashWidth } : undefined}
-      onClick={run}
+      onClick={(e) => void run(e)}
       disabled={disabled || busy}
     >
       {saved ? `✓ ${savedLabel}` : children}

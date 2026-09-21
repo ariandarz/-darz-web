@@ -5,6 +5,21 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-21 — The kit gets one way to say it worked, and one way to say it clashed
+
+- **Success (TD-4).** The old panel confirms a write in two places at once and both are ported:
+  `.dz-toast` (`darz-studio.html:370-372`, the admin's centred card — not the collector app's
+  bottom pill) and the v510/v631 `.dz-saved` flash, where the Save button itself turns green and
+  reads "✓ Saved" for 2s while keeping its own background. `DeskSave` flashes only when the write
+  **resolves**; a button congratulating you on a failed save is the one lie it must never tell.
+- **Conflict (TD-5).** `ConflictBanner`, taken verbatim from the six Projects desks that had each
+  written the sentence independently, now shared by all six and added to five more. Two
+  corrections to the audit: Accounting and Records **cannot 409** — they are last-write-wins
+  (**G-LOCK-1**) — and TD-6's "8 dead service methods" are not dead; three are buttons the old
+  panel ships and this port never built (**G-DEL-1**).
+- **Lint back to 0 (TD-7)**, one of the three a real bug: `AuctionEventPage` had no countdown
+  timer at all, so "2d 23h" froze at mount. Both auction pages now use `useNow`.
+
 ## 2026-09-19 — Tidy up the superseded rows, and price them all in one pass
 
 - **"Tidy them up"** on the standard-set card does what was an instruction: re-points every package
