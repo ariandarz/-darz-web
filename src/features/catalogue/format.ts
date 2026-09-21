@@ -2,6 +2,7 @@
  * Small, framework-free display helpers shared by the catalogue components.
  * Kept out of the components so they stay easy to unit test.
  */
+import { asArray } from '../../api/shapes';
 import type { Artwork } from '../../api/types';
 
 /** Tabular, exact — never rounded for drama (VOICE_AND_COPY.md). */
@@ -11,8 +12,21 @@ export function formatMoney(amount: string | number): string {
   return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
-export function primaryImage(artwork: Pick<Artwork, 'images'>): string | null {
-  const images = artwork.images ?? [];
+/**
+ * The work's own image, or `null`.
+ *
+ * Total on purpose — it takes a missing artwork, not just missing images. The
+ * un-total version read `artwork.images` and so threw
+ * `Cannot read properties of undefined (reading 'images')` when a lot arrived
+ * without its nested work, which **blanked the whole lot page** (the collector
+ * app has no boundary under it, so that is a white screen, not a message).
+ * Every caller here is a render path, and none of them has anything better to
+ * do with a missing image than show none.
+ */
+export function primaryImage(
+  artwork: Pick<Artwork, 'images'> | null | undefined,
+): string | null {
+  const images = asArray<Artwork['images'][number]>(artwork?.images);
   return images.find((img) => img.is_primary)?.image_url ?? images[0]?.image_url ?? null;
 }
 

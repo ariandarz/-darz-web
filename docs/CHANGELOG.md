@@ -26,9 +26,14 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
   orgs. Two were caught by the new boundary rather than blanking. Seven instances of one
   mistake earned `asArray` in `src/api/shapes.ts`, and the stub now states the real shape of
   the two endpoints it was misreporting.
-- **`e2e/desks.spec.ts`** turns the walk into a gate: every desk, its own heading, a
-  surviving shell, nothing thrown — **53 E2E tests** with the detail routes. Verified by
-  reverting a guard and watching it fail. Plus the Phase 6 fidelity pass's first fixes: the
+- **Then the collector app**, never walked before either, where the eighth instance was the
+  worst: `/auctions/lots/:id` was a **white screen**, because `primaryImage` read
+  `artwork.images` off an artwork that was not there — and unlike a desk, a collector route
+  has **no boundary under it**. Fixed; an equivalent boundary for the collector shell is
+  left as a recommendation, since it puts new copy in front of collectors.
+- **`e2e/desks.spec.ts` + `e2e/collector.spec.ts`** turn the walk into a gate: every desk, its
+  own heading, a surviving shell, nothing thrown — **71 E2E tests** across desks, detail routes
+  and the collector app. Verified by reverting a guard and watching it fail. Plus the Phase 6 fidelity pass's first fixes: the
   missing subtitles on Dashboard, Requests and Collectors, and three comments that still
   denied filters G-2 shipped.
 

@@ -111,7 +111,7 @@ export function LotDetailPage() {
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: lot?.artwork.title || 'Darz lot', url });
+        await navigator.share({ title: lot?.artwork?.title || 'Darz lot', url });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -124,6 +124,11 @@ export function LotDetailPage() {
   if (status === 'loading') return <p className="dz-state">Loading…</p>;
   if (status === 'error') return <p className="dz-state err">{error}</p>;
   if (!lot) return null;
+  // A lot without its nested work is not a lot this page can draw: every row
+  // below reads `lot.artwork`. It used to read them anyway and threw on the
+  // first one, which on the COLLECTOR side is a white screen — there is no
+  // boundary under these routes the way there now is under a desk.
+  if (!lot.artwork) return <p className="dz-state err">This lot could not be loaded.</p>;
 
   const image = primaryImage(lot.artwork);
   const rows: Array<[string, string]> = (

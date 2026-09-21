@@ -52,8 +52,16 @@ ledger?). G-1…G-6 are all decided.
 signing in against the **E2E stub**, since the only local team login's password is recorded
 nowhere) found **three blank desks**, two already on `main` — including a nested `<Route>`
 that had left Phase 2's ledger-entry detail unreachable from any URL. Fixed, guarded by a new
-`DeskBoundary`, and turned into `e2e/desks.spec.ts` so it is a gate: **38 E2E tests, 466 unit
-tests**. Details in `docs/ADMIN_V1_AUDIT.md` §9a. **TD-9 is closed for the stub tier.**
+`DeskBoundary`, and turned into a gate. Walking the **detail routes** and then the **collector
+app** — neither of which had ever been walked — found five more of the same crash, the worst
+being `/auctions/lots/:id`, a **white screen in the collector app**, which unlike a desk has no
+error boundary under it. **71 E2E tests · 478 unit tests.** Details in
+`docs/ADMIN_V1_AUDIT.md` §9a. **TD-9 is closed for the stub tier.**
+
+**Recommended, not done (needs the owner):** an error boundary for the collector shell, the
+counterpart of the admin's `DeskBoundary`. It is left out because it puts new copy in front of
+collectors, which is a design decision — but until it exists, any unexpected response shape on
+a collector route is a blank page rather than a message.
 
 ### What next (2026-09-21, revised 2026-09-22)
 
