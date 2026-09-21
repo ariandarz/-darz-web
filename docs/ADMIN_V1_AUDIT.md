@@ -34,7 +34,7 @@ Measured:
 | Backend admin endpoints | **141** (of 191 total) |
 | **Bound in the frontend API layer** | **111 of 141 (79%)** |
 | Unused service methods (dead code) | 8 of 217 |
-| Tests | **386 passing**, 36 files |
+| Tests | **386 passing**, 36 files *(443 in 41 files as of 2026-09-21, plus the `e2e/` stub tier added in #66)* |
 | Lint | 0 errors, 3 warnings (all outside admin) |
 | Typecheck | **Fails on macOS only** — see TD-1 |
 
@@ -503,7 +503,7 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 | ~~**TD-6**~~ | ~~8 unused service methods … delete or wire.~~ **Resolved 2026-09-21 — none were dead code.** Three are unbuilt old-panel buttons (**G-DEL-1**), one is a destructive action the old panel never had, one waits on a hidden v0.1 screen, and `RecommendationService` is a whole unbuilt surface. All eight now say in a comment why they have no caller. |
 | ~~**TD-7**~~ | ~~3 lint warnings.~~ **Closed 2026-09-21** — and one was a real bug: `AuctionEventPage` had no countdown timer at all, so its "2d 23h" froze at mount. Both auction pages now take the time from `useNow`. Lint: **0 warnings**. |
 | **TD-8** | **`admin.css` is 3,389 lines in one file.** It is well-commented and cited, but it is now the second-largest file in the repo. Consider splitting per desk group as the kit did for components. |
-| **TD-9** | **No admin E2E coverage.** 386 tests are pure logic tests; no test opens a desk against a running backend. The Phase 13 harness exists but the admin is not in it. |
+| **TD-9** | ~~**No admin E2E coverage.**~~ **Partly closed 2026-09-21** (#66, after this audit was written): `e2e/` now boots the production build against a stub server in CI, and one of its three tests *does* open a desk — "a desk renders its empty state against an empty backend". What remains is **breadth, not existence**: 3 smoke tests across 52 admin routes, with the real-backend walks still local and manual. |
 
 ### Can safely postpone
 

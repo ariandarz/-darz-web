@@ -57,10 +57,15 @@ ledger?). G-1…G-6 are all decided.
 2. **Phase 6b** — the three deletes, once **G-DEL-1** is ruled.
 3. **Phase 5b** — the Database desk's four *hard* filters (completeness, size ranges, duplicate
    images, Gallery Portal). Backend work first; the desk already names them as unavailable.
-4. **Phase 13 E2E** — unchanged from 2026-09-18 and still the biggest hole, now bigger: **all 443
-   tests are logic tests and not one renders a component**, while the admin panel has grown to 41%
-   of the app. TD-9. Needs the one decision recorded below: seeded local backend in CI, or a
-   network-layer stub.
+4. **Phase 13 E2E — its first tier landed 2026-09-21** (in #66, `e2e/`), which closes both the
+   "biggest remaining gap" framing below *and* the decision it was waiting on: the answer was
+   **both tiers, split by what each can honestly claim.** The **stub tier** (`e2e/smoke.spec.ts`,
+   3 tests) runs the production build against a no-state node server in CI — it proves the app
+   boots, the collector gate renders, a team session reaches the panel, and a desk survives an
+   empty backend. The **real-backend tier** is local-only by design, because this repo's CI has no
+   backend checkout. So the suite is no longer "nothing renders a component" — the remaining gap
+   is **breadth**: 3 smoke tests across 52 admin routes, and the per-desk walks are still manual
+   (CLAUDE.md rule 5). That is what TD-9 now means.
 5. Then the older repo-wide items below — the Vercel role (item 4), backend G-F1-1, the hidden
    collector features, and Phase 7 (Intelligence / Marketing / Document Builder) only if **G-6**
    is ever reversed.
