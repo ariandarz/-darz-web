@@ -10,10 +10,13 @@
 | `ariandarz/darz-backend-api` | `../darzmarket-api` | `development` @ `74c9326` | Source of truth for backend capability |
 | `ariandarz/darzstudio.art` | `../DarzStudio` | `main` (shallow) | Source of truth for admin UI/UX (`darz-studio.html`, 43,789 lines) |
 
-> **Read this first — a branch correction.** `main` on `-darz-web` is **72 commits behind
-> `development`**, and on `main` the admin panel is one page (`/admin/requests`). Everything below
-> measures `development`, which is the real working line and carries the whole panel. Any audit run
-> against `main` will conclude the panel does not exist. It does.
+> **Read this first.** This audit was written against `development` on 2026-09-21, when `main` was
+> 72 commits behind it and carried a one-page admin panel. **That gap is closed** — PR #68 and then
+> #71 brought `main` level, so either branch now measures the same thing. The figures below are the
+> ones taken on 2026-09-21 and are dated rather than rewritten; where later work changed a finding,
+> the finding says so.
+>
+> **New session? Read [`docs/HANDOFF.md`](HANDOFF.md) before this file.**
 
 ---
 
@@ -38,7 +41,8 @@ Measured:
 | Lint | 0 errors, 3 warnings (all outside admin) |
 | Typecheck | **Fails on macOS only** — see TD-1 |
 
-**Completion against V1:** roughly **80–85%** of the panel that V1 needs. The 23 unbuilt tabs split
+**Completion against V1:** roughly **80–85%** of the panel that V1 needs *(measured 2026-09-21;
+~85–90% after the Phase 6 work released on 2026-09-22)*. The 23 unbuilt tabs split
 cleanly:
 
 - **10 have no backend at all** (Logistics, Analytics, Stories, Social ×3, Languages, Strategy,
