@@ -128,6 +128,24 @@ const routes = {
   // undefined — the desk now normalises (see `artworkFacets.ts`), and this
   // route makes the stub tell the truth about the endpoint's real shape.
   'GET /api/catalog/admin/artworks/facets/': () => envelope({ years: [], sources: [] }),
+  // The collector questionnaire. Both halves are registered because the
+  // catch-all cannot express either: a GET **404s** until the collector has
+  // submitted one — the documented answer, not a failure — and the catch-all's
+  // paginated 200 would instead tell the app a profile already exists and send
+  // it straight to the review with no answers. POST answers the stored object.
+  'GET /api/recommendations/questionnaire/': () => ({
+    status: 404,
+    body: {
+      success: false,
+      error: { code: 'not_found', message: 'No questionnaire on file.' },
+      timestamp: new Date().toISOString(),
+    },
+  }),
+  // The stub reads no request bodies anywhere, so this does not echo what was
+  // sent — it answers the shape and the timestamp, which is all the app reads
+  // back (the thank-you screen renders from its own state, not the response).
+  'POST /api/recommendations/questionnaire/': () =>
+    envelope({ answers: [], submitted_at: new Date().toISOString() }),
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
       healthy: true,
@@ -172,8 +190,12 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (hit) {
-    res.writeHead(200);
-    res.end(JSON.stringify(hit(req)));
+    // A handler may answer `{status, body}` when the endpoint's real answer is
+    // not a 200 — the questionnaire's "never submitted" 404 is the first.
+    const answered = hit(req);
+    const status = answered && typeof answered.status === 'number' ? answered.status : 200;
+    res.writeHead(status);
+    res.end(JSON.stringify(status === 200 ? answered : answered.body));
     return;
   }
   for (const [re, method, answer] of patterns) {

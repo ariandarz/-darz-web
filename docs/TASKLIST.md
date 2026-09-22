@@ -710,9 +710,17 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [x] Settings — `/settings` (`SettingsPage`, port of `settingsView` :9827): profile row, Appearance
       (Paper/Black), account links, legal, about, Leave the Room. Notifications / membership / PWA
       rows behind flags.
-- [ ] Questionnaire — **unblocked 2026-09-17**: backend Phase 25 merged
-      (`GET/POST /api/recommendations/questionnaire/`); the `[!]` blocker in the Phases 12+ section
-      below is stale. Still hidden behind `features.questionnaire` pending this UI.
+- [x] Questionnaire — **built 2026-09-22** (`/questionnaire`, `src/features/questionnaire/`).
+      All four of the old screens in their own wording: intro (`qintro`, owner-editable via
+      `theme.qbIntro`) → contact step → the ten questions (owner-editable via
+      `theme.qbQuestions`, with `QVER` discarding a draft written against an older order) →
+      review → thank-you. `QuestionnaireController` owns the flow; the draft is per-device in
+      `localStorage` and the submitted answers live on the server. 29 unit tests + 2 E2E walks.
+      Two findings recorded: **G-Q-1** — the contact step cannot write back to the collector's
+      account, because this backend has no collector self-update endpoint, so Darz receives the
+      details as answers and the account row is unchanged; **G-Q-2** — the old intro's three
+      Roman-numeral points are *built and never rendered* there (`rows` is assigned at
+      `app.html:10032` and never concatenated), so they are recorded rather than ported.
 - [ ] Membership display/redemption (backend Phase 13 merged — ready)
 - [ ] PWA install + push opt-in `[!]` VAPID public key is still not published by the API (checked
       2026-09-17 — `apps.notifications` has no `GET` for it); push delivery itself is ready

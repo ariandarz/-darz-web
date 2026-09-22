@@ -8,8 +8,9 @@
  *   Overview — the numbers that matter as tiles (`profOverviewHTML`, :9527):
  *              Saved · Activity · Messages (Auctions tile hidden), the
  *              "Darz replied to you" banner, recent activity. The
- *              questionnaire ("Get to know you") and "Curated for you" cards
- *              are behind `features.questionnaire` / `.recommendations`.
+ *              questionnaire ("Get to know you") card is behind
+ *              `features.questionnaire` and opens /questionnaire; the
+ *              "Curated for you" card is behind `.recommendations`.
  *   Market   — "Your acquisitions" (`dzAcqSectionHTML`, :9685) over Saved
  *              works and "Requests & activity" with filter chips
  *              (`profMarketHTML`, :9704). Buy / Offers chips only appear
@@ -27,12 +28,13 @@ import { useArtworks } from '../catalogue/useArtworkCache';
 import '../catalogue/catalogue.css';
 import { ConversationRow } from '../conversations/ConversationRow';
 import { useConversations } from '../conversations/useConversations';
-import { Sheet } from '../../components';
+import { Button, Sheet } from '../../components';
 import { Acquisitions } from './Acquisitions';
 import { SavedListController } from '../saved/SavedListController';
 import { useSaved } from '../saved/useSaved';
 import { useListController } from '../shared/useListController';
 import { features } from '../shell/features';
+import '../questionnaire/questionnaire.css';
 import './profile.css';
 
 type Anchor = 'overview' | 'market' | 'auctions' | 'account';
@@ -151,6 +153,12 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
 
   return (
     <>
+      {/* "Get to know you" LEADS the Overview (v927, app.html:9566-9587) —
+          deliberately, so Darz can curate around the collector's taste before
+          anything else is shown. `theme.showQ` there; `features.questionnaire`
+          here. The card's two copy pairs switch on whether a profile has
+          already been sent, which is what `useQuestionnaireSent` answers. */}
+      {features.questionnaire && <GetToKnowYou />}
       {unseen > 0 && (
         <button type="button" className="ov-pending" onClick={() => navigate('/chat')}>
           <span className="pd" />
@@ -216,6 +224,51 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
         </>
       )}
     </>
+  );
+}
+
+/** The Overview's questionnaire prompt (app.html:9579-9587). Its heading, body
+ * and button all change once the collector has sent a profile, which the old
+ * app read from its local `qdone` flag; here the server is asked, because the
+ * answers live there and a cleared browser must not make a sent profile look
+ * unsent. A failed read shows the "not yet" copy — the honest degraded state,
+ * and the card still opens the flow either way. */
+function GetToKnowYou() {
+  const navigate = useNavigate();
+  const { recommendations } = useApi();
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    // 404 is the documented "never submitted" answer, so a rejection here is
+    // simply `false` — see `RecommendationService.questionnaire`.
+    recommendations.questionnaire().then(
+      () => alive && setSent(true),
+      () => alive && setSent(false),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [recommendations]);
+
+  return (
+    <div className="qcta-wrap">
+      <div className="qcta">
+        <div className="qcta-seam" />
+        <div className="qcta-lab">Get to know you</div>
+        <div className="qcta-h">
+          {sent ? 'Your taste, on file.' : 'Help Darz get to know your taste'}
+        </div>
+        <div className="qcta-p">
+          {sent
+            ? 'Darz curates around your profile — update it whenever your taste shifts.'
+            : 'A few questions about how you collect, so every work Darz prepares feels right for you.'}
+        </div>
+        <Button block onClick={() => navigate('/questionnaire')}>
+          {sent ? 'Review your profile →' : 'Begin your profile →'}
+        </Button>
+      </div>
+    </div>
   );
 }
 

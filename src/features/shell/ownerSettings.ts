@@ -12,7 +12,8 @@
  * Black *visual* theme and has nothing to do with this.
  *
  * Kept tiny on purpose: a setting belongs here only once something reads it.
- * The first is `requestWaitHours` (G-3).
+ * The first is `requestWaitHours` (G-3); the questionnaire's owner-editable
+ * bank and intro copy (`qbQuestions` / `qbIntro`) are the second and third.
  */
 
 let settings: Record<string, unknown> = {};
@@ -44,6 +45,39 @@ export function settingNumber(key: string, fallback: number): number {
   const raw = settings[key];
   const value = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw;
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+/**
+ * The raw value under `key`, unread and unchecked — for a setting whose shape
+ * is the reader's business rather than this module's.
+ *
+ * `settingNumber` above can decide what a good number is; it cannot decide
+ * what a good *question bank* is, and a half-validator here would be a second
+ * place to keep that rule in step with `questions.ts`. So this hands the value
+ * over as `unknown`, which forces the reader to narrow it — see
+ * `questionnaire/questions.ts::liveBank`, which does exactly that and falls
+ * back to the built-in bank when the theme holds something unusable.
+ */
+export function settingUnknown(key: string): unknown {
+  return settings[key];
+}
+
+/**
+ * A plain object from the theme, or `{}` — for a settings GROUP whose fields
+ * are each optional (`qbIntro`'s six strings).
+ *
+ * Returns `{}` rather than null for an array, a string or a missing key, so a
+ * caller reads `record[field]` without a guard and gets `undefined` — which is
+ * what its own per-field fallback already handles. An array is excluded
+ * deliberately: `typeof [] === 'object'`, and an array reaching a field-by-field
+ * reader gives every field `undefined` anyway, but saying so here keeps the
+ * type honest.
+ */
+export function settingRecord(key: string): Record<string, unknown> {
+  const raw = settings[key];
+  return raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? (raw as Record<string, unknown>)
+    : {};
 }
 
 /** Test seam — resets the store between cases. Not used by app code. */

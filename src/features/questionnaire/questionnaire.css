@@ -1,0 +1,594 @@
+/**
+ * Questionnaire — ported from the style block the old app injects when the
+ * flow first opens (`app.html:10061`, one long `st.textContent`), plus the
+ * `/* questionnaire *\/` block in the main stylesheet (`app.html:645-700`).
+ *
+ * Two sources, because the old app really does split them: the step chrome
+ * (`.qstep` … `.qcont`) is injected at runtime by the flow, and the review /
+ * summary chrome (`.qwrap`, `.qsum-*`, `.qrev-*`) sits in the static sheet.
+ * Both are reproduced here with their values unchanged; hard-coded colours are
+ * the only edits, mapped onto this repo's tokens (`#26262e` stays, because it
+ * is the old app's own fixed charcoal in BOTH themes — see `.qcont-bw`).
+ *
+ * The custom select the contact step uses is NOT here: it is `Dropdown`
+ * (`src/components/Dropdown.tsx`), already the port of `dzSel` / `.dzsel-*`.
+ */
+
+/* ---- step chrome (app.html:10061) ----------------------------------- */
+
+.qstep {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 56px);
+}
+
+.qsbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 4px;
+}
+
+.qsback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 25px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 400;
+  border: 1.5px solid var(--hair);
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  padding-bottom: 2px;
+  transition:
+    border-color 0.12s,
+    background 0.12s,
+    box-shadow 0.12s;
+  touch-action: manipulation;
+}
+
+.qsback:hover {
+  border-color: var(--ink3);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 8%);
+}
+
+.qsback:active {
+  background: var(--soft);
+}
+
+.qstitle {
+  font-size: 13px;
+  color: var(--ink3);
+  font-weight: 600;
+}
+
+.qstepn {
+  font-size: 12px;
+  color: var(--ink3);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.qprog {
+  display: flex;
+  gap: 5px;
+  padding: 10px 18px 2px;
+}
+
+.qprog span {
+  height: 6px;
+  border-radius: 4px;
+  flex: 1;
+  background: var(--hair);
+  transition: background 0.25s;
+  touch-action: manipulation;
+}
+
+.qprog span.f {
+  background: var(--dz-seam);
+}
+
+/* `padding-bottom` is the old sheet's own override of the shorthand above it
+   (`.qbody{padding:30px 20px 16px}` then `.qbody{padding-bottom:128px!important}`),
+   folded into one rule — the sticky footer needs the clearance. */
+.qbody {
+  flex: 1;
+  padding: 30px 20px 128px;
+}
+
+.qeyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.qeyebrow::before {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: var(--dz-seam);
+  display: inline-block;
+  border-radius: 2px;
+}
+
+.qbig {
+  font-size: 31px;
+  font-weight: 700;
+  line-height: 1.13;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-head);
+}
+
+.qbigsub {
+  font-size: 15px;
+  color: var(--ink3);
+  margin: 13px 0 26px;
+}
+
+.qnote {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin: 14px 2px 0;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+
+.qhelp {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin: -4px 2px 15px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+.qfld-l {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 2px 2px 6px;
+  display: block;
+}
+
+.qopts {
+  display: flex;
+  flex-direction: column;
+}
+
+.qopt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: 1.6px solid var(--hair);
+  background: var(--card);
+  border-radius: 15px;
+  padding: 17px 18px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  margin-bottom: 11px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s,
+    background 0.12s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.qopt:hover {
+  border-color: var(--ink3);
+  box-shadow: 0 3px 12px rgb(0 0 0 / 6%);
+}
+
+.qopt.on {
+  border-color: var(--accent);
+  background: var(--card);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.qopt-l {
+  flex: 1;
+}
+
+.qopt-box {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--hair);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 15px;
+  color: transparent;
+  transition: 0.12s;
+}
+
+.qopt:hover .qopt-box {
+  border-color: var(--ink3);
+}
+
+.qopt.on .qopt-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.qin2,
+.qta2 {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+  border: 1.6px solid var(--hair);
+  border-radius: 13px;
+  padding: 15px 16px;
+  outline: none;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+
+.qin2 {
+  margin-bottom: 12px;
+}
+
+.qta2 {
+  resize: vertical;
+}
+
+.qin2:focus,
+.qta2:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(10 10 10 / 6%);
+}
+
+.qfoot {
+  position: sticky;
+  bottom: 0;
+  padding: 14px 18px 24px;
+  background: linear-gradient(180deg, transparent, var(--bg) 36%);
+}
+
+/* The old app's Continue button is a FIXED charcoal in both Paper and Black
+   (`html.dz-bw .qcont-bw` repeats the same `#26262e`), so these are literals
+   rather than tokens — `var(--ink)` would invert it in Black mode and hand the
+   collector a white button with white text. */
+.qcont {
+  width: 100%;
+  border: 1px solid #3a3a44;
+  border-radius: 32px;
+  padding: 18px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: #26262e;
+  color: #fafafa;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgb(0 0 0 / 16%);
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.08s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qcont:hover:not(:disabled) {
+  background: #2e2e37;
+  box-shadow: 0 8px 26px rgb(0 0 0 / 22%);
+}
+
+.qcont:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qcont:disabled {
+  opacity: 0.45;
+  cursor: default;
+  background: var(--hair);
+  color: var(--ink3);
+  box-shadow: none;
+}
+
+html.dz-bw .qcont:hover:not(:disabled) {
+  background: #33333c;
+}
+
+/* ---- review / summary chrome (app.html:645-700) ---------------------- */
+
+.qwrap {
+  padding: 0 16px;
+}
+
+.qhead {
+  padding: 18px 0 12px;
+}
+
+.qttl {
+  font-size: 30px;
+  font-weight: 500;
+  font-family: var(--font-head);
+  margin-top: 8px;
+  letter-spacing: 0;
+  line-height: 1.05;
+}
+
+.qsub {
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.qsum-card {
+  background: var(--card);
+  border: 1.5px solid var(--hair);
+  border-radius: 16px;
+  padding: 4px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+}
+
+.qsum-row {
+  padding: 15px 0;
+  border-top: 1px solid var(--hair2);
+}
+
+.qsum-row:first-child {
+  border-top: 0;
+}
+
+.qsum-q {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.qsum-a {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.qsum-h {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 24px 2px 10px;
+}
+
+.qsum-empty {
+  font-size: 13px;
+  color: var(--ink3);
+  padding: 15px 0;
+}
+
+.qrev-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 24px 0 8px;
+}
+
+.qrev-btn {
+  width: 100%;
+  padding: 16px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 14px;
+  text-align: center;
+}
+
+/* "Sent to Darz · 12 Sep 2026" (app.html:10148-10152) */
+.qsent {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.qsent svg {
+  flex: 0 0 auto;
+  display: block;
+}
+
+.qsent span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+/* ---- intro (app.html:10046-10055) ------------------------------------ */
+
+.qintro-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  padding: 24px 20px 128px;
+}
+
+.qintro-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0 0 16px;
+}
+
+.qintro-title {
+  font-size: 38px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-head);
+  white-space: pre-line;
+}
+
+.qintro-lede {
+  font-size: 15px;
+  color: var(--ink2);
+  line-height: 1.72;
+  margin: 16px 0 4px;
+  max-width: 31em;
+}
+
+.qintro-rule {
+  height: 1px;
+  background: var(--hair);
+  margin: 24px 0 18px;
+}
+
+/* The `.qintro-pt` / `.qintro-num` rules the old file's `pts` would need are
+   not here either: that block is dead code in `qintro()` (G-Q-2). */
+
+.qintro-fine {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 20px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+/* ---- done (app.html:10170-10180) ------------------------------------- */
+
+.qdone-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 46px 8px 4px;
+}
+
+.qdone-seam {
+  width: 40px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+}
+
+.qdone-top .qeyebrow {
+  justify-content: center;
+  margin: 22px 0 9px;
+  color: var(--ink3);
+}
+
+.qdone-h {
+  font-family: var(--font-head);
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--ink);
+}
+
+.qdone-p {
+  font-size: 14px;
+  color: var(--ink2);
+  line-height: 1.7;
+  max-width: 344px;
+  margin: 14px auto 0;
+}
+
+/* ---- the Profile prompt card (app.html:9580-9587) -------------------- */
+
+.qcta {
+  background: var(--card);
+  border: 1px solid rgb(0 212 204 / 32%);
+  border-radius: 12px;
+  padding: 16px 17px 15px;
+}
+
+.qcta-wrap {
+  padding: 14px 16px 6px;
+}
+
+.qcta-seam {
+  width: 34px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+  margin-bottom: 12px;
+}
+
+/* `PF_LST` (app.html:9441) — the profile's small uppercase label. */
+.qcta-lab {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 6px;
+}
+
+.qcta-h {
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.qcta-p {
+  font-size: 12px;
+  color: var(--ink2);
+  margin-top: 6px;
+  line-height: 1.55;
+}
+
+.qcta .btn {
+  margin-top: 13px;
+}
+
+/* ---- desktop (app.html:425-426) -------------------------------------- */
+
+html.dz-desktop .qstep,
+html.dz-desktop .qwrap {
+  padding-left: clamp(16px, 2vw, 28px);
+  padding-right: clamp(16px, 2vw, 28px);
+}
