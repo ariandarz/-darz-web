@@ -155,14 +155,29 @@ looks; the kit is the shared vocabulary that stops it.
 | `SelectFilter` · `SearchFilter` · `ToggleFilter` | the toolbar controls; empty means _no filter_, sent as `undefined`                 |
 | `ConfirmDialog`                                  | the old `dzConfirm(message, {okLabel})` shape, plus `danger`                       |
 | `ShownOnceSecret`                                | the credential four endpoints return once and never again                          |
-| `deskState.ts`                                   | the two rules below — pure, and the only part with tests                           |
+| `DeskToast` + `useDeskToast`                     | the panel's transient line (`.dz-toast`, centred) — what happened                  |
+| `DeskSave`                                       | the Save button that turns green and reads "✓ Saved" — that your click did it      |
+| `ConflictBanner` + `isConflict`                  | a 409, said as a 409, with the only move that helps (Reload, never retry)          |
+| `deskState.ts` · `feedbackState.ts`              | the pure parts — the rules below, and the only pieces with tests                   |
 
-Two rules the kit fixes once for the whole panel, both easy to get wrong alone:
+Four rules the kit fixes once for the whole panel, all easy to get wrong alone:
 
 - **A reload never flashes the table away.** Rows win over `loading`, so filtering a desk does not
   blink.
 - **An error never hides rows.** A failed refresh leaves the last good page usable; the failure is a
   banner. A failed row action wins over a failed load, because it is what the person just did.
+- **A write says so twice, and only when it landed.** The toast says *what* happened, the button
+  says *your click did it* — the old panel's own pair. `DeskSave` flashes only when the work
+  resolves, so a desk whose save can fail must catch **and re-throw**, or the button congratulates
+  the person on a write that did not happen.
+- **A 409 is not a failed write.** It means someone else got there first, so the banner offers
+  **Reload**, never a retry — retrying would clobber their edit. Note which writes can actually
+  409: only `catalog`, `accounts`, `projects`, `crm` and `sales` enforce `expected_version`, so
+  adding the banner to a desk outside those is dead code (see **G-LOCK-1** in the V1 audit).
+
+Underneath all of it, **`DeskBoundary`** wraps the desk `<Outlet>` in `AdminShell`: a desk that
+throws degrades to a message with the navbar intact instead of blanking the whole panel. It is a
+floor, not a substitute for normalising a response — see `src/api/shapes.ts`.
 
 ### Adding a desk
 
@@ -170,8 +185,11 @@ Two rules the kit fixes once for the whole panel, both easy to get wrong alone:
    first one's state machine is a bug, per CLAUDE.md).
 2. A page: `<DeskPage>` + filters + `<DeskList>` + a `Column<T>[]`. The desk supplies its columns,
    its filters' vocabulary and its actions — nothing else.
-3. Its route in `src/routes.tsx`.
+3. Its route in `src/routes.tsx`. **Check it is a sibling `<Route>`, not nested inside another
+   route's `element`** — that mistake shipped once and silently unregistered a whole page.
 4. **Its `path` in `adminNav.ts`** — until then the navbar does not know it exists.
+5. **Its row in `e2e/desks.spec.ts`** — route and heading. That walk is what catches a desk that
+   renders nothing, which no logic test can see.
 
 `AdminRequestsPage` is the worked example: after moving onto the kit it is columns, filters and one
 transition action, and nothing about chrome.
