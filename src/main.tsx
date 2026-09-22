@@ -1,6 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+// Before global.css: the @font-face declarations must exist before the first
+// rule that asks for one. Self-hosted rather than fetched from Google — see
+// the file's own header for why that matters for this app's collectors.
+import './design/fonts.css';
 import './design/global.css';
 import { ApiProvider } from './api/ApiProvider';
 import { themeController } from './design';
