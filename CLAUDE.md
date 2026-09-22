@@ -1,5 +1,9 @@
 # Darz Market Web — project context
 
+> **New session: read [`docs/HANDOFF.md`](docs/HANDOFF.md) first.** This file is the standing
+> rules; that one is the current state, the next tasks, and the practical things (how to open a
+> screen without a backend, which recorded claims turned out false) that are not rules.
+
 React + TypeScript + Vite frontend for Darz Market. Separate repo from the backend
 (`darzmarket-api`) and the old app (`DarzStudio`) — see below for how the three relate.
 
@@ -22,8 +26,13 @@ Two sources are required **together** for every feature — neither alone is eno
   goes to a PR — that part has not changed. What did change: the old "owner pushes/merges, never
   Claude" rule no longer holds unconditionally. Since 2026-09-07 the owner has instructed Claude to
   merge on a per-request basis — PRs #1-#5 that day, and since then #15-#18 (design pass + release),
-  #22/#25/#26 (Phase 5 steps), #27/#28 (Phase 5 release + merge-back) and #29/#30/#31 (team sign-in,
-  its release, and the merge-back). Every one of those was a separate instruction.
+  #22/#25/#26 (Phase 5 steps), #27/#28 (Phase 5 release + merge-back), #29/#30/#31 (team sign-in,
+  its release, and the merge-back) and, on 2026-09-22, #69/#70 ("merge both PRs") then #71
+  ("release development to main"). Every one of those was a separate instruction.
+  **Note the shape of the 2026-09-22 pair**, because it is the one most likely to be
+  misread later: an overnight instruction to "keep everything moving" and "push/deploy where
+  appropriate" did **not** authorise a merge — the merges happened only when the owner
+  afterwards said "merge both PRs" and "release development to main", in as many words.
   **Merging still needs the owner to ask for it explicitly, per request — it is not a standing
   permission, and the list above is a record, not a precedent to act on.** Default remains: open the
   PR and stop.

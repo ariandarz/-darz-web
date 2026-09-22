@@ -36,6 +36,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
   wrong" is its heading verbatim. Gated by a `/_boom` route that exists only in the E2E
   build.
 - **77 E2E · 484 unit · typecheck · lint 0 · format · build.**
+## 2026-09-22 — Released: Phase 6's kit and the first full walk of the app (#69, #70, #71)
+
+- **`main` and `development` are level again**, identical trees, no open PRs. The release publishes
+  nothing — the Vercel project still does not exist (Phase 14, blocked on a team role).
+- **What went out:** the desk kit's write feedback (#69) and the eight broken routes the first full
+  walk of the app found (#70) — two of them already on `main`, one of them a nested `<Route>` that
+  had left Phase 2's ledger-entry detail unreachable from any URL since it shipped.
+- **Gate at release:** 478 unit tests · 71 E2E tests (was 443 and 3) · typecheck · lint 0 warnings ·
+  format · build. `docs/HANDOFF.md` is new and is where a fresh session should start.
 
 ## 2026-09-22 — Every desk was opened for the first time, and three were blank
 

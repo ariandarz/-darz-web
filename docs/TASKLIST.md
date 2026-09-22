@@ -1,9 +1,15 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
 **Last updated:** 2026-09-22 (**Phase 6 DoD met · Phase 6b done · the collector boundary
-built**) · **Current focus:** **the admin panel's V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That
-document, not this one, is where the current line of work is planned; this file records what has
-landed and what is still open across the whole repo.
+built**; before that, PRs #69-#71 merged and released) · **Current focus:** **the admin panel's
+V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That document, not this one, is where the current line
+of work is planned; this file records what has landed and what is still open across the whole
+repo.
+
+> **New session? Read [`docs/HANDOFF.md`](HANDOFF.md) first.** It is the two-minute version of
+> this file plus the parts no document was saying: how to open a screen in a browser without the
+> backend, the bug this repo keeps rewriting, and the claims in these docs that turned out false
+> when checked.
 
 **Read this before trusting the sections further down: everything from "The v0.1 loop is closed"
 onwards dates from 2026-09-18 or earlier and describes the collector app's v0.1 line** — including
@@ -45,8 +51,28 @@ pattern) and TD-7 (lint back to 0 warnings) landed together with the kit's `Desk
 - **TD-7 hid a real bug**: `AuctionEventPage` read `Date.now()` during render with no timer at
   all, so its countdown was frozen at whatever it said when the page mounted.
 
-**Open for the owner:** **G-DEL-1** (build the three deletes?) and **G-LOCK-1** (backend: lock the
-ledger?). G-1…G-6 are all decided.
+**Open for the owner:** **G-DEL-1** (build the three deletes?), **G-LOCK-1** (backend: lock the
+ledger?), and **an error boundary for the collector shell** (the admin has one; the collector app
+does not, so an unexpected response shape there is a white screen for a customer). G-1…G-6 are all
+decided.
+
+### Released 2026-09-22 — PRs #69, #70, #71
+
+`main` and `development` have **identical trees** again (`main` leads by its merge commit only),
+**no open PRs**, and the gate is **478 unit tests · 71 E2E tests · typecheck · lint 0 warnings ·
+format · build**. The release publishes nothing — the Vercel project still does not exist (item 4
+below).
+
+- **#69 — Phase 6's kit.** `DeskToast` / `DeskSave` / `ConflictBanner`; TD-4, TD-5, TD-6, TD-7
+  closed. Lint 3 warnings → 0, and one of the three was a real bug (`AuctionEventPage` had no
+  countdown timer at all, so its "2d 23h" froze at mount).
+- **#70 — the first full walk of the app**, made possible by signing in against the E2E stub
+  rather than a backend nobody has the password for. **Eight broken routes**, two already on
+  `main`, including a nested `<Route>` that had left Phase 2's ledger-entry detail unreachable
+  from any URL. Fixed, plus `asArray` and `DeskBoundary` underneath, and the walk is now
+  `e2e/desks.spec.ts` + `e2e/collector.spec.ts` (3 → 71 E2E tests). **TD-9 closed for the stub
+  tier.** Also the panel's surface, wrong on every desk and invisible in source.
+- **#71 — the release.**
 
 **2026-09-22 — the first full desk walk.** Opening all 35 built desks (possible at last by
 signing in against the **E2E stub**, since the only local team login's password is recorded
