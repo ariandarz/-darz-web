@@ -5,6 +5,21 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-22 — The deploy block is cleared, and ArvanCloud is scoped to the frontend
+
+- **Frontend Phase 14 is closed.** The owner created the `darz-web` Vercel project on the team
+  and imported the repo, so `main` auto-deploys — **https://darz-web.vercel.app**, verified
+  serving. The "blocked on a Vercel team role" item, open since 2026-09-07, is done. Creating
+  the project from here still 403s; it did not need to.
+- **The deploy is visual-only and stays that way** until `darzmarket-api` has a public URL.
+  `.env.production` is the deliberate `api.invalid` placeholder.
+- **ArvanCloud is frontend-only** (owner, 2026-09-22). `docs/DEPLOY_ARVAN.md` §1 says so and
+  says what that buys: the same build, served from inside Iran with no foreign origin on the
+  critical path — and no sign-in, because the API is nowhere yet. §4 stays as guidance for
+  whenever the backend moves, with the note that a split (frontend in Iran, API abroad) moves
+  the blocked-origin problem from the fonts onto the data path, where it cannot be self-hosted
+  away.
+
 ## 2026-09-22 — Released: Phase 6's DoD, the three deletes, the collector boundary (#73, #74)
 
 - **`main` and `development` are the same commit** (`dd62f7a`) — not merely identical trees.
