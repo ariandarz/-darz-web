@@ -43,6 +43,11 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/auction-records', 'Auction Records'],
   ['/admin/auction-records/new', 'New auction record'],
   ['/admin/sources', 'Galleries & Sources'],
+  // The nav's OTHER tab on this route. It is the same desk filtered to
+  // galleries and it carries its OWN heading and sub-line, which is the
+  // fidelity fix of 2026-09-22 — walking only the bare path let both tabs
+  // draw the partners desk's copy for as long as they did.
+  ['/admin/sources?type=gallery', 'Galleries'],
   ['/admin/exhibition-services', 'Exhibition Services'],
   ['/admin/issue', 'Issue a document'],
   ['/admin/sales', 'Market Sales'],

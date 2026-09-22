@@ -56,6 +56,10 @@ export function SourcesPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const typeParam = params.get('type') ?? undefined;
+  /** The nav's Galleries tab is this desk filtered to galleries (`adminNav.ts`
+   * routes it to `?type=gallery`), and the old panel treats it as its own
+   * desk with its own heading and copy. */
+  const galleriesTab = typeParam === 'gallery';
   const viewParam = params.get('view');
   const [view, setView] = useState<View>(
     viewParam === 'updates'
@@ -200,7 +204,14 @@ export function SourcesPage() {
   return (
     <DeskPage
       wide
-      title="Galleries & Sources"
+      /* The nav has TWO tabs on this route — Galleries (`?type=gallery`) and
+         Sources & Partners — and until 2026-09-22 both drew the partners
+         desk's heading and sub-line, so the Galleries tab read as the wrong
+         desk. The old panel gives it its own (`workspaces-runtime.js:195`),
+         and the sub-line it gives it is precisely the one that explains the
+         overlap: "The same record the Sources & Partners desk edits — there
+         is only one." Found against `04-galleries`. */
+      title={galleriesTab ? 'Galleries' : 'Galleries & Sources'}
       action={
         <span className="ad-rowacts">
           <Segment<View>
@@ -256,11 +267,20 @@ export function SourcesPage() {
         ) : undefined
       }
       subtitle={
-        <>
-          Galleries, dealers and artists who share works with Darz — each relationship in one
-          place, with the works they shared and a no-login portal (token + PIN). Deals &amp;
-          commissions and the archive follow with the accounting and portal phases.
-        </>
+        galleriesTab ? (
+          /* `workspaces-runtime.js:195`, verbatim. */
+          <>
+            Every gallery Darz works with. Open one for its artworks, the portal it sees, and
+            its passport. The same record the Sources &amp; Partners desk edits — there is only
+            one.
+          </>
+        ) : (
+          <>
+            Galleries, dealers and artists who share works with Darz — each relationship in one
+            place, with the works they shared and a no-login portal (token + PIN). Deals &amp;
+            commissions and the archive follow with the accounting and portal phases.
+          </>
+        )
       }
     >
       {/* :27326 — the reminder banner, on the partners half only */}
@@ -327,9 +347,14 @@ export function SourcesPage() {
           <p className="dz-state">
             {needle
               ? `No partner matches “${query.trim()}”.`
-              : typeParam
-                ? 'No partners of this type yet.'
-                : 'No partners yet — issue the first.'}
+              : galleriesTab
+                ? 'No galleries yet — add the first with ＋ New partner.'
+                : typeParam
+                  ? 'No partners of this type yet.'
+                  : /* names the control, the way this panel's other empty
+                     states do ("add one with ＋ New deal") — "issue the
+                     first" read as a document, not a partner */
+                    'No partners yet — add the first with ＋ New partner.'}
           </p>
         ) : shown ? (
           <DataTable label="Partners" rows={shown} columns={columns} rowKey={(l) => l.id} />
