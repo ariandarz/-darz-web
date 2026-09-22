@@ -5,6 +5,23 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-22 — The container is built and run, and it had three bugs
+
+- **`Dockerfile` and `nginx.conf` are no longer unverified.** Built, started,
+  and driven in a browser: SPA fallback on four deep routes, assets still
+  404ing, cache and security headers, gzip (928 KB → 245 KB), correct content
+  types, the master process running as `nginx`, `(healthy)`, 80.9 MB — and the
+  app itself loading a deep route, signing in and rendering a desk in
+  Cormorant Garamond with zero JS errors.
+- **Three bugs that `nginx -t` and review both passed.** `listen [::]:8080`
+  crashes nginx outright on a host without IPv6. Every security header was
+  silently absent from every response, because nginx's `add_header` replaces
+  rather than merges and both cache locations declared their own. And
+  `USER nginx` killed the container at boot — the stock image's writable paths
+  are root-owned, and this repo had *asserted* they were world-writable.
+- `docs/DEPLOY_ARVAN.md` §7 is rewritten from "what is NOT verified" into what
+  is, what is not, and those three bugs.
+
 ## 2026-09-22 — The deploy block is cleared, and ArvanCloud is scoped to the frontend
 
 - **Frontend Phase 14 is closed.** The owner created the `darz-web` Vercel project on the team
