@@ -222,3 +222,39 @@ test('the membership sheet prices both terms and confirms a redeem', async () =>
 
   expect(thrown, 'page errors in the membership sheet').toEqual([]);
 });
+
+/**
+ * i18n ships OFF. This is the regression test for that, not for translation.
+ *
+ * The engine is a faithful port of the old app's, and the old app ships
+ * English-only (`showLangSetting: 'Hidden'`, `theme.i18n: {}`, and its own
+ * comment at app.html:9944). The risk in having an engine at all is that it
+ * quietly turns itself on — through a stale `?lang=`, a remembered device
+ * choice, or a default that drifts. All three are covered here.
+ */
+test('the app is English-only until the owner enables a language', async () => {
+  thrown = [];
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+
+  expect(await page.getAttribute('html', 'lang')).toBe('en');
+  expect(await page.getAttribute('html', 'dir')).toBe('ltr');
+  await expect(page.locator('#nav .lb').first()).toHaveText('Market');
+
+  // A link asking for a language the owner never enabled is ignored — it must
+  // not strand someone in a language that was withdrawn.
+  await page.goto('/?lang=fa');
+  await page.waitForLoadState('networkidle');
+  expect(await page.getAttribute('html', 'lang')).toBe('en');
+  await expect(page.locator('#nav .lb').first()).toHaveText('Market');
+
+  // Nor may a remembered choice resurrect one.
+  await page.evaluate(() => localStorage.setItem('darz_lang', 'ar'));
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  expect(await page.getAttribute('html', 'lang')).toBe('en');
+  expect(await page.getAttribute('html', 'dir')).toBe('ltr');
+  await page.evaluate(() => localStorage.removeItem('darz_lang'));
+
+  expect(thrown).toEqual([]);
+});
