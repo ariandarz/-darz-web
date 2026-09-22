@@ -63,8 +63,11 @@ surface on every desk that no amount of source-reading could show. All fixed, an
    found them — and `e2e/capture-desks.mjs` now automates the screenshot half of it.
 2. **Phase 5b** — the Database desk's four hard filters (completeness, size ranges, duplicate
    images, Gallery Portal). Backend work first; the desk already names them as unavailable.
-3. **TD-8** — `admin.css` is one ~3,800-line file. Splitting it is safe now that the E2E walk
-   exists, but there is no *visual* regression baseline, so split in small steps and screenshot.
+3. ~~**TD-8**~~ — ✅ **done 2026-09-22.** Six parts imported by `admin.css`, which is now an
+   index. The "no visual regression baseline" this row worried about is no longer true either:
+   `e2e/diff-desks.mjs` compares a fresh capture set against a saved one, pixel by pixel. Worth
+   knowing before you trust `cmp` on these files — **two of the 34 differed byte-for-byte and
+   were pixel-identical**; Chromium's PNG encoder is not byte-deterministic across runs.
 4. ~~**TD-3**~~ — ✅ **done 2026-09-22.** The decision it was waiting on turned out to have a
    wrong option in it: **not `theme.*`**, because `GET /api/app-theme/` is `AllowAny` and would
    publish a card number and an IBAN to anyone who can reach the API. The page now seeds from the

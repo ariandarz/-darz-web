@@ -138,6 +138,13 @@ been run** — the session that wrote them had no Docker daemon — so one `dock
 `curl` of a deep route comes first. Note what §1 of that guide says about scope: with the backend
 staying put, the ArvanCloud site is the same visual-only build, just served from inside Iran.
 
+**This round (2026-09-22, after the ArvanCloud work):** the collector questionnaire and
+membership screens — the last two unbuilt Phase 9 items; the Club and Memberships tile strips
+(G-CLUB-2 / G-MEMB-1) and, found while building them, the strip geometry itself, wrong on all
+eight strip desks; the Data Health counts panel (G-HEALTH-1); TD-3 (the invoice bank block, whose
+proposed `theme.*` home turned out to be a public endpoint); and TD-8 (`admin.css` split into six
+parts, verified pixel-identical across all 34 desks by the new `e2e/diff-desks.mjs`).
+
 **Open for the owner after this round** (each stated on the desk it belongs to, and listed in
 `docs/ADMIN_V1_AUDIT.md` §10): **G-HEALTH-1** (eight of the old Data Health counts are real
 catalogue counts and are absent — the largest of them), **G-CLUB-2** and **G-MEMB-1** (two more

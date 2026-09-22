@@ -1,0 +1,652 @@
+/* =============================================================================
+   The desks, part one: Dashboard, Chat (list + thread), Collectors and
+   Access Requests, App Design, Memberships and Team, Import and Data Health.
+
+   Part of the admin stylesheet. `admin.css` imports every `_*.css` beside it,
+   in the order they were written — see that file for why this one exists and
+   for the porting notes that apply to all of them.
+   ========================================================================== */
+
+/* ---- Dashboard (features/admin/DashboardPage) ---------------------------
+   Tiles over the summary read. The accent state marks a number that means
+   someone is WAITING (a request, a paddle registration, a review), which is
+   the old dashboard's own emphasis; a plain total never lights up.          */
+.ad-dsec {
+  margin: 0 0 22px;
+}
+.ad-dsec-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 9px;
+}
+.ad-dsec-t {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0;
+}
+.ad-dsec-n {
+  font-size: 12px;
+  color: var(--ink3);
+}
+/* A check with nothing to report. Sits on the same line rhythm as a check
+   that DOES have rows (`.ad-recrow`), so three clean checks read as a short
+   list rather than three empty screens — the old desk's System Checks shape
+   (`19-data-health-full`). */
+.ad-dsec-clean {
+  margin: 0;
+  padding: 2px 2px 0;
+  font-size: 12px;
+  color: var(--status-avail);
+}
+.ad-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.ad-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 14px 15px;
+  color: inherit;
+  text-decoration: none;
+}
+.ad-tile-v {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.ad-tile-l {
+  font-size: 11.5px;
+  color: var(--ink3);
+}
+.ad-tile.is-attn {
+  border-color: var(--magenta);
+}
+.ad-tile.is-attn .ad-tile-v {
+  color: var(--magenta);
+}
+.ad-tile.is-link:hover {
+  border-color: var(--ink);
+}
+
+/* ---- Chat: the conversation list (AdminChatPage) ------------------------
+   Ported row anatomy from _chatDashConvos (darz-studio.html:40448-40453):
+   avatar initial · name · context line · unread badge · date.              */
+.ad-convos {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+.ad-convo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+.ad-convo:hover {
+  background: var(--soft);
+}
+.ad-convo + .ad-convo {
+  border-top: 1px solid var(--hair2);
+}
+.ad-cav {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ctl-bg);
+  color: var(--ctl-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ad-cbody {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ad-cname {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-csub {
+  font-size: 12px;
+  color: var(--ink3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-cmeta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ad-cdate {
+  font-size: 11px;
+  color: var(--ink3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Chat: one thread (AdminThreadPage) --------------------------------- */
+.ad-thread {
+  max-width: 760px;
+}
+.ad-thread-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin: 0 0 14px;
+}
+.ad-back {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink2);
+  text-decoration: none;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 7px 11px;
+}
+.ad-back:hover {
+  border-color: var(--ink);
+}
+.ad-thread-who {
+  min-width: 0;
+}
+.ad-thread-name {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-thread-sub {
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.ad-bubbles {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 15px;
+  max-height: 55vh;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+.ad-thread-empty {
+  color: var(--ink3);
+  font-size: 13px;
+  padding: 30px 14px;
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+.ad-bub {
+  max-width: 78%;
+  align-self: flex-start;
+}
+.ad-bub.is-team {
+  align-self: flex-end;
+  text-align: right;
+}
+.ad-bub-b {
+  display: inline-block;
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 13px;
+  padding: 9px 13px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ad-bub.is-team .ad-bub-b {
+  background: var(--ctl-bg);
+  border-color: var(--ctl-border);
+  color: var(--ctl-text);
+}
+.ad-bub-t {
+  font-size: 10.5px;
+  color: var(--ink3);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.ad-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+}
+.ad-composer-in {
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 14px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 11px 13px;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  resize: none;
+  min-height: 52px;
+  max-height: 150px;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.ad-composer-in:focus {
+  border-color: var(--ink);
+}
+.ad-sent {
+  font-size: 12px;
+  color: var(--status-avail);
+  /* 14px under, not 0. With no bottom margin this line sat flush against
+     whatever followed it, which on Data Health meant "Everything checks out"
+     and the first check's heading reading as one block. The two places it
+     is the LAST thing on a page (App Design's save notice, a sent reply) are
+     unaffected — nothing follows them to be pushed. */
+  margin: 8px 2px 14px;
+}
+
+/* ---- Step 2: Collectors + Access Requests ------------------------------- */
+.ad-cellmain {
+  display: block;
+  color: var(--ink);
+}
+.ad-cellsub {
+  display: block;
+  font-size: 11px;
+  color: var(--ink3);
+}
+.ad-rowbtn {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ad-rowbtn:hover {
+  border-color: var(--ink);
+}
+.ad-rowbtn.is-danger {
+  color: var(--danger);
+}
+.ad-ghostbtn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: none;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 8px 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ad-ghostbtn:hover {
+  border-color: var(--ink);
+}
+.ad-ghostbtn.is-danger {
+  color: var(--danger);
+}
+.ad-keyacts {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* the old tier colours (:32612 tierColor) mapped onto tokens where they
+   coincide; vip keeps the old #E11D48 via --danger, active the green */
+.ad-chip.ad-tier-vip {
+  background: var(--pl-attnbg);
+  color: var(--danger);
+}
+.ad-chip.ad-tier-active {
+  background: var(--status-avail-bg);
+  color: var(--status-avail);
+}
+.ad-chip.ad-tier-new {
+  background: var(--pl-waitbg);
+  color: var(--pl-wait);
+}
+.ad-chip.ad-tier-institutional {
+  background: var(--status-res-bg);
+  color: var(--status-res);
+}
+
+/* expCell (:33042) — three tones + date underneath */
+.ad-exp {
+  display: block;
+  font-weight: 700;
+  font-size: 11.5px;
+}
+.ad-exp.is-never {
+  color: var(--ink3);
+  font-weight: 500;
+}
+.ad-exp.is-expired {
+  color: var(--danger);
+}
+.ad-exp.is-soon {
+  color: var(--status-res);
+}
+.ad-exp.is-ok {
+  color: var(--status-avail);
+}
+
+/* the record card + login list on the detail */
+.ad-record,
+.ad-logins {
+  padding: 6px 0;
+  margin-bottom: 20px;
+}
+.ad-recrow {
+  display: flex;
+  gap: 14px;
+  padding: 8px 16px;
+}
+.ad-recrow + .ad-recrow {
+  border-top: 1px solid var(--hair2);
+}
+.ad-reck {
+  flex: 0 0 110px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding-top: 1px;
+}
+.ad-recv {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* the create/edit form */
+.ad-form {
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.ad-form-h {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.ad-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ad-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ad-field--wide {
+  grid-column: 1 / -1;
+}
+.ad-field input,
+.ad-field select,
+.ad-field textarea {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 9px 12px;
+  outline: none;
+}
+.ad-field input:focus,
+.ad-field select:focus,
+.ad-field textarea:focus {
+  border-color: var(--ink);
+}
+.ad-form-a {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+/* the review queue's cards (accReqPanel :33006-33027) */
+.ad-desksub {
+  font-size: 12px;
+  color: var(--ink3);
+  margin: -12px 0 16px;
+  line-height: 1.5;
+}
+.ad-badge-attn {
+  display: inline-block;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 20px;
+  padding: 3px 9px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.ad-reqcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ad-reqcard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 13px 15px;
+}
+.ad-reqbody {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.ad-reqname {
+  font-weight: 700;
+  color: var(--ink);
+}
+.ad-reqname .ad-cellsub {
+  display: inline;
+}
+.ad-reqline {
+  font-size: 12px;
+  color: var(--ink2);
+  margin-top: 2px;
+}
+.ad-reqmeta {
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.ad-reqref {
+  font-size: 11px;
+  color: var(--status-avail);
+  font-weight: 600;
+  margin-top: 3px;
+}
+.ad-reqwhy {
+  font-size: 12px;
+  color: var(--ink2);
+  margin-top: 5px;
+  line-height: 1.5;
+}
+.ad-reqacts {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ---- Step 3: App Design ------------------------------------------------- */
+.ad-switches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 4px 18px;
+  padding: 12px 14px;
+}
+.ad-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 4px;
+  cursor: pointer;
+}
+.ad-switch input {
+  margin-top: 3px;
+  accent-color: var(--magenta);
+}
+.ad-switch-t {
+  min-width: 0;
+}
+.ad-verrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.ad-verin {
+  flex: 1 1 200px;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 9px 12px;
+  outline: none;
+}
+.ad-verin:focus {
+  border-color: var(--ink);
+}
+
+/* ---- Step 4: Memberships + Team ----------------------------------------- */
+.ad-wa {
+  color: var(--status-avail);
+  text-decoration: none;
+  font-weight: 600;
+}
+.ad-wa:hover {
+  text-decoration: underline;
+}
+.ad-code {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.ad-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+.ad-dot.is-ok {
+  background: var(--status-avail);
+}
+.ad-dot.is-expired {
+  background: var(--danger);
+}
+.ad-dot.is-never {
+  background: var(--ink3);
+}
+
+/* ---- Step 5: Import + Data Health --------------------------------------- */
+.ad-imptiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ad-imptile {
+  font: inherit;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 14px 15px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ad-imptile:hover {
+  border-color: var(--ink);
+}
+.ad-pastebox {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 10px 12px;
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.ad-pastebox:focus {
+  border-color: var(--ink);
+}
+.ad-maprows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.ad-chip.ad-imp-pending {
+  background: var(--status-res-bg);
+  color: var(--status-res);
+}
+.ad-chip.ad-imp-confirmed,
+.ad-chip.ad-imp-created {
+  background: var(--status-avail-bg);
+  color: var(--status-avail);
+}
+.ad-chip.ad-imp-discarded,
+.ad-chip.ad-imp-rejected,
+.ad-chip.ad-imp-error {
+  background: var(--pl-blockbg);
+  color: var(--danger);
+}
+.ad-imp-err {
+  color: var(--danger);
+  max-width: 360px;
+  white-space: normal;
+}
