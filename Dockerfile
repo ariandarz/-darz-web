@@ -59,8 +59,27 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # hosts that require it (most managed container platforms do).
 EXPOSE 8080
 
-# nginx's own image writes to /var/cache/nginx and /var/run; both are already
-# world-writable in the alpine image, so this needs no extra chown.
+# **`USER nginx` alone does NOT work, and fails at boot rather than at build.**
+# The stock nginx image runs its master as root and drops privileges for the
+# workers, so its writable paths are root-owned. Run the master as `nginx` and
+# it dies immediately with
+#   [emerg] mkdir() "/var/cache/nginx/client_temp" failed (13: Permission denied)
+# — an exit code 1 a couple of seconds after `docker run`, which on a platform
+# with restart-on-failure looks like a crash loop with no obvious cause.
+#
+# An earlier version of this file asserted these paths were "already
+# world-writable, so this needs no extra chown". They are not. Found
+# 2026-09-22 by actually running the image.
+#
+# So hand the nginx user what the master needs: the cache tree it creates its
+# temp dirs under, and the pid file. (`nginxinc/nginx-unprivileged` is the
+# published image that does exactly this; the four lines are cheaper than a
+# second base image to track.)
+RUN mkdir -p /var/cache/nginx/client_temp \
+ && chown -R nginx:nginx /var/cache/nginx \
+ && touch /var/run/nginx.pid \
+ && chown nginx:nginx /var/run/nginx.pid
+
 USER nginx
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
