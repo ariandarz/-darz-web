@@ -40,13 +40,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# `@v5` throughout, not `@v4`. Every `v4` action runs on Node 20, which GitHub
+# deprecated on 2025-09-19: the runner already forces them onto Node 24 and
+# prints a warning on every job. Pinning the current majors is what stops that
+# becoming a hard failure on a Tuesday.
 jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           # 22, not 20. `jsdom@30` (the component-test environment, added
           # 2026-09-22) declares `engines.node: ^22.22.2 || ^24.15.0 ||
@@ -89,8 +93,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           # 22, not 20. `jsdom@30` (the component-test environment, added
           # 2026-09-22) declares `engines.node: ^22.22.2 || ^24.15.0 ||
@@ -115,7 +119,7 @@ jobs:
       # (error-context.md, traces) is unreadable otherwise
       - name: Upload failure context
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: e2e-failure-context
           path: test-results/

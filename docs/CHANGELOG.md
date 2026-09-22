@@ -13,6 +13,8 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 - **A `concurrency` group cancels superseded pull-request runs.** Pushing three commits no longer
   leaves two stale runs to finish. `push` runs on `main` are exempt: that one is the post-merge
   record of a deployed commit.
+- **Every action pinned to `@v5`.** `v4` runs on Node 20, deprecated 2025-09-19 — the runner was
+  already forcing them onto Node 24 and warning on every job.
 
 ## 2026-09-22 — The container is built and run, and it had three bugs
 
