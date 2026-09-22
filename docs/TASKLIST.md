@@ -1007,7 +1007,13 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       create → invite → lot → go-live → artwork Reserved → queue resolve → approve → paddle #1 →
       close early → passed → artwork back to Available. (Redis joined the local stack for the
       Channels lot-state broadcast.)
-- [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+- [ ] **Step 6 — Auction Sales** `[!]` — **re-verified against the schema 2026-09-22 and still
+      blocked, but the recorded reason needed sharpening.** "`Sale` has no source axis" is not
+      quite right: `SaleAdmin` carries two source-ish fields. Neither helps. `seller_source` is a
+      free string naming who sold the work, and `source_request` is "the confirmed PurchaseIntent
+      this sale was created from" — a CRM request, not an auction. Nothing on a Sale says it came
+      from an auction, **and the admin sales filterset accepts `status` only**, so even a field
+      that did exist could not be filtered on. G-SALE-4 stands; auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 - [x] **Step 7 — Accounting: the four-ledger books** ✅ 2026-09-19 (overnight run) —
