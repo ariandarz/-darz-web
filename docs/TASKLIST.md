@@ -634,7 +634,9 @@ point the brief says to stop. Frontend only: **no backend, API-contract or `sche
 
 Matches backend V1 exactly — the only admin surfaces that currently exist.
 
-- [ ] Catalog CRUD (Artist/Artwork/ArtworkImage) — includes the multipart image upload flow
+- [x] Catalog CRUD (Artist/Artwork/ArtworkImage) — `ArtworkEditorPage` (with the multipart image
+      flow and the selection grants), `ArtistsPage`. *Checkbox corrected 2026-09-22: it was still
+      unticked long after the desks shipped.*
 - [x] Unified CRM request feed (filterable by kind/status/assignee/archived) + transition actions —
       `AdminRequestsPage` at `/admin/requests` over `AdminRequestsController extends ListController`.
       Chrome ported from `darz-studio.html`'s `.ad-h`/`.ad-toolbar`/`.ad-card`/`.ad-tbl`. Statuses
@@ -654,8 +656,17 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
       piece of new markup — a bar with the signed-in identity and "LEAVE THE ROOM" — because the
       desk sits outside the collector `AppShell` and a team member would otherwise have no way out.
       The real admin shell is Phase 11; that bar should be deleted when it lands, not grown.
-- [ ] Sales CRUD + transition/payment/delivery-status actions
-- [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
+- [x] Sales CRUD + transition/payment/delivery-status actions — `SalesPage`, `SaleDetailPage`,
+      `DealEditorPage`. *Checkbox corrected 2026-09-22.*
+- [x] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI) —
+      **completed 2026-09-22, and it found a real bug rather than confirming the row.** Three
+      services (`updateCollector`, `updateTeamUser`, `updateMembershipCode`) took a `version`
+      property and sent it as `version`; the API field is `expected_version` and it is OPTIONAL, so
+      the server saw no lock and wrote anyway. Collectors, Memberships and **Team logins** were
+      last-write-wins with no 409 — on the Team desk the raced field is `role`. Fixed, the three
+      forms now show a conflict message, and `src/api/optimisticLock.test.ts` pins the wire format
+      for all six locking calls (verified by reintroducing the bug and watching it fail).
+      Accounting and Auction Records remain genuinely unlockable server-side — **G-LOCK-1**.
 
 ## Phase 8 — Collector: auctions ✅ all 4 steps merged (hidden in v0.1 behind `features.auctions`) — see `docs/PHASE_8_PLAN.md`
 
@@ -996,7 +1007,13 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       create → invite → lot → go-live → artwork Reserved → queue resolve → approve → paddle #1 →
       close early → passed → artwork back to Available. (Redis joined the local stack for the
       Channels lot-state broadcast.)
-- [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+- [ ] **Step 6 — Auction Sales** `[!]` — **re-verified against the schema 2026-09-22 and still
+      blocked, but the recorded reason needed sharpening.** "`Sale` has no source axis" is not
+      quite right: `SaleAdmin` carries two source-ish fields. Neither helps. `seller_source` is a
+      free string naming who sold the work, and `source_request` is "the confirmed PurchaseIntent
+      this sale was created from" — a CRM request, not an auction. Nothing on a Sale says it came
+      from an auction, **and the admin sales filterset accepts `status` only**, so even a field
+      that did exist could not be filtered on. G-SALE-4 stands; auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 - [x] **Step 7 — Accounting: the four-ledger books** ✅ 2026-09-19 (overnight run) —
@@ -1039,21 +1056,44 @@ Old-app surfaces the current backend has no model for (from `DarzStudio/docs/eng
 owner decision 2026-09-04: scope all seven now). Faithful-port rule applies — read the old app's real
 surface before building each. Ordered by V1 relevance:
 
-- [ ] **Curated-set catalogue (`selected`/`private_selection`)** — **unblocked 2026-09-17**: backend
-      Phase 24 merged (`GET /api/catalog/artworks/selections/`, grant-gated, admin
-      `admin/artworks/{id}/selection-grants/`). Old `[!]` blocker on this line is stale.
-      **This unblocks the "Partial" half of frontend Phase 4 (flow 2).**
-- [ ] **Collector questionnaire** — **unblocked 2026-09-17**: backend Phase 25 merged (same endpoint
-      as Phase 9's Questionnaire item above — build once, wire both).
-- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — still
-      not built.
-- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — still
-      not built.
-- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — still not built.
+- [x] **Curated-set catalogue (`selected`/`private_selection`)** — built: the collector side is the
+      "Curated for You" chip (`CuratedChip.tsx`) on the catalogue, the admin side is the Collector
+      Club desk plus the artwork editor's selection grants. *Checkbox corrected 2026-09-22.*
+- [x] **Collector questionnaire** — ✅ **built 2026-09-22**, see Phase 9. *Checkbox corrected.*
+- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — not
+      built, and **verified backend-blocked 2026-09-22**: there is no `/api/logistics/` namespace at
+      all. The API's full set is accounting · admin · app-theme · auctions · auth · catalog · crm ·
+      dashboard · documents · gallery · health · marketing · notifications · options · projects ·
+      recommendations · sales. Phase 20 was planned, never merged.
+- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — not
+      built, and **verified backend-blocked 2026-09-22**: the only pricelist endpoints in the whole
+      schema are the gallery-portal pair (`/gallery/admin/links/{id}/pricelists/` and
+      `/gallery/portal/{token}/pricelists/`), both already built in Phase 10. There is no
+      standalone builder API.
+- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — not built, and **verified
+      backend-blocked 2026-09-22**: no stories or insights endpoint exists.
 - [x] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
       full faithful port. Data Health + Import shipped in Phase 11b, Projects in Phase 11c
       (2026-09-19) — this bullet stays only as the Phases-12+ cross-reference.
-- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
+- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — not built.
+      **Scoped 2026-09-22; it is the only remaining item that is buildable at all, and it needs
+      three answers before it is worth starting.**
+
+      What exists to port, which is more than the `[!]` suggests: the old app ships a real engine
+      (`darz_i18n.js`, 31KB) with five language blocks — `en · fa · fr · es · ar` — and
+      `app.html:9872-9878` wires a language picker to it. So this would be a port, not an
+      invention.
+
+      What makes it a decision rather than a task: **the old app ships it OFF.**
+      `showLangSetting` defaults to `'Hidden'`, `theme.i18n` defaults to `{}`, and the file's own
+      comment at `:9944` says *"the app is English-only for now"*. A faithful port therefore
+      defaults to hidden too — i.e. a multi-day change across ~430 user-visible strings that
+      nobody sees until the owner turns it on.
+
+      **Owner decisions needed:** (1) which of the five languages actually ship; (2) whether Farsi
+      and Arabic get real RTL layout, which is a design question the old app's LTR-only CSS does
+      not answer; (3) whether the picker ships visible or stays behind `showLangSetting` as it is
+      there. Without (2) especially, the work would very likely be redone.
 
 ## Phase 13 — Testing
 
@@ -1065,7 +1105,13 @@ surface before building each. Ordered by V1 relevance:
       two tiers' claims and the rule of thumb (a new desk gets its real-backend walk before it
       ships; the smoke only grows with the boot/shell contract).
 
-- [ ] Component tests for shared/base components
+- [x] Component tests for shared/base components — **built 2026-09-22**, 40 tests across
+      `Dropdown` (14), `Sheet` (9) and the form primitives (17). `vitest.config.ts` now runs **two
+      projects**: `logic` (`*.test.ts`, node, no DOM) and `components` (`*.test.tsx`, jsdom). The
+      split is deliberate rather than incidental — the node project having no `localStorage` is
+      what proves `QuestionnaireController` and `bankDetails` survive a private window, and giving
+      the whole suite a DOM would quietly delete that guarantee. Deps added: `jsdom`,
+      `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, all dev.
 - [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
 
 ## Phase 14 — Deploy & cutover `[~]` config landed; deploy blocked on a Vercel permission

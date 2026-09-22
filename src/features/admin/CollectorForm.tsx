@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { useApi, useOptions } from '../../api/hooks';
 import type { Choice, CollectorAdmin } from '../../api/types';
+import { isConflict } from './kit';
 import './admin.css';
 
 type Draft = Pick<
@@ -79,12 +80,24 @@ export function CollectorForm({
       const saved = existing
         ? await adminAccounts.updateCollector(existing.id, {
             ...draft,
-            version: existing.version,
+            expected_version: existing.version,
           })
         : await adminAccounts.createCollector(draft);
       onSaved(saved);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
+      // A 409 means someone else saved this collector while the form was
+      // open. Saying "Could not save." would send the admin back to press the
+      // button again on a form that is now stale — the fix is to reopen the
+      // record, not to retry (TD-5's rule, applied here for the first time:
+      // this form sent no lock at all until 2026-09-22, see
+      // `AdminAccountsService.updateCollector`).
+      setError(
+        isConflict(err)
+          ? 'Someone else saved this collector while you were editing. Close and reopen the record to see their changes before saving again.'
+          : err instanceof Error
+            ? err.message
+            : 'Could not save.',
+      );
     } finally {
       setBusy(false);
     }

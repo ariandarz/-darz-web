@@ -53,6 +53,7 @@ import {
   DeskPage,
   SearchFilter,
   SelectFilter,
+  isConflict,
   type Column,
 } from './kit';
 import './admin.css';
@@ -413,14 +414,22 @@ function MembershipForm({
       if (existing) {
         await adminAccounts.updateMembershipCode(existing.id, {
           ...body,
-          version: existing.version,
+          expected_version: existing.version,
         });
       } else {
         await adminAccounts.createMembershipCode(body);
       }
       onSaved();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
+      // The lock was not sent at all until 2026-09-22 — see
+      // `AdminAccountsService.updateMembershipCode`.
+      setError(
+        isConflict(err)
+          ? 'Someone else saved this membership while you were editing. Close and reopen it to see their changes before saving again.'
+          : err instanceof Error
+            ? err.message
+            : 'Could not save.',
+      );
     } finally {
       setBusy(false);
     }
