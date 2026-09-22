@@ -58,9 +58,9 @@ on Vercel today.
 
 ### a) Container (recommended)
 
-The repo now carries a `Dockerfile` and `nginx.conf`. Multi-stage: node builds,
+The repo carries a `Dockerfile` and `nginx.conf`. Multi-stage: node builds,
 nginx serves. Runs on an ArvanCloud VM with Docker, or on their container /
-Kubernetes platform.
+Kubernetes platform. **Built and run end to end on 2026-09-22 — see §7.**
 
 ```bash
 docker build \
@@ -72,8 +72,17 @@ docker build \
 docker run -d -p 8080:8080 --name darz-web --restart unless-stopped darz-web:latest
 ```
 
-It listens on **8080** and runs as the `nginx` user, so it needs no privileged
-port and works on platforms that forbid root.
+It listens on **8080** and runs as the `nginx` user — verified: the master
+process is `nginx`, and the container reports `(healthy)` from its own
+healthcheck. So it needs no privileged port and works on platforms that forbid
+root. Final image: **80.9 MB**.
+
+The one command worth running after any change to either file:
+
+```bash
+curl -I http://localhost:8080/admin/accounting   # 200 — the SPA fallback
+curl -I http://localhost:8080/assets/nope.js     # 404 — and assets still 404
+```
 
 Preferred because the SPA fallback is exact and the cache headers are yours —
 see `nginx.conf`, which is commented line by line.
@@ -239,18 +248,76 @@ const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
 
 ---
 
-## 7 · What this document has NOT verified
+## 7 · What has been verified, and what has not
 
-Stated plainly so nobody trusts it further than it has earned:
+Updated 2026-09-22, after actually building and running the image. The
+container and the nginx config are no longer "written but untested" — and
+running them found **three real bugs** that `nginx -t` and a code review had
+both passed.
 
-- **The Docker image has never been built.** The environment this was written
-  in has the Docker CLI but no daemon, and no nginx binary, so neither the
-  image nor `nginx.conf` has been run. The Vite build itself **is** verified
-  (including with the build-arg env vars, §3), and the paths `nginx.conf`
-  serves — `/assets/`, `index.html`, `favicon.svg` — were checked against real
-  build output. **Run one build and one `curl` of a deep route
-  (`/admin/accounting`) before trusting it.** That single check catches the SPA
-  fallback, which is the one thing most likely to be wrong.
-- **No ArvanCloud console step is verified.** No account access.
-- **The backend half is guidance, not a runbook.** `darzmarket-api` is a
-  separate repository and was not open when this was written.
+### Verified, by running it
+
+- **The image builds.** `docker build` through the multi-stage Dockerfile,
+  with the build args. 80.9 MB final image.
+- **It starts and stays up**, reporting `(healthy)` from its own HEALTHCHECK,
+  with the nginx **master process running as `nginx`**, not root.
+- **The SPA fallback works.** `/`, `/admin/accounting`, `/artwork/<id>` and
+  `/records/artist/<id>` all return **200** on a direct request — no click-path
+  needed, which is the case that breaks.
+- **A missing asset still 404s.** `/assets/nope.js` → 404, not a fallback to
+  `index.html`. Both halves matter: routes fall through, assets do not.
+- **Cache headers.** `index.html` → `no-cache, must-revalidate`; hashed assets
+  → `public, max-age=31536000, immutable`.
+- **Security headers** on every response — the document, deep routes, and
+  assets.
+- **gzip.** The JS bundle goes 928 KB → 245 KB. woff2 is correctly left alone.
+- **Content types.** `application/javascript`, `text/css`, `font/woff2`,
+  `image/svg+xml`.
+- **The app actually runs through it**: loaded `/admin/login` directly (the
+  fallback path), signed in, opened the Market Sales desk, headings rendering
+  in **Cormorant Garamond** from the self-hosted fonts, **zero JS errors**.
+
+### The three bugs that only running it could find
+
+1. **`listen [::]:8080;` crashed nginx on any host without IPv6.** Not a
+   warning — `socket() [::]:8080 failed (97: Address family not supported by
+   protocol)` and the process refuses to start. `nginx -t` passes. Now IPv4
+   only, which is also what the official nginx image's own default config
+   does.
+2. **Every security header was silently absent from every response.**
+   nginx's `add_header` **replaces rather than merges**: a location declaring
+   any `add_header` of its own discards all of them from the enclosing block.
+   Both cache-control locations did, so `X-Content-Type-Options`,
+   `Referrer-Policy` and `X-Frame-Options` shipped nowhere — including on
+   deep routes, which `try_files` redirects internally into
+   `location = /index.html`. The config read as completely correct. They are
+   now repeated in all three places, with a note saying why.
+3. **`USER nginx` killed the container at boot.** The stock nginx image runs
+   its master as root, so its writable paths are root-owned; as `nginx` it
+   dies with `mkdir() "/var/cache/nginx/client_temp" failed (13: Permission
+   denied)` seconds after `docker run` — a crash loop with no obvious cause on
+   a platform that restarts on failure. This file previously *asserted* those
+   paths were world-writable. They are not. The image now chowns the cache
+   tree and the pid file.
+
+### Still not verified
+
+- **No ArvanCloud console step.** No account access from here. Their product
+  names and menus change; check the current documentation.
+- **The backend half (§4) is guidance, not a runbook** — and out of scope per
+  §1 anyway. `darzmarket-api` is a separate repository.
+- **TLS, DNS and the CDN in front** are deployment-time concerns this image
+  knows nothing about; it serves plain HTTP on 8080 and expects something in
+  front of it.
+
+> **A note on building this image behind a corporate or filtering proxy.**
+> The build was done in a sandbox whose egress proxy uses a private CA, which
+> made `npm ci` fail inside the container with a TLS verification error
+> (`Exit handler never called!` is npm's unhelpful surface for it) even though
+> the host could reach the registry. If you hit that, the fix is to trust your
+> proxy's CA in the **build stage only** — `COPY` it into
+> `/usr/local/share/ca-certificates/`, append it to
+> `/etc/ssl/certs/ca-certificates.crt` and set `NODE_EXTRA_CA_CERTS`. It is
+> deliberately **not** in the committed Dockerfile: a normal host needs none
+> of it, and baking someone's private CA into a published image is a bad
+> habit.
