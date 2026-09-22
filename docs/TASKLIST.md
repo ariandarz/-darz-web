@@ -1,7 +1,8 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
 **Last updated:** 2026-09-22 (**Phase 6 DoD met · Phase 6b done · the collector boundary
-built**; before that, PRs #69-#71 merged and released) · **Current focus:** **the admin panel's
+built — released via #73/#74; `main` and `development` are the same commit `dd62f7a`**;
+before that, PRs #69-#71) · **Current focus:** **the admin panel's
 V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That document, not this one, is where the current line
 of work is planned; this file records what has landed and what is still open across the whole
 repo.
