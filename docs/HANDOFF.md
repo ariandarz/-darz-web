@@ -65,11 +65,11 @@ surface on every desk that no amount of source-reading could show. All fixed, an
    images, Gallery Portal). Backend work first; the desk already names them as unavailable.
 3. **TD-8** — `admin.css` is one ~3,800-line file. Splitting it is safe now that the E2E walk
    exists, but there is no *visual* regression baseline, so split in small steps and screenshot.
-4. **TD-3** — `src/features/admin/exhibitions/IssueDocumentPage.tsx` (`readBank`/`saveBank`)
-   keeps the payee bank details in `localStorage`, so a second admin issuing an invoice gets
-   blanks and a cleared browser loses them. Belongs under `theme.*` or its own endpoint; needs a
-   small decision on which. *(The audit's TD-3 row gives the path as
-   `IssueDocumentPage.tsx` at the admin root — it is one folder deeper.)*
+4. ~~**TD-3**~~ — ✅ **done 2026-09-22.** The decision it was waiting on turned out to have a
+   wrong option in it: **not `theme.*`**, because `GET /api/app-theme/` is `AllowAny` and would
+   publish a card number and an IBAN to anyone who can reach the API. The page now seeds from the
+   most recent issued invoice's `Document.fields.bank` — already stored server-side on every
+   invoice, so shared, durable, and nothing new published. See `exhibitions/bankDetails.ts`.
 5. **One recorded fidelity finding** that is a scope decision rather than a fix: the Market App's
    every-published-work tile is no longer blocked (G-2 shipped `published`) but is admin-only,
    while that desk reads the collector catalogue for its images. *(The Documents sub-tabs that

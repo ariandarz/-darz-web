@@ -58,9 +58,8 @@ import {
   type LibraryPackage,
   type LibraryService,
 } from './servicesLibrary';
+import { hasBank, newestBank, readLocalBank, saveLocalBank } from './bankDetails';
 import './exhibitions.css';
-
-const BANK_KEY = 'darz_desk_bank_details'; // per-device convenience; the record is Document.fields
 
 async function walkAll<T>(
   load: (page: number) => Promise<{ results: T[]; pagination?: { has_next?: boolean } }>,
@@ -95,7 +94,31 @@ export function IssueDocumentPage() {
   const [discount, setDiscount] = useState('');
   const [note, setNote] = useState('');
   const [terms, setTerms] = useState('');
-  const [bank, setBank] = useState<BankDetails>(() => readBank());
+  /* TD-3. The block starts from this device's copy so the page is instant,
+     then the server's own last-issued invoice overwrites it — see
+     `bankDetails.ts` for why the audit's `theme.*` suggestion is the one
+     answer this must NOT take (that endpoint is `AllowAny`). */
+  const [bank, setBank] = useState<BankDetails>(readLocalBank);
+  const [bankTouched, setBankTouched] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    documentsAdmin.documents({ kind: 'exhibition_invoice', per_page: 20 }).then(
+      (page) => {
+        const found = newestBank(page.results);
+        // Never clobber what the admin has typed. The seed is a starting
+        // point, not a correction — an edit mid-form must survive the read
+        // landing late.
+        if (alive && found && !bankTouched) setBank(found);
+      },
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+    // `bankTouched` is read, not depended on: re-running this when the admin
+    // starts typing is exactly what must not happen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentsAdmin]);
   const [picking, setPicking] = useState(false);
   /** The show the lines were filled from. A ref, not state: remembering it
    * must not itself cause a render (oxlint react/set-state-in-effect). */
@@ -305,7 +328,9 @@ export function IssueDocumentPage() {
         `${reference}.pdf`,
       );
       const confirmed = await galleryAdmin.confirmExhibitionDocument(show.id, doc.id);
-      if (kind === 'exhibition_invoice') saveBank(bank);
+      // The server copy is `fields.bank` on the document just issued; this is
+      // only the device's head start next time.
+      if (kind === 'exhibition_invoice' && hasBank(bank)) saveLocalBank(bank);
       setIssued(confirmed);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The document was not issued.');
@@ -579,7 +604,10 @@ export function IssueDocumentPage() {
                     <input
                       className="dzx-input"
                       value={bank[k]}
-                      onChange={(e) => setBank({ ...bank, [k]: e.target.value })}
+                      onChange={(e) => {
+                        setBankTouched(true);
+                        setBank({ ...bank, [k]: e.target.value });
+                      }}
                     />
                   </label>
                 ))}
@@ -750,26 +778,4 @@ function LibraryPicker({
       </div>
     </div>
   );
-}
-
-function readBank(): BankDetails {
-  try {
-    const p = JSON.parse(localStorage.getItem(BANK_KEY) ?? '{}') as Partial<BankDetails>;
-    return {
-      holder: p.holder ?? '',
-      bank: p.bank ?? '',
-      card: p.card ?? '',
-      iban: p.iban ?? '',
-    };
-  } catch {
-    return { holder: '', bank: '', card: '', iban: '' };
-  }
-}
-
-function saveBank(bank: BankDetails) {
-  try {
-    localStorage.setItem(BANK_KEY, JSON.stringify(bank));
-  } catch {
-    /* convenience only */
-  }
 }
