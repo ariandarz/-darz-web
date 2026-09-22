@@ -1,0 +1,16 @@
+# Keep the build context small and the image reproducible. node_modules in
+# particular must NOT be copied: the build stage installs from the lockfile,
+# and a host copy would shadow it with whatever is on someone's laptop.
+node_modules
+dist
+dist-e2e
+dist-seeded
+dist-desk-shots
+.git
+.github
+playwright-report
+test-results
+*.log
+.env
+.env.local
+.DS_Store

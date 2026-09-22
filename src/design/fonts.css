@@ -1,0 +1,84 @@
+/* ---- Brand fonts, self-hosted -------------------------------------------
+ *
+ * These used to be one `<link>` to `fonts.googleapis.com` in `index.html`.
+ * That is a third-party request on every first load, and the app is deployed
+ * for collectors **in Iran** — where Google's font CDN is unreliable and often
+ * blocked outright. The failure mode is quiet and ugly: the page renders in
+ * Helvetica and Times, so every serif heading and the whole Persian layer
+ * silently fall back and the app looks like someone else's.
+ *
+ * Self-hosting removes the dependency: the fonts ship with the build and are
+ * served from the same origin as the app, so they work wherever it does.
+ *
+ * **Three families were being fetched and used nowhere.** The old link
+ * requested seven — Barlow, Cormorant Garamond, DM Sans, Inter, Playfair
+ * Display, Space Mono, Vazirmatn — and `src/design/tokens/index.ts`'s
+ * `typography` names only four:
+ *
+ *   --sans      Barlow                (body text, UI)
+ *   --font-head Cormorant Garamond    (headings, and body copy — it is the serif)
+ *   --mono      Space Mono            (codes, references, amounts)
+ *   --persian   Vazirmatn             (the Farsi layer)
+ *
+ * DM Sans, Inter and Playfair Display appear in no stylesheet, no token, and
+ * no component. Nor can the server theme ask for one: `Theme.toCssVars()`
+ * writes the font variables from that same fixed `typography` constant, never
+ * from the fetched theme — so there is no runtime path that could want them.
+ * They are dropped, which is not a design change: nothing rendered in them.
+ *
+ * **Weights are exactly the old link's**, so no glyph the app could draw goes
+ * missing. **Subsets are not**: `latin` and `latin-ext` are kept (artist names
+ * carry accents — "Salé Sharifi"), `arabic` is kept for Vazirmatn, and
+ * `cyrillic` / `vietnamese` are left out because nothing in this app can
+ * render them. Each face still carries its own `unicode-range`, so a browser
+ * downloads only the subset a page actually needs.
+ *
+ * Imported from `main.tsx` ahead of `global.css`, so the faces are declared
+ * before first paint.
+ */
+
+/* Barlow — 300/400/500/600/700 (`--sans`) */
+@import '@fontsource/barlow/latin-300.css';
+@import '@fontsource/barlow/latin-ext-300.css';
+@import '@fontsource/barlow/latin-400.css';
+@import '@fontsource/barlow/latin-ext-400.css';
+@import '@fontsource/barlow/latin-500.css';
+@import '@fontsource/barlow/latin-ext-500.css';
+@import '@fontsource/barlow/latin-600.css';
+@import '@fontsource/barlow/latin-ext-600.css';
+@import '@fontsource/barlow/latin-700.css';
+@import '@fontsource/barlow/latin-ext-700.css';
+
+/* Cormorant Garamond — 400/500/600, upright and italic (`--font-head`,
+   `--font-body`). The italics are real: `.dz-state` sets `font-style: italic`
+   on every empty and loading line in the app. */
+@import '@fontsource/cormorant-garamond/latin-400.css';
+@import '@fontsource/cormorant-garamond/latin-ext-400.css';
+@import '@fontsource/cormorant-garamond/latin-400-italic.css';
+@import '@fontsource/cormorant-garamond/latin-ext-400-italic.css';
+@import '@fontsource/cormorant-garamond/latin-500.css';
+@import '@fontsource/cormorant-garamond/latin-ext-500.css';
+@import '@fontsource/cormorant-garamond/latin-500-italic.css';
+@import '@fontsource/cormorant-garamond/latin-ext-500-italic.css';
+@import '@fontsource/cormorant-garamond/latin-600.css';
+@import '@fontsource/cormorant-garamond/latin-ext-600.css';
+@import '@fontsource/cormorant-garamond/latin-600-italic.css';
+@import '@fontsource/cormorant-garamond/latin-ext-600-italic.css';
+
+/* Space Mono — 400/700 (`--mono`) */
+@import '@fontsource/space-mono/latin-400.css';
+@import '@fontsource/space-mono/latin-ext-400.css';
+@import '@fontsource/space-mono/latin-700.css';
+@import '@fontsource/space-mono/latin-ext-700.css';
+
+/* Vazirmatn — 400/500/600/700 (`--persian`). `arabic` is the point of it;
+   `latin` comes too because Farsi copy routinely carries Latin digits, years
+   and artist names. */
+@import '@fontsource/vazirmatn/arabic-400.css';
+@import '@fontsource/vazirmatn/latin-400.css';
+@import '@fontsource/vazirmatn/arabic-500.css';
+@import '@fontsource/vazirmatn/latin-500.css';
+@import '@fontsource/vazirmatn/arabic-600.css';
+@import '@fontsource/vazirmatn/latin-600.css';
+@import '@fontsource/vazirmatn/arabic-700.css';
+@import '@fontsource/vazirmatn/latin-700.css';

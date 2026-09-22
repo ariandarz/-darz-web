@@ -738,6 +738,19 @@ the largest of them).
 **Verified and passing:** G-1 is applied consistently — no desk rendering a table is
 missing `wide`.
 
+**One caveat on this pass, found afterwards and recorded rather than buried.** Every capture
+`e2e/capture-desks.mjs` took on 2026-09-22 rendered in **Liberation Serif**, not the brand
+fonts. `index.html` fetched all seven families from `fonts.googleapis.com`, and that request
+**failed** in the environment the captures were taken in — silently, as it always does. It was
+caught the next day while self-hosting the fonts for the ArvanCloud migration, by asking Chrome
+DevTools which font it had actually used instead of judging by eye.
+
+What that does and does not affect: **nothing in the findings above depended on the typeface.**
+They are missing controls, dropped copy, element ordering and box spacing — all of which render
+the same in any font. What was *not* compared, and is still open, is **typography itself**:
+weights, sizes and letterforms against the captures. Re-running the harness now renders Cormorant
+Garamond and Barlow properly, so that comparison is possible for the first time.
+
 **Still open in this phase:** TD-8 (`admin.css` is one 3,700-line file). The Market App
 tile below remains a scope decision rather than a bug:
 
