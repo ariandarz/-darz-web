@@ -804,11 +804,12 @@ export class DocumentsAdminService extends ResourceService {
       body,
     });
   }
-  /** **Unbound — G-DEL-1.** The old panel's `dlDelDoc` (`:17913`) — OWNER ONLY
-   * there ("Only the owner can delete an issued document"), and its confirm
-   * names the cost: "…and all N versions? A version a gallery already holds
-   * cannot be un-sent." The API allows any standard admin; the UI, when built,
-   * should keep the old panel's stricter gate (TD-6). */
+  /** The old panel's `dlDelDoc` (`:17913`). **Built 2026-09-22** (G-DEL-1
+   * approved) on `DocumentDetailPage`, with that confirm verbatim — version
+   * count and "A version a gallery already holds cannot be un-sent" included.
+   * The desk keeps the old panel's OWNER-ONLY gate, which is stricter than
+   * this endpoint's `IsStandardAdminOrOwner`: a UI gate over a permissive
+   * endpoint, so enforcing it properly is still server-side work. */
   deleteDocument(id: string) {
     return this.client.send<void>('DELETE', `${this.basePath}/documents/${id}/`);
   }
@@ -1058,9 +1059,11 @@ export class AuctionsAdminService extends ResourceService {
   }) {
     return this.create<Auction>('/auctions/', body);
   }
-  /** **Unbound — G-DEL-1.** The old panel's `×` on an auction card, titled
-   * "Delete auction permanently" (`:31815`, confirm "Delete this auction?"),
-   * is not built here yet (TD-6). */
+  /** The old panel's `×` on an auction card, titled "Delete auction
+   * permanently" (`:31815`, confirm "Delete this auction?"). **Built
+   * 2026-09-22** (G-DEL-1 approved) as the auctions desk's row action, with
+   * that confirm verbatim and no role gate — the endpoint is
+   * `IsStandardAdminOrOwner` and the old `×` has no role check either. */
   deleteAuction(id: string) {
     return this.client.send<void>('DELETE', `${this.basePath}/auctions/${id}/`);
   }
@@ -1200,10 +1203,11 @@ export class AccountingAdminService extends ResourceService {
       body,
     });
   }
-  /** **Unbound — G-DEL-1.** The old panel has this button ("Delete deal",
-   * `darz-studio.html:12664`, confirming "Delete this deal? The collector's
-   * request/activity is not affected.") and this port has not built it, so the
-   * method is an unfinished port rather than dead code (TD-6). */
+  /** The old panel's "Delete deal" (`darz-studio.html:12664`). **Built
+   * 2026-09-22** (G-DEL-1 approved) as the Private Deals row action, with its
+   * confirm verbatim ("Delete this deal? The collector's request/activity is
+   * not affected."). Owner-only in the desk because this endpoint is
+   * `IsOwner` — the UI agreeing with the server, not gating it. */
   deleteDeal(id: string) {
     return this.client.send<void>('DELETE', `${this.basePath}/deals/${id}/`);
   }

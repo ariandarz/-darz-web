@@ -54,6 +54,14 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/team', 'Team'],
   ['/admin/settings', 'Settings'],
   ['/admin/accounting', 'Accounting'],
+  // The Accounting desk is FOUR desks on one route, switched by `?view=`
+  // (`accountingView()` in `AccountingPage.tsx`). Walking the bare path only
+  // ever opened `books`, which is how the Private Deals view kept a live
+  // `.length`-on-undefined — §9a's own bug, one desk over — through the first
+  // full walk and a release. A query-param view is a desk.
+  ['/admin/accounting?view=deals', 'Accounting'],
+  ['/admin/accounting?view=duplicates', 'Accounting'],
+  ['/admin/accounting?view=settlement', 'Accounting'],
   ['/admin/accounting/deals/new', 'New private deal'],
   ['/admin/projects', 'Projects'],
   ['/admin/projects/list', 'Projects'],

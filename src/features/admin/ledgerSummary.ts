@@ -92,3 +92,61 @@ export function normaliseLedgerSummary(raw: unknown): LedgerSummary {
     converted_income: converted,
   };
 }
+
+/* ------------------------------------------------------------------ *
+ * The SAME failure, one desk over — found 2026-09-22.
+ *
+ * `GET /accounting/admin/deals/summary/` has the same `{currencies,
+ * by_currency}` shape and `AccountingDeals` trusted it the same way
+ * (`summary && summary.currencies.length > 0`). §9a fixed the LEDGER
+ * summary and stopped there, so the Private Deals view of `/admin/accounting`
+ * still threw — caught by `DeskBoundary` rather than blanking, which is the
+ * boundary doing its job and still a desk that does not render.
+ *
+ * It survived the first full desk walk because that walk opens
+ * `/admin/accounting`, which is the books view; the other three views are
+ * `?view=` on the same route and nothing opened them. `e2e/desks.spec.ts`
+ * now walks all four.
+ * ------------------------------------------------------------------ */
+import type { DealsSummary } from '../../api/types';
+
+type DealBucket = DealsSummary['by_currency'][string];
+
+export const EMPTY_DEALS_SUMMARY: DealsSummary = {
+  currencies: [],
+  by_currency: {},
+};
+
+function dealBucket(raw: unknown): DealBucket {
+  const v = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  return {
+    sale: money(v.sale),
+    commission: money(v.commission),
+    costs: money(v.costs),
+    expenses: money(v.expenses),
+    received: money(v.received),
+    net: money(v.net),
+    remaining: money(v.remaining),
+  };
+}
+
+export function normaliseDealsSummary(raw: unknown): DealsSummary {
+  if (!raw || typeof raw !== 'object') return EMPTY_DEALS_SUMMARY;
+  const v = raw as Record<string, unknown>;
+
+  const currencies = Array.isArray(v.currencies)
+    ? v.currencies.filter((c): c is string => typeof c === 'string' && c !== '')
+    : [];
+
+  const byCurrency: DealsSummary['by_currency'] = {};
+  const rawBuckets = (
+    v.by_currency && typeof v.by_currency === 'object' ? v.by_currency : {}
+  ) as Record<string, unknown>;
+  for (const currency of currencies) byCurrency[currency] = dealBucket(rawBuckets[currency]);
+
+  return {
+    currencies,
+    by_currency: byCurrency,
+    ...(typeof v.count === 'number' && Number.isFinite(v.count) ? { count: v.count } : {}),
+  };
+}

@@ -19,6 +19,13 @@
  *    its own desk later; Registrations is its own route (the nav's
  *    "Register to Bid" tab), not a sub-tab.
  *
+ * **Delete (G-DEL-1, approved 2026-09-22).** The old card's `×`, titled
+ * "Delete auction permanently" (`:31815`), had never been built here. Its
+ * confirm ("Delete this auction?", `:39813`) is ported verbatim. Unlike the
+ * deal delete this one is **not** owner-gated: the endpoint is
+ * `IsStandardAdminOrOwner`, and the old panel's own `×` is on every card
+ * with no role check, so the two agree.
+ *
  * **Two more, recorded 2026-09-22 comparing against `09-auctions`:**
  *  - **The heading reads "Live Auctions", the old one reads "Auctions"**
  *    (`:31732`). Deliberate. The old panel gives all three auction views the
@@ -41,7 +48,14 @@ import { useNavigate } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type { Auction, Choice } from '../../api/types';
-import { DeskAction, DeskBanner, DeskPage, DataTable, type Column } from './kit';
+import {
+  ConfirmDialog,
+  DeskAction,
+  DeskBanner,
+  DeskPage,
+  DataTable,
+  type Column,
+} from './kit';
 import './admin.css';
 
 export function AuctionsAdminPage() {
@@ -57,6 +71,8 @@ export function AuctionsAdminPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [creating, setCreating] = useState(false);
+  const [removing, setRemoving] = useState<Auction | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     auctionsAdmin.auctions({ per_page: 100 }).then(
@@ -66,6 +82,16 @@ export function AuctionsAdminPage() {
     );
   }, [auctionsAdmin]);
   useEffect(load, [load]);
+
+  const remove = async (a: Auction) => {
+    setActionError(null);
+    try {
+      await auctionsAdmin.deleteAuction(a.id);
+      load();
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete the auction.');
+    }
+  };
 
   const rows = useMemo(() => {
     let list = auctions ?? [];
@@ -126,13 +152,24 @@ export function AuctionsAdminPage() {
       key: 'open',
       header: '',
       cell: (a) => (
-        <button
-          type="button"
-          className="ad-rowbtn"
-          onClick={() => navigate(`/admin/auctions/${a.id}`)}
-        >
-          Open
-        </button>
+        <span className="ad-rowacts">
+          <button
+            type="button"
+            className="ad-rowbtn"
+            onClick={() => navigate(`/admin/auctions/${a.id}`)}
+          >
+            Open
+          </button>
+          {/* the old card's `×`, "Delete auction permanently" (`:31815`) */}
+          <button
+            type="button"
+            className="ad-rowbtn is-danger"
+            title="Delete auction permanently"
+            onClick={() => setRemoving(a)}
+          >
+            Delete
+          </button>
+        </span>
       ),
     },
   ];
@@ -181,6 +218,7 @@ export function AuctionsAdminPage() {
       }
     >
       {error && <DeskBanner>{error}</DeskBanner>}
+      {actionError && <DeskBanner>{actionError}</DeskBanner>}
       {!auctions && !error && <p className="dz-state">Loading…</p>}
 
       {creating && (
@@ -205,6 +243,21 @@ export function AuctionsAdminPage() {
               : 'No auctions yet — create the first sale.'}
           </p>
         ))}
+
+      {removing && (
+        /* `:39813`, verbatim — the old `delAuc` confirm. */
+        <ConfirmDialog
+          message="Delete this auction?"
+          okLabel="Delete"
+          danger
+          onCancel={() => setRemoving(null)}
+          onConfirm={() => {
+            const a = removing;
+            setRemoving(null);
+            void remove(a);
+          }}
+        />
+      )}
     </DeskPage>
   );
 }

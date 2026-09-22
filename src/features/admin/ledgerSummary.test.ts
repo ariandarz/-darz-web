@@ -5,7 +5,11 @@
  * actually answer — the sibling of `artworkFacets.test.ts`.
  */
 import { describe, expect, it } from 'vitest';
-import { EMPTY_LEDGER_SUMMARY, normaliseLedgerSummary } from './ledgerSummary';
+import {
+  EMPTY_LEDGER_SUMMARY,
+  normaliseDealsSummary,
+  normaliseLedgerSummary,
+} from './ledgerSummary';
 
 const WELL_FORMED = {
   book: 'darz',
@@ -96,5 +100,66 @@ describe('normaliseLedgerSummary', () => {
       converted_income: { USD: '0', EUR: null, GBP: 'nonsense' },
     });
     expect(out.converted_income).toEqual({ USD: '0' });
+  });
+});
+
+/**
+ * The same guard, one desk over. `normaliseDealsSummary` exists because the
+ * Private Deals view had §9a's bug still live after §9a: `summary &&
+ * summary.currencies.length` passed its null check against the empty
+ * paginated envelope and threw on the `.length`.
+ */
+describe('normaliseDealsSummary', () => {
+  it('survives the exact response that broke the view — an empty page envelope', () => {
+    const out = normaliseDealsSummary({
+      pagination: { page: 1, per_page: 25, total_count: 0 },
+      results: [],
+    });
+    expect(out.currencies).toEqual([]);
+    // the line that threw
+    expect(out.currencies.length > 0).toBe(false);
+  });
+
+  it('survives null, a string and an array', () => {
+    for (const raw of [null, undefined, 'nope', [1, 2]]) {
+      expect(normaliseDealsSummary(raw).currencies).toEqual([]);
+    }
+  });
+
+  it('keeps a well-formed summary intact', () => {
+    const out = normaliseDealsSummary({
+      currencies: ['USD'],
+      by_currency: {
+        USD: {
+          sale: '10000',
+          commission: '1500',
+          costs: '200',
+          expenses: '100',
+          received: '8000',
+          net: '8200',
+          remaining: '2000',
+        },
+      },
+      count: 3,
+    });
+    expect(out.currencies).toEqual(['USD']);
+    expect(out.by_currency.USD.net).toBe('8200');
+    expect(out.count).toBe(3);
+  });
+
+  it('drops a bucket for a currency the response did not list, and never prints NaN', () => {
+    const out = normaliseDealsSummary({
+      currencies: ['USD'],
+      by_currency: { USD: { sale: null, net: 900 }, GBP: { sale: '5' } },
+    });
+    expect(Object.keys(out.by_currency)).toEqual(['USD']);
+    expect(out.by_currency.USD.sale).toBe('0');
+    expect(out.by_currency.USD.net).toBe('900');
+    expect(Number(out.by_currency.USD.sale).toLocaleString('en-US')).not.toBe('NaN');
+  });
+
+  it('omits count rather than inventing one', () => {
+    expect(normaliseDealsSummary({ currencies: [] }).count).toBeUndefined();
+    expect(normaliseDealsSummary({ currencies: [], count: 'x' }).count).toBeUndefined();
   });
 });
