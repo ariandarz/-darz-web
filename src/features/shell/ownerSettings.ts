@@ -48,6 +48,19 @@ export function settingNumber(key: string, fallback: number): number {
 }
 
 /**
+ * A non-empty string from the theme, or `fallback`.
+ *
+ * Trims, and treats a blank string as unset — an owner who clears the box in
+ * App Design means "none", not "empty string", and the one caller that has to
+ * tell those apart (the membership sheet's WhatsApp number) shows a different
+ * line when there is no number at all.
+ */
+export function settingString(key: string, fallback: string): string {
+  const raw = settings[key];
+  return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : fallback;
+}
+
+/**
  * The raw value under `key`, unread and unchecked — for a setting whose shape
  * is the reader's business rather than this module's.
  *

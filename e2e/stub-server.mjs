@@ -34,7 +34,8 @@ const ME_COLLECTOR = {
   principal: 'collector',
   id: '00000000-0000-4000-8000-0000000000c0',
   display_name: 'E2E Collector',
-  tier: 'standard',
+  // Also `CollectorTierEnum`, for the same reason as the options key above.
+  tier: 'active',
   access_status: 'active',
 };
 
@@ -67,7 +68,17 @@ const OPTIONS = {
     { value: 'offer', label: 'Make an offer' },
     { value: 'viewing', label: 'Request a viewing' },
   ],
-  'accounts.collector_tier': [{ value: 'standard', label: 'Standard' }],
+  // `CollectorTierEnum` — the real four. This said `[{standard, Standard}]`
+  // until 2026-09-22, and `standard` is not in the enum at all: the stub was
+  // inventing a tier. It matters because this key is also what the membership
+  // sheet labels a redeemed code's `plan` from, so a stub with the wrong
+  // vocabulary makes a working lookup look broken (and a broken one look fine).
+  'accounts.collector_tier': [
+    { value: 'vip', label: 'VIP' },
+    { value: 'active', label: 'Active' },
+    { value: 'new', label: 'New' },
+    { value: 'institutional', label: 'Institutional' },
+  ],
   'accounts.collector_access_status': [{ value: 'active', label: 'Active' }],
   'accounts.team_role': [{ value: 'owner', label: 'Owner' }],
   'sales.status': [{ value: 'draft', label: 'Draft' }],
@@ -116,6 +127,11 @@ const routes = {
     envelope(bearerIsCollector(req) ? TOKENS.collector : TOKENS.team),
   'GET /api/auth/me/': (req) => envelope(bearerIsCollector(req) ? ME_COLLECTOR : ME),
   'GET /api/options/': () => envelope(OPTIONS),
+  // Membership redeem (Phase 13). A POST, so the catch-all 400s it — which is
+  // a fine stand-in for a rejected code but never lets the success path run.
+  // Answers `basic` so the sheet's active block and the Settings pill appear.
+  'POST /api/auth/membership/redeem/': () =>
+    envelope({ plan: 'vip', tier: 'vip', redeemed_at: new Date().toISOString() }),
   // the REAL path: DashboardService = '/dashboard' + '/admin/summary/'.
   // The route said '/api/admin/summary/' until PR #54 — the summary then
   // fell into the paginated catch-all and Tiles crashed on

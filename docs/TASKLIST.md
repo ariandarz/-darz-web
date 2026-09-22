@@ -721,7 +721,20 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
       details as answers and the account row is unchanged; **G-Q-2** — the old intro's three
       Roman-numeral points are *built and never rendered* there (`rows` is assigned at
       `app.html:10032` and never concatenated), so they are recorded rather than ported.
-- [ ] Membership display/redemption (backend Phase 13 merged — ready)
+- [x] Membership display/redemption — **built 2026-09-22** (`src/features/membership/`), opened
+      from the Settings › Membership row. The old sheet's full content: the tiers, their two
+      billing terms with the 10% six-month discount, the includes lists, the WhatsApp subscribe
+      link and the access-code redeem box, each string verbatim. **Four findings**, all recorded
+      on the screen itself: **G-MEMB-3** (no expiry anywhere, so "Active until …" and the
+      EXPIRED state cannot exist), **G-MEMB-6** (no "my membership" read at all — `me.tier` is
+      the CRM segmentation every collector already has, so the persistent "Active membership"
+      block and the Settings ACTIVE pill are not built; a redeem is confirmed in the moment
+      instead), **G-MEMB-4** (tier names and prices are literals, as in the old app — they move
+      to `theme.*` when the owner wants them editable without a deploy) and **G-MEMB-5** (the
+      old app's hardcoded WhatsApp number is not ported; an unset `theme.whatsapp` falls to the
+      old "Contact Darz to subscribe." line). The redeemed plan is labelled from
+      `accounts.collector_tier` — **never** the old basic/premium mapping, which would print
+      "Basic Access" for a VIP.
 - [ ] PWA install + push opt-in `[!]` VAPID public key is still not published by the API (checked
       2026-09-17 — `apps.notifications` has no `GET` for it); push delivery itself is ready
       (Phase 13), but the frontend can't complete the browser subscribe handshake without the key.

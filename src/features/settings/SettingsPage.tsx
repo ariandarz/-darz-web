@@ -15,14 +15,20 @@
  *   ✗ NOTIFICATIONS (:9901-9915) — the toggles were device-local preferences
  *     with no backend, and push is wired to auctions only (Phase 13): hidden
  *     behind `features.push`, not deleted.
- *   ✗ Membership (:9896-9900) — `features.membership`.
+ *   ✓ Membership (:9923-9927) — the row, opening the access-tier sheet
+ *     (`MembershipSheet`). Behind `features.membership`. Built 2026-09-22
+ *     against Phase 13's `POST /api/auth/membership/redeem/`. Its ACTIVE /
+ *     EXPIRED pill and plan sub-line are NOT built — see the sheet's header
+ *     (G-MEMB-6, G-MEMB-3) for what the backend cannot answer.
  *   ✗ "Get the app" (PWA install) — no service worker in this build yet.
  */
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
 import { themeController } from '../../design';
 import '../catalogue/catalogue.css';
+import { MembershipSheet } from '../membership/MembershipSheet';
+import '../membership/membership.css';
 import { features } from '../shell/features';
 import './settings.css';
 
@@ -125,6 +131,8 @@ export function SettingsPage() {
   const signOut = () =>
     void auth.logout().finally(() => navigate('/login', { replace: true }));
 
+  const [membershipOpen, setMembershipOpen] = useState(false);
+
   return (
     <div className="dz-page">
       <div className="hero compact">
@@ -145,6 +153,31 @@ export function SettingsPage() {
           <span className="st-chev">›</span>
         </Link>
       </div>
+
+      {/* Membership (`:9923-9927`) — the row and the sheet it opens.
+          The old row also carries a green ACTIVE / red EXPIRED pill and a
+          sub-line naming the plan and its end date. **None of those are
+          built**, and not for want of trying: nothing in this backend answers
+          whether a collector has redeemed a code, and `me.tier` is the CRM
+          segmentation every collector already has, so lighting the pill from
+          it would mark everyone a member. See `MembershipSheet`'s header,
+          G-MEMB-6 / G-MEMB-3. The row keeps the old default sub-line, which
+          is exactly what the old app shows a non-member. */}
+      {features.membership && (
+        <div className="st-card">
+          <button
+            type="button"
+            className="st-row top click"
+            onClick={() => setMembershipOpen(true)}
+          >
+            <div>
+              <div className="t">Membership</div>
+              <div className="s">View plans and your access to the private room</div>
+            </div>
+            <span className="st-chev">›</span>
+          </button>
+        </div>
+      )}
 
       {features.push && (
         <div className="st-card">
@@ -278,6 +311,8 @@ export function SettingsPage() {
         <div className="dz-powered">Powered by Darz</div>
         <div className="st-ver">v0.1</div>
       </div>
+
+      <MembershipSheet open={membershipOpen} onClose={() => setMembershipOpen(false)} />
     </div>
   );
 }

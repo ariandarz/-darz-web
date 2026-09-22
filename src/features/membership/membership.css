@@ -1,0 +1,350 @@
+/**
+ * Membership — ported from `DZ.viewMemberships()` and `dzTierCardHTML`
+ * (app.html:10303-10341, :10253-10271), whose styling is entirely inline
+ * there, lifted here into classes.
+ *
+ * The tier card is the old `dark:true` variant of `dzTierCardHTML`, which is
+ * the only one both tiers use. Its colours are FIXED literals in the old app
+ * (`#0A0A0A` / `#F4F4F2` / `#B8B8B4` / `#8A8A86`), not tokens — the card is
+ * charcoal in Paper mode as well as Black, which is the whole point of the
+ * variant. Reproduced as literals for that reason; using `--ink` here would
+ * make the card invert with the theme and lose the contrast it is built on.
+ */
+
+.mb-head {
+  text-align: center;
+  padding: 6px 2px 2px;
+}
+
+.mb-seam {
+  height: 2px;
+  width: 38px;
+  border-radius: 2px;
+  background: var(--dz-seam);
+  margin: 2px auto 16px;
+}
+
+.mb-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+.mb-h {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 5px 0 8px;
+  color: var(--ink);
+}
+
+.mb-lede {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink2);
+  margin: 0 auto;
+  max-width: 340px;
+}
+
+/* ---- the active-membership block (:10313-10318) ---------------------- */
+
+.mb-active {
+  background: #26262e;
+  border: 1px solid #3a3a44;
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  margin-top: 14px;
+  text-align: center;
+}
+
+.mb-active-lab {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8a8a86;
+}
+
+.mb-active-plan {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 600;
+  color: #f4f4f2;
+  margin: 4px 0 2px;
+}
+
+.mb-active-sub {
+  font-size: 12.5px;
+  color: #b8b8b4;
+}
+
+.mb-active-note {
+  font-size: 11px;
+  color: #8a8a86;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ---- the redeem box (:10329-10335) ----------------------------------- */
+
+.mb-redeem {
+  background: var(--card);
+  border: 1px solid rgb(10 10 10 / 10%);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-top: 14px;
+}
+
+html.dz-bw .mb-redeem {
+  border-color: var(--hair);
+}
+
+.mb-redeem-t {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.mb-redeem-s {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.mb-redeem-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+  align-items: stretch;
+}
+
+.mb-code {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--hair);
+  background: var(--card);
+  border-radius: 11px;
+  padding: 11px 13px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  outline: none;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.mb-code:focus {
+  border-color: var(--ink3);
+}
+
+.mb-activate {
+  white-space: nowrap;
+  font-size: 12.5px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mb-msg {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 9px;
+  min-height: 1px;
+}
+
+/* The old sheet's own two message colours (`setMsg`, :10344). */
+.mb-msg.ok {
+  color: #1f9d57;
+}
+
+.mb-msg.err {
+  color: #c0392b;
+}
+
+/* ---- the billing-period segment (:10325-10328) ----------------------- */
+
+.mb-term {
+  margin-top: 16px;
+}
+
+.mb-term-lab {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0 2px 7px;
+}
+
+.mb-term-seg {
+  display: flex;
+  background: var(--soft);
+  border-radius: 13px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.mb-term-seg button {
+  flex: 1;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 10px 8px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  box-shadow: none;
+  transition: 0.15s;
+}
+
+.mb-term-seg button.on {
+  font-weight: 700;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+}
+
+/* ---- a tier card (`dzTierCardHTML`, :10253-10271) -------------------- */
+
+.mb-tiers {
+  text-align: left;
+}
+
+.mb-tier {
+  background: #0a0a0a;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 18px;
+  padding: 20px 20px 22px;
+  margin-top: 14px;
+}
+
+/* The card's own seam is left-aligned and narrower than the head's. */
+.mb-tier .mb-seam {
+  width: 36px;
+  margin: 0 0 14px;
+}
+
+.mb-tier-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8a8a86;
+}
+
+.mb-tier-label {
+  font-family: var(--font-head);
+  font-size: 23px;
+  font-weight: 600;
+  color: #f4f4f2;
+  margin: 3px 0 10px;
+}
+
+.mb-price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #f4f4f2;
+}
+
+.mb-price .v {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mb-price .r {
+  font-size: 13px;
+  color: #8a8a86;
+}
+
+.mb-price.intl {
+  color: #b8b8b4;
+  margin-top: 3px;
+}
+
+.mb-price.intl .v {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mb-save {
+  font-size: 11.5px;
+  color: #5fcf94;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.mb-rule {
+  height: 1px;
+  background: rgb(255 255 255 / 12%);
+  margin: 16px 0;
+}
+
+.mb-includes {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.mb-inc {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #b8b8b4;
+}
+
+.mb-inc .tk {
+  color: var(--cyan);
+  flex: 0 0 auto;
+  margin-top: 2px;
+  display: block;
+}
+
+.mb-wa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+  text-decoration: none;
+  box-sizing: border-box;
+  border-radius: 13px;
+  padding: 13px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  background: #26262e;
+  color: #fafafa;
+  border: 1px solid #3a3a44;
+}
+
+.mb-nowa {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #8a8a86;
+  text-align: center;
+}
+
+.mb-foot {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ink3);
+  text-align: center;
+  margin: 16px auto 2px;
+  max-width: 330px;
+}
+
+/* The Settings row's green ACTIVE / red EXPIRED pills (`:9926`) have no rule
+   here because they have no state to render — see `MembershipSheet`'s header
+   (G-MEMB-6 / G-MEMB-3). */

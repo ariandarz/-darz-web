@@ -187,3 +187,38 @@ test('the profile overview opens the questionnaire', async () => {
   await expect(page).toHaveURL(/\/questionnaire$/);
   expect(thrown).toEqual([]);
 });
+
+/**
+ * Membership — the sheet, its arithmetic, and a redeem.
+ *
+ * Worth a walk rather than a unit test alone because the two things most
+ * likely to break are both integration: the six-month discount has to reach
+ * the rendered card, and the redeemed plan has to be LABELLED from
+ * `GET /api/options/` rather than the old app's basic/premium mapping, which
+ * would print "Basic Access" for a VIP (`tiers.ts`).
+ */
+test('the membership sheet prices both terms and confirms a redeem', async () => {
+  thrown = [];
+  await page.goto('/settings');
+  await page.waitForLoadState('networkidle');
+
+  await page.getByRole('button', { name: /Membership/ }).click();
+  await expect(page.locator('.mb-h')).toHaveText('Choose your access');
+  await expect(page.locator('.mb-tier').first()).toContainText('5,000,000 Toman / month');
+
+  await page.getByRole('button', { name: '6 months · save 10%' }).click();
+  // 5,000,000 x 6 x 0.9, and the premium tier rounded to a whole million.
+  await expect(page.locator('.mb-tier').first()).toContainText('27,000,000 Toman / 6 months');
+  await expect(page.locator('.mb-tier').last()).toContainText('49,000,000 Toman / 6 months');
+
+  await page.fill('.mb-code', 'dz-p-abc123');
+  await page.getByRole('button', { name: 'Activate' }).click();
+
+  // The stub redeems a `vip` code. The label must come from the options map —
+  // "VIP", never the old mapping's fallback "Basic Access".
+  await expect(page.locator('.mb-active-plan')).toHaveText('VIP');
+  await expect(page.locator('.mb-active-plan')).not.toHaveText(/Basic Access/);
+  await expect(page.locator('.mb-h')).toHaveText('Your membership');
+
+  expect(thrown, 'page errors in the membership sheet').toEqual([]);
+});
