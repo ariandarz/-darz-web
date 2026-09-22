@@ -95,7 +95,16 @@ import { SavedItemsPage } from './features/saved/SavedItemsPage';
 import { SavedProvider } from './features/saved/SavedProvider';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { AppShell } from './features/shell/AppShell';
+import { ScreenBoundary } from './features/shell/ScreenBoundary';
 import { features, isHiddenPath, type FeatureFlags } from './features/shell/features';
+
+/** Build-time only — see the `/_boom` route. `undefined` in every build that
+ * does not set it, which is every build but the E2E one. */
+const BOOM = import.meta.env.VITE_E2E_BOOM === '1';
+
+function Boom(): never {
+  throw new Error('E2E — forced render failure');
+}
 
 function CollectorLayout() {
   const location = useLocation();
@@ -103,7 +112,16 @@ function CollectorLayout() {
 
   const shell = (
     <AppShell>
-      <Outlet />
+      {/* The screen, behind the boundary that keeps a thrown render from
+          taking the header, the chroma line and the nav down with it. Until
+          2026-09-22 a collector screen had nothing under it, so an
+          unexpected response shape was a white page — `/auctions/lots/:id`
+          was exactly that. Keyed on the pathname the way `DeskBoundary` is,
+          so leaving a broken screen clears it, and NOT on the search string,
+          which would remount a screen every time a filter changed. */}
+      <ScreenBoundary key={location.pathname}>
+        <Outlet />
+      </ScreenBoundary>
     </AppShell>
   );
   return (
@@ -150,6 +168,15 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<CollectorLayout />}>
+        {/* A route that throws, so `ScreenBoundary` can be a GATE rather than
+            an afternoon's hand-check. It exists only when
+            `VITE_E2E_BOOM` is set, which only `npm run e2e:build` sets —
+            `resolveBoom()` reads it the way every other value in this app is
+            read (`.env.example` documents it), so no real build ever carries a
+            crash switch. Without this, removing the boundary would break
+            nothing that fails. */}
+        {BOOM && <Route path="/_boom" element={<Boom />} />}
+
         <Route path="/" element={<CataloguePage />} />
         <Route path="/artwork/:id" element={<ArtworkDetailPage />} />
         <Route path="/artists" element={<ArtistListPage />} />
