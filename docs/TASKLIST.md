@@ -1081,7 +1081,13 @@ surface before building each. Ordered by V1 relevance:
       two tiers' claims and the rule of thumb (a new desk gets its real-backend walk before it
       ships; the smoke only grows with the boot/shell contract).
 
-- [ ] Component tests for shared/base components
+- [x] Component tests for shared/base components — **built 2026-09-22**, 40 tests across
+      `Dropdown` (14), `Sheet` (9) and the form primitives (17). `vitest.config.ts` now runs **two
+      projects**: `logic` (`*.test.ts`, node, no DOM) and `components` (`*.test.tsx`, jsdom). The
+      split is deliberate rather than incidental — the node project having no `localStorage` is
+      what proves `QuestionnaireController` and `bankDetails` survive a private window, and giving
+      the whole suite a DOM would quietly delete that guarantee. Deps added: `jsdom`,
+      `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, all dev.
 - [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
 
 ## Phase 14 — Deploy & cutover `[~]` config landed; deploy blocked on a Vercel permission
