@@ -230,6 +230,27 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     tabs: [
       // The first four are one page with a sticky sub-tab in the old panel
       // (`docsTab(...)`, :11732-11735); here they are four routes.
+      //
+      // **Create** (`docsTab('create')`, `:11732`) is the old group's FIRST
+      // tab and was missing from this group entirely — found 2026-09-22
+      // comparing the Documents desk against `45-documents-library`, whose
+      // sub-row has six tabs to this one's three. It is not an unbuilt desk:
+      // `42-documents-create`'s own copy is "Choose the exhibition, check its
+      // services, then create the proposal or the invoice", which is exactly
+      // what `/admin/issue` does. That desk was promoted into the Galleries
+      // group on the owner's instruction (2026-09-19), and nothing was left
+      // behind here, so an admin looking under Documents for Create found
+      // nothing. Same desk, two entry points, each labelled as its own group
+      // labels it — the shape App Design already has (`:218`, `:407`), and
+      // why both carry the key `issue`.
+      tab(
+        'issue',
+        'Create',
+        '/admin/issue',
+        'ready',
+        '12·A',
+        'the old Create tab — the same desk the Galleries group lists as "Issue a document".',
+      ),
       tab('docProposals', 'Proposals', '/admin/documents?kind=proposal', 'ready', '12·3'),
       tab('docInvoices', 'Invoices', '/admin/documents?kind=invoice', 'ready', '12·3'),
       tab('docFiles', 'Library', '/admin/documents', 'ready', '12·3'),

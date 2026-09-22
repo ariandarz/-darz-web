@@ -18,13 +18,44 @@
  *  - the results sub-tab (`aucResultSweep`) — the external results DB has
  *    its own desk later; Registrations is its own route (the nav's
  *    "Register to Bid" tab), not a sub-tab.
+ *
+ * **Delete (G-DEL-1, approved 2026-09-22).** The old card's `×`, titled
+ * "Delete auction permanently" (`:31815`), had never been built here. Its
+ * confirm ("Delete this auction?", `:39813`) is ported verbatim. Unlike the
+ * deal delete this one is **not** owner-gated: the endpoint is
+ * `IsStandardAdminOrOwner`, and the old panel's own `×` is on every card
+ * with no role check, so the two agree.
+ *
+ * **Two more, recorded 2026-09-22 comparing against `09-auctions`:**
+ *  - **The heading reads "Live Auctions", the old one reads "Auctions"**
+ *    (`:31732`). Deliberate. The old panel gives all three auction views the
+ *    same `<h1>Auctions</h1>` and tells them apart by the in-desk sub-tab
+ *    bar (`aucTabBar`: Live & upcoming · Past auctions & results ·
+ *    Registrations · Archived). This port has no in-desk bar — those views
+ *    are separate nav tabs, which is the routing change §6.2 covers — so
+ *    three desks titled "Auctions" would be three pages with the same name.
+ *    Each takes its own nav label as its heading instead.
+ *  - **The "Archived" sub-tab is not built.** The old bar's fourth view is
+ *    the archived list, with its own copy ("Archived auctions — hidden from
+ *    the Live list and the Market App, kept for your record. **Restore** any
+ *    to bring it back.", `:31734`). `AuctionQuery` has no `archived`
+ *    parameter — the flag exists on requests and projects, not on auctions —
+ *    so there is nothing to filter on. Backend gap **G-AUC-4**; `cancelled`
+ *    is the nearest status and is not the same thing.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type { Auction, Choice } from '../../api/types';
-import { DeskAction, DeskBanner, DeskPage, DataTable, type Column } from './kit';
+import {
+  ConfirmDialog,
+  DeskAction,
+  DeskBanner,
+  DeskPage,
+  DataTable,
+  type Column,
+} from './kit';
 import './admin.css';
 
 export function AuctionsAdminPage() {
@@ -40,6 +71,8 @@ export function AuctionsAdminPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [creating, setCreating] = useState(false);
+  const [removing, setRemoving] = useState<Auction | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     auctionsAdmin.auctions({ per_page: 100 }).then(
@@ -49,6 +82,16 @@ export function AuctionsAdminPage() {
     );
   }, [auctionsAdmin]);
   useEffect(load, [load]);
+
+  const remove = async (a: Auction) => {
+    setActionError(null);
+    try {
+      await auctionsAdmin.deleteAuction(a.id);
+      load();
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete the auction.');
+    }
+  };
 
   const rows = useMemo(() => {
     let list = auctions ?? [];
@@ -109,13 +152,24 @@ export function AuctionsAdminPage() {
       key: 'open',
       header: '',
       cell: (a) => (
-        <button
-          type="button"
-          className="ad-rowbtn"
-          onClick={() => navigate(`/admin/auctions/${a.id}`)}
-        >
-          Open
-        </button>
+        <span className="ad-rowacts">
+          <button
+            type="button"
+            className="ad-rowbtn"
+            onClick={() => navigate(`/admin/auctions/${a.id}`)}
+          >
+            Open
+          </button>
+          {/* the old card's `×`, "Delete auction permanently" (`:31815`) */}
+          <button
+            type="button"
+            className="ad-rowbtn is-danger"
+            title="Delete auction permanently"
+            onClick={() => setRemoving(a)}
+          >
+            Delete
+          </button>
+        </span>
       ),
     },
   ];
@@ -124,6 +178,20 @@ export function AuctionsAdminPage() {
     <DeskPage
       wide
       title="Live Auctions"
+      subtitle={
+        /* `:31734`'s line under the heading, verbatim bar one clause — this
+           desk had dropped it entirely (found 2026-09-22 against
+           `09-auctions`). "invitation-only auctions stay private" is not
+           ported: invitation-only is the old `clubView` layer (`:33772`),
+           which this backend has for private SELECTIONS but not for
+           auctions, so the sentence would promise a control that is not
+           here. "drafts stay private" is true and kept — `draft` is a real
+           status in `auctions.auction_status`. */
+        <>
+          One card per auction — open to manage lots, estimates and the poster.{' '}
+          <b>Publish to App</b> to go live; drafts stay private.
+        </>
+      }
       action={<DeskAction onClick={() => setCreating(true)}>＋ New auction</DeskAction>}
       toolbar={
         <>
@@ -150,6 +218,7 @@ export function AuctionsAdminPage() {
       }
     >
       {error && <DeskBanner>{error}</DeskBanner>}
+      {actionError && <DeskBanner>{actionError}</DeskBanner>}
       {!auctions && !error && <p className="dz-state">Loading…</p>}
 
       {creating && (
@@ -174,6 +243,21 @@ export function AuctionsAdminPage() {
               : 'No auctions yet — create the first sale.'}
           </p>
         ))}
+
+      {removing && (
+        /* `:39813`, verbatim — the old `delAuc` confirm. */
+        <ConfirmDialog
+          message="Delete this auction?"
+          okLabel="Delete"
+          danger
+          onCancel={() => setRemoving(null)}
+          onConfirm={() => {
+            const a = removing;
+            setRemoving(null);
+            void remove(a);
+          }}
+        />
+      )}
     </DeskPage>
   );
 }

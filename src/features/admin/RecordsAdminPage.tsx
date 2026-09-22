@@ -14,6 +14,33 @@
  * Not ported: the old tab's four import methods and the darz.art archive
  * browser — migration machinery for the old cloud, dead architecture here
  * (the Import desk's CSV path covers bulk entry when needed).
+ *
+ * **Compared against `10-auction-records`, 2026-09-22.** The old chip row is
+ * `All · Upcoming · Past · Highlights · Artist`, then four selects, then a
+ * List / Cards toggle and a `✦ n / 10` counter. Where each one landed:
+ *  - **Upcoming / Past** — the Section select, already ported (BE-R6).
+ *  - **Highlights** — was missing, and is **now built** (the toggle below):
+ *    `is_highlight` was already in the query type and nothing exposed it, so
+ *    the desk drew the ★ per row with no way to ask for the strip.
+ *  - **All results** — the Status select, already ported; the old filter's
+ *    options are this model's `auctions.record_status`.
+ *  - **Artist** — the old chip opens one artist's records. Here that is the
+ *    `artist` query param, reached by the Artists desk's record-count link,
+ *    which is itself deferred with the counts (G-CAT-3). Not a second
+ *    control on this desk.
+ *  - **All auction houses** — not built: `house` is free text on the record
+ *    and there is no facet endpoint over it, so the select has no options to
+ *    offer (the Database desk's four filters got one in #66; this one did
+ *    not). Backend gap **G-REC-1**.
+ *  - **Sort** — not built, and not invented. The old options are
+ *    `Most recent · Most records · Artist A–Z · Artist Z–A` (`:20324`) — a
+ *    set for a desk that GROUPS BY ARTIST, which this one does not. The API
+ *    orders by `sale_date` / `price_amount` / `created_at`, so a sort here
+ *    would be four new options the old desk never offered.
+ *  - **`✦ n / 10`** — the old highlights cap. No server-side cap exists
+ *    (`is_highlight` is a plain boolean), so the counter would be asserting
+ *    a rule nothing enforces.
+ *  - **List / Cards** — table only, the same call as Collectors (**G-4**).
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +58,7 @@ import {
   DeskPage,
   SearchFilter,
   SelectFilter,
+  ToggleFilter,
   type Column,
 } from './kit';
 import './admin.css';
@@ -179,13 +207,25 @@ export function RecordsAdminPage() {
             onChange={(status) => setQuery({ status })}
             choices={statuses}
           />
+          {/* The old chip row's ★ Highlights (`:20318`). The desk has always
+              SHOWN the star per row and had no way to filter by it, while
+              `is_highlight` sat in `AuctionRecordQuery` unused — found
+              2026-09-22 against `10-auction-records`. The server spells the
+              boolean `True`/`False`, the same as the other admin filters. */}
+          <ToggleFilter
+            label="★ Highlights"
+            checked={state.query.is_highlight === 'True'}
+            onChange={(on) => setQuery({ is_highlight: on ? 'True' : undefined })}
+          />
+        </>
+      }
+      subtitle={
+        <>
+          Third-party auction-house results — the market's memory, kept as comparables. What
+          collectors browse under Records; ★ marks the highlights strip.
         </>
       }
     >
-      <p className="ad-desksub">
-        Third-party auction-house results — the market's memory, kept as comparables. What
-        collectors browse under Records; ★ marks the highlights strip.
-      </p>
       {actionError && <DeskBanner>{actionError}</DeskBanner>}
       <DeskList
         label="Auction records"

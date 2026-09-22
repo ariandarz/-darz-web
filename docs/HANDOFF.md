@@ -1,6 +1,8 @@
 # Handoff — start here
 
 **Written 2026-09-22, end of the session that released PRs #69-#71.**
+**Updated 2026-09-22 by the session that met Phase 6's DoD** — §3's three "waiting on the
+owner" rows and its first unblocked item are done; the changes are marked inline.
 
 This file is the fastest way into the repo for a new session: where things stand, what is
 genuinely next, and the traps that have already cost time. `docs/TASKLIST.md` remains the
@@ -15,7 +17,7 @@ and the part neither of them says.
 | --- | --- |
 | `main` / `development` | **Identical trees** (`main` leads by its merge commit only), as of PR #71 |
 | Open PRs | **None** |
-| Gate | 478 unit tests · **71 E2E tests** · typecheck · lint **0 warnings** · format · build |
+| Gate | **484 unit tests · 77 E2E tests** · typecheck · lint **0 warnings** · format · build |
 | Deploy | Still none. The Vercel project does not exist — frontend Phase 14, blocked on a team role |
 
 The admin panel is ~85-90% of V1. The collector app's v0.1 loop is closed. What is left is listed
@@ -45,17 +47,20 @@ surface on every desk that no amount of source-reading could show. All fixed, an
 
 | Ref | Question | Recommendation |
 | --- | --- | --- |
-| **G-DEL-1** | Build the three deletes the old panel has (deal `:12664` · auction `:31815` · document `:17913`)? Each endpoint is already bound. | **Yes**, old confirm copy verbatim, and keep the old panel's **owner-only** gate on documents even though the API allows any standard admin |
+| ~~**G-DEL-1**~~ | ~~Build the three deletes…~~ | ✅ **Approved and built 2026-09-22.** All three, old confirm copy verbatim, owner-only gate kept on documents |
 | **G-LOCK-1** | Backend: put the optimistic lock on Accounting and Auction Records? They are **last-write-wins** today — two admins silently overwrite each other | **Yes for the ledger at least.** A silent overwrite there costs money |
-| **Collector error boundary** | The admin has `DeskBoundary`; the collector app has nothing, so an unexpected shape is a **white screen for a customer** | **Yes.** Held back only because it puts new copy in front of collectors, which is a design decision |
+| ~~**Collector error boundary**~~ | ~~The admin has `DeskBoundary`; the collector app has nothing…~~ | ✅ **Approved and built 2026-09-22** as `ScreenBoundary`. The design objection dissolved: the old app already catches a thrown render (`app.html:9821`) and "Something went wrong" is its heading verbatim, so no copy was invented |
 
 ### Unblocked — pick these up freely
 
-1. **Finish Phase 6's fidelity pass.** ~27 desks still to compare capture-by-capture
-   (`docs/ADMIN_SCREENS.md` maps each desk to its reference). Do it the way §5 describes; the
-   desks compared so far were mostly already correct *and* their file headers already explained
-   their differences, so expect to be confirming rather than fixing — the value is in the few that
-   are not.
+1. ~~**Finish Phase 6's fidelity pass.**~~ ✅ **Done 2026-09-22** —
+   `docs/ADMIN_V1_AUDIT.md` §10 "Phase 6 DoD — met". Two notes for whoever reads the advice
+   above, because it was half right: the desks' file headers *were* usually honest about their
+   differences, and the fixes still outnumbered the confirmations, because **three of the
+   findings were not per-desk at all**. `DeskPage` had no `subtitle` slot and no `strip` slot, so
+   every desk's sub-line and every count strip rendered below the filter row; and `.ad-deskintro`
+   was a second subtitle class. None of that is visible in one desk's source. §5's method is what
+   found them — and `e2e/capture-desks.mjs` now automates the screenshot half of it.
 2. **Phase 5b** — the Database desk's four hard filters (completeness, size ranges, duplicate
    images, Gallery Portal). Backend work first; the desk already names them as unavailable.
 3. **TD-8** — `admin.css` is one ~3,800-line file. Splitting it is safe now that the E2E walk
@@ -65,10 +70,12 @@ surface on every desk that no amount of source-reading could show. All fixed, an
    blanks and a cleared browser loses them. Belongs under `theme.*` or its own endpoint; needs a
    small decision on which. *(The audit's TD-3 row gives the path as
    `IssueDocumentPage.tsx` at the admin root — it is one folder deeper.)*
-5. **Two recorded fidelity findings** that are scope decisions rather than fixes: the Documents
-   desk is missing the old **Create** and **Pricelists & saved items** sub-tabs without saying
-   why; and the Market App's every-published-work tile is no longer blocked (G-2 shipped
-   `published`) but is admin-only, while that desk reads the collector catalogue for its images.
+5. **One recorded fidelity finding** that is a scope decision rather than a fix: the Market App's
+   every-published-work tile is no longer blocked (G-2 shipped `published`) but is admin-only,
+   while that desk reads the collector catalogue for its images. *(The Documents sub-tabs that
+   sat here are resolved: **Create** was never missing — it is `/admin/issue`, and the Documents
+   group had simply lost the entry point when that desk moved to Galleries; **Pricelists** is
+   backend-blocked and `adminNav.ts` always said so, which the desk now says too.)*
 
 ### Not planned
 
@@ -97,6 +104,15 @@ claim in a doc or a file header is not evidence.** Check it against the backend 
 - And two of my own, corrected in-branch: "only two desks have a subtitle" (a too-narrow grep;
   it is ten-odd, and three built desks had dropped theirs) and a conflict branch written for a
   transition endpoint that sends no version.
+- **That subtitle correction was still short.** Grepping the style the old panel writes them in
+  finds **seventeen**, and a fourth built desk had dropped its own (Live Auctions), a fifth had
+  never had it (Galleries — it shares a route with Sources & Partners and drew that desk's
+  heading), and Accounting had lost **all six** of its per-book lines. Restoring three of them
+  the day before also put them in the wrong place, which is the `subtitle`-slot fix above. The
+  pattern in this section holds for its own entries too.
+- The Chat desk's header said `/api/crm/admin/requests/` has **no text-search param**, "a gap
+  worth raising with the backend". **G-5 shipped it** on that exact endpoint the day before, and
+  the Requests desk was already using it.
 
 ---
 

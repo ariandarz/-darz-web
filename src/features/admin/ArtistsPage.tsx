@@ -25,6 +25,14 @@
  *    carries name/bio/birth year/nationality/variants only. "Only a
  *    Published profile reaches collectors" therefore does not apply: every
  *    artist row is servable to the collector Artists screen today.
+ *  - **the Cards / Table segment** (`viewSeg`, `:33592`), found 2026-09-22
+ *    against `03-artists`. The old desk defaults to a CARD per artist —
+ *    avatar, name, three counts, Open / Profile — with Table as the
+ *    alternative; this desk is the table only. It is the same shape the
+ *    Collectors desk has, where the owner ruled **G-4**: keep the table.
+ *    Recorded here rather than built, because the card face is mostly the
+ *    three counts above, which have no server aggregate (G-CAT-3) — a card
+ *    here would be a name and two zeroes.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApi } from '../../api/hooks';
@@ -191,6 +199,23 @@ export function ArtistsPage() {
     <DeskPage
       wide
       title="Artists"
+      subtitle={
+        /* `:33593`'s line under the heading, which this desk had dropped
+           entirely — found 2026-09-22 comparing against `03-artists`.
+           It is not portable verbatim: three of its four sentences describe
+           the features listed as "not ported" above. Ported is the half that
+           is TRUE here — what the roster holds, and that the intro edits
+           inline. Dropped, each for the reason already stated above: the
+           auction-record clause and its "tap a record count" (the auctions
+           phase's), "and profile status" (no such field, G-ART-1), and the
+           whole Published-profile sentence, which would tell an admin their
+           artists are hidden from collectors when in fact every row is
+           servable today. */
+        <>
+          Every artist in your catalogue — each one’s works and Market-App works. Edit the
+          intro inline; tap the name or Edit for the full card.
+        </>
+      }
       action={<DeskAction onClick={() => setEditing('new')}>＋ New artist</DeskAction>}
       toolbar={
         <>

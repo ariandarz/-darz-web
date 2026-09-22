@@ -113,19 +113,22 @@ export function AccountingSettlement() {
 
   return (
     <>
-      <p className="ad-deskintro">
-        The ownership-settlement worksheet, on the server rather than on one laptop — saved
-        with a version each time, and readable by the owner from any device.
-      </p>
-
+      {/* This view's line under the heading is the old desk's own
+          (`acctHead`'s settlement case — see `AccountingPage`'s
+          `accountingIntro`), so what was a second `.ad-deskintro` here folds
+          into the note block below it: two stacked grey paragraphs at
+          different widths is what it looked like otherwise (found 2026-09-22
+          against `31-accounting`, which has exactly one line). */}
       <div className="ad-noteblock">
         <p>
-          This is the worksheet's <strong>state</strong>, not the calculator. The old sheet's
-          year tables, share splits and inflation ladders are not ported — porting that
-          arithmetic wrongly would produce a confident wrong figure about who owes whom, so it
-          is its own piece of work. What you can do here is keep the figures safely, move the
-          old <code>darz_settlement_v1</code> blob onto the server by pasting it in, and read
-          any earlier save back.
+          Where the old sheet lived on one laptop, this one is on the server — saved with a
+          version each time, and readable by the owner from any device. It is the worksheet's{' '}
+          <strong>state</strong>, not the calculator. The old sheet's year tables, share splits
+          and inflation ladders are not ported — porting that arithmetic wrongly would produce
+          a confident wrong figure about who owes whom, so it is its own piece of work. What
+          you can do here is keep the figures safely, move the old{' '}
+          <code>darz_settlement_v1</code> blob onto the server by pasting it in, and read any
+          earlier save back.
         </p>
       </div>
 

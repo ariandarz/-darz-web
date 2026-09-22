@@ -126,11 +126,18 @@ export function AccountingDuplicates() {
 
   return (
     <>
-      <p className="ad-deskintro">
-        Receipts the scan thinks it has seen before. A row that is <strong>not counted</strong>{' '}
-        is being left out of the Expenses-Arian totals until someone settles it, so an
-        unattended queue quietly under-reports the book. Open one to record the verdict.
-      </p>
+      {/* The line under the heading is the old desk's own (`acctHead`'s
+          `arianexp` case — `AccountingPage`'s `accountingIntro`), which says
+          what the queue IS. This says what an unsettled row COSTS, which the
+          old line does not, so it stays — as a note rather than a second
+          subtitle (found 2026-09-22 against `31-accounting`). */}
+      <div className="ad-noteblock">
+        <p>
+          A row that is <strong>not counted</strong> is being left out of the Expenses-Arian
+          totals until someone settles it, so an unattended queue quietly under-reports the
+          book. Open one to record the verdict.
+        </p>
+      </div>
 
       <DeskList
         label="Possible duplicates"

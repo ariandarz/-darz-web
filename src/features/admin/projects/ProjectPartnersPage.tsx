@@ -301,14 +301,15 @@ export function ProjectPartnersPage() {
           placeholder="Search partners…"
         />
       }
+      subtitle={
+        /* :15400 */
+        <>
+          Partner organisations and their roles across projects. Each partner’s lane is
+          explicit; two partners owning the same deliverable class flags amber on both —
+          responsibilities never silently collide.
+        </>
+      }
     >
-      {/* :15400 */}
-      <p className="ad-desksub">
-        Partner organisations and their roles across projects. Each partner’s lane is explicit;
-        two partners owning the same deliverable class flags amber on both — responsibilities
-        never silently collide.
-      </p>
-
       <div className="dzp">
         {conflict && (
           <ConflictBanner noun="partner" onReload={reloadAll} reloadClassName="dzp-btn sm" />

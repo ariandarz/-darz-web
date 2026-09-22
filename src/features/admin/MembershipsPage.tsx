@@ -193,7 +193,7 @@ export function MembershipsPage() {
     <DeskPage
       wide
       title="Memberships"
-      action={<DeskAction onClick={() => setCreating(true)}>＋ New membership</DeskAction>}
+      action={<DeskAction onClick={() => setCreating(true)}>＋ Add member</DeskAction>}
       toolbar={
         <>
           <SearchFilter
@@ -218,13 +218,17 @@ export function MembershipsPage() {
           />
         </>
       }
+      subtitle={
+        /* `:33341`, verbatim — the desk's own line under the heading, which
+           this port had paraphrased. The last sentence is the v806 intro's
+           (`:33127` / backend Phase 30), kept because this backend really
+           does no payment processing anywhere. */
+        <>
+          A private subscription ledger. Payment happens over WhatsApp or chat — after it
+          clears, add the member and issue their code. No payment processing anywhere.
+        </>
+      }
     >
-      {/* the old desk's own on-screen rule, kept (:33127 / backend Phase 30) */}
-      <p className="ad-desksub">
-        Payment stays outside the app — after payment, issue the access code here. No payment
-        processing anywhere.
-      </p>
-
       {(creating || editing) && (
         <MembershipForm
           existing={editing}
@@ -252,7 +256,7 @@ export function MembershipsPage() {
         columns={columns}
         rowKey={(m) => m.id}
         busyKey={busyId}
-        empty="No memberships yet."
+        empty="No memberships yet — tap “＋ Add member” after a collector pays."
       />
 
       {removing && (

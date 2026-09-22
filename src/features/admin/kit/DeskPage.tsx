@@ -18,12 +18,49 @@ import '../admin.css';
 
 export function DeskPage({
   title,
+  subtitle,
+  strip,
   action,
   toolbar,
   wide = false,
   children,
 }: {
   title: ReactNode;
+  /**
+   * The old panel's line under the heading — `<div class="sub">` inside the
+   * desk's head block, e.g. Market Sales at `darz-studio.html:12570`.
+   *
+   * It is a **slot** rather than something a desk writes into `children`, and
+   * that is the whole point: `.ad-desksub` carries `margin-top: -12px` to sit
+   * tight under the heading, which only reads correctly when nothing is
+   * between them. A desk writing it as its first child put it AFTER the
+   * toolbar — so on the fourteen desks that have both, the line rendered
+   * under the filters with its negative margin pulling it into them, instead
+   * of under the heading where the old panel puts it. Found 2026-09-22 by
+   * screenshotting Market Sales against `15-market-sales`; invisible in
+   * source, and exactly the class of miss CLAUDE.md rule 5 exists for.
+   */
+  subtitle?: ReactNode;
+  /**
+   * The desk's overview strip — the row of count tiles several desks open
+   * with (`.ad-tiles`).
+   *
+   * A slot for the same reason `subtitle` is one, and found the same way:
+   * the old panel puts the strip **between the sub-line and the filter bar**,
+   * every time it has one — Market Sales (`dzs-head` → `dzs-stats` →
+   * `dzs-bar`), Market App, Memberships, Collectors. A desk writing it as its
+   * first child put it AFTER the toolbar, so on all four of this port's
+   * strip-carrying desks you filtered first and read the totals second.
+   * Found 2026-09-22 against `06-market-published`.
+   *
+   * **Accounting is the exception and must stay one.** Its old desk
+   * (`31-accounting`) runs sub-line → filters → totals → quick-add, because
+   * those totals are *scoped by* the filters above them — month, category,
+   * person, status — so reading them before setting the filter would be
+   * reading the wrong number. It keeps its tiles in `children`, after its own
+   * filter row, and should not be moved into this slot.
+   */
+  strip?: ReactNode;
   /** The desk's primary action, if it has one — rendered beside the heading. */
   action?: ReactNode;
   /** Filters: see `filters.tsx`. Omitted entirely when a desk has none. */
@@ -51,6 +88,8 @@ export function DeskPage({
         <h1 className="ad-h">{title}</h1>
         {action}
       </div>
+      {subtitle && <p className="ad-desksub">{subtitle}</p>}
+      {strip}
       {toolbar && <div className="ad-toolbar">{toolbar}</div>}
       {children}
     </div>

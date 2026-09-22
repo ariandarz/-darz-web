@@ -9,10 +9,17 @@
  * server-side, never in the client), priority marks and the follow-up date.
  * The editor is its own page (`/admin/accounting/deals/new|:id`) — the deal
  * form is the old panel's widest.
+ *
+ * **Delete (G-DEL-1, approved 2026-09-22.)** The old panel's "Delete deal"
+ * (`:12664`, confirming at `:12770`) had never been built here, which left
+ * Django admin as the only way to remove a deal. Its confirm copy is ported
+ * verbatim. The row is **owner-only** — not a port decision but the API's:
+ * `DELETE /accounting/admin/deals/{id}/` is `IsOwner`, so showing it to a
+ * standard admin would be offering a button that always 403s.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApi, useOptions } from '../../api/hooks';
+import { useApi, useOptions, useSession } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type {
   Choice,
@@ -24,7 +31,9 @@ import type {
 import { ListController } from '../shared/ListController';
 import { useListController } from '../shared/useListController';
 import type { AccountingAdminService } from '../../api/services';
-import { DeskList, SelectFilter, type Column } from './kit';
+import { asAdminRole } from './adminNav';
+import { normaliseDealsSummary } from './ledgerSummary';
+import { ConfirmDialog, DeskBanner, DeskList, SelectFilter, type Column } from './kit';
 import './admin.css';
 
 class DealsController extends ListController<PrivateDealAdmin, DealQuery> {
@@ -42,19 +51,39 @@ export function AccountingDeals() {
   const { accountingAdmin } = useApi();
   const options = useOptions();
   const navigate = useNavigate();
+  const { me } = useSession();
+  const isOwner = asAdminRole(me?.role) === 'owner';
 
   const statuses = choices(options, 'accounting.deal_status');
   const payStatuses = choices(options, 'accounting.deal_pay_status');
 
-  const { state, setQuery, setPage } = useListController<PrivateDealAdmin, DealQuery>(
+  const { state, setQuery, setPage, reload } = useListController<PrivateDealAdmin, DealQuery>(
     () => new DealsController(accountingAdmin),
   );
+
+  const [removing, setRemoving] = useState<PrivateDealAdmin | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const remove = async (d: PrivateDealAdmin) => {
+    setActionError(null);
+    try {
+      await accountingAdmin.deleteDeal(d.id);
+      await reload();
+      loadSummary();
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete the deal.');
+    }
+  };
 
   const [summary, setSummary] = useState<DealsSummary | null>(null);
   const loadSummary = useCallback(() => {
     const { page: _p, per_page: _pp, ...filters } = state.query;
     accountingAdmin.dealsSummary(filters).then(
-      (s) => setSummary(s),
+      // never the raw response: `summary && summary.currencies.length` passes
+      // its null check for ANY object and then throws on a shape that has no
+      // `currencies` — the §9a failure, which this view still had
+      // (`ledgerSummary.ts`)
+      (s) => setSummary(normaliseDealsSummary(s)),
       () => setSummary(null),
     );
   }, [accountingAdmin, state.query]);
@@ -141,13 +170,25 @@ export function AccountingDeals() {
       key: 'open',
       header: '',
       cell: (d) => (
-        <button
-          type="button"
-          className="ad-rowbtn"
-          onClick={() => navigate(`/admin/accounting/deals/${d.id}`)}
-        >
-          Open
-        </button>
+        <span className="ad-rowacts">
+          <button
+            type="button"
+            className="ad-rowbtn"
+            onClick={() => navigate(`/admin/accounting/deals/${d.id}`)}
+          >
+            Open
+          </button>
+          {/* `:12664` — owner-only, because the endpoint is (see the header). */}
+          {isOwner && (
+            <button
+              type="button"
+              className="ad-rowbtn is-danger"
+              onClick={() => setRemoving(d)}
+            >
+              Delete
+            </button>
+          )}
+        </span>
       ),
     },
   ];
@@ -201,6 +242,8 @@ export function AccountingDeals() {
         </div>
       )}
 
+      {actionError && <DeskBanner>{actionError}</DeskBanner>}
+
       <DeskList
         label="Private deals"
         status={state.status}
@@ -212,6 +255,21 @@ export function AccountingDeals() {
         rowKey={(d) => d.id}
         empty="No private deals yet — open the first with ＋ New deal."
       />
+
+      {removing && (
+        /* `:12770`, verbatim. */
+        <ConfirmDialog
+          message="Delete this deal? The collector’s request/activity is not affected."
+          okLabel="Delete"
+          danger
+          onCancel={() => setRemoving(null)}
+          onConfirm={() => {
+            const d = removing;
+            setRemoving(null);
+            void remove(d);
+          }}
+        />
+      )}
     </>
   );
 }

@@ -5,6 +5,37 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-22 — Phase 6's DoD met, G-DEL-1 built, and the collector app gets a boundary
+
+- **The comparison is repeatable now.** `e2e/capture-desks.mjs` shoots every built desk at
+  the reference harness's own settings (1440x900, dark) against the E2E stub, so "hold the
+  two side by side" is a command. Every remaining desk was then compared against its
+  capture per `docs/ADMIN_SCREENS.md`.
+- **Three findings were cross-cutting, not per-desk.** `DeskPage` had no `subtitle` slot, so
+  all 33 desk sub-lines rendered *below* the filter row with their negative margin pulling
+  them into it; it had no `strip` slot either, so all four count-tile strips sat below the
+  filters where the old panel puts them above; and `.ad-deskintro` was a second subtitle
+  class with its own width. All three fixed at the kit, not per desk.
+- **The old panel has 17 desk sub-lines, not two.** Live Auctions, Artists and Galleries had
+  dropped theirs; Accounting had lost all six of its per-book lines. Restored, each to the
+  half that is true of this backend — the passkey/device-sync clauses are not repeated.
+- **Built** (each the old panel's own control): Auction Records' ★ Highlights filter, the
+  Chat search box that **G-5** had already unblocked, the Documents group's **Create** tab
+  (the desk exists as `/admin/issue`; the group lost its entry point), and **G-DEL-1**'s
+  three deletes — deal, auction and document, old confirm copy verbatim, the document one
+  owner-gated as the old panel gates it.
+- **A live bug on a released desk**, found verifying those deletes against a seeded stub:
+  the Private Deals view read its summary the way §9a's ledger bug read its own and rendered
+  `DeskBoundary` instead of a desk. It survived the first full walk because
+  `/admin/accounting`'s other three views are `?view=` on the same route and only the bare
+  path was ever opened. Fixed, all four views now in the walk, `normaliseDealsSummary` with
+  five regression tests.
+- **The collector app gets `ScreenBoundary`** — the counterpart of `DeskBoundary` the route
+  walk recommended and left undone because it puts copy in front of collectors. It does not:
+  `app.html:9821` is the old app's own catch around a thrown render and "Something went
+  wrong" is its heading verbatim. Gated by a `/_boom` route that exists only in the E2E
+  build.
+- **77 E2E · 484 unit · typecheck · lint 0 · format · build.**
 ## 2026-09-22 — Released: Phase 6's kit and the first full walk of the app (#69, #70, #71)
 
 - **`main` and `development` are level again**, identical trees, no open PRs. The release publishes

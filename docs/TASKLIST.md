@@ -1,9 +1,10 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-22 (PRs #69-#71 merged and released; `main` and `development` level) ·
-**Current focus:** **the admin panel's V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That document,
-not this one, is where the current line of work is planned; this file records what has landed and
-what is still open across the whole repo.
+**Last updated:** 2026-09-22 (**Phase 6 DoD met · Phase 6b done · the collector boundary
+built**; before that, PRs #69-#71 merged and released) · **Current focus:** **the admin panel's
+V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That document, not this one, is where the current line
+of work is planned; this file records what has landed and what is still open across the whole
+repo.
 
 > **New session? Read [`docs/HANDOFF.md`](HANDOFF.md) first.** It is the two-minute version of
 > this file plus the parts no document was saying: how to open a screen in a browser without the
@@ -83,22 +84,32 @@ being `/auctions/lots/:id`, a **white screen in the collector app**, which unlik
 error boundary under it. **71 E2E tests · 478 unit tests.** Details in
 `docs/ADMIN_V1_AUDIT.md` §9a. **TD-9 is closed for the stub tier.**
 
-**Recommended, not done (needs the owner):** an error boundary for the collector shell, the
-counterpart of the admin's `DeskBoundary`. It is left out because it puts new copy in front of
-collectors, which is a design decision — but until it exists, any unexpected response shape on
-a collector route is a blank page rather than a message.
+~~**Recommended, not done (needs the owner):** an error boundary for the collector shell~~ —
+**built 2026-09-22** on the owner's instruction. The design objection dissolved on inspection:
+the old app already catches a thrown render (`app.html:9821`) and "Something went wrong" is its
+heading verbatim, so no copy was invented. `ScreenBoundary` wraps `<main>`'s content only, so
+the header, chroma line and nav survive, and it does not print the error message — an admin can
+act on one, a collector cannot. Two E2E tests over a `/_boom` route that exists only in the E2E
+build keep it honest.
 
-### What next (2026-09-21, revised 2026-09-22)
+### What next (2026-09-22)
 
-1. **Finish Phase 6** — the DoD proper: compare each desk side by side with its Phase 0 capture
-   (`docs/ADMIN_SCREENS.md` is the map) and either fix or record every difference. **Started
-   2026-09-22**: all 35 desks opened and rendering clean, three compared in detail (Dashboard,
-   Requests, Artworks Database) with their differences fixed or already recorded. The remaining
-   ~31 capture-by-capture comparisons are what is left.
-2. **Phase 6b** — the three deletes, once **G-DEL-1** is ruled.
-3. **Phase 5b** — the Database desk's four *hard* filters (completeness, size ranges, duplicate
+1. ~~**Finish Phase 6**~~ — **done 2026-09-22.** Every remaining desk compared against its
+   capture; `docs/ADMIN_V1_AUDIT.md` §10 "Phase 6 DoD — met" has the full account. The
+   comparison itself is now a command (`e2e/capture-desks.mjs`) rather than an afternoon.
+   Three findings were cross-cutting and fixed at the kit — `DeskPage` had no `subtitle`
+   slot and no `strip` slot, so every desk's sub-line and every count strip rendered below
+   the filter row; and `.ad-deskintro` was a second subtitle class. Four desks had dropped
+   the old panel's sub-line outright (Live Auctions, Artists, Galleries, and Accounting,
+   which had lost all six of its per-book lines).
+2. ~~**Phase 6b**~~ — **done 2026-09-22**, G-DEL-1 approved. Delete a deal · an auction · an
+   issued document, each with the old confirm copy verbatim.
+3. ~~**The collector shell's error boundary**~~ — **done 2026-09-22** on the owner's
+   instruction. `ScreenBoundary`, in the old app's own words (`app.html:9821`), gated by a
+   `/_boom` route that exists only in the E2E build.
+4. **Phase 5b** — the Database desk's four *hard* filters (completeness, size ranges, duplicate
    images, Gallery Portal). Backend work first; the desk already names them as unavailable.
-4. **Phase 13 E2E — its first tier landed 2026-09-21** (in #66, `e2e/`), which closes both the
+5. **Phase 13 E2E — its first tier landed 2026-09-21** (in #66, `e2e/`), which closes both the
    "biggest remaining gap" framing below *and* the decision it was waiting on: the answer was
    **both tiers, split by what each can honestly claim.** The **stub tier** (`e2e/smoke.spec.ts`,
    3 tests) runs the production build against a no-state node server in CI — it proves the app
@@ -107,9 +118,16 @@ a collector route is a blank page rather than a message.
    backend checkout. So the suite is no longer "nothing renders a component" — the remaining gap
    is **breadth**: 3 smoke tests across 52 admin routes, and the per-desk walks are still manual
    (CLAUDE.md rule 5). That is what TD-9 now means.
-5. Then the older repo-wide items below — the Vercel role (item 4), backend G-F1-1, the hidden
+6. Then the older repo-wide items below — the Vercel role (item 4), backend G-F1-1, the hidden
    collector features, and Phase 7 (Intelligence / Marketing / Document Builder) only if **G-6**
    is ever reversed.
+
+**Open for the owner after this round** (each stated on the desk it belongs to, and listed in
+`docs/ADMIN_V1_AUDIT.md` §10): **G-HEALTH-1** (eight of the old Data Health counts are real
+catalogue counts and are absent — the largest of them), **G-CLUB-2** and **G-MEMB-1** (two more
+tile strips, the same shape of call as G-4), and the backend gaps **G-AUC-4** (no `archived` on
+an auction), **G-CLUB-3** (no invitation-only auctions), **G-REC-1** (no auction-house facet),
+**G-MEMB-2** (a membership has no start date) and **G-CHAT-2** (nothing archives a message).
 
 ---
 

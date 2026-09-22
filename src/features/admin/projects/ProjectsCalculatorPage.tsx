@@ -210,15 +210,18 @@ export function ProjectsCalculatorPage() {
   const loading = svcWalk.rows === null && !svcWalk.error;
 
   return (
-    <DeskPage title="Calculator">
-      {/* adapted from :15324 — the hours / production / scale / multiplier
-          inputs priced from a client-side rate card; the catalogue prices now */}
-      <p className="ad-desksub">
-        Service lines from the catalogue × quantities → cost and recommended price; discount,
-        deposit and a final approved price. Internal cost and margin are shown here and omitted
-        from the client quote view.
-      </p>
-
+    <DeskPage
+      title="Calculator"
+      subtitle={
+        /* adapted from :15324 — the hours / production / scale / multiplier
+          inputs priced from a client-side rate card; the catalogue prices now */
+        <>
+          Service lines from the catalogue × quantities → cost and recommended price; discount,
+          deposit and a final approved price. Internal cost and margin are shown here and
+          omitted from the client quote view.
+        </>
+      }
+    >
       <div className="dzp">
         {svcWalk.error && <DeskBanner>{svcWalk.error}</DeskBanner>}
         {loading && <p className="dz-state">Loading…</p>}

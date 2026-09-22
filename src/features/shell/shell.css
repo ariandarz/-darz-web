@@ -327,3 +327,47 @@ html.dz-desktop .navdot {
     text-transform: uppercase;
   }
 }
+
+/* ---- Screen failed — `ScreenBoundary` ----------------------------------
+   The old app's `.pad` / `.pad .big` (app.html:719-720), which is its recipe
+   for a centred block with a heading over a line of explanation. This port
+   had only the one-line half of that role (`.dz-state`, components.css:474),
+   because nothing here needed the heading until the collector shell got a
+   boundary — the admin's `DeskBoundary` uses the panel's own `.ad-h`, which
+   belongs to a desk and does not exist out here.
+
+   Same two rules, in this app's tokens: `.pad`'s 46px/24px, centring and
+   `--ink3`, and `.pad .big`'s 21px/600/`--ink` with the 6px gap under it.
+   `--font-head` on the heading is the one change, and it is not a new
+   choice: it is what every heading in this app already uses. */
+.dz-screenfail {
+  padding: 46px 24px;
+  text-align: center;
+  color: var(--ink3);
+}
+.dz-screenfail-h {
+  margin: 0 0 6px;
+  font-family: var(--font-head);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.dz-screenfail-s {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.6;
+}
+/* The desktop reader's version of "pull to refresh" — there is nothing to
+   pull with a mouse. Styled as a link rather than a button so it never reads
+   as the screen's primary action; what the person should usually do is tap
+   another screen in the bar. */
+.dz-screenfail-r {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+  cursor: pointer;
+}

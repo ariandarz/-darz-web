@@ -71,13 +71,14 @@ export function ProjectsDashboardPage() {
       action={
         <DeskAction onClick={() => navigate('/admin/projects/new')}>＋ New project</DeskAction>
       }
+      subtitle={
+        /* :13616 */
+        <>
+          What needs you now — active work, deadlines, approvals and deliverables at a glance.
+          Every card opens the matching list.
+        </>
+      }
     >
-      {/* :13616 */}
-      <p className="ad-desksub">
-        What needs you now — active work, deadlines, approvals and deliverables at a glance.
-        Every card opens the matching list.
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
       {!dash && !error && <p className="dz-state">Loading…</p>}
 
