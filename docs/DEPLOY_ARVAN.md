@@ -15,19 +15,42 @@ achieve", and check the exact clicks against their current documentation.
 
 ---
 
-## 1 · The two halves move separately
+## 1 · Scope — frontend only, for now
 
-| | What it is | Difficulty |
+**Owner's decision, 2026-09-22: the frontend moves; the backend does not.**
+
+| | What it is | In scope? |
 | --- | --- | --- |
-| **Frontend** — this repo | A static SPA. `npm run build` → `dist/`, a folder of files. No server-side runtime at all. | Low. Reversible in seconds. |
-| **Backend** — `darzmarket-api` | Django/DRF + PostgreSQL + object storage + **WebSockets** (daphne serves HTTP and WS on one port). | The real project. |
+| **Frontend** — this repo | A static SPA. `npm run build` → `dist/`, a folder of files. No server-side runtime at all. | **Yes.** Low risk, reversible in seconds. |
+| **Backend** — `darzmarket-api` | Django/DRF + PostgreSQL + object storage + **WebSockets** (daphne serves HTTP and WS on one port). | **No.** §4 is kept as guidance for when it is. |
 
-Do the frontend first. It is low-risk, it proves the DNS and TLS path, and the
-Vercel project stays as an instant rollback.
+**Be clear-eyed about what a frontend-only move buys, and what it does not.**
+`darzmarket-api` is not deployed *anywhere* today — `.env.production` points at
+`https://api.invalid/api`, a reserved address that can never resolve, on
+purpose (frontend Phase 14 is still waiting on the API's own Phase 18). So the
+ArvanCloud deployment will be the same **visual-only** build as the Vercel one:
 
-**They are coupled in one direction only, and it matters:** the frontend has
-the backend's URL *compiled into it* (§3). Moving the backend therefore forces
-a frontend rebuild. Moving the frontend does not touch the backend.
+- **Real:** every screen, the layout, the chrome, routing, both themes, deep
+  links, and now the brand fonts, served from inside Iran with no foreign
+  origin on the critical path.
+- **Not real:** sign-in, and all data. Every API call fails immediately and
+  visibly, which is the designed behaviour rather than a bug to chase.
+
+That is a perfectly good reason to do it — it is how the UI gets reviewed on a
+real device at real latency — as long as nobody expects to log in.
+
+**The two are coupled in one direction, and it matters later:** the frontend
+has the backend's URL *compiled into it* (§3). So whenever the backend does get
+a home, the frontend must be **rebuilt**, not reconfigured. Moving the frontend
+does not touch the backend.
+
+**One thing to decide before the backend lands anywhere.** If the frontend is
+served from Iran and the API ends up on a foreign host, the blocked foreign
+origin problem simply moves: it stops being the fonts and becomes every single
+API call — which is worse, because that is the data path and it cannot be
+self-hosted away. Putting the API in Iran too is the decision that makes this
+migration coherent; a split leaves the app slower and more fragile than it is
+on Vercel today.
 
 ---
 
@@ -109,7 +132,11 @@ above work, and `.env.production` stays what it is — the fallback for a plain
 
 ---
 
-## 4 · Backend — and the thing that will bite you
+## 4 · Backend — NOT in this migration (kept for when it is)
+
+> Out of scope per §1. Nothing below needs doing now. It is kept because the
+> frontend rebuild in §3 is triggered by exactly this work, and because the
+> WebSocket note is the one thing most likely to be missed when it happens.
 
 Four pieces:
 
