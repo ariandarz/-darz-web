@@ -50,6 +50,8 @@ import type {
   Lot,
   Paginated,
   PublishedRecommendation,
+  CollectorQuestionnaire,
+  QuestionnaireAnswer,
   RequestDetail,
   RequestKind,
   RequestMessage,
@@ -417,6 +419,18 @@ export class RecommendationService extends ResourceService {
   }
   dismiss(id: string) {
     return this.create<PublishedRecommendation>(`/published/${id}/dismiss/`);
+  }
+
+  /** The collector's own questionnaire. **404 until they have submitted one**
+   * — that is the documented answer, not an error, and the caller treats it as
+   * "not filled in yet" (see `QuestionnaireController.load`). */
+  questionnaire() {
+    return this.retrieve<CollectorQuestionnaire>('/questionnaire/');
+  }
+  /** Full-replace: a resubmission overwrites the prior answers, and the server
+   * rebuilds the collector's preference rows from them. */
+  submitQuestionnaire(answers: QuestionnaireAnswer[]) {
+    return this.create<CollectorQuestionnaire>('/questionnaire/', { answers });
   }
 }
 

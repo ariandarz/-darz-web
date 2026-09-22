@@ -187,6 +187,16 @@ export interface AdminRequestQuery {
 
 export type CollectorActivity = Schemas['CollectorActivity'];
 export type PublishedRecommendation = Schemas['CollectorPublishedRecommendation'];
+
+/** The collector's stored questionnaire (backend Phase 25).
+ *
+ * `answers` is declared `unknown` by the generated types, and honestly so: the
+ * backend field is a JSONField holding `[{q, a}, …]` and nothing validates its
+ * shape on read. Iterate it through `asArray` — see `docs/HANDOFF.md` §6. */
+export type CollectorQuestionnaire = Schemas['CollectorQuestionnaire'];
+/** One `{q, a}` pair — free text on both sides, so a past submission stays
+ * readable after the question bank is edited. */
+export type QuestionnaireAnswer = Schemas['QuestionnaireAnswer'];
 export type Me = Schemas['Me'];
 export type Principal = Me['principal'];
 

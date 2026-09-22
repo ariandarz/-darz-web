@@ -138,6 +138,13 @@ been run** — the session that wrote them had no Docker daemon — so one `dock
 `curl` of a deep route comes first. Note what §1 of that guide says about scope: with the backend
 staying put, the ArvanCloud site is the same visual-only build, just served from inside Iran.
 
+**This round (2026-09-22, after the ArvanCloud work):** the collector questionnaire and
+membership screens — the last two unbuilt Phase 9 items; the Club and Memberships tile strips
+(G-CLUB-2 / G-MEMB-1) and, found while building them, the strip geometry itself, wrong on all
+eight strip desks; the Data Health counts panel (G-HEALTH-1); TD-3 (the invoice bank block, whose
+proposed `theme.*` home turned out to be a public endpoint); and TD-8 (`admin.css` split into six
+parts, verified pixel-identical across all 34 desks by the new `e2e/diff-desks.mjs`).
+
 **Open for the owner after this round** (each stated on the desk it belongs to, and listed in
 `docs/ADMIN_V1_AUDIT.md` §10): **G-HEALTH-1** (eight of the old Data Health counts are real
 catalogue counts and are absent — the largest of them), **G-CLUB-2** and **G-MEMB-1** (two more
@@ -710,10 +717,31 @@ next step. Full step breakdown + the deferred admin Records-desk gaps: `docs/PHA
 - [x] Settings — `/settings` (`SettingsPage`, port of `settingsView` :9827): profile row, Appearance
       (Paper/Black), account links, legal, about, Leave the Room. Notifications / membership / PWA
       rows behind flags.
-- [ ] Questionnaire — **unblocked 2026-09-17**: backend Phase 25 merged
-      (`GET/POST /api/recommendations/questionnaire/`); the `[!]` blocker in the Phases 12+ section
-      below is stale. Still hidden behind `features.questionnaire` pending this UI.
-- [ ] Membership display/redemption (backend Phase 13 merged — ready)
+- [x] Questionnaire — **built 2026-09-22** (`/questionnaire`, `src/features/questionnaire/`).
+      All four of the old screens in their own wording: intro (`qintro`, owner-editable via
+      `theme.qbIntro`) → contact step → the ten questions (owner-editable via
+      `theme.qbQuestions`, with `QVER` discarding a draft written against an older order) →
+      review → thank-you. `QuestionnaireController` owns the flow; the draft is per-device in
+      `localStorage` and the submitted answers live on the server. 29 unit tests + 2 E2E walks.
+      Two findings recorded: **G-Q-1** — the contact step cannot write back to the collector's
+      account, because this backend has no collector self-update endpoint, so Darz receives the
+      details as answers and the account row is unchanged; **G-Q-2** — the old intro's three
+      Roman-numeral points are *built and never rendered* there (`rows` is assigned at
+      `app.html:10032` and never concatenated), so they are recorded rather than ported.
+- [x] Membership display/redemption — **built 2026-09-22** (`src/features/membership/`), opened
+      from the Settings › Membership row. The old sheet's full content: the tiers, their two
+      billing terms with the 10% six-month discount, the includes lists, the WhatsApp subscribe
+      link and the access-code redeem box, each string verbatim. **Four findings**, all recorded
+      on the screen itself: **G-MEMB-3** (no expiry anywhere, so "Active until …" and the
+      EXPIRED state cannot exist), **G-MEMB-6** (no "my membership" read at all — `me.tier` is
+      the CRM segmentation every collector already has, so the persistent "Active membership"
+      block and the Settings ACTIVE pill are not built; a redeem is confirmed in the moment
+      instead), **G-MEMB-4** (tier names and prices are literals, as in the old app — they move
+      to `theme.*` when the owner wants them editable without a deploy) and **G-MEMB-5** (the
+      old app's hardcoded WhatsApp number is not ported; an unset `theme.whatsapp` falls to the
+      old "Contact Darz to subscribe." line). The redeemed plan is labelled from
+      `accounts.collector_tier` — **never** the old basic/premium mapping, which would print
+      "Basic Access" for a VIP.
 - [ ] PWA install + push opt-in `[!]` VAPID public key is still not published by the API (checked
       2026-09-17 — `apps.notifications` has no `GET` for it); push delivery itself is ready
       (Phase 13), but the frontend can't complete the browser subscribe handshake without the key.

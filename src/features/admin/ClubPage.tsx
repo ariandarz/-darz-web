@@ -32,12 +32,12 @@
  *    collector through the "Curated for You" chip on the catalogue
  *    (`docs/PHASE_24_35_PLAN.md` step 2). Porting the old sentence would
  *    describe a screen this port deliberately did not build.
- *  - **The 3-tile strip** (Private selections · Private auctions · Collector
- *    keys, `:33774`) is absent. One tile of the three is answerable from
- *    what this desk already loads; the other two are a second and third
- *    endpoint for a number, and "private auctions" is the next item. The
- *    Collectors desk's equivalent strip was an owner decision (**G-4**), so
- *    this one is put the same way rather than assumed: **G-CLUB-2**.
+ *  - ~~**The 3-tile strip**~~ (Private selections · Private auctions ·
+ *    Collector keys, `:33774`) — **built 2026-09-22, G-CLUB-2 decided the
+ *    same way G-4 was.** Two of the three: the selections this desk already
+ *    loads, and the collector roster's count. "Private auctions" is left out
+ *    because there is nothing to count, not because it costs a read — see
+ *    `clubTiles.ts` and G-CLUB-3 below.
  *  - **The "Auction access" section is absent, and blocked** — not
  *    overlooked. The old desk lists every auction with Public / "Make
  *    private…" and explains the badge (`:33779`). Invitation-only auctions
@@ -50,6 +50,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
 import type { CollectorSelection } from '../../api/types';
+import { clubTiles, type ClubCounts } from './clubTiles';
 import {
   ConfirmDialog,
   ConflictBanner,
@@ -66,7 +67,7 @@ import {
 import './admin.css';
 
 export function ClubPage() {
-  const { crm } = useApi();
+  const { crm, adminAccounts } = useApi();
   const [selections, setSelections] = useState<CollectorSelection[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<CollectorSelection | null | 'new'>(null);
@@ -80,6 +81,24 @@ export function ClubPage() {
     );
   }, [crm]);
   useEffect(load, [load]);
+
+  /* The strip's two counts (`:33774`, G-CLUB-2). Selections come from the list
+     this desk already holds — no second read for a number it has — and the
+     roster is one `per_page: 1` call whose `total_count` is all that is
+     wanted. A failed read stays `null` and the tile shows `—`. */
+  const [keys, setKeys] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    adminAccounts
+      .collectors({ per_page: 1 })
+      .then((page) => alive && setKeys(page.pagination.total_count))
+      .catch(() => alive && setKeys(null));
+    return () => {
+      alive = false;
+    };
+  }, [adminAccounts]);
+  const counts: ClubCounts = { selections: selections?.length ?? null, keys };
+
   const { say, message } = useDeskToast();
 
   const remove = async (sel: CollectorSelection) => {
@@ -107,6 +126,19 @@ export function ClubPage() {
           You” in the app. Two selections can share a work and a collector; a grant only lifts
           when no selection still wants it.
         </>
+      }
+      strip={
+        /* `:33774`'s stat row, two of its three (G-CLUB-2 — `clubTiles.ts`).
+           `.ad-tiles-sales` is the same narrow variant the Collectors strip
+           uses; it is the shape the old row has, not a per-desk choice. */
+        <div className="ad-tiles ad-tiles-sales">
+          {clubTiles(counts).map((t) => (
+            <div key={t.key} className="ad-tile">
+              <span className="ad-tile-v">{t.value}</span>
+              <span className="ad-tile-l">{t.label}</span>
+            </div>
+          ))}
+        </div>
       }
     >
       {error && <DeskBanner>{error}</DeskBanner>}
