@@ -1075,7 +1075,25 @@ surface before building each. Ordered by V1 relevance:
 - [x] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
       full faithful port. Data Health + Import shipped in Phase 11b, Projects in Phase 11c
       (2026-09-19) — this bullet stays only as the Phases-12+ cross-reference.
-- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
+- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — not built.
+      **Scoped 2026-09-22; it is the only remaining item that is buildable at all, and it needs
+      three answers before it is worth starting.**
+
+      What exists to port, which is more than the `[!]` suggests: the old app ships a real engine
+      (`darz_i18n.js`, 31KB) with five language blocks — `en · fa · fr · es · ar` — and
+      `app.html:9872-9878` wires a language picker to it. So this would be a port, not an
+      invention.
+
+      What makes it a decision rather than a task: **the old app ships it OFF.**
+      `showLangSetting` defaults to `'Hidden'`, `theme.i18n` defaults to `{}`, and the file's own
+      comment at `:9944` says *"the app is English-only for now"*. A faithful port therefore
+      defaults to hidden too — i.e. a multi-day change across ~430 user-visible strings that
+      nobody sees until the owner turns it on.
+
+      **Owner decisions needed:** (1) which of the five languages actually ship; (2) whether Farsi
+      and Arabic get real RTL layout, which is a design question the old app's LTR-only CSS does
+      not answer; (3) whether the picker ships visible or stays behind `showLangSetting` as it is
+      there. Without (2) especially, the work would very likely be redone.
 
 ## Phase 13 — Testing
 
