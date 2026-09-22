@@ -634,7 +634,9 @@ point the brief says to stop. Frontend only: **no backend, API-contract or `sche
 
 Matches backend V1 exactly — the only admin surfaces that currently exist.
 
-- [ ] Catalog CRUD (Artist/Artwork/ArtworkImage) — includes the multipart image upload flow
+- [x] Catalog CRUD (Artist/Artwork/ArtworkImage) — `ArtworkEditorPage` (with the multipart image
+      flow and the selection grants), `ArtistsPage`. *Checkbox corrected 2026-09-22: it was still
+      unticked long after the desks shipped.*
 - [x] Unified CRM request feed (filterable by kind/status/assignee/archived) + transition actions —
       `AdminRequestsPage` at `/admin/requests` over `AdminRequestsController extends ListController`.
       Chrome ported from `darz-studio.html`'s `.ad-h`/`.ad-toolbar`/`.ad-card`/`.ad-tbl`. Statuses
@@ -654,8 +656,17 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
       piece of new markup — a bar with the signed-in identity and "LEAVE THE ROOM" — because the
       desk sits outside the collector `AppShell` and a team member would otherwise have no way out.
       The real admin shell is Phase 11; that bar should be deleted when it lands, not grown.
-- [ ] Sales CRUD + transition/payment/delivery-status actions
-- [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
+- [x] Sales CRUD + transition/payment/delivery-status actions — `SalesPage`, `SaleDetailPage`,
+      `DealEditorPage`. *Checkbox corrected 2026-09-22.*
+- [x] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI) —
+      **completed 2026-09-22, and it found a real bug rather than confirming the row.** Three
+      services (`updateCollector`, `updateTeamUser`, `updateMembershipCode`) took a `version`
+      property and sent it as `version`; the API field is `expected_version` and it is OPTIONAL, so
+      the server saw no lock and wrote anyway. Collectors, Memberships and **Team logins** were
+      last-write-wins with no 409 — on the Team desk the raced field is `role`. Fixed, the three
+      forms now show a conflict message, and `src/api/optimisticLock.test.ts` pins the wire format
+      for all six locking calls (verified by reintroducing the bug and watching it fail).
+      Accounting and Auction Records remain genuinely unlockable server-side — **G-LOCK-1**.
 
 ## Phase 8 — Collector: auctions ✅ all 4 steps merged (hidden in v0.1 behind `features.auctions`) — see `docs/PHASE_8_PLAN.md`
 
@@ -1039,17 +1050,22 @@ Old-app surfaces the current backend has no model for (from `DarzStudio/docs/eng
 owner decision 2026-09-04: scope all seven now). Faithful-port rule applies — read the old app's real
 surface before building each. Ordered by V1 relevance:
 
-- [ ] **Curated-set catalogue (`selected`/`private_selection`)** — **unblocked 2026-09-17**: backend
-      Phase 24 merged (`GET /api/catalog/artworks/selections/`, grant-gated, admin
-      `admin/artworks/{id}/selection-grants/`). Old `[!]` blocker on this line is stale.
-      **This unblocks the "Partial" half of frontend Phase 4 (flow 2).**
-- [ ] **Collector questionnaire** — **unblocked 2026-09-17**: backend Phase 25 merged (same endpoint
-      as Phase 9's Questionnaire item above — build once, wire both).
-- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — still
-      not built.
-- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — still
-      not built.
-- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — still not built.
+- [x] **Curated-set catalogue (`selected`/`private_selection`)** — built: the collector side is the
+      "Curated for You" chip (`CuratedChip.tsx`) on the catalogue, the admin side is the Collector
+      Club desk plus the artwork editor's selection grants. *Checkbox corrected 2026-09-22.*
+- [x] **Collector questionnaire** — ✅ **built 2026-09-22**, see Phase 9. *Checkbox corrected.*
+- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — not
+      built, and **verified backend-blocked 2026-09-22**: there is no `/api/logistics/` namespace at
+      all. The API's full set is accounting · admin · app-theme · auctions · auth · catalog · crm ·
+      dashboard · documents · gallery · health · marketing · notifications · options · projects ·
+      recommendations · sales. Phase 20 was planned, never merged.
+- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — not
+      built, and **verified backend-blocked 2026-09-22**: the only pricelist endpoints in the whole
+      schema are the gallery-portal pair (`/gallery/admin/links/{id}/pricelists/` and
+      `/gallery/portal/{token}/pricelists/`), both already built in Phase 10. There is no
+      standalone builder API.
+- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — not built, and **verified
+      backend-blocked 2026-09-22**: no stories or insights endpoint exists.
 - [x] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
       full faithful port. Data Health + Import shipped in Phase 11b, Projects in Phase 11c
       (2026-09-19) — this bullet stays only as the Phases-12+ cross-reference.

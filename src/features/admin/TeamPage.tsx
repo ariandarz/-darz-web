@@ -36,6 +36,7 @@ import {
   SearchFilter,
   SelectFilter,
   ShownOnceSecret,
+  isConflict,
   type Column,
 } from './kit';
 import './admin.css';
@@ -276,7 +277,7 @@ function TeamForm({
         await adminAccounts.updateTeamUser(existing.id, {
           ...draft,
           role: draft.role as TeamUserAdmin['role'],
-          version: existing.version,
+          expected_version: existing.version,
         });
         onSaved(null, null);
       } else {
@@ -288,7 +289,17 @@ function TeamForm({
         onSaved(created.password, created.email);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
+      // A 409 on THIS form is the one worth spelling out: the field two admins
+      // race on is `role`, so a silent overwrite hands someone the wrong
+      // permissions. The lock was not sent at all until 2026-09-22 — see
+      // `AdminAccountsService.updateTeamUser`.
+      setError(
+        isConflict(err)
+          ? 'Someone else changed this login while you were editing. Close and reopen it to see their changes — otherwise you may overwrite a role they just set.'
+          : err instanceof Error
+            ? err.message
+            : 'Could not save.',
+      );
     } finally {
       setBusy(false);
     }
