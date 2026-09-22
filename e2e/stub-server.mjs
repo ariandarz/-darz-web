@@ -34,7 +34,8 @@ const ME_COLLECTOR = {
   principal: 'collector',
   id: '00000000-0000-4000-8000-0000000000c0',
   display_name: 'E2E Collector',
-  tier: 'standard',
+  // Also `CollectorTierEnum`, for the same reason as the options key above.
+  tier: 'active',
   access_status: 'active',
 };
 
@@ -67,7 +68,17 @@ const OPTIONS = {
     { value: 'offer', label: 'Make an offer' },
     { value: 'viewing', label: 'Request a viewing' },
   ],
-  'accounts.collector_tier': [{ value: 'standard', label: 'Standard' }],
+  // `CollectorTierEnum` — the real four. This said `[{standard, Standard}]`
+  // until 2026-09-22, and `standard` is not in the enum at all: the stub was
+  // inventing a tier. It matters because this key is also what the membership
+  // sheet labels a redeemed code's `plan` from, so a stub with the wrong
+  // vocabulary makes a working lookup look broken (and a broken one look fine).
+  'accounts.collector_tier': [
+    { value: 'vip', label: 'VIP' },
+    { value: 'active', label: 'Active' },
+    { value: 'new', label: 'New' },
+    { value: 'institutional', label: 'Institutional' },
+  ],
   'accounts.collector_access_status': [{ value: 'active', label: 'Active' }],
   'accounts.team_role': [{ value: 'owner', label: 'Owner' }],
   'sales.status': [{ value: 'draft', label: 'Draft' }],
@@ -116,6 +127,11 @@ const routes = {
     envelope(bearerIsCollector(req) ? TOKENS.collector : TOKENS.team),
   'GET /api/auth/me/': (req) => envelope(bearerIsCollector(req) ? ME_COLLECTOR : ME),
   'GET /api/options/': () => envelope(OPTIONS),
+  // Membership redeem (Phase 13). A POST, so the catch-all 400s it — which is
+  // a fine stand-in for a rejected code but never lets the success path run.
+  // Answers `basic` so the sheet's active block and the Settings pill appear.
+  'POST /api/auth/membership/redeem/': () =>
+    envelope({ plan: 'vip', tier: 'vip', redeemed_at: new Date().toISOString() }),
   // the REAL path: DashboardService = '/dashboard' + '/admin/summary/'.
   // The route said '/api/admin/summary/' until PR #54 — the summary then
   // fell into the paginated catch-all and Tiles crashed on
@@ -128,6 +144,24 @@ const routes = {
   // undefined — the desk now normalises (see `artworkFacets.ts`), and this
   // route makes the stub tell the truth about the endpoint's real shape.
   'GET /api/catalog/admin/artworks/facets/': () => envelope({ years: [], sources: [] }),
+  // The collector questionnaire. Both halves are registered because the
+  // catch-all cannot express either: a GET **404s** until the collector has
+  // submitted one — the documented answer, not a failure — and the catch-all's
+  // paginated 200 would instead tell the app a profile already exists and send
+  // it straight to the review with no answers. POST answers the stored object.
+  'GET /api/recommendations/questionnaire/': () => ({
+    status: 404,
+    body: {
+      success: false,
+      error: { code: 'not_found', message: 'No questionnaire on file.' },
+      timestamp: new Date().toISOString(),
+    },
+  }),
+  // The stub reads no request bodies anywhere, so this does not echo what was
+  // sent — it answers the shape and the timestamp, which is all the app reads
+  // back (the thank-you screen renders from its own state, not the response).
+  'POST /api/recommendations/questionnaire/': () =>
+    envelope({ answers: [], submitted_at: new Date().toISOString() }),
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
       healthy: true,
@@ -172,8 +206,12 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (hit) {
-    res.writeHead(200);
-    res.end(JSON.stringify(hit(req)));
+    // A handler may answer `{status, body}` when the endpoint's real answer is
+    // not a 200 — the questionnaire's "never submitted" 404 is the first.
+    const answered = hit(req);
+    const status = answered && typeof answered.status === 'number' ? answered.status : 200;
+    res.writeHead(status);
+    res.end(JSON.stringify(status === 200 ? answered : answered.body));
     return;
   }
   for (const [re, method, answer] of patterns) {

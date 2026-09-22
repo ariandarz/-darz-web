@@ -87,6 +87,7 @@ import { ThreadPage } from './features/chat/ThreadPage';
 import { ConversationsProvider } from './features/conversations/ConversationsProvider';
 import { PortalPage } from './features/portal/PortalPage';
 import { ProfilePage } from './features/profile/ProfilePage';
+import { QuestionnairePage } from './features/questionnaire/QuestionnairePage';
 import { ArtistRecordsPage } from './features/records/ArtistRecordsPage';
 import { RecordsArchiveProvider } from './features/records/RecordsArchiveProvider';
 import { RecordsPage } from './features/records/RecordsPage';
@@ -232,6 +233,17 @@ export function AppRoutes() {
           element={
             <Gate flag="profile">
               <ProfilePage />
+            </Gate>
+          }
+        />
+        {/* The collector questionnaire (`theme.showQ` → `features.questionnaire`).
+            Opened from the Profile overview's "Get to know you" card, which is
+            behind the same flag, and exits back to /profile. */}
+        <Route
+          path="/questionnaire"
+          element={
+            <Gate flag="questionnaire">
+              <QuestionnairePage />
             </Gate>
           }
         />

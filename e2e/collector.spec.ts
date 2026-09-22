@@ -44,6 +44,7 @@ const ROUTES: ReadonlyArray<readonly [route: string, minChars: number]> = [
   ['/chat', 60],
   [`/chat/${ID}`, 60],
   ['/profile', 60],
+  ['/questionnaire', 60],
   ['/settings', 60],
   ['/auctions', 60],
   ['/auctions/notifications', 60],
@@ -120,4 +121,104 @@ test('leaving a broken screen clears it — the boundary is keyed on the path', 
   await page.goto('/');
   await page.waitForLoadState('networkidle');
   await expect(page.getByText('Something went wrong')).toHaveCount(0);
+});
+
+/**
+ * The questionnaire, walked end to end.
+ *
+ * It is the one collector screen with real multi-step state, and three of its
+ * rules are invisible from a single page load: the step counter counts the
+ * contact step (so eleven, not ten), Continue is gated until a question is
+ * answered, and the answers survive the walk to the review. The stub's GET
+ * 404s — its documented "never submitted" answer — so this starts at the
+ * intro, which is also the path a real new collector takes.
+ */
+test('the questionnaire runs intro → contact → questions → review → sent', async () => {
+  thrown = [];
+  await page.goto('/questionnaire');
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByRole('heading', { name: /how you collect/i })).toBeVisible();
+  await page.getByRole('button', { name: /^Begin/ }).click();
+
+  // Step 0 is the contact step, and it counts: eleven segments, not ten.
+  await expect(page.locator('.qstepn')).toHaveText('1 / 11');
+  await page.fill('#q-email', 'collector@example.invalid');
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // A question with no answer cannot be continued past.
+  await expect(page.locator('.qstepn')).toHaveText('2 / 11');
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Abstraction' }).click();
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeEnabled();
+
+  // Walk the rest by always taking the first option. Nine more Continues land
+  // on step 10 — the optional free-text one, which has no options to click and
+  // whose button reads "Review →" because it is the last visible step.
+  for (let i = 0; i < 9; i++) {
+    await page.getByRole('button', { name: 'Continue' }).click();
+    const opts = page.locator('.qopt');
+    if (await opts.count()) await opts.first().click();
+  }
+  await page.getByRole('button', { name: 'Review →' }).click();
+
+  // The answers made it, under their own question text. `.qttl` is a div in
+  // the old markup too, not a heading — hence the class rather than a role.
+  await expect(page.locator('.qttl')).toHaveText('Review & send');
+  await expect(page.locator('.qsum-card').first()).toContainText(
+    'collector@example.invalid',
+  );
+  await expect(page.locator('.qsum-card').last()).toContainText('Abstraction');
+
+  await page.getByRole('button', { name: 'Confirm & send' }).click();
+  await expect(page.getByRole('heading', { name: 'Thank you' })).toBeVisible();
+
+  expect(thrown, 'page errors during the questionnaire').toEqual([]);
+  await expect(page.getByText('Something went wrong')).toHaveCount(0);
+});
+
+/** The Profile card is the only way in, so it is part of the screen. */
+test('the profile overview opens the questionnaire', async () => {
+  thrown = [];
+  await page.goto('/profile');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('.qcta-lab')).toHaveText('Get to know you');
+  await page.getByRole('button', { name: /Begin your profile/ }).click();
+  await expect(page).toHaveURL(/\/questionnaire$/);
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * Membership — the sheet, its arithmetic, and a redeem.
+ *
+ * Worth a walk rather than a unit test alone because the two things most
+ * likely to break are both integration: the six-month discount has to reach
+ * the rendered card, and the redeemed plan has to be LABELLED from
+ * `GET /api/options/` rather than the old app's basic/premium mapping, which
+ * would print "Basic Access" for a VIP (`tiers.ts`).
+ */
+test('the membership sheet prices both terms and confirms a redeem', async () => {
+  thrown = [];
+  await page.goto('/settings');
+  await page.waitForLoadState('networkidle');
+
+  await page.getByRole('button', { name: /Membership/ }).click();
+  await expect(page.locator('.mb-h')).toHaveText('Choose your access');
+  await expect(page.locator('.mb-tier').first()).toContainText('5,000,000 Toman / month');
+
+  await page.getByRole('button', { name: '6 months · save 10%' }).click();
+  // 5,000,000 x 6 x 0.9, and the premium tier rounded to a whole million.
+  await expect(page.locator('.mb-tier').first()).toContainText('27,000,000 Toman / 6 months');
+  await expect(page.locator('.mb-tier').last()).toContainText('49,000,000 Toman / 6 months');
+
+  await page.fill('.mb-code', 'dz-p-abc123');
+  await page.getByRole('button', { name: 'Activate' }).click();
+
+  // The stub redeems a `vip` code. The label must come from the options map —
+  // "VIP", never the old mapping's fallback "Basic Access".
+  await expect(page.locator('.mb-active-plan')).toHaveText('VIP');
+  await expect(page.locator('.mb-active-plan')).not.toHaveText(/Basic Access/);
+  await expect(page.locator('.mb-h')).toHaveText('Your membership');
+
+  expect(thrown, 'page errors in the membership sheet').toEqual([]);
 });

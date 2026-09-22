@@ -1,0 +1,317 @@
+/**
+ * The questionnaire's flow, exercised without a browser.
+ *
+ * Three things here are regressions waiting to happen, and each has a case:
+ * the step→bank one-based offset (get it wrong and every answer attaches to
+ * the neighbouring question), `QVER` discarding a stale draft (get it wrong
+ * and a returning collector sees last year's answers against this year's
+ * questions), and reading a server response's shape without trusting it —
+ * the crash this repo has now written eight times (docs/HANDOFF.md §6).
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { QuestionnaireController } from './QuestionnaireController';
+import { QB_DEFAULT, QVER } from './questions';
+import { __resetOwnerSettings } from '../shell/ownerSettings';
+
+/**
+ * This suite runs in vitest's node environment (`vitest.config.ts`), which has
+ * no `localStorage` — so the draft store gets a minimal in-memory stand-in
+ * here rather than the whole suite getting a DOM.
+ *
+ * Worth noting what the absence proves on its own: the controller wraps every
+ * storage call, so under plain node it already runs with the draft silently
+ * disabled, which is exactly the private-window case. The shim is here to test
+ * the path where storage WORKS.
+ */
+class MemoryStorage implements Storage {
+  private map = new Map<string, string>();
+  get length() {
+    return this.map.size;
+  }
+  clear() {
+    this.map.clear();
+  }
+  getItem(k: string) {
+    return this.map.get(k) ?? null;
+  }
+  key(i: number) {
+    return [...this.map.keys()][i] ?? null;
+  }
+  removeItem(k: string) {
+    this.map.delete(k);
+  }
+  setItem(k: string, v: string) {
+    this.map.set(k, String(v));
+  }
+}
+globalThis.localStorage = new MemoryStorage();
+globalThis.Storage = MemoryStorage as unknown as typeof Storage;
+
+type Api = {
+  questionnaire: () => Promise<{ answers?: unknown; submitted_at: string }>;
+  submitQuestionnaire: (
+    answers: Array<{ q: string; a: string }>,
+  ) => Promise<{ answers?: unknown; submitted_at: string }>;
+};
+
+/** A service stand-in — only the two methods the controller calls. */
+function api(over: Partial<Api> = {}): Api {
+  return {
+    questionnaire: () => Promise.reject(new Error('404')),
+    submitQuestionnaire: (answers) =>
+      Promise.resolve({ answers, submitted_at: '2026-09-22T10:00:00Z' }),
+    ...over,
+  };
+}
+
+function make(over: Partial<Api> = {}) {
+  // The controller only ever touches these two methods; the cast keeps the
+  // test from having to stand up the whole ApiClient.
+  return new QuestionnaireController(api(over) as never);
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  __resetOwnerSettings();
+});
+
+describe('load', () => {
+  it('opens on the intro when the collector has never submitted (404)', async () => {
+    const c = make();
+    await c.load();
+    expect(c.getSnapshot().stage).toBe('intro');
+    expect(c.getSnapshot().submitted).toBe(false);
+    expect(c.getSnapshot().status).toBe('idle');
+  });
+
+  it('opens a returning collector straight on the review', async () => {
+    const c = make({
+      questionnaire: () =>
+        Promise.resolve({ answers: [], submitted_at: '2026-09-01T00:00:00Z' }),
+    });
+    await c.load();
+    expect(c.getSnapshot().stage).toBe('review');
+    expect(c.getSnapshot().submitted).toBe(true);
+    expect(c.getSnapshot().submittedAt).toBe('2026-09-01T00:00:00Z');
+  });
+
+  it('survives a server answers field that is not a list', async () => {
+    // The eighth instance of this bug would have been here: `answers` is an
+    // untyped JSONField, so `{}` and `null` really do come back.
+    for (const answers of [null, {}, 'nope', 42]) {
+      const c = make({
+        questionnaire: () => Promise.resolve({ answers, submitted_at: 'x' }),
+      });
+      await c.load();
+      expect(c.getSnapshot().stage).toBe('review');
+      expect(c.getSnapshot().answers).toEqual({});
+    }
+  });
+
+  it('maps the server answers back onto the bank by question text', async () => {
+    const c = make({
+      questionnaire: () =>
+        Promise.resolve({
+          answers: [
+            { q: 'Email', a: 'a@b.c' },
+            { q: QB_DEFAULT[2].q, a: 'Painting · Sculpture' },
+            { q: 'a question no longer in the bank', a: 'ignored' },
+          ],
+          submitted_at: 'x',
+        }),
+    });
+    await c.load();
+    const s = c.getSnapshot();
+    expect(s.contact.email).toBe('a@b.c');
+    // one-based: QB_DEFAULT[2] is step 3
+    expect(s.answers[3]).toEqual(['Painting', 'Sculpture']);
+    expect(Object.keys(s.answers)).toEqual(['3']);
+  });
+
+  it('keeps a local draft rather than overwriting it with the sent answers', async () => {
+    localStorage.setItem(
+      'darz_questionnaire',
+      JSON.stringify({ qver: QVER, ans: { 1: ['Figuration'] }, email: 'draft@x.y' }),
+    );
+    const c = make({
+      questionnaire: () =>
+        Promise.resolve({
+          answers: [{ q: QB_DEFAULT[0].q, a: 'Abstraction' }],
+          submitted_at: 'x',
+        }),
+    });
+    await c.load();
+    expect(c.getSnapshot().answers[1]).toEqual(['Figuration']);
+  });
+
+  it('discards a draft written under an older QVER', async () => {
+    localStorage.setItem(
+      'darz_questionnaire',
+      JSON.stringify({ qver: QVER - 1, ans: { 1: ['Figuration'] }, email: 'keep@x.y' }),
+    );
+    const c = make();
+    await c.load();
+    // The answers go; the contact details are kept, exactly as the old app
+    // promises (`startQ`, app.html:10016).
+    expect(c.getSnapshot().answers).toEqual({});
+    expect(c.getSnapshot().contact.email).toBe('keep@x.y');
+  });
+
+  it('starts fresh when the stored draft is corrupt', async () => {
+    localStorage.setItem('darz_questionnaire', '{not json');
+    const c = make();
+    await expect(c.load()).resolves.toBeUndefined();
+    expect(c.getSnapshot().answers).toEqual({});
+  });
+});
+
+describe('answering', () => {
+  it('single-select replaces, multi-select accumulates', async () => {
+    const c = make();
+    await c.load();
+    c.pick(1, 'Abstraction', true);
+    c.pick(1, 'Figuration', true);
+    expect(c.getSnapshot().answers[1]).toEqual(['Figuration']);
+
+    c.pick(3, 'Painting', false);
+    c.pick(3, 'Sculpture', false);
+    expect(c.getSnapshot().answers[3]).toEqual(['Painting', 'Sculpture']);
+    c.pick(3, 'Painting', false);
+    expect(c.getSnapshot().answers[3]).toEqual(['Sculpture']);
+  });
+
+  it('tapping the chosen single-select option again clears it', async () => {
+    const c = make();
+    await c.load();
+    c.pick(1, 'Abstraction', true);
+    c.pick(1, 'Abstraction', true);
+    expect(c.getSnapshot().answers[1]).toEqual([]);
+  });
+
+  it('gates Continue on an answer, except where the old form does not', async () => {
+    const c = make();
+    await c.load();
+    c.begin();
+    expect(c.canContinue()).toBe(true); // contact step — always
+
+    c.next();
+    expect(c.getSnapshot().step).toBe(1);
+    expect(c.canContinue()).toBe(false);
+    c.pick(1, 'Abstraction', true);
+    expect(c.canContinue()).toBe(true);
+  });
+
+  it('accepts a step answered only through its extra field', async () => {
+    // Step 7 ("Where will you collect from?") is the one with `extra`.
+    const c = make();
+    await c.load();
+    c.begin();
+    for (let i = 0; i < 7; i++) c.next();
+    expect(c.getSnapshot().step).toBe(7);
+    expect(c.canContinue()).toBe(false);
+    c.setExtra(7, 'Tehran');
+    expect(c.canContinue()).toBe(true);
+  });
+
+  it('lets the final free-text step be skipped', async () => {
+    const c = make();
+    await c.load();
+    c.begin();
+    for (let i = 0; i < QB_DEFAULT.length; i++) c.next();
+    expect(c.getSnapshot().step).toBe(QB_DEFAULT.length);
+    expect(c.canContinue()).toBe(true);
+  });
+
+  it('goes to the review past the last step, and back again', async () => {
+    const c = make();
+    await c.load();
+    c.begin();
+    for (let i = 0; i <= QB_DEFAULT.length; i++) c.next();
+    expect(c.getSnapshot().stage).toBe('review');
+    expect(c.back()).toBe(true);
+    expect(c.getSnapshot().stage).toBe('step');
+    expect(c.getSnapshot().step).toBe(QB_DEFAULT.length);
+  });
+
+  it('reports that step 0 has nowhere further back — the view exits', async () => {
+    const c = make();
+    await c.load();
+    c.begin();
+    expect(c.back()).toBe(false);
+  });
+});
+
+describe('payload', () => {
+  it('sends contact first, then every answered step, skipping the blanks', async () => {
+    const c = make();
+    await c.load();
+    c.setContact('email', 'a@b.c');
+    c.setContact('lang', 'Farsi');
+    c.pick(1, 'Abstraction', true);
+    c.pick(3, 'Painting', false);
+    c.pick(3, 'Sculpture', false);
+
+    expect(c.payload()).toEqual([
+      { q: 'Email', a: 'a@b.c' },
+      { q: 'Preferred communication language', a: 'Farsi' },
+      { q: QB_DEFAULT[0].q, a: 'Abstraction' },
+      { q: QB_DEFAULT[2].q, a: 'Painting · Sculpture' },
+    ]);
+  });
+
+  it('appends a step extra the way the review renders it', async () => {
+    const c = make();
+    await c.load();
+    c.pick(7, 'Both', true);
+    c.setExtra(7, 'Tehran');
+    expect(c.payload()).toContainEqual({
+      q: QB_DEFAULT[6].q,
+      a: 'Both · Your city, if you like: Tehran',
+    });
+  });
+
+  it('sends an extra with no option picked', async () => {
+    const c = make();
+    await c.load();
+    c.setExtra(7, 'Tehran');
+    expect(c.payload()).toEqual([{ q: QB_DEFAULT[6].q, a: 'Your city, if you like: Tehran' }]);
+  });
+});
+
+describe('submit', () => {
+  it('clears the draft and lands on the thank-you screen', async () => {
+    const c = make();
+    await c.load();
+    c.pick(1, 'Abstraction', true);
+    expect(localStorage.getItem('darz_questionnaire')).not.toBeNull();
+
+    await expect(c.submit()).resolves.toBe(true);
+    expect(c.getSnapshot().stage).toBe('done');
+    expect(c.getSnapshot().submitted).toBe(true);
+    expect(localStorage.getItem('darz_questionnaire')).toBeNull();
+  });
+
+  it('keeps the collector on the review with a message when the send fails', async () => {
+    const c = make({ submitQuestionnaire: () => Promise.reject(new Error('Network down')) });
+    await c.load();
+    c.pick(1, 'Abstraction', true);
+
+    await expect(c.submit()).resolves.toBe(false);
+    expect(c.getSnapshot().stage).not.toBe('done');
+    expect(c.getSnapshot().error).toBe('Network down');
+    expect(c.getSnapshot().status).toBe('idle');
+    // The draft survives a failed send — losing it would lose the answers.
+    expect(localStorage.getItem('darz_questionnaire')).not.toBeNull();
+  });
+
+  it('carries on when localStorage refuses to write', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceeded');
+    });
+    const c = make();
+    await c.load();
+    expect(() => c.pick(1, 'Abstraction', true)).not.toThrow();
+    expect(c.getSnapshot().answers[1]).toEqual(['Abstraction']);
+    setItem.mockRestore();
+  });
+});

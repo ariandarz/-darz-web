@@ -18,6 +18,14 @@
  *    max(expiry, today), and reactivates;
  *  - remove behind a confirm.
  *
+ *  - the overview strip (`:33342`), **built 2026-09-22 — G-MEMB-1, decided
+ *    the same way G-4 was.** Two of the old four tiles; the other two are
+ *    named rather than faked, and `membershipTiles.ts` says exactly why
+ *    (Premium is a vocabulary this backend does not have; "Expiring ≤ 7d"
+ *    needs one `expires_before=` filter the API lacks — **G-MEMB-7**, and the
+ *    one of the four worth raising, because it is the only one that drives an
+ *    action).
+ *
  * One deviation, the backend's own (Phase 30, flagged there and here): `plan`
  * is constrained to the **collector tiers**, not the old `MEMB_PLANS`
  * Basic/Premium/Free-Invite (`:33131`), so a redeemed code sets a real
@@ -25,7 +33,7 @@
  * not shown. **No payment processing anywhere** — kept on screen, the old
  * desk's own statement.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApi, useOptions } from '../../api/hooks';
 import type { Choice, MembershipCodeAdmin } from '../../api/types';
 import { useListController } from '../shared/useListController';
@@ -33,6 +41,11 @@ import { ListController } from '../shared/ListController';
 import type { AdminAccountsService } from '../../api/services';
 import type { Paginated } from '../../api/types';
 import { expiryParts } from './expiry';
+import {
+  EMPTY_MEMBERSHIP_COUNTS,
+  membershipTiles,
+  type MembershipCounts,
+} from './membershipTiles';
 import {
   ConfirmDialog,
   DeskAction,
@@ -76,6 +89,27 @@ export function MembershipsPage() {
     MembershipCodeAdmin,
     MembershipQuery
   >(() => new MembershipsController(adminAccounts));
+
+  /* The strip's two counts (`:33342`, G-MEMB-1). Read once, from the FULL
+     ledger — not re-read when the desk's filters change, for the reason the
+     Collectors strip gives (`collectorTiles.ts`): a strip that moved with the
+     filter below it would answer a different question from the one it appears
+     to ask, and the pager already shows the filtered count. */
+  const [counts, setCounts] = useState<MembershipCounts>(EMPTY_MEMBERSHIP_COUNTS);
+  useEffect(() => {
+    let alive = true;
+    const count = (query: MembershipQuery) =>
+      adminAccounts
+        .membershipCodes({ ...query, per_page: 1 })
+        .then((page) => page.pagination.total_count)
+        .catch(() => null);
+    void Promise.all([count({}), count({ status: 'active' })]).then(([total, active]) => {
+      if (alive) setCounts({ total, active });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [adminAccounts]);
 
   const plans = (options?.['accounts.collector_tier'] as Choice[] | undefined) ?? [];
   const statuses =
@@ -228,6 +262,18 @@ export function MembershipsPage() {
           clears, add the member and issue their code. No payment processing anywhere.
         </>
       }
+      strip={
+        /* `:33342`'s stat row, two of its four (G-MEMB-1 —
+           `membershipTiles.ts`). */
+        <div className="ad-tiles ad-tiles-sales">
+          {membershipTiles(counts).map((t) => (
+            <div key={t.key} className="ad-tile">
+              <span className="ad-tile-v">{t.value}</span>
+              <span className="ad-tile-l">{t.label}</span>
+            </div>
+          ))}
+        </div>
+      }
     >
       {(creating || editing) && (
         <MembershipForm
@@ -258,6 +304,30 @@ export function MembershipsPage() {
         busyKey={busyId}
         empty="No memberships yet — tap “＋ Add member” after a collector pays."
       />
+
+      {/* The desk's closing footnote (`:33347`), restored 2026-09-22 against
+          `28-memberships` — it had been dropped entirely, and it is the one
+          line that tells an owner what happens AFTER they issue a code.
+
+          Two of its three clauses are deliberately not carried:
+
+          - the ☁ Cloud warning ("sign in to the Cloud before issuing codes,
+            or the code won't reach their app") is dead architecture. Codes are
+            server-side here; there is no device-local ledger to sync, so the
+            hazard it warns about cannot occur.
+          - "Basic and Premium both include the auctions when running; Premium
+            adds earlier access…" describes the old Basic/Premium plans. This
+            backend's `plan` is the collector tier set, which the desk header
+            already records — repeating the old plan names here would promise a
+            tier structure that does not exist.
+
+          The first clause is kept, and is now literally true: the collector
+          app's Settings › Membership › "Have an access code?" was built the
+          same day (`src/features/membership/`). */}
+      <p className="ad-cellsub" style={{ marginTop: 10, lineHeight: 1.6 }}>
+        The member redeems their <b>access code</b> in the app, under Settings → Membership →
+        “Have an access code?”, to activate their tier.
+      </p>
 
       {removing && (
         <ConfirmDialog

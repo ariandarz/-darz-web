@@ -41,7 +41,13 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
-import type { DataHealthReport } from '../../api/types';
+import type { ArtworkAdminQuery, DataHealthReport } from '../../api/types';
+import {
+  ARCHIVED_STATUSES,
+  EMPTY_HEALTH_COUNTS,
+  healthTiles,
+  type HealthCounts,
+} from './healthCounts';
 import { DeskAction, DeskBanner, DeskPage } from './kit';
 import './admin.css';
 
@@ -59,6 +65,37 @@ export function DataHealthPage() {
   }, [catalogAdmin]);
   useEffect(load, [load]);
 
+  /* The counts panel above the checks (G-HEALTH-1 — `healthCounts.ts` says
+     which four of the old eight these are and why the other four are not
+     here). One `per_page: 1` read for Market App and three for the archival
+     statuses; the other two tiles come out of the report the desk already
+     loads. */
+  const [counts, setCounts] = useState<HealthCounts>(EMPTY_HEALTH_COUNTS);
+  useEffect(() => {
+    let alive = true;
+    const count = (query: ArtworkAdminQuery) =>
+      catalogAdmin
+        .artworks({ ...query, per_page: 1 })
+        .then((page) => page.pagination.total_count)
+        .catch(() => null);
+    void Promise.all([
+      count({ published: true }),
+      ...ARCHIVED_STATUSES.map((availability_status) => count({ availability_status })),
+    ]).then(([published, ...archivedParts]) => {
+      if (!alive) return;
+      // One failed status read makes the whole archived total unknowable —
+      // reporting the other two as "Archived" would be a number that is
+      // quietly short. `—` is the honest answer.
+      const archived = archivedParts.some((n) => n === null)
+        ? null
+        : archivedParts.reduce((a, b) => (a ?? 0) + (b ?? 0), 0);
+      setCounts({ published, archived });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [catalogAdmin]);
+
   return (
     <DeskPage
       title="Data Health"
@@ -75,9 +112,33 @@ export function DataHealthPage() {
       }
       subtitle={
         <>
-          Three checks. The old desk's other five diagnosed the old app's device-sync
-          architecture, which does not exist here — one database, nothing to drift.
+          The catalogue's counts, then three checks. The old desk's other five checks diagnosed
+          the old app's device-sync architecture, which does not exist here — one database,
+          nothing to drift.
         </>
+      }
+      strip={
+        /* `:26316`'s "Data Health & Counts" grid, four of its twelve boxes —
+           see `healthCounts.ts`. The old panel puts this panel ABOVE the
+           system checks, which is what the `strip` slot is.
+
+           Its own grid, NOT the `.ad-tiles-sales` strip every other desk
+           uses: the old panel gives this panel `.dz-ovgrid` / `.dz-ovbox`
+           (`:9427-9433`), a wider auto-fill cell with a three-line box, and
+           reusing the six-column stat row would be a different component
+           wearing this one's data. */
+        <div className="ad-ovgrid">
+          {healthTiles(counts, report).map((t) => (
+            <div key={t.key} className={`ad-ovbox${t.tone === 'warn' ? ' is-warn' : ''}`}>
+              <span className="ad-ovbox-num">{t.value}</span>
+              <span className="ad-ovbox-title">{t.title}</span>
+              {/* The old box's one-line explanation (`dz-ovbox-exp`) — the
+                  half that tells an admin what the number MEANS, which is the
+                  whole reason that panel exists (`:26279`). */}
+              <span className="ad-ovbox-exp">{t.exp}</span>
+            </div>
+          ))}
+        </div>
       }
     >
       {error && <DeskBanner>{error}</DeskBanner>}
