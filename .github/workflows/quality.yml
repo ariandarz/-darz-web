@@ -17,7 +17,28 @@ name: Quality
 on:
   pull_request:
   push:
-    branches: [main, development]
+    branches: [main]
+
+# One run per commit, and one only.
+#
+# `push` used to list `development` as well, which ran the whole gate twice on
+# every release: a release pull request has `development` as its head, so a
+# push to `development` fired `push` *and* `pull_request` on the same commit,
+# at the same time, for the same result. Dropping `development` costs no
+# coverage — every commit gets there through a pull request, and GitHub runs
+# `pull_request` against the *merge* commit (the head merged into the current
+# base), so the gate already tested the merged tree. `main` keeps its `push`
+# run: that one verifies what actually deploys, after the merge.
+#
+# `concurrency` handles the other waste. Pushing three commits to a branch
+# started three full runs and let the two superseded ones finish; now a newer
+# commit cancels the older run on the same pull request. Cancellation is
+# limited to pull requests on purpose — a `push` run on `main` is the
+# post-merge record of a deployed commit and should always finish, even when
+# the next merge lands on top of it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
