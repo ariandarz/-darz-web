@@ -21,6 +21,31 @@
  * if no OTHER selection still wants it. So deleting a selection does not
  * necessarily un-curate a work for a collector — another selection may keep
  * it. The delete confirm says exactly that.
+ *
+ * **Compared against `14-collector-club`, 2026-09-22.** Three differences,
+ * all recorded rather than built:
+ *
+ *  - **The sub-line is this app's, not the old one's, and deliberately.**
+ *    `:33772` says a private selection shows "as a “Private — for you”
+ *    section". That section does not exist in the collector app any more:
+ *    `app.html:8890` records v669 REMOVING it, and curated works now reach a
+ *    collector through the "Curated for You" chip on the catalogue
+ *    (`docs/PHASE_24_35_PLAN.md` step 2). Porting the old sentence would
+ *    describe a screen this port deliberately did not build.
+ *  - **The 3-tile strip** (Private selections · Private auctions · Collector
+ *    keys, `:33774`) is absent. One tile of the three is answerable from
+ *    what this desk already loads; the other two are a second and third
+ *    endpoint for a number, and "private auctions" is the next item. The
+ *    Collectors desk's equivalent strip was an owner decision (**G-4**), so
+ *    this one is put the same way rather than assumed: **G-CLUB-2**.
+ *  - **The "Auction access" section is absent, and blocked** — not
+ *    overlooked. The old desk lists every auction with Public / "Make
+ *    private…" and explains the badge (`:33779`). Invitation-only auctions
+ *    have no counterpart here: `auctions.auction_status` carries
+ *    draft/scheduled/live/closed/cancelled and the model has no invited-keys
+ *    relation, so there is nothing for the control to set. Backend gap
+ *    **G-CLUB-3**. It is the same absence the Auctions desk's sub-line works
+ *    around by not promising invitation-only.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
@@ -87,7 +112,13 @@ export function ClubPage() {
       {error && <DeskBanner>{error}</DeskBanner>}
       {!selections && !error && <p className="dz-state">Loading…</p>}
       {selections?.length === 0 && !editing && (
-        <p className="dz-state">No private selections yet.</p>
+        /* `:33777`, verbatim — this desk had shortened it to its first four
+           words, dropping the half that tells a new owner what the feature
+           is FOR. Restored 2026-09-22 against `14-collector-club`. */
+        <p className="dz-state">
+          No private selections yet. Tap <b>＋ New private selection</b>, pick a few works and
+          invite the collectors who should feel they saw it first.
+        </p>
       )}
 
       {editing && (
