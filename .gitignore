@@ -27,3 +27,6 @@ dist-ssr
 dist-e2e
 playwright-report
 test-results
+
+# Phase 6 fidelity pass output (e2e/capture-desks.mjs)
+dist-desk-shots

@@ -157,13 +157,17 @@ export function ImportPage() {
   ];
 
   return (
-    <DeskPage wide title="Import artworks">
-      {/* :29708, verbatim */}
-      <p className="ad-desksub">
-        Imports land in <b>Review</b> first — edit, then confirm into the Database. Nothing
-        touches the catalogue until you confirm.
-      </p>
-
+    <DeskPage
+      wide
+      title="Import artworks"
+      subtitle={
+        /* :29708, verbatim */
+        <>
+          Imports land in <b>Review</b> first — edit, then confirm into the Database. Nothing
+          touches the catalogue until you confirm.
+        </>
+      }
+    >
       <div className="ad-imptiles">
         {/* :29710 — the CSV tile's own copy */}
         <button type="button" className="ad-imptile" onClick={() => fileRef.current?.click()}>
@@ -176,7 +180,10 @@ export function ImportPage() {
           <span className="ad-cellsub">CSV rows or JSON.</span>
         </button>
       </div>
-      <p className="ad-cellsub" style={{ marginTop: -6 }}>
+      {/* `marginBottom` matters as much as the negative top: with none, this
+          line sat flush against the BATCHES heading below it and the two read
+          as one block (found 2026-09-22 against `18-import`). */}
+      <p className="ad-cellsub" style={{ margin: '-6px 0 16px' }}>
         PDF catalogue and image imports follow later (D15) — stated here rather than shown as
         buttons that do nothing.
       </p>

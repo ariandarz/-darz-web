@@ -1,6 +1,24 @@
 /**
  * RegistrationsPage — `/admin/auction-registrations`, "Register to Bid"
- * (`auctionsRegView()`, `darz-studio.html:31780ish` — the paddle queue).
+ * (`auctionsRegView()`, `darz-studio.html:31865` — the paddle queue).
+ *
+ * **This desk's reference is not what the old tab opens — recorded
+ * 2026-09-22.** Comparing against `46-auction-registrations` showed the
+ * capture is the REQUESTS desk in its Auctions scope, not a paddle queue,
+ * which sent the comparison back to the nav: `:11745` routes the tab through
+ * `DarzAdmin.goReg()` with `page:'activity'`, and `:38046` records why —
+ * v1044 moved "Register to Bid" into the Activity desk's Auctions scope,
+ * over `kind==='auction-register'` request rows (`aucRegRequests`, `:29371`).
+ * `auctionsRegView()` is the view it replaced and is no longer reachable.
+ *
+ * So this desk is a **deliberate divergence, and the right one**: registration
+ * is a first-class model in this backend (`BidderRegistration`, with a
+ * server-assigned sequential paddle) rather than a request kind, so it gets a
+ * desk that can show the paddle. What the old panel does in its place is
+ * exactly what the Requests desk here does — those rows arrive there too, as
+ * requests. Its dead predecessor's sub-line (`:31893`) carries a
+ * "N pending · N approved" clause this desk could answer from the status
+ * counts; it is left off rather than revived from a superseded view.
  *
  * Ported content:
  *  - the columns: Collector · Auction · Request date · Status · actions;
@@ -191,11 +209,13 @@ export function RegistrationsPage() {
           />
         </>
       }
+      subtitle={
+        <>
+          Paddle requests from the app. Approving assigns the auction's next sequential paddle
+          number — the anonymous paddle the collector bids under.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Paddle requests from the app. Approving assigns the auction's next sequential paddle
-        number — the anonymous paddle the collector bids under.
-      </p>
       {actionError && <DeskBanner>{actionError}</DeskBanner>}
       <DeskList
         label="Registrations"

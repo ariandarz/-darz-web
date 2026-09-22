@@ -247,6 +247,21 @@ describe('the map itself — every registered tab is documented', () => {
     const groups = ADMIN_GROUPS.filter((g) => g.tabs.some((t) => t.key === 'design'));
     expect(groups.map((g) => g.key)).toEqual(['market', 'operations']);
   });
+
+  it('carries the issue flow in two groups, labelled as each group names it', () => {
+    // The old panel's Documents group opens with **Create** (`:11732`); this
+    // port had that desk only under Galleries, as "Issue a document", so the
+    // old group's first tab was missing. One desk, two entry points — the
+    // App Design shape above — but here the two labels differ, because the
+    // two groups are the ones that differ: `Create` is the old panel's own
+    // word and `Issue a document` is this port's.
+    const withIssue = ADMIN_GROUPS.filter((g) => g.tabs.some((t) => t.key === 'issue'));
+    expect(withIssue.map((g) => g.key)).toEqual(['galleries', 'documents']);
+    expect(withIssue.map((g) => g.tabs.find((t) => t.key === 'issue')!.label)).toEqual([
+      'Issue a document',
+      'Create',
+    ]);
+  });
 });
 
 describe('the map’s size, stated so a partial port cannot pass quietly', () => {
@@ -254,10 +269,12 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
     // 14 groups: ADGROUPS' fifteen entries minus `more`, which is the
     // folded-group menu rather than a group of its own.
     expect(ADMIN_GROUPS.length).toBe(14);
-    // 55 group tabs + Dashboard + Chat, the two that belong to no group.
+    // 56 group tabs + Dashboard + Chat, the two that belong to no group.
     // 53 + the two Exhibition Services tabs the owner asked for on
-    // 2026-09-19 (the library, and the one-page issue flow).
-    expect(allTabs().length).toBe(57);
+    // 2026-09-19 (the library, and the one-page issue flow), + the
+    // Documents group's Create tab, which is that same issue flow's second
+    // entry point (2026-09-22 — see `adminNav.ts` and the test below).
+    expect(allTabs().length).toBe(58);
   });
 
   it('counts what is actually built, so progress cannot be overstated', () => {
@@ -274,6 +291,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'issue',
       'market',
       'design',
+      'issue',
       'docProposals',
       'docInvoices',
       'docFiles',

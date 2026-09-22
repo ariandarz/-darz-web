@@ -6,12 +6,19 @@
  * stopped there. Doing it found `/auctions/lots/:id` rendering a **white
  * screen** on `Cannot read properties of undefined (reading 'images')`.
  *
- * That one matters more than the three the panel walk found, for a reason
- * worth writing down: **there is no error boundary under these routes.** The
- * admin got `DeskBoundary`, so a desk that throws now degrades to a message
- * with the navbar intact. A collector route that throws is still a blank page.
- * Until that changes, this file is the only thing standing between a bad
- * response shape and a customer seeing nothing at all.
+ * That one mattered more than the three the panel walk found, for a reason
+ * worth writing down: **there was no error boundary under these routes.** The
+ * admin had `DeskBoundary`, so a desk that threw degraded to a message with
+ * the navbar intact; a collector route that threw was still a blank page, and
+ * this file was the only thing standing between a bad response shape and a
+ * customer seeing nothing at all.
+ *
+ * **`ScreenBoundary` closed that on 2026-09-22** (owner's instruction), and
+ * the last test below is what keeps it closed: a route that throws on render,
+ * which exists only in this build (`VITE_E2E_BOOM`), asserting that the
+ * header, the chroma line and the nav survive it. This file is still the
+ * breadth check — a screen caught by the boundary is a screen that did not
+ * render, and every test above it still demands a real body.
  *
  * Same contract as the desk walk: signed in once, each route must render a
  * real body and throw nothing, against a backend that answers empty for
@@ -79,5 +86,38 @@ for (const [route, minChars] of ROUTES) {
     const body = (await page.locator('body').innerText()).trim();
     expect(body.length, `${route} rendered a blank page`).toBeGreaterThan(minChars);
     expect(thrown, `page errors on ${route}`).toEqual([]);
+
+    // Nothing above should ever be CAUGHT rather than rendered — that reads as
+    // a pass on the character count and is a screen that failed.
+    await expect(page.getByText('Something went wrong')).toHaveCount(0);
   });
 }
+
+/**
+ * The boundary itself. Before it, this was a white page: no wordmark, no
+ * chroma line, no nav, and no way back except retyping a URL.
+ *
+ * The copy is not invented for this app — `app.html:9821` is the old app's own
+ * catch around a thrown render, and "Something went wrong" is its heading
+ * verbatim. See `ScreenBoundary.tsx` for what was adapted and why.
+ */
+test('a screen that throws keeps the shell, and says so in the old app’s words', async () => {
+  thrown = [];
+  await page.goto('/_boom');
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByText('Something went wrong')).toBeVisible();
+  // the three things a white page loses
+  await expect(page.locator('header')).toBeVisible();
+  await expect(page.locator('.chroma')).toHaveCount(1);
+  await expect(page.locator('nav#nav')).toBeVisible();
+});
+
+test('leaving a broken screen clears it — the boundary is keyed on the path', async () => {
+  await page.goto('/_boom');
+  await expect(page.getByText('Something went wrong')).toBeVisible();
+
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByText('Something went wrong')).toHaveCount(0);
+});

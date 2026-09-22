@@ -315,13 +315,14 @@ export function ProjectsListPage() {
           />
         </>
       }
+      subtitle={
+        /* :13653 */
+        <>
+          {counts ? `${counts.active} active · ${counts.total} total. ` : ''}
+          One record per project — client and partners are linked, never re-typed.
+        </>
+      }
     >
-      {/* :13653 */}
-      <p className="ad-desksub">
-        {counts ? `${counts.active} active · ${counts.total} total. ` : ''}
-        One record per project — client and partners are linked, never re-typed.
-      </p>
-
       <div className="dzp">
         {quick && (
           // :13647 / :13661 — the chip and its wrapper carried these two inline styles

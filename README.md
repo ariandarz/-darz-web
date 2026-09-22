@@ -14,8 +14,12 @@ This is a **faithful port** of the old DarzStudio app's already-approved design 
 Where the two disagree, flag it — don't silently pick. On the token layer the owner has already
 ruled: **`app.html` wins over the guide** (see `docs/adr/0001-styling-and-oop.md`).
 
-See `CLAUDE.md` for the full cross-repo context and `docs/TASKLIST.md` for the phase plan
-(the source of progress truth).
+**Starting a session? Read [`docs/HANDOFF.md`](docs/HANDOFF.md) first** — where things stand,
+what is genuinely next, how to open any screen in a browser without a backend, and the claims in
+these docs that turned out false when checked.
+
+Then `CLAUDE.md` for the full cross-repo context, `docs/TASKLIST.md` for the phase plan (the
+source of progress truth), and `docs/ADMIN_V1_AUDIT.md` for the admin panel's own plan.
 
 ## Stack
 

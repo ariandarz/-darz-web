@@ -111,24 +111,28 @@ export function PublishedPage() {
           placeholder="Search published works…"
         />
       }
+      subtitle={
+        <>
+          The works collectors see in the public catalogue. Publication is its own layer — a
+          work joins from the Database's ✓ APP toggle and is live the moment it is set. A
+          published work with Selected / Private-selection visibility reaches its collectors
+          through the <Link to="/admin/club">Collector Club</Link>, not this public list.
+        </>
+      }
+      strip={
+        <>
+          <div className="ad-tiles ad-tiles-sales">
+            <Stat label="In the public catalogue" value={total} />
+            <Stat
+              label="Hidden by a gap"
+              value={health ? health.published_but_hidden.count : undefined}
+              tone={health && health.published_but_hidden.count > 0 ? 'attn' : undefined}
+              hint="published with zero images — collectors can never see them (Data Health)"
+            />
+          </div>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        The works collectors see in the public catalogue. Publication is its own layer — a work
-        joins from the Database's ✓ APP toggle and is live the moment it is set. A published
-        work with Selected / Private-selection visibility reaches its collectors through the{' '}
-        <Link to="/admin/club">Collector Club</Link>, not this public list.
-      </p>
-
-      <div className="ad-tiles ad-tiles-sales">
-        <Stat label="In the public catalogue" value={total} />
-        <Stat
-          label="Hidden by a gap"
-          value={health ? health.published_but_hidden.count : undefined}
-          tone={health && health.published_but_hidden.count > 0 ? 'attn' : undefined}
-          hint="published with zero images — collectors can never see them (Data Health)"
-        />
-      </div>
-
       {error && <DeskBanner>{error}</DeskBanner>}
       {state.status === 'loading' && !state.results.length && (
         <p className="dz-state">Loading…</p>

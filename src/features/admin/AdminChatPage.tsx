@@ -20,17 +20,52 @@
  *    a conversation here is a request, whose real status/assignee live on the
  *    request itself (the Requests desk);
  *  - **Clear**, which deleted the thread from the old client-local store —
- *    threads here are server records;
- *  - the client-side **search** box — this list is paginated server-side and
- *    `GET /api/crm/admin/requests/` has no text-search param (a gap worth
- *    raising with the backend when Chat gets heavy use).
+ *    threads here are server records.
+ *
+ * **The search box is built** (`:40446`, "Search collectors by name or key…").
+ * It was listed above as unbuildable — "no text-search param, a gap worth
+ * raising with the backend" — and that stopped being true when **G-5** landed
+ * `?search=` on this very endpoint (backend 2026-09-21, wired into the
+ * Requests desk by #65). This desk reads the same list through the same
+ * controller and nobody came back for it; found 2026-09-22 comparing against
+ * `17-chat`. It searches the collector's name, the artwork title and its
+ * artist — not message bodies, which is the backend's own decision
+ * (`AdminRequestQuery`), so the old placeholder's "or key" is not promised.
+ *
+ * **Also compared against `17-chat`, recorded rather than built:**
+ *  - **The heading.** The old desk's is "💬 Chat Dashboard"; this one takes
+ *    its nav label, for the same reason Live Auctions does — the old panel
+ *    separates its two chat views with an in-desk pill row this port has no
+ *    counterpart for.
+ *  - **The 4-tile strip** (New · Active · Waiting · Resolved) and the
+ *    **Conversations / AI Monitor pills**. Both count things listed above as
+ *    having no backend: the per-conversation status does not exist here, and
+ *    there is no AI anywhere in this backend. A strip of four tiles reading
+ *    zero would be worse than none.
+ *  - **The two-pane layout** — list left, thread right. Here the thread is
+ *    its own route (`/admin/chat/:id`), which is the routing change §6.2
+ *    covers, and it is what makes a conversation linkable.
+ *  - **"Conversation renewal"** (Keep · daily · weekly, and "Archive all &
+ *    start fresh"). Not ported and not buildable: it writes `chatRenew` /
+ *    `chatArchiveBefore` into the old THEME (`:40259-40260`) and the app
+ *    hides older messages client-side. Nothing here archives a message —
+ *    `RequestMessage` has no archived flag and no endpoint sweeps one.
+ *    Backend gap **G-CHAT-2**.
  */
 import { Link } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import type { AdminRequest, AdminRequestQuery } from '../../api/types';
 import { useListController } from '../shared/useListController';
 import { AdminRequestsController } from './AdminRequestsController';
-import { DeskBanner, DeskPage, Pager, SelectFilter, deskBanner, resolveDeskView } from './kit';
+import {
+  DeskBanner,
+  DeskPage,
+  Pager,
+  SearchFilter,
+  SelectFilter,
+  deskBanner,
+  resolveDeskView,
+} from './kit';
 import './admin.css';
 
 /** All conversations, or just the general chats (`kind=message`). */
@@ -49,13 +84,24 @@ export function AdminChatPage() {
     <DeskPage
       title="Chat"
       toolbar={
-        <SelectFilter
-          label="Show"
-          anyLabel="All conversations"
-          value={state.query.kind}
-          onChange={(kind) => setQuery({ kind })}
-          choices={KIND_CHOICES}
-        />
+        <>
+          {/* `:40446` — the old desk's own box. Its placeholder said "name or
+              key"; the server searches names and the artwork/artist, never the
+              access key, so this one says what it does. */}
+          <SearchFilter
+            label="Search"
+            value={state.query.search}
+            placeholder="Collector, artwork or artist…"
+            onChange={(search) => setQuery({ search })}
+          />
+          <SelectFilter
+            label="Show"
+            anyLabel="All conversations"
+            value={state.query.kind}
+            onChange={(kind) => setQuery({ kind })}
+            choices={KIND_CHOICES}
+          />
+        </>
       }
     >
       {banner && <DeskBanner>{banner}</DeskBanner>}

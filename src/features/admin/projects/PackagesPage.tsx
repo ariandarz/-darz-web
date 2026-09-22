@@ -423,14 +423,15 @@ export function PackagesPage() {
           </DeskAction>
         </div>
       }
+      subtitle={
+        /* :13904 */
+        <>
+          One shared service catalogue feeds every package, the calculator and curatorial
+          pricing. Apply a package to a project as an editable snapshot — the template stays
+          pristine.
+        </>
+      }
     >
-      {/* :13904 */}
-      <p className="ad-desksub">
-        One shared service catalogue feeds every package, the calculator and curatorial
-        pricing. Apply a package to a project as an editable snapshot — the template stays
-        pristine.
-      </p>
-
       <div className="dzp">
         {banner && <DeskBanner>{banner}</DeskBanner>}
         {svcWalk.error && <DeskBanner>{svcWalk.error}</DeskBanner>}

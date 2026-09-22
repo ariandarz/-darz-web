@@ -70,17 +70,18 @@ export function AuctionAdminDetailPage() {
       wide
       title={auction.title}
       action={<AuctionPill status={auction.status} label={label(statuses, auction.status)} />}
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/auctions')}
+          >
+            ← All auctions
+          </button>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate('/admin/auctions')}
-        >
-          ← All auctions
-        </button>
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
 
       <section className="ad-dsec">

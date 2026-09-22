@@ -18,11 +18,29 @@
  * shape depends on `kind` and the model keeps it freeform, so a validated
  * JSON textarea is the honest editor until the Studio (D18) gives each kind
  * its form.
+ *
+ * **Delete (G-DEL-1, approved 2026-09-22).** The old panel's `dlDelDoc`
+ * (`:17913`) had never been built here, so Django admin was the only way to
+ * remove a document. Its confirm is ported verbatim, version count and all —
+ * it is the one of the three that names what delete costs ("A version a
+ * gallery already holds cannot be un-sent"), which is the reason to keep the
+ * sentence rather than summarise it.
+ *
+ * **It is owner-only, and that is the STRICTER of the two rules in play.**
+ * The old panel refuses a standard admin outright ("Only the owner can
+ * delete an issued document", `:17913`); this API's endpoint is
+ * `IsStandardAdminOrOwner`, so the server would allow it. G-DEL-1 called
+ * that mismatch out and the owner approved the faithful reading: the desk
+ * keeps the old gate. A standard admin does not see the button. Note this is
+ * a UI gate over a permissive endpoint — the opposite of the deal delete
+ * below it, where the endpoint is `IsOwner` and the UI merely agrees — so if
+ * the rule ever needs enforcing, it has to be enforced server-side.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useApi } from '../../api/hooks';
+import { useApi, useSession } from '../../api/hooks';
 import type { DocumentAdmin, DocumentVersionAdmin } from '../../api/types';
+import { asAdminRole } from './adminNav';
 import { DocPill } from './DocumentsPage';
 import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
 import './admin.css';
@@ -31,12 +49,15 @@ export function DocumentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { documentsAdmin } = useApi();
   const navigate = useNavigate();
+  const { me } = useSession();
+  const isOwner = asAdminRole(me?.role) === 'owner';
 
   const [doc, setDoc] = useState<DocumentAdmin | null>(null);
   const [versions, setVersions] = useState<DocumentVersionAdmin[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // draft form state
   const [title, setTitle] = useState('');
@@ -82,6 +103,21 @@ export function DocumentDetailPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'That did not go through.');
     } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Not `act`: that adopts a returned document into the page, and this
+   * leaves the page entirely — there is no record to adopt. */
+  const deleteDoc = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await documentsAdmin.deleteDocument(id!);
+      navigate('/admin/documents');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not delete the document.');
       setBusy(false);
     }
   };
@@ -135,17 +171,18 @@ export function DocumentDetailPage() {
     <DeskPage
       title={doc.title}
       action={<DocPill status={doc.status} signed={!!doc.signed_at} />}
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/documents')}
+          >
+            ← All documents
+          </button>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate('/admin/documents')}
-        >
-          ← All documents
-        </button>
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
 
       {/* ---- the PDF + lifecycle ---- */}
@@ -221,6 +258,17 @@ export function DocumentDetailPage() {
                 onClick={() => void act(() => documentsAdmin.archiveDocument(id!))}
               >
                 Archive
+              </button>
+            )}
+            {/* `:17913` — owner-only, the old panel's gate (see the header). */}
+            {isOwner && (
+              <button
+                type="button"
+                className="ad-ghostbtn is-danger"
+                disabled={busy}
+                onClick={() => setDeleting(true)}
+              >
+                Delete
               </button>
             )}
             {doc.confirmed_at && (
@@ -341,6 +389,22 @@ export function DocumentDetailPage() {
           onConfirm={() => {
             setConfirming(false);
             void act(() => documentsAdmin.confirmDocument(id!));
+          }}
+        />
+      )}
+      {deleting && (
+        /* `:17913`, verbatim — including its singular/plural on the count. */
+        <ConfirmDialog
+          message={`Delete this document and all ${versions.length} version${
+            versions.length === 1 ? '' : 's'
+          }? A version a gallery already holds cannot be un-sent.`}
+          okLabel="Delete"
+          danger
+          busy={busy}
+          onCancel={() => setDeleting(false)}
+          onConfirm={() => {
+            setDeleting(false);
+            void deleteDoc();
           }}
         />
       )}

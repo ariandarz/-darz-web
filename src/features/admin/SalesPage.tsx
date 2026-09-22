@@ -9,9 +9,30 @@
  *    deal, followed to the ledger"); here a Sale begins at the confirmed
  *    purchase intent (or by hand) rather than absorbing every request — the
  *    Requests desk holds the funnel's front;
- *  - the stats strip (`:12573`): Open deals · Payment pending · Completed ·
- *    Lost — counts read per status from the server's own pagination totals
- *    (no aggregate endpoint, G-SALE-1);
+ *  - the stats strip (`:12573`). **Two of its four tiles are this model's,
+ *    not the old panel's** — recorded here 2026-09-22 after the fidelity pass
+ *    compared the desk against `15-market-sales` and found the line above had
+ *    been misquoting the source. The old four are
+ *    `Open deals · Need attention · Payment pending · Sent to Accounting`
+ *    (`:12541-12544`), and they map across like this:
+ *      · **Open deals** — same tile, same arithmetic (`stage` is neither
+ *        `accounting` nor `rejected`; here, neither `completed` nor `lost`).
+ *      · **Payment pending** — same tile, and the label is now the old one
+ *        verbatim; it had drifted to "Awaiting payment".
+ *      · **Need attention** — NOT ported. `attn` is `salesFlag(d)` returning
+ *        `attn`/`block`, computed client-side over the old deal store's
+ *        follow-up dates and notes (G-SALE-5) — fields the `Sale` model does
+ *        not carry, so there is nothing to count. **Completed** takes the
+ *        slot: a terminal status this ledger does have.
+ *      · **Sent to Accounting** — NOT ported, because there is no such stage
+ *        here. The old panel hands a finished deal to its Accounting desk as
+ *        a workflow step; in this backend a `Sale` and a ledger entry are
+ *        separate records with no "sent" flag between them (the Accounting
+ *        desk reads the ledger directly). **Lost** takes the slot — the old
+ *        desk's own `rejected`/lost bucket, which it offered as a stage
+ *        filter (`:12546`) but never as a tile.
+ *    All four counts are read per status from the server's own pagination
+ *    totals (no aggregate endpoint, G-SALE-1);
  *  - the "＋ New deal" action (`:12571`) and the row's price-first anatomy
  *    (`:12594`): artwork · collector · status pill · payment/delivery ·
  *    agreed price · "Next: <the chain's forward step>" (`:12599`);
@@ -175,20 +196,25 @@ export function SalesPage() {
           choices={statuses}
         />
       }
+      subtitle={
+        <>
+          One deal, followed to the ledger. A sale begins at a confirmed purchase intent — or
+          by hand with ＋ New deal; the funnel before that lives in Requests &amp; Activity.
+          Search, the payment/stage filters and the Pipeline / Cards views wait on the API
+          (G-SALE-2).
+        </>
+      }
+      strip={
+        <>
+          <div className="ad-tiles ad-tiles-sales">
+            <Stat label="Open deals" value={open} />
+            <Stat label="Payment pending" value={payPending} tone="attn" />
+            <Stat label="Completed" value={counts?.completed} tone="ok" />
+            <Stat label="Lost" value={counts?.lost} />
+          </div>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        One deal, followed to the ledger. A sale begins at a confirmed purchase intent — or by
-        hand with ＋ New deal; the funnel before that lives in Requests &amp; Activity. Search
-        and the payment/stage filters wait on the API (G-SALE-2).
-      </p>
-
-      <div className="ad-tiles ad-tiles-sales">
-        <Stat label="Open deals" value={open} />
-        <Stat label="Awaiting payment" value={payPending} tone="attn" />
-        <Stat label="Completed" value={counts?.completed} tone="ok" />
-        <Stat label="Lost" value={counts?.lost} />
-      </div>
-
       {creating && (
         <NewDealForm
           onClose={() => setCreating(false)}

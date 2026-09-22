@@ -115,16 +115,19 @@ export function LedgerEntryPage() {
           ← Back to the books
         </button>
       }
+      subtitle={
+        /* the record's own line under its title — moved into the slot so it
+           sits where every other desk's does (`kit/DeskPage.tsx`) */
+        <>
+          {labelOf(books, entry.book)} · {labelOf(types, entry.entry_type)}
+          {entry.category ? ` · ${entry.category}` : ''} ·{' '}
+          {new Date(entry.entry_date).toLocaleDateString('en-GB')}
+          {entry.person ? ` · ${entry.person}` : ''}
+          {entry.position ? ` (${entry.position})` : ''}
+          {entry.note ? ` — ${entry.note}` : ''}
+        </>
+      }
     >
-      <p className="ad-deskintro">
-        {labelOf(books, entry.book)} · {labelOf(types, entry.entry_type)}
-        {entry.category ? ` · ${entry.category}` : ''} ·{' '}
-        {new Date(entry.entry_date).toLocaleDateString('en-GB')}
-        {entry.person ? ` · ${entry.person}` : ''}
-        {entry.position ? ` (${entry.position})` : ''}
-        {entry.note ? ` — ${entry.note}` : ''}
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
 
       <section className="ad-dsec">

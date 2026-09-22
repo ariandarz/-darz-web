@@ -189,14 +189,15 @@ export function ProjectPipelinePage() {
           <ToggleFilter label="Archived" checked={archived} onChange={setArchived} />
         </>
       }
+      subtitle={
+        /* :13695 */
+        <>
+          The 17 stages, left to right. Move a project with Back / Fwd — curatorial work is
+          blocked from Research and Production until Scope Approval, Contract and Deposit are
+          recorded. Swipe the board sideways on a phone.
+        </>
+      }
     >
-      {/* :13695 */}
-      <p className="ad-desksub">
-        The 17 stages, left to right. Move a project with Back / Fwd — curatorial work is
-        blocked from Research and Production until Scope Approval, Contract and Deposit are
-        recorded. Swipe the board sideways on a phone.
-      </p>
-
       <div className="dzp">
         {conflict && (
           <ConflictBanner noun="project" onReload={reloadBoard} reloadClassName="dzp-btn sm" />

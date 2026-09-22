@@ -146,12 +146,13 @@ export function DesignPage() {
           Save
         </DeskAction>
       }
+      subtitle={
+        <>
+          What the collector app shows. Changes publish immediately on Save; the build-time
+          floor is <b>{FEATURE_SET}</b>, and a failed read of this theme falls back to it.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        What the collector app shows. Changes publish immediately on Save; the build-time floor
-        is <b>{FEATURE_SET}</b>, and a failed read of this theme falls back to it.
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
       {notice && <p className="ad-sent">{notice}</p>}
       {!draft && !error && <p className="dz-state">Loading…</p>}

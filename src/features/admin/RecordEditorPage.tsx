@@ -172,16 +172,20 @@ export function RecordEditorPage() {
   );
 
   return (
-    <DeskPage title={isNew ? 'New auction record' : 'Edit auction record'}>
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate('/admin/auction-records')}
-        >
-          ← All records
-        </button>
-      </p>
+    <DeskPage
+      title={isNew ? 'New auction record' : 'Edit auction record'}
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/auction-records')}
+          >
+            ← All records
+          </button>
+        </>
+      }
+    >
       {error && <DeskBanner>{error}</DeskBanner>}
 
       <div className="ad-card ad-form">

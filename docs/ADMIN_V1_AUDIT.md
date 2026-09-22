@@ -10,10 +10,13 @@
 | `ariandarz/darz-backend-api` | `../darzmarket-api` | `development` @ `74c9326` | Source of truth for backend capability |
 | `ariandarz/darzstudio.art` | `../DarzStudio` | `main` (shallow) | Source of truth for admin UI/UX (`darz-studio.html`, 43,789 lines) |
 
-> **Read this first — a branch correction.** `main` on `-darz-web` is **72 commits behind
-> `development`**, and on `main` the admin panel is one page (`/admin/requests`). Everything below
-> measures `development`, which is the real working line and carries the whole panel. Any audit run
-> against `main` will conclude the panel does not exist. It does.
+> **Read this first.** This audit was written against `development` on 2026-09-21, when `main` was
+> 72 commits behind it and carried a one-page admin panel. **That gap is closed** — PR #68 and then
+> #71 brought `main` level, so either branch now measures the same thing. The figures below are the
+> ones taken on 2026-09-21 and are dated rather than rewritten; where later work changed a finding,
+> the finding says so.
+>
+> **New session? Read [`docs/HANDOFF.md`](HANDOFF.md) before this file.**
 
 ---
 
@@ -38,7 +41,8 @@ Measured:
 | Lint | 0 errors, 3 warnings (all outside admin) |
 | Typecheck | **Fails on macOS only** — see TD-1 |
 
-**Completion against V1:** roughly **80–85%** of the panel that V1 needs. The 23 unbuilt tabs split
+**Completion against V1:** roughly **80–85%** of the panel that V1 needs *(measured 2026-09-21;
+~85–90% after the Phase 6 work released on 2026-09-22)*. The 23 unbuilt tabs split
 cleanly:
 
 - **10 have no backend at all** (Logistics, Analytics, Stories, Social ×3, Languages, Strategy,
@@ -492,7 +496,7 @@ Pricelists, Auction Sales. All backend-blocked; leave them as `path: null`.
 | --- | --- | --- |
 | **TD-1** | **`npm run build` and `npm run typecheck` fail on macOS and Windows** | `src/features/profile/Acquisitions.tsx` (component) and `src/features/profile/acquisitions.ts` (helpers) differ only in case. On a case-insensitive filesystem TS resolves `import { Acquisitions } from './Acquisitions'` to the *helper* module: `TS2724` + `TS1261`. CI runs Ubuntu, so it is **green in CI and red on every Mac** — the exact failure mode the repo's own CI comment warns about. Fix: rename one module (e.g. `acquisitions.ts` → `acquisitionRows.ts`). ~3 lines. |
 | **TD-2** | **`main` is 72 commits behind `development`** | Anyone auditing, branching from, or deploying `main` gets a one-page admin panel. Release or document the gap. |
-| **TD-3** | **Bank details in `localStorage`** | `IssueDocumentPage.tsx` `readBank`/`saveBank` keep the payee account holder, bank, card and IBAN per-device. A second admin issuing an invoice gets blanks; a cleared browser loses them. Belongs under `theme.*` (App Design) or its own endpoint. |
+| **TD-3** | **Bank details in `localStorage`** | `exhibitions/IssueDocumentPage.tsx` (the path this row first gave was one folder too shallow) `readBank`/`saveBank` keep the payee account holder, bank, card and IBAN per-device. A second admin issuing an invoice gets blanks; a cleared browser loses them. Belongs under `theme.*` (App Design) or its own endpoint. |
 
 ### Recommended cleanup
 
@@ -676,22 +680,75 @@ Dependency-ordered. The desk kit exists, so each phase is assembly.
       one uniform charcoal edge to edge. The paint now belongs to `.ad-shell`, which fills
       the viewport; `.ad-page` is transparent. Verified in both skins, and the collector
       app is untouched.
-  - **Not yet compared capture-by-capture:** the remaining ~27 desks. They render and are
-    covered by the walk; their pixel-level comparison is what is left of this phase.
-    Two desks are one difference short of done, both **recorded, not fixed**:
-    - **Documents** — the old sub-tabs include **Create** and **Pricelists & saved items**,
-      which this port does not have and, unlike its other omissions, does not say why.
-    - **Market App** — its header says the old desk's every-published-work tile "stays
-      unavailable until G-CAT-2's `is_published` filter exists". **That filter now exists**
-      (`published`, backend G-2, #66) — but only on `ArtworkAdminFilterSet`, and this desk
-      deliberately reads the *collector* catalogue so it gets images and resolved artists.
-      So the tile is now **buildable at a cost** (a second call to the admin list, or
-      moving the desk onto it and losing the images), rather than blocked. That is a scope
-      decision, not a bug, which is why it is here and not in the diff.
-- **Still open in this phase:** that remaining comparison, and TD-8 (`admin.css` is one
-  3,700-line file).
+### Phase 6 DoD — met, 2026-09-22 (second pass)
 
-### Phase 6b — the deletes the old panel has (½ day) · **needs G-DEL-1 approved**
+The remaining desks were compared, and the comparison was made **repeatable** first:
+`e2e/capture-desks.mjs` shoots every built desk at the reference harness's own settings
+(1440x900, dark, `design/admin-panel/capture-admin-screens.mjs:55`) against the E2E stub, so
+"open the two side by side" is a command rather than an afternoon of driving a browser. It
+runs empty — the stub answers an empty list for everything — which is exactly what supports
+the comparison that matters for a port: the **inventory** (headings, sub-lines, sub-tabs,
+filters, toolbar actions, column headers, empty copy). A populated row stays the
+real-backend tier's job.
+
+**Three findings were cross-cutting, not per-desk** — each invisible in source and each
+found by looking:
+
+1. **`DeskPage` had no `subtitle` slot**, so all 33 desk sub-lines were written into
+   `children` and rendered AFTER `.ad-toolbar`; on the fourteen desks with both, the line's
+   `margin-top: -12px` pulled it up into the filters. Slot added, all 33 moved.
+2. **`DeskPage` had no `strip` slot either**, so the same thing happened to the count-tile
+   strips: you filtered first and read the totals second, on all four desks that carry one.
+   Accounting is the deliberate exception and its slot doc says why — its totals are
+   *scoped by* its filters.
+3. **A second subtitle class.** `.ad-deskintro` was doing `.ad-desksub`'s job in seven
+   places with its own `max-width: 68ch`, which is why the Settings line wrapped at half the
+   desk's width.
+
+**The old panel has seventeen desk sub-lines, not "two".** Yesterday's pass recorded the
+Dashboard's as "one of only two in the whole old panel"; `grep` for the style it is written
+in finds seventeen. Three more desks had dropped theirs entirely — **Live Auctions**
+(`:31734`), **Artists** (`:33593`) and **Accounting**, which had lost all six of its
+per-book/per-view lines (`acctHead`, `:23328-23335`). **Galleries** had not dropped its own
+so much as never had it: that tab and Sources & Partners are one route, and both drew the
+partners desk's heading and line.
+
+**Built in this pass** (each the old panel's own control, none invented):
+
+| Desk | What | Why it was missing |
+| --- | --- | --- |
+| Auction Records | the ★ Highlights filter | `is_highlight` was already in the query type and nothing exposed it |
+| Chat | the search box | listed as unbuildable; **G-5** landed `?search=` on that endpoint and nobody came back |
+| Documents | the **Create** tab | the desk exists as `/admin/issue`; the Documents group lost the entry point when it moved to Galleries |
+| Deal · Auction · Document | the three deletes | **G-DEL-1**, approved — see Phase 6b, now done |
+
+**Copy restored verbatim** where it had drifted: Market Sales' "Payment pending" tile,
+Memberships' sub-line / "＋ Add member" / empty state, Collector Club's empty state.
+**Rendering fixed**: Data Health drew a 40px centred empty-state block per clean check —
+three checks, three screenfuls of whitespace — where the old desk draws compact rows.
+
+**New gaps recorded** (§8 has none of these as decisions yet; they are stated where the
+desk is, and listed here so they are findable): G-AUC-4 (no `archived` on an auction),
+G-CLUB-2 (the Club's tile strip — an owner call, like G-4), G-CLUB-3 (no invitation-only
+auctions), G-REC-1 (no auction-house facet), G-MEMB-1 / G-MEMB-2 (the Memberships strip and
+its missing start date), G-CHAT-2 (nothing archives a message), **G-HEALTH-1** (eight of the
+old Data Health counts are real catalogue counts and are absent with no reason recorded —
+the largest of them).
+
+**Verified and passing:** G-1 is applied consistently — no desk rendering a table is
+missing `wide`.
+
+**Still open in this phase:** TD-8 (`admin.css` is one 3,700-line file). The Market App
+tile below remains a scope decision rather than a bug:
+
+- **Market App** — its header says the old desk's every-published-work tile "stays
+  unavailable until G-CAT-2's `is_published` filter exists". **That filter now exists**
+  (`published`, backend G-2, #66) — but only on `ArtworkAdminFilterSet`, and this desk
+  deliberately reads the *collector* catalogue so it gets images and resolved artists.
+  So the tile is **buildable at a cost** (a second call to the admin list, or moving the
+  desk onto it and losing the images), rather than blocked.
+
+### Phase 6b — the deletes the old panel has (½ day) · ✅ **done 2026-09-22**
 
 - **Goal:** build the three destructive row actions the old panel ships and this port
   skipped — found by resolving TD-6, not by the original survey.
@@ -700,8 +757,17 @@ Dependency-ordered. The desk kit exists, so each phase is assembly.
   layer **already binds**, with `ConfirmDialog` already in the kit, and each has the old
   panel's own confirm copy to port verbatim.
 - **Why it is its own step:** adding permanent-delete buttons to three desks is not a
-  polish pass, and the document one needs a ruling (below).
+  polish pass, and the document one needed a ruling.
 - **Complexity:** Low. **Depends on:** Phase 6.
+- **Done 2026-09-22**, G-DEL-1 approved by the owner. All three built with the old confirm
+  copy verbatim. The document delete takes the **stricter** of the two rules, as G-DEL-1
+  proposed: owner-only in the desk, over an endpoint that is `IsStandardAdminOrOwner` — so
+  it is a UI gate, and enforcing it properly is still server-side work. The deal delete is
+  owner-only because its endpoint already is; the auction delete has no gate, matching the
+  old `×`. Verifying them found a live crash on a released desk: the Private Deals view read
+  its summary the way §9a's ledger bug read its own, and the walk had never opened it
+  because `/admin/accounting`'s three other views are `?view=` on the same route. Fixed,
+  and all four views are in the walk.
 
 ### Phase 7 — Deferred, on approval only
 
@@ -745,6 +811,9 @@ they are more work than everything else in this plan combined.
 | **G-4** | Collectors overview strip and card face? | Strip with the 2 answerable tiles; keep the table |
 | **G-5** | Search on the admin request feed? | **Yes — required for V1** |
 | **G-6** | Build Intelligence / Marketing / Document Builder in V1? | **No — defer all three** ✅ *decided 2026-09-21: deferred* |
-| **G-DEL-1** | Build the three deletes the old panel has (deal · auction · document)? | **Yes**, old confirm copy verbatim, owner-gated on documents |
+| **G-DEL-1** | Build the three deletes the old panel has (deal · auction · document)? | **Yes**, old confirm copy verbatim, owner-gated on documents ✅ *decided and built 2026-09-22* |
 | **G-LOCK-1** | Backend: put the optimistic lock on Accounting and Auction Records? | Yes for the ledger at least — a silent overwrite there costs money |
 | **D18** | Document Builder's PDF renderer | `@react-pdf/renderer`, after checking bundle cost |
+| **G-HEALTH-1** | Build the eight Data Health counts that are real catalogue counts? | Yes — but as **one** aggregate on the existing data-health endpoint, not eight client reads |
+| **G-CLUB-2** | Collector Club's 3-tile strip? | The G-4 answer: the answerable tiles only, or none — "private auctions" has no backend |
+| **G-MEMB-1** | Memberships' 4-tile strip? | Two of the four are answerable; Premium is not, because `plan` is the collector tier set |

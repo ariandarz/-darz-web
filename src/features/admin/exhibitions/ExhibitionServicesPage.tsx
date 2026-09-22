@@ -207,12 +207,13 @@ export function ExhibitionServicesPage() {
           onChange={(v) => setQuery(v ?? '')}
         />
       }
+      subtitle={
+        <>
+          What Darz offers a gallery, and what each one costs. Every proposal and invoice is
+          built from this list — change a price here and the next document follows.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        What Darz offers a gallery, and what each one costs. Every proposal and invoice is
-        built from this list — change a price here and the next document follows.
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
 
       {editing === 'new' && (

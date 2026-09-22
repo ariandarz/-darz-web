@@ -13,12 +13,30 @@
  *    is never visible until issued; confirm locks; the gallery-signs half
  *    of the old sentence waits on the portal (Phase 10).
  *
- * **Not ported, stated:** the History tab — its "issued documents" half IS
- * this list (one model now); its activity half waits on an audit feed
- * (G-DOC-2). The Document Builder tab is the Studio and waits on D18 (the
- * PDF renderer decision) — the backend's own contract says "the PDF is
- * rendered client-side… uploaded here", so the desk today uploads a
- * hand-rendered PDF and the Studio will plug into the same endpoint.
+ * **The group's six sub-tabs, one by one** (`:11732-11736`) — written out
+ * 2026-09-22, because comparing against `45-documents-library` showed this
+ * row with three tabs against the old six, and two of the three missing had
+ * no reason recorded anywhere a reader would look:
+ *
+ *  1. **Create** — built, as `/admin/issue`. It had been reachable only from
+ *     the Galleries group; the Documents group now lists it again under the
+ *     old panel's own label (`adminNav.ts`).
+ *  2. **Proposals** · 3. **Invoices** — this desk, pre-filtered by `?kind=`
+ *     (the old sticky sub-tab; one page in both panels).
+ *  4. **Library & history** — this desk unfiltered. The label loses "&
+ *     history" because History is its own tab below.
+ *  5. **Pricelists & saved items** — **not built, backend-blocked.** Phase 21
+ *     (the two builders and `savedItems`) does not exist; `adminNav.ts`
+ *     carries the tab with `path: null` and that reason, so the navbar hides
+ *     it rather than stubbing it (owner decision D9).
+ *  6. **Document Builder** — the Studio; waits on **D18**, the client-side
+ *     PDF renderer decision. The backend's own contract is "the PDF is
+ *     rendered client-side… uploaded here", so this desk already uploads a
+ *     hand-rendered PDF and the Studio plugs into the same endpoint.
+ *
+ * And the tab the old row does not have: **History** — its "issued
+ * documents" half IS this list (one model now); its activity half waits on
+ * an audit feed (G-DOC-2).
  */
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -152,15 +170,16 @@ export function DocumentsPage() {
           choices={COMMON_KINDS.map((k) => ({ value: k, label: k }))}
         />
       }
+      subtitle={
+        <>
+          Each document is numbered once (its reference) and kept in versions. A draft is
+          editable and never visible until issued; <b>Confirm</b> needs an uploaded PDF and
+          locks the record; <b>Sign</b> follows confirmation. The backend never renders a
+          document — the PDF is made client-side and uploaded (the Studio, D18, plugs into the
+          same contract).
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Each document is numbered once (its reference) and kept in versions. A draft is
-        editable and never visible until issued; <b>Confirm</b> needs an uploaded PDF and locks
-        the record; <b>Sign</b> follows confirmation. The backend never renders a document —
-        the PDF is made client-side and uploaded (the Studio, D18, plugs into the same
-        contract).
-      </p>
-
       {creating && (
         <NewDocumentForm
           initialKind={kindParam}

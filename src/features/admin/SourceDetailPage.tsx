@@ -91,17 +91,18 @@ export function SourceDetailPage() {
           {link.status}
         </span>
       }
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/sources')}
+          >
+            ← All partners
+          </button>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate('/admin/sources')}
-        >
-          ← All partners
-        </button>
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
 
       {/* ---- the record ---- */}

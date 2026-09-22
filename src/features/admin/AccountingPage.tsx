@@ -210,6 +210,7 @@ export function AccountingPage() {
       <DeskPage
         wide
         title="Accounting"
+        subtitle={accountingIntro(view, book)}
         action={
           <span className="ad-rowacts">
             <ViewSeg view={view} setParams={setParams} />
@@ -232,6 +233,7 @@ export function AccountingPage() {
     <DeskPage
       wide
       title="Accounting"
+      subtitle={accountingIntro(view, book)}
       action={
         <span className="ad-rowacts">
           <ViewSeg view={view} setParams={setParams} />
@@ -381,6 +383,39 @@ function ViewSeg({
       }}
     />
   );
+}
+
+/**
+ * The old desk's per-view intro line (`acctHead`, `darz-studio.html:23328-23335`)
+ * — a different sentence for every book and every sub-tab, and this desk had
+ * **none of them**. Found 2026-09-22 against `31-accounting`, which shows the
+ * line sitting under the sub-nav on every view.
+ *
+ * Each is ported to its first sentences and no further. Every one of the six
+ * ends with the same clause — "behind your passkey, synced privately across
+ * your own devices and backed up daily" — and that clause is the old app's
+ * localStorage-and-passkey architecture, not a promise this backend makes:
+ * there is no passkey here (the desk is owner-only through the API's own
+ * `IsOwner`), nothing syncs between devices because there is one database,
+ * and the daily backup is that database's, not this desk's. Repeating it
+ * would be telling an owner their money is protected by a mechanism that does
+ * not exist.
+ *
+ * The books view takes its line from the BOOK, the way the old desk does;
+ * `koocheh` and `personal` have their own, and `darz` gets the default.
+ */
+function accountingIntro(view: AccountingView, book: string): string {
+  if (view === 'deals')
+    return 'Privately manage your individual art deals — artwork, buyer, seller, commission, costs and profit — each one a simple, flexible file. Fill in only what you need; the totals update as you go.';
+  if (view === 'duplicates')
+    return 'Every payment Arian made, entered from the receipts one by one — who was paid, how much, why, for which project, with the tracking number, bank and method from the receipt. Each payment carries a duplicate-check status and an accounting status, so a receipt reviewed twice is flagged, never double-counted.';
+  if (view === 'settlement')
+    return 'A private worksheet to organise the Darz ownership settlement — costs by year, unpaid salary, partner contributions, inflation & interest, and a live final figure. Every number editable, totals live.';
+  if (book === 'koocheh')
+    return 'A separate book for the Koocheh brand — its own income, costs and totals, kept entirely apart from Darz. Add entries in seconds and export a clean report whenever you need one.';
+  if (book === 'personal')
+    return 'Your personal money — rent, debts, shopping and every other cost — in its own private book, separate from Darz and Koocheh. Track what you spend, what’s still owed, and where it goes.';
+  return 'Your private money desk. Add income and costs in seconds, watch the monthly totals, and export a clean report whenever you need one.';
 }
 
 /** The desk's four sub-tabs. The old desk's own sub-nav had the four books,

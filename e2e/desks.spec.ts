@@ -43,6 +43,11 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/auction-records', 'Auction Records'],
   ['/admin/auction-records/new', 'New auction record'],
   ['/admin/sources', 'Galleries & Sources'],
+  // The nav's OTHER tab on this route. It is the same desk filtered to
+  // galleries and it carries its OWN heading and sub-line, which is the
+  // fidelity fix of 2026-09-22 — walking only the bare path let both tabs
+  // draw the partners desk's copy for as long as they did.
+  ['/admin/sources?type=gallery', 'Galleries'],
   ['/admin/exhibition-services', 'Exhibition Services'],
   ['/admin/issue', 'Issue a document'],
   ['/admin/sales', 'Market Sales'],
@@ -54,6 +59,14 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/team', 'Team'],
   ['/admin/settings', 'Settings'],
   ['/admin/accounting', 'Accounting'],
+  // The Accounting desk is FOUR desks on one route, switched by `?view=`
+  // (`accountingView()` in `AccountingPage.tsx`). Walking the bare path only
+  // ever opened `books`, which is how the Private Deals view kept a live
+  // `.length`-on-undefined — §9a's own bug, one desk over — through the first
+  // full walk and a release. A query-param view is a desk.
+  ['/admin/accounting?view=deals', 'Accounting'],
+  ['/admin/accounting?view=duplicates', 'Accounting'],
+  ['/admin/accounting?view=settlement', 'Accounting'],
   ['/admin/accounting/deals/new', 'New private deal'],
   ['/admin/projects', 'Projects'],
   ['/admin/projects/list', 'Projects'],

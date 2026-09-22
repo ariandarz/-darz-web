@@ -244,22 +244,24 @@ export function ExhibitionComposePage() {
           {choiceLabel(options, 'gallery.exhibition_request_status', ev.request_status)}
         </span>
       }
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate(`/admin/sources/${linkId || ev.link}`)}
+          >
+            ← {partner}
+          </button>{' '}
+          ·{' '}
+          {[ev.event_date, ev.venue, ev.artists].filter(Boolean).join(' · ') ||
+            'no details yet'}
+          {ev.gallery_updated_at
+            ? ` · gallery last edited ${fmtDate(ev.gallery_updated_at)}`
+            : ''}
+        </>
+      }
     >
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate(`/admin/sources/${linkId || ev.link}`)}
-        >
-          ← {partner}
-        </button>{' '}
-        ·{' '}
-        {[ev.event_date, ev.venue, ev.artists].filter(Boolean).join(' · ') || 'no details yet'}
-        {ev.gallery_updated_at
-          ? ` · gallery last edited ${fmtDate(ev.gallery_updated_at)}`
-          : ''}
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
       {notice && (
         <div className="ad-remind">
