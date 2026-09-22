@@ -123,6 +123,21 @@ build keep it honest.
    collector features, and Phase 7 (Intelligence / Marketing / Document Builder) only if **G-6**
    is ever reversed.
 
+**Deploy (frontend Phase 14) — the Vercel block cleared 2026-09-22.** The owner created the
+`darz-web` project on the team and imported the repo, so `main` now auto-deploys:
+**https://darz-web.vercel.app**, verified serving `c79d91d` and then `b436f40`. The two-year
+"blocked on a Vercel team role" item is closed. **The deploy is still visual-only** —
+`.env.production` is the deliberate `api.invalid` placeholder, because `darzmarket-api` has no
+public URL (its own Phase 18). Layout, chrome, routing, both themes and the fonts are real;
+sign-in and data are not.
+
+**Next: ArvanCloud, frontend only** (owner's decision, 2026-09-22 — the backend is not moving
+for now). `docs/DEPLOY_ARVAN.md` is the guide, and the repo already carries what it needs: the
+fonts are self-hosted, and `Dockerfile` + `nginx.conf` reproduce the Vercel setup. **Neither has
+been run** — the session that wrote them had no Docker daemon — so one `docker build` and one
+`curl` of a deep route comes first. Note what §1 of that guide says about scope: with the backend
+staying put, the ArvanCloud site is the same visual-only build, just served from inside Iran.
+
 **Open for the owner after this round** (each stated on the desk it belongs to, and listed in
 `docs/ADMIN_V1_AUDIT.md` §10): **G-HEALTH-1** (eight of the old Data Health counts are real
 catalogue counts and are absent — the largest of them), **G-CLUB-2** and **G-MEMB-1** (two more
