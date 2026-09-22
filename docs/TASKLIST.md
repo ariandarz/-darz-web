@@ -1075,25 +1075,26 @@ surface before building each. Ordered by V1 relevance:
 - [x] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
       full faithful port. Data Health + Import shipped in Phase 11b, Projects in Phase 11c
       (2026-09-19) — this bullet stays only as the Phases-12+ cross-reference.
-- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — not built.
-      **Scoped 2026-09-22; it is the only remaining item that is buildable at all, and it needs
-      three answers before it is worth starting.**
+- [~] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 — **the engine is built and shipped
+      OFF, 2026-09-22.** `src/i18n/`: the old app's language registry (`en · fa · fr · es · ar`),
+      its full 144-entry dictionary ported verbatim, `I18nController` on the shared `Observable`
+      base, a `useT()` hook, and `<html lang/dir>` applied at boot. The nav is wired as the first
+      surface. **Default is unchanged behaviour**: with no `theme.langs` the app is English-only,
+      `?lang=` is ignored, and an E2E test guards that.
 
-      What exists to port, which is more than the `[!]` suggests: the old app ships a real engine
-      (`darz_i18n.js`, 31KB) with five language blocks — `en · fa · fr · es · ar` — and
-      `app.html:9872-9878` wires a language picker to it. So this would be a port, not an
-      invention.
+      **Mechanism deliberately differs from the old app's, and that is the one liberty taken.**
+      `darz_i18n.js` translates by sweeping the DOM after every render; in React that fights the
+      renderer (a MutationObserver rewriting text React owns is undone on the next commit). Same
+      dictionary, same theme keys, same defaults — substitution moved to a `t()` lookup.
 
-      What makes it a decision rather than a task: **the old app ships it OFF.**
-      `showLangSetting` defaults to `'Hidden'`, `theme.i18n` defaults to `{}`, and the file's own
-      comment at `:9944` says *"the app is English-only for now"*. A faithful port therefore
-      defaults to hidden too — i.e. a multi-day change across ~430 user-visible strings that
-      nobody sees until the owner turns it on.
-
-      **Owner decisions needed:** (1) which of the five languages actually ship; (2) whether Farsi
-      and Arabic get real RTL layout, which is a design question the old app's LTR-only CSS does
-      not answer; (3) whether the picker ships visible or stays behind `showLangSetting` as it is
-      there. Without (2) especially, the work would very likely be redone.
+      **Still open, and now with evidence — G-I18N-1.** Enabling Farsi was verified in a browser:
+      direction flips, the nav translates, the layout mirrors. But the ~430 strings NOT yet wired
+      to `t()` stay English, and English inside an RTL container produces bidi artifacts — a
+      screenshot showed the hero lede rendering as `.Contemporary Iranian works…` with its period
+      moved to the left. So the remaining work is not "translate the strings", it is **two
+      decisions**: (1) which languages actually ship, and (2) whether RTL gets a real layout audit
+      (the old engine injects a stylesheet of RTL overrides that this port does not carry). Wiring
+      call sites before (2) is answered is what would cause rework.
 
 ## Phase 13 — Testing
 

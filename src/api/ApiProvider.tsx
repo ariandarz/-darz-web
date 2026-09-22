@@ -9,6 +9,7 @@ import { ApiContext } from './apiContext';
 import { api as defaultApi, DarzApi } from './index';
 import { applyRuntimeFeatures } from '../features/shell/features';
 import { applyOwnerSettings } from '../features/shell/ownerSettings';
+import { i18n } from '../i18n';
 
 export function ApiProvider({
   children,
@@ -38,6 +39,12 @@ export function ApiProvider({
         applyRuntimeFeatures(theme?.features);
         // The non-feature half of the same object — see `ownerSettings.ts`.
         applyOwnerSettings(theme);
+        // Language settles here, after the theme, for the same reason the
+        // features do: `theme.langs` decides which languages exist at all, and
+        // resolving before it would always answer English. With no theme —
+        // the default today — that IS the answer, and nothing changes.
+        i18n.start(window.location.search);
+        i18n.applyDocument();
       })
       .catch(() => {});
     Promise.allSettled([api.session.resume(), theme]).then(() => {

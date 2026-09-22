@@ -18,6 +18,7 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
+import { useT } from '../../i18n';
 import { Wordmark } from '../../components';
 import { ReplyNotice } from '../chat/ReplyNotice';
 import { useConversations } from '../conversations/useConversations';
@@ -63,6 +64,7 @@ const LEAVE_ICON = (
 );
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const translate = useT();
   const location = useLocation();
   const navigate = useNavigate();
   const { auth } = useApi();
@@ -183,7 +185,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <span className="navdot" aria-hidden="true" />
                 ) : null}
               </span>
-              <span className="lb">{t.label}</span>
+              {/* The nav is the first surface wired to the dictionary — its
+                  labels are literally its first six entries (`dictionary.ts`).
+                  With no `theme.langs` this returns the English unchanged, so
+                  it is a no-op until the owner enables a language. */}
+              <span className="lb">{translate(t.label)}</span>
             </button>
           ))}
       </nav>
