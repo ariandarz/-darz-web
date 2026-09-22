@@ -14,6 +14,24 @@ opening one named file, not by searching 43,789 lines of HTML.
 
 ## How to compare a desk
 
+**Shoot this panel first** — `e2e/capture-desks.mjs` (added 2026-09-22) walks every built desk
+at the reference harness's own settings (1440x900, dark, deviceScaleFactor 1) and writes
+`dist-desk-shots/<capture-id>.png`, named so it sits next to the capture it is compared
+against:
+
+```bash
+node e2e/stub-server.mjs &
+npx vite preview --outDir dist-e2e --host 127.0.0.1 --port 4173 &
+node e2e/capture-desks.mjs            # all of them
+ONLY=31-accounting node e2e/capture-desks.mjs   # just one
+```
+
+It runs against the E2E stub, so every desk is in its EMPTY state while the reference is
+seeded. That supports the comparison that matters for a port — headings, sub-lines, sub-tabs,
+filters, toolbar actions, column headers, empty copy — and not a populated row, a chart with
+bars in it, or anything whose shape depends on data. Those stay the real-backend tier's job
+(`e2e/README.md`).
+
 1. Find the desk below and note its capture id.
 2. Open `../DarzStudio/design/admin-panel/screenshots/desktop/dark/<id>.jpg` — **dark first**: the
    old panel ships dark and *locked* (`forceDarkAdmin` defaults on), so that is what an admin
