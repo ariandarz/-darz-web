@@ -9,8 +9,8 @@
  * whenever someone taps their own form.
  */
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import { Sheet } from './overlays';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Sheet, Toast } from './overlays';
 
 function setup(open = true) {
   const onClose = vi.fn();
@@ -105,5 +105,66 @@ describe('what it announces', () => {
       </Sheet>,
     );
     expect(container.querySelector('.dz-seamline')).not.toBeNull();
+  });
+});
+
+/**
+ * `Toast` — the collector app's bottom pill (`app.html:1246`).
+ *
+ * Its whole behaviour is one timer, and a timer has three ways to be wrong:
+ * it never fires, it fires after the component is gone, or it re-arms on every
+ * render and so never actually elapses. Fake timers make all three visible.
+ */
+describe('Toast', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('closes itself after the duration', () => {
+    const onClose = vi.fn();
+    render(<Toast message="Saved" open duration={2600} onClose={onClose} />);
+    expect(onClose).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2599);
+    expect(onClose).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('starts no timer while closed', () => {
+    const onClose = vi.fn();
+    render(<Toast message="Saved" open={false} onClose={onClose} />);
+    vi.advanceTimersByTime(10_000);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('treats duration 0 as "stays until dismissed"', () => {
+    const onClose = vi.fn();
+    render(<Toast message="Saved" open duration={0} onClose={onClose} />);
+    vi.advanceTimersByTime(60_000);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('does not fire after unmount', () => {
+    // The leak: a toast dismissed by a route change would otherwise call back
+    // into a gone component.
+    const onClose = vi.fn();
+    const { unmount } = render(<Toast message="Saved" open onClose={onClose} />);
+    unmount();
+    vi.advanceTimersByTime(10_000);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('is announced politely, and only shown when open', () => {
+    const { container, rerender } = render(<Toast message="Saved" open={false} />);
+    const el = container.firstElementChild!;
+    expect(el).toHaveAttribute('role', 'status');
+    expect(el).toHaveAttribute('aria-live', 'polite');
+    expect(el.className).not.toContain('show');
+    rerender(<Toast message="Saved" open />);
+    expect(el.className).toContain('show');
+  });
+
+  it('survives having no onClose at all', () => {
+    render(<Toast message="Saved" open duration={100} />);
+    expect(() => vi.advanceTimersByTime(200)).not.toThrow();
   });
 });
