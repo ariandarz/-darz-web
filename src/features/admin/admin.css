@@ -697,6 +697,16 @@ html.dz-bw .dz-page.ad-page {
   font-size: 12px;
   color: var(--ink3);
 }
+/* A check with nothing to report. Sits on the same line rhythm as a check
+   that DOES have rows (`.ad-recrow`), so three clean checks read as a short
+   list rather than three empty screens — the old desk's System Checks shape
+   (`19-data-health-full`). */
+.ad-dsec-clean {
+  margin: 0;
+  padding: 2px 2px 0;
+  font-size: 12px;
+  color: var(--status-avail);
+}
 .ad-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -920,7 +930,12 @@ html.dz-bw .dz-page.ad-page {
 .ad-sent {
   font-size: 12px;
   color: var(--status-avail);
-  margin: 8px 2px 0;
+  /* 14px under, not 0. With no bottom margin this line sat flush against
+     whatever followed it, which on Data Health meant "Everything checks out"
+     and the first check's heading reading as one block. The two places it
+     is the LAST thing on a page (App Design's save notice, a sent reply) are
+     unaffected — nothing follows them to be pushed. */
+  margin: 8px 2px 14px;
 }
 
 /* ---- Step 2: Collectors + Access Requests ------------------------------- */
