@@ -204,14 +204,17 @@ export function SalesPage() {
           (G-SALE-2).
         </>
       }
+      strip={
+        <>
+          <div className="ad-tiles ad-tiles-sales">
+            <Stat label="Open deals" value={open} />
+            <Stat label="Payment pending" value={payPending} tone="attn" />
+            <Stat label="Completed" value={counts?.completed} tone="ok" />
+            <Stat label="Lost" value={counts?.lost} />
+          </div>
+        </>
+      }
     >
-      <div className="ad-tiles ad-tiles-sales">
-        <Stat label="Open deals" value={open} />
-        <Stat label="Payment pending" value={payPending} tone="attn" />
-        <Stat label="Completed" value={counts?.completed} tone="ok" />
-        <Stat label="Lost" value={counts?.lost} />
-      </div>
-
       {creating && (
         <NewDealForm
           onClose={() => setCreating(false)}

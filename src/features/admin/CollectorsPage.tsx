@@ -209,6 +209,23 @@ export function CollectorsPage() {
           pricelists and activity.
         </>
       }
+      strip={
+        <>
+          {/* `:32634`'s overview strip. The tiles read the whole roster, not the
+          filtered page — see `collectorTiles.ts`. */}
+          <div className="ad-tiles ad-tiles-sales">
+            {collectorTiles(counts).map((t) => (
+              <div key={t.key} className="ad-tile">
+                <span className="ad-tile-v">{t.value}</span>
+                <span className="ad-tile-l">
+                  {t.label}
+                  {t.note ? ` · ${t.note}` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      }
     >
       {creating && (
         <CollectorForm
@@ -220,20 +237,6 @@ export function CollectorsPage() {
           }}
         />
       )}
-
-      {/* `:32634`'s overview strip. The tiles read the whole roster, not the
-          filtered page — see `collectorTiles.ts`. */}
-      <div className="ad-tiles ad-tiles-sales">
-        {collectorTiles(counts).map((t) => (
-          <div key={t.key} className="ad-tile">
-            <span className="ad-tile-v">{t.value}</span>
-            <span className="ad-tile-l">
-              {t.label}
-              {t.note ? ` · ${t.note}` : ''}
-            </span>
-          </div>
-        ))}
-      </div>
 
       <DeskList
         label="Collectors"

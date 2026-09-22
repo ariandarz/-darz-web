@@ -119,17 +119,20 @@ export function PublishedPage() {
           through the <Link to="/admin/club">Collector Club</Link>, not this public list.
         </>
       }
+      strip={
+        <>
+          <div className="ad-tiles ad-tiles-sales">
+            <Stat label="In the public catalogue" value={total} />
+            <Stat
+              label="Hidden by a gap"
+              value={health ? health.published_but_hidden.count : undefined}
+              tone={health && health.published_but_hidden.count > 0 ? 'attn' : undefined}
+              hint="published with zero images — collectors can never see them (Data Health)"
+            />
+          </div>
+        </>
+      }
     >
-      <div className="ad-tiles ad-tiles-sales">
-        <Stat label="In the public catalogue" value={total} />
-        <Stat
-          label="Hidden by a gap"
-          value={health ? health.published_but_hidden.count : undefined}
-          tone={health && health.published_but_hidden.count > 0 ? 'attn' : undefined}
-          hint="published with zero images — collectors can never see them (Data Health)"
-        />
-      </div>
-
       {error && <DeskBanner>{error}</DeskBanner>}
       {state.status === 'loading' && !state.results.length && (
         <p className="dz-state">Loading…</p>

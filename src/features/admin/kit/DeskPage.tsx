@@ -19,6 +19,7 @@ import '../admin.css';
 export function DeskPage({
   title,
   subtitle,
+  strip,
   action,
   toolbar,
   wide = false,
@@ -40,6 +41,26 @@ export function DeskPage({
    * source, and exactly the class of miss CLAUDE.md rule 5 exists for.
    */
   subtitle?: ReactNode;
+  /**
+   * The desk's overview strip — the row of count tiles several desks open
+   * with (`.ad-tiles`).
+   *
+   * A slot for the same reason `subtitle` is one, and found the same way:
+   * the old panel puts the strip **between the sub-line and the filter bar**,
+   * every time it has one — Market Sales (`dzs-head` → `dzs-stats` →
+   * `dzs-bar`), Market App, Memberships, Collectors. A desk writing it as its
+   * first child put it AFTER the toolbar, so on all four of this port's
+   * strip-carrying desks you filtered first and read the totals second.
+   * Found 2026-09-22 against `06-market-published`.
+   *
+   * **Accounting is the exception and must stay one.** Its old desk
+   * (`31-accounting`) runs sub-line → filters → totals → quick-add, because
+   * those totals are *scoped by* the filters above them — month, category,
+   * person, status — so reading them before setting the filter would be
+   * reading the wrong number. It keeps its tiles in `children`, after its own
+   * filter row, and should not be moved into this slot.
+   */
+  strip?: ReactNode;
   /** The desk's primary action, if it has one — rendered beside the heading. */
   action?: ReactNode;
   /** Filters: see `filters.tsx`. Omitted entirely when a desk has none. */
@@ -68,6 +89,7 @@ export function DeskPage({
         {action}
       </div>
       {subtitle && <p className="ad-desksub">{subtitle}</p>}
+      {strip}
       {toolbar && <div className="ad-toolbar">{toolbar}</div>}
       {children}
     </div>
