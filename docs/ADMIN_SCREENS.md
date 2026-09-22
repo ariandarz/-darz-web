@@ -47,6 +47,7 @@ A route of — means the desk is not built; the capture still exists for when it
 | Published works (`market`) | `/admin/published` | `06-market-published` | — |
 | App Design (`design`) | `/admin/design` | `07-app-design` | ✅ |
 | **Documents** | | | |
+| Create (`issue`) | `/admin/issue` | `42-documents-create` | — |
 | Proposals (`docProposals`) | `/admin/documents?kind=proposal` | `43-documents-proposals` | — |
 | Invoices (`docInvoices`) | `/admin/documents?kind=invoice` | `44-documents-invoices` | — |
 | Library (`docFiles`) | `/admin/documents` | `45-documents-library` | — |
@@ -108,7 +109,7 @@ A route of — means the desk is not built; the capture still exists for when it
 | Desk | Why there is no reference |
 | --- | --- |
 | **Exhibition Services** (`exhservices`) | No old-panel page. The old exhibition service list lives in `gallery-update.html`'s `EXH_SVC` (:733-741) and was promoted to its own section here on the owner's instruction, 2026-09-19. Compare against that file, not the panel. |
-| **Issue a document** (`issue`) | No old-panel page. It collapses the old Documents → Create → Builder path into one route. Its nearest references are `08-documents`, `42-documents-create` and `34-document-builder`. |
+| **Issue a document** (`issue`) | No old-panel page under that name — but the old **Documents → Create** tab is the same job, and `42-documents-create` is its capture, so this row is no longer reference-less (corrected 2026-09-22). The desk collapses the old Documents → Create → Builder path into one route; `08-documents` and `34-document-builder` are the other two thirds. It is listed in both the Galleries group (this row) and the Documents group, as Create. |
 | **History** (`docHistory`) | Not a separate old page either — its issued half **is** the Library list, so it points at `45-documents-library`. |
 | **Proposal** (`projProposal`) | Deliberately not ported: the old free-form Proposal Builder (:14647) is a document editor, and the port issues a proposal from the project record instead. |
 | **Instagram · Content Calendar · AI Settings** (`igStudio`, `socialCal`, `socialAi`) | The old desks exist, but the backend deliberately left them unscoped, so there is nothing to build against yet. Ask for a capture when they are scoped. |
