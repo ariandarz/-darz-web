@@ -18,12 +18,28 @@ import '../admin.css';
 
 export function DeskPage({
   title,
+  subtitle,
   action,
   toolbar,
   wide = false,
   children,
 }: {
   title: ReactNode;
+  /**
+   * The old panel's line under the heading — `<div class="sub">` inside the
+   * desk's head block, e.g. Market Sales at `darz-studio.html:12570`.
+   *
+   * It is a **slot** rather than something a desk writes into `children`, and
+   * that is the whole point: `.ad-desksub` carries `margin-top: -12px` to sit
+   * tight under the heading, which only reads correctly when nothing is
+   * between them. A desk writing it as its first child put it AFTER the
+   * toolbar — so on the fourteen desks that have both, the line rendered
+   * under the filters with its negative margin pulling it into them, instead
+   * of under the heading where the old panel puts it. Found 2026-09-22 by
+   * screenshotting Market Sales against `15-market-sales`; invisible in
+   * source, and exactly the class of miss CLAUDE.md rule 5 exists for.
+   */
+  subtitle?: ReactNode;
   /** The desk's primary action, if it has one — rendered beside the heading. */
   action?: ReactNode;
   /** Filters: see `filters.tsx`. Omitted entirely when a desk has none. */
@@ -51,6 +67,7 @@ export function DeskPage({
         <h1 className="ad-h">{title}</h1>
         {action}
       </div>
+      {subtitle && <p className="ad-desksub">{subtitle}</p>}
       {toolbar && <div className="ad-toolbar">{toolbar}</div>}
       {children}
     </div>

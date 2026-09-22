@@ -116,12 +116,11 @@ export function AccessRequestsPage() {
           )}
         </>
       }
+      subtitle={
+        /* :33119, verbatim */
+        <>Owner-only. Review app sign-in requests and issue a Collector Key in one tap.</>
+      }
     >
-      {/* :33119, verbatim */}
-      <p className="ad-desksub">
-        Owner-only. Review app sign-in requests and issue a Collector Key in one tap.
-      </p>
-
       {issued && (
         <ShownOnceSecret
           label={`Key issued for ${issued.name}`}

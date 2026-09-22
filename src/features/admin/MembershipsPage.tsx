@@ -218,13 +218,14 @@ export function MembershipsPage() {
           />
         </>
       }
+      subtitle={
+        /* the old desk's own on-screen rule, kept (:33127 / backend Phase 30) */
+        <>
+          Payment stays outside the app — after payment, issue the access code here. No payment
+          processing anywhere.
+        </>
+      }
     >
-      {/* the old desk's own on-screen rule, kept (:33127 / backend Phase 30) */}
-      <p className="ad-desksub">
-        Payment stays outside the app — after payment, issue the access code here. No payment
-        processing anywhere.
-      </p>
-
       {(creating || editing) && (
         <MembershipForm
           existing={editing}

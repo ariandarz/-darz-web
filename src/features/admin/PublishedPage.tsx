@@ -111,14 +111,15 @@ export function PublishedPage() {
           placeholder="Search published works…"
         />
       }
+      subtitle={
+        <>
+          The works collectors see in the public catalogue. Publication is its own layer — a
+          work joins from the Database's ✓ APP toggle and is live the moment it is set. A
+          published work with Selected / Private-selection visibility reaches its collectors
+          through the <Link to="/admin/club">Collector Club</Link>, not this public list.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        The works collectors see in the public catalogue. Publication is its own layer — a work
-        joins from the Database's ✓ APP toggle and is live the moment it is set. A published
-        work with Selected / Private-selection visibility reaches its collectors through the{' '}
-        <Link to="/admin/club">Collector Club</Link>, not this public list.
-      </p>
-
       <div className="ad-tiles ad-tiles-sales">
         <Stat label="In the public catalogue" value={total} />
         <Stat

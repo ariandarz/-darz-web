@@ -95,13 +95,18 @@ export function SaleDetailPage() {
     <DeskPage
       title={art ? `${art.artist ? `${art.artist} — ` : ''}${art.title}` : 'Deal'}
       action={<SalePill status={sale.status} label={label(statuses, sale.status)} />}
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/sales')}
+          >
+            ← All deals
+          </button>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        <button type="button" className="ad-ghostbtn" onClick={() => navigate('/admin/sales')}>
-          ← All deals
-        </button>
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
 
       {/* ---- stage & the two setters ---- */}

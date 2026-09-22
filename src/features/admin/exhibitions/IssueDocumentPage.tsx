@@ -364,11 +364,15 @@ export function IssueDocumentPage() {
   }
 
   return (
-    <DeskPage title="Issue a document">
-      <p className="ad-desksub">
-        One page: choose the show, pick the services, see exactly what the client receives, and
-        issue it.
-      </p>
+    <DeskPage
+      title="Issue a document"
+      subtitle={
+        <>
+          One page: choose the show, pick the services, see exactly what the client receives,
+          and issue it.
+        </>
+      }
+    >
       {error && <DeskBanner>{error}</DeskBanner>}
 
       <div className="dzx-split">

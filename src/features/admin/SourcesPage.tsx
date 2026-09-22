@@ -255,13 +255,14 @@ export function SourcesPage() {
           </>
         ) : undefined
       }
+      subtitle={
+        <>
+          Galleries, dealers and artists who share works with Darz — each relationship in one
+          place, with the works they shared and a no-login portal (token + PIN). Deals &amp;
+          commissions and the archive follow with the accounting and portal phases.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Galleries, dealers and artists who share works with Darz — each relationship in one
-        place, with the works they shared and a no-login portal (token + PIN). Deals &amp;
-        commissions and the archive follow with the accounting and portal phases.
-      </p>
-
       {/* :27326 — the reminder banner, on the partners half only */}
       {view === 'partners' && (pendingCount ?? 0) > 0 && (
         <div className="ad-remind">

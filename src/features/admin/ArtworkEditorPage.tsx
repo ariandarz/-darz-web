@@ -226,17 +226,18 @@ export function ArtworkEditorPage() {
           />
         )
       }
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/artworks')}
+          >
+            ← Back to the Database
+          </button>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate('/admin/artworks')}
-        >
-          ← Back to the Database
-        </button>
-      </p>
-
       {conflict && (
         <ConflictBanner
           noun="artwork"

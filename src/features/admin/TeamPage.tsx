@@ -170,12 +170,13 @@ export function TeamPage() {
           />
         </>
       }
+      subtitle={
+        <>
+          Sign-ins for the desk. The old panel's workspace suite (tasks · notes · time ·
+          contacts) has no backend here and is not part of this desk.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Sign-ins for the desk. The old panel's workspace suite (tasks · notes · time ·
-        contacts) has no backend here and is not part of this desk.
-      </p>
-
       {issued && (
         <ShownOnceSecret
           label={`Password for ${issued.email}`}

@@ -200,15 +200,16 @@ export function CollectorsPage() {
           />
         </>
       }
-    >
-      {/* `:32612`'s line under the heading, verbatim. The fidelity pass found
+      subtitle={
+        /* `:32612`'s line under the heading, verbatim. The fidelity pass found
           this desk was one of three that had dropped the old panel's own
-          subtitle. */}
-      <p className="ad-desksub">
-        Every collector as a file — open one to view &amp; edit all their details, purchases,
-        pricelists and activity.
-      </p>
-
+          subtitle. */
+        <>
+          Every collector as a file — open one to view &amp; edit all their details, purchases,
+          pricelists and activity.
+        </>
+      }
+    >
       {creating && (
         <CollectorForm
           title="New collector"

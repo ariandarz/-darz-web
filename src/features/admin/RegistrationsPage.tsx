@@ -191,11 +191,13 @@ export function RegistrationsPage() {
           />
         </>
       }
+      subtitle={
+        <>
+          Paddle requests from the app. Approving assigns the auction's next sequential paddle
+          number — the anonymous paddle the collector bids under.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Paddle requests from the app. Approving assigns the auction's next sequential paddle
-        number — the anonymous paddle the collector bids under.
-      </p>
       {actionError && <DeskBanner>{actionError}</DeskBanner>}
       <DeskList
         label="Registrations"

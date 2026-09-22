@@ -195,16 +195,20 @@ export function DealEditorPage() {
   const currencies = opt('currency');
 
   return (
-    <DeskPage title={isNew ? 'New private deal' : draft.title || 'Private deal'}>
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate('/admin/accounting?view=deals')}
-        >
-          ← All deals
-        </button>
-      </p>
+    <DeskPage
+      title={isNew ? 'New private deal' : draft.title || 'Private deal'}
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/accounting?view=deals')}
+          >
+            ← All deals
+          </button>
+        </>
+      }
+    >
       {error && <DeskBanner>{error}</DeskBanner>}
 
       {deal && <CalcCard deal={deal} />}

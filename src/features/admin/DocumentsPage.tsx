@@ -152,15 +152,16 @@ export function DocumentsPage() {
           choices={COMMON_KINDS.map((k) => ({ value: k, label: k }))}
         />
       }
+      subtitle={
+        <>
+          Each document is numbered once (its reference) and kept in versions. A draft is
+          editable and never visible until issued; <b>Confirm</b> needs an uploaded PDF and
+          locks the record; <b>Sign</b> follows confirmation. The backend never renders a
+          document — the PDF is made client-side and uploaded (the Studio, D18, plugs into the
+          same contract).
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Each document is numbered once (its reference) and kept in versions. A draft is
-        editable and never visible until issued; <b>Confirm</b> needs an uploaded PDF and locks
-        the record; <b>Sign</b> follows confirmation. The backend never renders a document —
-        the PDF is made client-side and uploaded (the Studio, D18, plugs into the same
-        contract).
-      </p>
-
       {creating && (
         <NewDocumentForm
           initialKind={kindParam}

@@ -135,17 +135,18 @@ export function DocumentDetailPage() {
     <DeskPage
       title={doc.title}
       action={<DocPill status={doc.status} signed={!!doc.signed_at} />}
+      subtitle={
+        <>
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/documents')}
+          >
+            ← All documents
+          </button>
+        </>
+      }
     >
-      <p className="ad-desksub">
-        <button
-          type="button"
-          className="ad-ghostbtn"
-          onClick={() => navigate('/admin/documents')}
-        >
-          ← All documents
-        </button>
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
 
       {/* ---- the PDF + lifecycle ---- */}

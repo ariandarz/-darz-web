@@ -317,14 +317,17 @@ export function ProjectsReportsPage() {
   const rows = rollup.rows ? rollupRows(rollup.rows) : [];
 
   return (
-    <DeskPage title="Reports">
-      {/* :15461 */}
-      <p className="ad-desksub">
-        Every deliverable across active projects — owner, due, status and what’s blocked — plus
-        per-project reports and reusable checklist templates. Client reports omit internal
-        cost, margin and notes.
-      </p>
-
+    <DeskPage
+      title="Reports"
+      subtitle={
+        /* :15461 */
+        <>
+          Every deliverable across active projects — owner, due, status and what’s blocked —
+          plus per-project reports and reusable checklist templates. Client reports omit
+          internal cost, margin and notes.
+        </>
+      }
+    >
       <div className="dzp">
         {conflict && (
           <ConflictBanner noun="template" onReload={reloadAll} reloadClassName="dzp-btn sm" />

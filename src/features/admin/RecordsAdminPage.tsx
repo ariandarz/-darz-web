@@ -181,11 +181,13 @@ export function RecordsAdminPage() {
           />
         </>
       }
+      subtitle={
+        <>
+          Third-party auction-house results — the market's memory, kept as comparables. What
+          collectors browse under Records; ★ marks the highlights strip.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Third-party auction-house results — the market's memory, kept as comparables. What
-        collectors browse under Records; ★ marks the highlights strip.
-      </p>
       {actionError && <DeskBanner>{actionError}</DeskBanner>}
       <DeskList
         label="Auction records"

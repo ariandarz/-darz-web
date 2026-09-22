@@ -76,13 +76,14 @@ export function ClubPage() {
       action={
         <DeskAction onClick={() => setEditing('new')}>＋ New private selection</DeskAction>
       }
+      subtitle={
+        <>
+          A named selection grants its works to its collectors — they appear under “Curated for
+          You” in the app. Two selections can share a work and a collector; a grant only lifts
+          when no selection still wants it.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        A named selection grants its works to its collectors — they appear under “Curated for
-        You” in the app. Two selections can share a work and a collector; a grant only lifts
-        when no selection still wants it.
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
       {!selections && !error && <p className="dz-state">Loading…</p>}
       {selections?.length === 0 && !editing && (

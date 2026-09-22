@@ -49,12 +49,13 @@ export function DataHealthPage() {
           Run again
         </DeskAction>
       }
+      subtitle={
+        <>
+          Three checks. The old desk's other five diagnosed the old app's device-sync
+          architecture, which does not exist here — one database, nothing to drift.
+        </>
+      }
     >
-      <p className="ad-desksub">
-        Three checks. The old desk's other five diagnosed the old app's device-sync
-        architecture, which does not exist here — one database, nothing to drift.
-      </p>
-
       {error && <DeskBanner>{error}</DeskBanner>}
       {!report && !error && <p className="dz-state">Running the checks…</p>}
 
