@@ -137,6 +137,17 @@ export function SettingsPage() {
     <DeskPage
       wide
       title="Settings"
+      subtitle={
+        /* Was a `.ad-deskintro` written into `children`, so it rendered under
+           the filters rather than under the heading — the `subtitle` slot's
+           whole reason (`kit/DeskPage.tsx`). Found 2026-09-22 against
+           `25-settings`. */
+        <>
+          The audit log — every privileged change in the system, newest first. Both filters
+          match<strong> exactly</strong>, not by substring: an entity is its full{' '}
+          <code>app.Model</code>, as the rows show it.
+        </>
+      }
       toolbar={
         <>
           <SearchFilter
@@ -154,12 +165,6 @@ export function SettingsPage() {
         </>
       }
     >
-      <p className="ad-deskintro">
-        The audit log — every privileged change in the system, newest first. Both filters match
-        <strong> exactly</strong>, not by substring: an entity is its full{' '}
-        <code>app.Model</code>, as the rows show it.
-      </p>
-
       <div className="ad-noteblock">
         <p>
           The rest of the old Settings tab is not here, and is not coming as-is. Who may see
