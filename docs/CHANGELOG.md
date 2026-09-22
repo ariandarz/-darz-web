@@ -5,6 +5,18 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-22 — Released: Phase 6's DoD, the three deletes, the collector boundary (#73, #74)
+
+- **`main` and `development` are the same commit** (`dd62f7a`) — not merely identical trees.
+  No open PRs. Owner's instruction to merge, given per-request as always.
+- **What went out:** #72's docs, and #73 — Phase 6's DoD met, **G-DEL-1**'s three deletes,
+  `ScreenBoundary` for the collector app, the Chat search **G-5** had already unblocked, the
+  Documents group's Create tab, Auction Records' ★ Highlights filter, and a live crash on the
+  released Private Deals view that verifying the deletes exposed.
+- **The release publishes nothing.** `create_git_project` was retried against the team on this
+  branch and still answers `403 forbidden: You don't have permission to create the project`.
+  Frontend Phase 14's two ways out both need the owner — see "What next" item 4.
+
 ## 2026-09-22 — Phase 6's DoD met, G-DEL-1 built, and the collector app gets a boundary
 
 - **The comparison is repeatable now.** `e2e/capture-desks.mjs` shoots every built desk at
