@@ -87,13 +87,17 @@ They are independent and can be merged in any order.
 
 ---
 
-## One thing I paused rather than touched
+## The one thing I had paused — now done
 
-Release PRs run CI **twice** (once for `pull_request`, once for the push to
-`development`). That is ~18 wasted minutes per release.
+Release PRs used to run CI **twice** (once for `pull_request`, once for the push
+to `development`), ~18 wasted minutes per release. I had held off because another
+of your sessions was titled *"Stop CI running twice per pull request"* and two
+sessions editing `.github/workflows/quality.yml` would have conflicted.
 
-I did not fix it: another of your sessions is titled *"Stop CI running twice per
-pull request"* and reports a fix in its own PR #75. I could not confirm which
-repository that is, and two sessions editing `.github/workflows/quality.yml`
-would conflict. **If that session was working on a different repo, tell me and I
-will fix it here — it is a two-line change.**
+That session turned out to be working on a **different repository** — it has
+finished, and nothing it did touched this one (`quality.yml` here is untouched by
+it, and the pull-request numbers in its report are that repo's, not ours). So the
+overlap is gone and the fix is in: `push` lists `main` only now, and a
+`concurrency` group cancels a superseded run when you push again to an open pull
+request. Nothing is tested less — `pull_request` already runs against the *merge*
+commit.

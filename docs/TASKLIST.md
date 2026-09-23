@@ -238,7 +238,7 @@ below, a whole panel's worth of API with no frontend UI.
    **removed** it, so porting that would have shipped something the old app deleted. Both plan steps
    are done; `docs/PHASE_24_35_PLAN.md` has the decisions and what was deliberately left out.
 1. ~~CI~~ — **done 2026-09-18.** `.github/workflows/quality.yml` runs typecheck · lint ·
-   format:check · test · build on every PR and on pushes to `main`/`development`, modelled on
+   format:check · test · build on every PR and on pushes to `main`, modelled on
    `darzstudio.art`'s `Quality`. Verified before landing against a real clean checkout
    (`git archive` + `npm ci`, no `.env.local`): all five steps pass, so its first run is green
    rather than red. `lint` exits 0 on the 3 pre-existing warnings, so they do not gate. Every

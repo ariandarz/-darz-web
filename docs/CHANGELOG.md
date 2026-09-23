@@ -5,6 +5,17 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-22 — CI stops running the gate twice
+
+- **`push` now lists `main` only.** A release pull request has `development` as its head, so every
+  push to it fired `push` *and* `pull_request` on the same commit — the full gate, twice, at once.
+  `pull_request` already runs against the merge commit, so nothing is tested less.
+- **A `concurrency` group cancels superseded pull-request runs.** Pushing three commits no longer
+  leaves two stale runs to finish. `push` runs on `main` are exempt: that one is the post-merge
+  record of a deployed commit.
+- **Every action pinned to `@v5`.** `v4` runs on Node 20, deprecated 2025-09-19 — the runner was
+  already forcing them onto Node 24 and warning on every job.
+
 ## 2026-09-22 — The container is built and run, and it had three bugs
 
 - **`Dockerfile` and `nginx.conf` are no longer unverified.** Built, started,
