@@ -1,11 +1,11 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-22 (**Phase 6 DoD met · Phase 6b done · the collector boundary
-built — released via #73/#74; `main` and `development` are the same commit `dd62f7a`**;
-before that, PRs #69-#71) · **Current focus:** **the admin panel's
-V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That document, not this one, is where the current line
-of work is planned; this file records what has landed and what is still open across the whole
-repo.
+**Last updated:** 2026-09-23 (**PRs #83-#90 all merged to `development`, which is now 18 commits
+ahead of `main`; every buildable task is built**) · **Current focus:** **none — the queue is
+empty.** What is left is four owner decisions (see the section directly below, and
+`docs/NOTES-FOR-ARIAN.md`), the backend-blocked surfaces, and the recorded API gaps.
+`docs/ADMIN_V1_AUDIT.md` §10 remains the admin panel's plan of record; this file records what has
+landed and what is still open across the whole repo.
 
 > **New session? Read [`docs/HANDOFF.md`](HANDOFF.md) first.** It is the two-minute version of
 > this file plus the parts no document was saying: how to open a screen in a browser without the
@@ -18,6 +18,59 @@ the "What next (2026-09-18)" list, whose items 2-6 are still open but whose fram
 the admin work. It is true as history; it is not the current focus.
 
 ---
+
+## Now — 2026-09-23 · the queue is empty (PRs #83-#90 merged)
+
+| | |
+| --- | --- |
+| `main` | `50215b3` (PR #84) — what https://darz-web.vercel.app is serving |
+| `development` | `f580eed` (PR #90) — **18 commits ahead of `main`** |
+| Open PRs | none |
+| Gate (re-measured 2026-09-23) | **620 unit** across 56 files · **82 E2E** (collector 25 · desks 54 · smoke 3) · typecheck · lint **0** · format · build · `npm audit` **0** |
+| CI | Node **22** both jobs · `push` on `main` only · concurrency cancels superseded PR runs · actions `@v5` |
+
+**Every merge in this range was made by the owner personally** — consistent with `CLAUDE.md`'s
+rule that merging is asked for per request and is never a standing permission.
+
+### What landed
+
+| PR | What |
+| --- | --- |
+| #83 / #84 | The collector **questionnaire** and **membership** screens (the last two unbuilt Phase 9 items), **G-CLUB-2** + **G-MEMB-1** (two admin count strips, and the strip geometry that was wrong on all eight strip desks), **G-HEALTH-1** (the Data Health counts panel), **TD-3** (the invoice bank block), **TD-8** (`admin.css` split into six parts, verified pixel-identical across 34 desks) — then the release to `main`. |
+| #85 | **A silently-disabled optimistic lock on three admin editors** (see below), 40 component tests, Phase 7 and Phase 13 closed, and four "remaining" phases verified as backend dead ends. |
+| #86 | `docs/HANDOFF.md` rewritten as the start-here doc; `Segment` / `Toast` component tests. |
+| #87 | **vitest 3 → 5**, clearing `GHSA-82fw-gwwq-j7x9` (dev-only path traversal in vite's dev server). `npm audit` is 0. Node 22 became the `engines` floor, because `jsdom@30` needs it. |
+| #88 | **The i18n engine, shipped OFF** exactly as the old app ships it — see the Phases 12+ i18n row for the full account and **G-I18N-1**. |
+| #89 | `docs/NOTES-FOR-ARIAN.md` — the four open owner decisions in one place. |
+| #90 | **CI stops running the gate twice.** A release PR has `development` as its head, so every push to it fired `push` *and* `pull_request` on the same commit: the whole gate, twice, ~18 wasted minutes per release. `push` now lists `main` only (`pull_request` already runs against the **merge** commit, so nothing is tested less), a `concurrency` group cancels superseded PR runs, and every action is pinned `@v5` (`v4` runs on Node 20, deprecated 2025-09-19). |
+
+**The find worth remembering from #85:** `updateCollector`, `updateTeamUser` and
+`updateMembershipCode` sent the lock field as `version`, but the API wants `expected_version` —
+and it is **optional**, so the server skipped the lock and wrote anyway. Collectors, Memberships
+and Team logins were last-write-wins with no 409, and on Team the raced field is `role`.
+TypeScript could not catch it: both spellings are a `number` and `version` is a real field on each
+model. `src/api/optimisticLock.test.ts` now pins the **wire format** for all six locking calls.
+
+### What next (2026-09-23) — nothing starts without one of these
+
+1. **Release `development` → `main`.** 18 commits, including the lock fix. Needs the owner's word,
+   per request (`CLAUDE.md`). The live site has none of it.
+2. **The real `VITE_API_BASE_URL`.** `.env.production` is the deliberate `api.invalid`
+   placeholder, so the live site is visual-only. One line; nothing else changes.
+3. **i18n — G-I18N-1**: which languages ship, whether RTL gets a real layout audit, whether the
+   picker is visible. Wiring the ~430 remaining call sites before (2) is answered causes rework.
+4. **`/artists` has no menu entry** — nav, Market screen, or deep link only? ~30 minutes.
+5. **G-LOCK-1** (backend): the optimistic lock on Accounting and Auction Records, which are
+   last-write-wins today. **G-6** (Intelligence · Marketing · Document Builder) stays deferred
+   unless the owner reverses it.
+6. **Phase 5b** — the Database desk's four hard filters (completeness, size ranges, duplicate
+   images, Gallery Portal). The only item needing nobody's decision, but it is **backend work
+   first**; the desk already names those filters as unavailable.
+
+Everything else open is either backend-blocked (Phases 20/21/22, Auction Sales, PWA push — all
+verified 2026-09-22 against the API's complete namespace list) or one of the recorded gaps
+`G-Q-1 · G-MEMB-3/6/7 · G-HEALTH-2/3/4 · G-DOC-1 · G-SALE-4 · G-CLUB-3 · G-AUC-4 · G-REC-1 ·
+G-CHAT-2`, each stated on the screen it belongs to.
 
 ## Since 2026-09-19 — the admin panel (PRs #61-#68)
 
@@ -93,7 +146,7 @@ the header, chroma line and nav survive, and it does not print the error message
 act on one, a collector cannot. Two E2E tests over a `/_boom` route that exists only in the E2E
 build keep it honest.
 
-### What next (2026-09-22)
+### What next (2026-09-22) — *superseded; kept as history. The current list is §"What next (2026-09-23)" at the top of this file.*
 
 1. ~~**Finish Phase 6**~~ — **done 2026-09-22.** Every remaining desk compared against its
    capture; `docs/ADMIN_V1_AUDIT.md` §10 "Phase 6 DoD — met" has the full account. The
@@ -1106,14 +1159,23 @@ surface before building each. Ordered by V1 relevance:
       two tiers' claims and the rule of thumb (a new desk gets its real-backend walk before it
       ships; the smoke only grows with the boot/shell contract).
 
-- [x] Component tests for shared/base components — **built 2026-09-22**, 40 tests across
-      `Dropdown` (14), `Sheet` (9) and the form primitives (17). `vitest.config.ts` now runs **two
+- [x] Component tests for shared/base components — **built 2026-09-22**, now **53 tests** across
+      `Dropdown` (14), `Sheet` (9), the form primitives (17) and `Segment` / `Toast` (13, added in
+      #86). `vitest.config.ts` now runs **two
       projects**: `logic` (`*.test.ts`, node, no DOM) and `components` (`*.test.tsx`, jsdom). The
       split is deliberate rather than incidental — the node project having no `localStorage` is
       what proves `QuestionnaireController` and `bankDetails` survive a private window, and giving
       the whole suite a DOM would quietly delete that guarantee. Deps added: `jsdom`,
       `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, all dev.
-- [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
+- [~] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
+      — **partly done, and honestly bounded.** 82 Playwright tests now run in CI against the stub:
+      `desks.spec.ts` (54) walks every admin desk, `collector.spec.ts` (25) the collector journeys,
+      `smoke.spec.ts` (3) the boot/gate/sign-in contract. **Both sign-ins are covered; reads are
+      covered.** What is *not*: **admin CRUD writes** and the **409 conflict path**, because the
+      stub holds no state and the real-backend tier is local-only (the one `TeamUser`'s password is
+      recorded nowhere — `docs/HANDOFF.md` §5). The conflict path is covered at the unit level
+      instead, by `src/api/optimisticLock.test.ts` pinning the wire format of all six locking
+      calls. Closing this row for real needs a seeded backend in CI, which is backend work.
 
 ## Phase 14 — Deploy & cutover `[~]` config landed; deploy blocked on a Vercel permission
 

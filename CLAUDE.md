@@ -36,6 +36,12 @@ Two sources are required **together** for every feature — neither alone is eno
   **Merging still needs the owner to ask for it explicitly, per request — it is not a standing
   permission, and the list above is a record, not a precedent to act on.** Default remains: open the
   PR and stop.
+  **2026-09-22/23 — PRs #83 to #90 were all merged by the owner personally**, from the GitHub UI,
+  with no merge made from a session. One of them adds a second shape worth recording: the owner
+  **marked #90 ready for review** and the session did *not* treat that as authorisation. Marking a
+  PR ready, requesting a review, or approving it are not merge instructions; only "merge it" (or
+  "release development to main") is. `development` is 18 commits ahead of `main` as of
+  2026-09-23 for exactly this reason, and that is the correct state, not a backlog to clear.
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full

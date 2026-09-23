@@ -59,7 +59,14 @@ npm run lint          # oxlint
 npm run format        # prettier --write (src + config; not docs/)
 npm run format:check  # prettier --check
 npm run preview       # serve the production build
+npm run e2e           # e2e:build against the stub, then Playwright (82 tests)
 ```
+
+The gate CI runs, and the numbers it stands at (2026-09-23): **620 unit tests** (vitest, two
+projects — `logic` in node with no DOM, `components` in jsdom), **82 E2E tests** (Playwright
+against `e2e/stub-server.mjs`), typecheck, **lint 0 warnings**, format, build, and `npm audit` 0.
+**Node 22 is the floor** (`engines`) because `jsdom@30` needs it — on Node 20 the suite fails
+*dishonestly*, skipping every `.test.tsx` file while still printing a green count.
 
 ## Layout
 
@@ -82,7 +89,10 @@ src/
                     its hooks, ported CSS (app.html class names, line-cited) and
                     the React views. e.g. `auctions/` (Phase 8): `AuctionListController`,
                     `LotSocket` (the `ws/auctions/lots/{id}/` live socket) + `LotController`.
-  App.tsx           currently the Phase 2 design-system showcase
+  i18n/             the old app's language engine, ported and shipped OFF
+                    (registry + 144-entry dictionary + `I18nController` + `useT()`)
+  routes.tsx        the real router — every collector and admin route
+  App.tsx           the Phase 2 design-system showcase, still reachable at `/_design`
 docs/
   TASKLIST.md       phase plan + status (source of progress truth)
   CHANGELOG.md      one entry per completed task
@@ -92,4 +102,9 @@ docs/
 ## Workflow
 
 Each `docs/TASKLIST.md` phase is built on its own branch cut from `development`
-(`phase-N-<slug>`). The repo owner pushes and merges.
+(`phase-N-<slug>` or `claude/<slug>`), and goes to a PR against `development`.
+
+**Merging is the owner's, asked for per request.** A session opens the PR and stops; an
+instruction to "keep things moving", or the owner marking a PR ready for review, is not
+authorisation to merge. `CLAUDE.md` § "Where things live" carries the full record and the two
+cases where that distinction has actually mattered.
