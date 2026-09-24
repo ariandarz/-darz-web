@@ -46,7 +46,7 @@ bottom nav / desktop top nav · `LayoutController`. Merged onto v0.1 (`docs/V0_1
 Settings, Records and Chat screens; the design pass owns the tokens, shell skin (430px frame,
 glass header, chroma, nav pips), catalogue, artwork detail, artist page, auctions, lot, gate and the
 shared `Dropdown` / `Segment` components. Not ported (no backend): Insights tab, questionnaire,
-access-key card, WhatsApp, legal copy, push — see `docs/API_INTEGRATION_GAPS.md` § Still open.
+access-key card, WhatsApp, legal copy, push — see `docs/archive/API_INTEGRATION_GAPS.md` § Still open.
 
 ## Remaining flows — API availability (not yet built)
 
@@ -55,7 +55,7 @@ Every row below is backend-ready unless marked. This is the build order the endp
 | Flow | Endpoints available | Status |
 |---|---|---|
 | **Collector: own request list** | `GET /api/crm/requests/` (`kind`/`status` filters) | `[ ]` ready |
-| **Collector: activity self-logging** | `POST /api/crm/activity/` (`view`/`save`/`search`/`login`) | `[ ]` ready — see the open question in `docs/PHASE_6_API_GAPS.md` |
+| **Collector: activity self-logging** | `POST /api/crm/activity/` (`view`/`save`/`search`/`login`) | `[ ]` ready — see the open question in `docs/archive/PHASE_6_API_GAPS.md` |
 | **Collector: recommendations** ("Curated for You") | `GET /api/recommendations/published/`, `POST .../{id}/dismiss/` | `[ ]` ready |
 | **Collector: membership** | `POST /api/auth/membership/redeem/` | `[ ]` ready |
 | **Collector: push notifications** | `POST /api/notifications/push/{subscribe,unsubscribe}/` | `[ ]` ready |

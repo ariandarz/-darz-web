@@ -183,6 +183,22 @@ Only build the ones the owner wants surfaced — the endpoints now exist either 
 
 ---
 
+## P2 — Invite-only auctions (G-CLUB-3, shipped by backend Phase 35)
+
+- **Backend now:** `Auction.invite_only` (bool) + an `invited_collectors` M2M exist
+  (`apps/auctions/models.py`). An uninvited collector never sees an invite-only auction in the
+  list/detail and can't register a paddle for it (server-enforced). `invite_only` is on the base
+  collector-facing `AuctionSerializer` (safe bool); the invited-collector identities are admin-only via
+  `GET/POST /api/auctions/admin/auctions/{id}/invite-only/` (`AuctionInviteOnlySerializer`).
+- **Frontend:** this was recorded as an open backend gap in `docs/TASKLIST.md` (the old panel's "Make
+  an auction private…") but the backend has since shipped it. Two surfaces: (a) collector side needs no
+  new work — the server already filters invite-only auctions out for the uninvited, so the existing
+  list/detail just works; optionally show an "invite-only" marker from the `invite_only` bool. (b) the
+  admin auction desk (`AuctionsAdminPage` / `AuctionAdminDetailPage`) can expose the invite-only toggle
+  + invited-collector picker over the admin endpoint. Build the admin side only if the owner wants it.
+- **Done when:** an admin can mark an auction invite-only and add collectors; an uninvited collector
+  cannot see or register for it (verify against a second collector session).
+
 ## P2 — Admin Database desk: the four "unavailable" filters are now real (Phase 5b)
 
 - **Backend now:** `ArtworkAdminFilterSet` (admin artworks list) accepts:
