@@ -27,7 +27,7 @@ pair, `darz_save_edit`), and none of its env files or generated assets.
 | `.act-primary` Buy now (`app.html:9236`) | `POST /api/crm/requests/` `kind=purchase` | `features/requests/ActionButtons` | `[x]` |
 | `.act-box` 24h hold (`DZ.act(id,'hold')`, `:10462`) | `POST /api/crm/requests/` `kind=hold` | `features/requests/ActionButtons` | `[x]` |
 | `.act-box` Request viewing (`DZ.act(id,'visit')`) | `POST /api/crm/requests/` `kind=viewing` | `features/requests/ActionButtons` | `[x]` |
-| Make an Offer sheet (`DZ.offer`/`DZ.submit`, `:11074-11106`) | `POST /api/crm/requests/` `kind=offer` | `features/requests/OfferSheet` | `[~]` detail shape unverified (G-F1-1); floor not enforced (G-F1-2) |
+| Make an Offer sheet (`DZ.offer`/`DZ.submit`, `:11074-11106`) | `POST /api/crm/requests/` `kind=offer` | `features/requests/OfferSheet` | `[x]` typed create `detail` (G-F1-1 closed) + offer floor enforced server-side (G-F1-2 closed) — regen schema, drop the `unknown` cast |
 | `dzActConfirm` confirmation sheet (`:10181`) | — | `features/requests/ConfirmSheet` | `[x]` |
 | `dzGuard` double-tap guard (v576) | — (client-side) | `RequestController` | `[x]` server key still missing (G-F1-5) |
 | Admin actions feed (`darz-studio.html`) | `GET /api/crm/admin/requests/` + `POST .../transition/` | `features/admin/AdminRequestsPage` | `[~]` shows UUIDs, not names (G-F1-7) |
@@ -46,7 +46,7 @@ bottom nav / desktop top nav · `LayoutController`. Merged onto v0.1 (`docs/V0_1
 Settings, Records and Chat screens; the design pass owns the tokens, shell skin (430px frame,
 glass header, chroma, nav pips), catalogue, artwork detail, artist page, auctions, lot, gate and the
 shared `Dropdown` / `Segment` components. Not ported (no backend): Insights tab, questionnaire,
-access-key card, WhatsApp, legal copy, push — see `docs/API_INTEGRATION_GAPS.md` § Still open.
+access-key card, WhatsApp, legal copy, push — see `docs/archive/API_INTEGRATION_GAPS.md` § Still open.
 
 ## Remaining flows — API availability (not yet built)
 
@@ -55,7 +55,7 @@ Every row below is backend-ready unless marked. This is the build order the endp
 | Flow | Endpoints available | Status |
 |---|---|---|
 | **Collector: own request list** | `GET /api/crm/requests/` (`kind`/`status` filters) | `[ ]` ready |
-| **Collector: activity self-logging** | `POST /api/crm/activity/` (`view`/`save`/`search`/`login`) | `[ ]` ready — see the open question in `docs/PHASE_6_API_GAPS.md` |
+| **Collector: activity self-logging** | `POST /api/crm/activity/` (`view`/`save`/`search`/`login`) | `[ ]` ready — see the open question in `docs/archive/PHASE_6_API_GAPS.md` |
 | **Collector: recommendations** ("Curated for You") | `GET /api/recommendations/published/`, `POST .../{id}/dismiss/` | `[ ]` ready |
 | **Collector: membership** | `POST /api/auth/membership/redeem/` | `[ ]` ready |
 | **Collector: push notifications** | `POST /api/notifications/push/{subscribe,unsubscribe}/` | `[ ]` ready |
