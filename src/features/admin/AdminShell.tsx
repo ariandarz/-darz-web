@@ -34,6 +34,7 @@
  * instead, so the panel already follows the app's skin with no second toggle
  * (see the note in `admin.css`, and `docs/PHASE_11B_PLAN.md` D10).
  */
+import { Suspense } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { DeskBoundary } from './DeskBoundary';
 import { useApi, useSession } from '../../api/hooks';
@@ -192,7 +193,13 @@ export function AdminShell() {
           the four times that happened. Keyed on the location so leaving a
           broken desk clears it. */}
       <DeskBoundary key={pathname}>
-        <Outlet />
+        {/* Every desk page is `React.lazy` (see routes.tsx), so its chunk
+            resolves here. `fallback={null}` keeps the desk area blank for the
+            one-frame load rather than flashing a spinner — the navbar above is
+            already painted, so the panel never goes fully white. */}
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
       </DeskBoundary>
     </div>
   );
