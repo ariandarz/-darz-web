@@ -62,16 +62,22 @@ first, then:
       questions, G-P5-4/5/11/12 (archive/withdraw/artist-link/activity read), G-P13-1 push opt-in,
       G-CLUB-3 invite-only auction admin toggle, Phase 5b Database-desk filters.
 
-### C · Non-V1 backend gaps (Group B) → `../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md`
-Each leaves an admin/collector screen incomplete; none blocks launch. Tracked as 🔵 in `API_GAPS.md`:
-- [!] G-F1-1 (typed `detail` on the *create* schema), G-CHAT-2 (archive a message), G-Q-1 + profile-edit
-      (`PATCH /auth/me/`), G-MEMB-3/6/7 (collector membership read/expiry), G-DOC-1 (collector documents),
-      G-AUC-4 (auction archived), G-REC-1 (records house facet), G-SALE-4 (sale source axis),
-      G-HEALTH-2/3/4 (data-health checks), auction `cover_image_url`, records `?section=`.
+### C · Non-V1 backend gaps (Group B) — ✅ all shipped backend-side (B1–B5, 2026-09-24)
+Every Group-B gap is now closed on `darz-backend-api` `development` (see `API_GAPS.md`). What remains
+here is **frontend adoption** (the UI that consumes them) — tracked in `API_GAPS_FRONTEND_ADOPTION.md`,
+not as a backend block:
+- [x] Backend done: G-F1-1 (typed `detail` on the create schema), G-CHAT-2 (message archive), G-Q-1 +
+      profile-edit (`PATCH /auth/me/`), G-MEMB-3/6/7 (`GET /auth/my-membership/`), G-DOC-1
+      (`GET /documents/`), G-AUC-4 (auction archive), G-REC-1 (`?house=`), G-SALE-4 (`Sale.source`),
+      G-HEALTH-2/3/4 (source_type / deleted count / created_after), auction `cover_image_url`, records
+      `?section=` (found already served).
+- [ ] Frontend adoption of the above → `API_GAPS_FRONTEND_ADOPTION.md`.
 
 ### D · Deferred / backend-blocked features (owner-scoped)
-- [!] **Auction Sales** — backend-blocked; `Sale` has no auction-source axis and the filterset takes
-      `status` only (re-verified 2026-09-22). Waits on G-SALE-4.
+- [ ] **Auction Sales** — **unblocked** (G-SALE-4 shipped B5): `Sale.source` (market/auction) +
+      `?source=` on the admin sales list. Build the tab by filtering `?source=auction`. (Backend note:
+      no auction→Sale automation yet — an admin sets `source=auction`; a follow-up backend task is
+      tracked in the API repo's TASKLIST.)
 - [!] **Logistics & Payment desk** (backend Phase 20 — no `/api/logistics/` namespace exists).
 - [!] **Library + pricelist builders** (backend Phase 21 — no standalone pricelist builder API).
 - [!] **Insights & Stories** (backend Phase 22 — no editorial model).

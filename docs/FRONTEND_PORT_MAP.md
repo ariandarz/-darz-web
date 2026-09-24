@@ -27,7 +27,7 @@ pair, `darz_save_edit`), and none of its env files or generated assets.
 | `.act-primary` Buy now (`app.html:9236`) | `POST /api/crm/requests/` `kind=purchase` | `features/requests/ActionButtons` | `[x]` |
 | `.act-box` 24h hold (`DZ.act(id,'hold')`, `:10462`) | `POST /api/crm/requests/` `kind=hold` | `features/requests/ActionButtons` | `[x]` |
 | `.act-box` Request viewing (`DZ.act(id,'visit')`) | `POST /api/crm/requests/` `kind=viewing` | `features/requests/ActionButtons` | `[x]` |
-| Make an Offer sheet (`DZ.offer`/`DZ.submit`, `:11074-11106`) | `POST /api/crm/requests/` `kind=offer` | `features/requests/OfferSheet` | `[~]` detail shape unverified (G-F1-1); floor not enforced (G-F1-2) |
+| Make an Offer sheet (`DZ.offer`/`DZ.submit`, `:11074-11106`) | `POST /api/crm/requests/` `kind=offer` | `features/requests/OfferSheet` | `[x]` typed create `detail` (G-F1-1 closed) + offer floor enforced server-side (G-F1-2 closed) — regen schema, drop the `unknown` cast |
 | `dzActConfirm` confirmation sheet (`:10181`) | — | `features/requests/ConfirmSheet` | `[x]` |
 | `dzGuard` double-tap guard (v576) | — (client-side) | `RequestController` | `[x]` server key still missing (G-F1-5) |
 | Admin actions feed (`darz-studio.html`) | `GET /api/crm/admin/requests/` + `POST .../transition/` | `features/admin/AdminRequestsPage` | `[~]` shows UUIDs, not names (G-F1-7) |

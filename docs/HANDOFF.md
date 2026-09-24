@@ -57,10 +57,15 @@ wire `ConflictBanner` on the two G-LOCK-1 desks, delete the hand-typed `detail` 
 | **`/artists` menu entry** | Exists at `/artists`, nothing links to it (the old app orphans it too). Nav / Market screen / deep link only? ~30 min. |
 | **G-6** | Intelligence · Marketing · Document Builder — API ready, no UI. Deferred unless reversed. |
 
-**Non-V1 backend gaps** (`../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md`, tracked 🔵 in `API_GAPS.md`):
-G-F1-1 · G-CHAT-2 · G-Q-1 + profile-edit · G-MEMB-3/6/7 · G-DOC-1 · G-AUC-4 · G-REC-1 · G-SALE-4 ·
-G-HEALTH-2/3/4. **Backend-blocked/deferred:** Auction Sales, Logistics (Phase 20), Library/pricelist
-(Phase 21), Insights & Stories (Phase 22).
+**Non-V1 backend gaps (Group B) — ✅ all shipped backend-side 2026-09-24** (B1–B5; see
+`../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md` and `API_GAPS.md`). What's left is **frontend
+adoption** of them → `API_GAPS_FRONTEND_ADOPTION.md`: G-F1-1 · G-CHAT-2 · G-Q-1 + profile-edit ·
+G-MEMB-3/6/7 · G-DOC-1 · G-AUC-4 · G-REC-1 · G-SALE-4 · G-HEALTH-2/3/4. **Auction Sales** is now
+unblocked (filter `?source=auction`). **Still backend-blocked/deferred:** Logistics (Phase 20),
+Library/pricelist (Phase 21), Insights & Stories (Phase 22). **Still-open distinct backend candidates**
+(raised 2026-09-24, tracked in the API repo's TASKLIST): a `document_refs` on `RequestMessage`
+(attach a document to a thread — distinct from the G-DOC-1 documents list), and a roster-wide
+`GET /admin/access-keys/` list (G-KEY-1).
 
 ---
 
