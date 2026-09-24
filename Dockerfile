@@ -25,7 +25,7 @@
 #     -t darz-web .
 
 # ── Stage 1: build ───────────────────────────────────────────────────────────
-FROM node:22-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 
 # Dependencies first, so a source-only change does not reinstall them.
