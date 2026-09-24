@@ -2,7 +2,10 @@
 
 Two tiers, deliberately different in what they claim:
 
-## 1 · The stub tier (`smoke.spec.ts` + `desks.spec.ts`) — runs in CI
+**As of 2026-09-23 the stub tier is 82 tests in three specs** — `desks.spec.ts` (54),
+`collector.spec.ts` (25), `smoke.spec.ts` (3).
+
+## 1 · The stub tier (`smoke.spec.ts` + `desks.spec.ts` + `collector.spec.ts`) — runs in CI
 
 `npm run e2e` (builds first — `e2e:build` — then tests). Playwright boots
 the **production build** against
@@ -28,6 +31,18 @@ rendered a completely blank page**, two of them already released to `main` —
 
 Adding a desk means adding its row to `DESKS`. If a desk's heading changes, the
 row is the one place to change.
+
+`collector.spec.ts` is the same idea on the collector side: the gate, the
+catalogue, artwork detail, saved, artists, the questionnaire, settings and
+membership, plus `ScreenBoundary` via the `/_boom` route that exists only in
+the E2E build.
+
+**What the stub tier still cannot claim**, and why it is not a gap to close
+here: **admin CRUD writes** and the **optimistic-lock 409 path**. The stub
+holds no state, so a write has nothing to conflict with. The lock is covered
+at the unit level instead — `src/api/optimisticLock.test.ts` pins the wire
+format (`expected_version`, not `version`) for all six locking calls, which is
+the thing that actually broke once.
 
 Locally, the pre-installed Chromium may not match `@playwright/test`'s
 pinned revision — point `PW_CHROMIUM` at it:

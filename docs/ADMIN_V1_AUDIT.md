@@ -797,6 +797,16 @@ Pricelists · Auction Sales — all backend-blocked. Leave `path: null`; the nav
 
 ## 11 · Recommended starting point
 
+> **Superseded 2026-09-23 — this section is history.** Every phase of §10 that was not
+> owner-deferred or backend-blocked is **built and merged to `development`**: Phase 0 ✅, Phase 1 ✅
+> (G-5 approved, backend `darz-backend-api` #31), Phases 2-4 ✅ (PR #64), Phase 6 ✅ (DoD met,
+> second pass 2026-09-22), Phase 6b ✅ (G-DEL-1). **Phase 5** landed as its four cheap filters
+> (G-2); **Phase 5b** — the four *hard* ones (completeness, size ranges, duplicate images, Gallery
+> Portal) — is the one piece of §10 still open, and it is **backend work first**; the desk already
+> names those filters as unavailable. **Phase 7** stays deferred under G-6.
+> Current state, next steps and the four open owner decisions: `docs/HANDOFF.md` and
+> `docs/NOTES-FOR-ARIAN.md`. The rest of this section is left as written on 2026-09-21.
+
 **Start with Phase 0, then Phase 1.** Concretely, in order:
 
 1. **`src/features/profile/acquisitions.ts` → `acquisitionRows.ts`** and update the two importers. Three lines; restores `npm run build` on macOS. *(Prepared — see the PR linked from this branch.)*

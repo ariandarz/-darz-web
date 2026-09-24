@@ -1,11 +1,11 @@
 # Darz Market Web — Frontend Task List (source of progress truth)
 
-**Last updated:** 2026-09-22 (**Phase 6 DoD met · Phase 6b done · the collector boundary
-built — released via #73/#74; `main` and `development` are the same commit `dd62f7a`**;
-before that, PRs #69-#71) · **Current focus:** **the admin panel's
-V1 plan — `docs/ADMIN_V1_AUDIT.md` §10.** That document, not this one, is where the current line
-of work is planned; this file records what has landed and what is still open across the whole
-repo.
+**Last updated:** 2026-09-23 (**PRs #83-#90 all merged to `development`, which is now 18 commits
+ahead of `main`; every buildable task is built**) · **Current focus:** **none — the queue is
+empty.** What is left is four owner decisions (see the section directly below, and
+`docs/NOTES-FOR-ARIAN.md`), the backend-blocked surfaces, and the recorded API gaps.
+`docs/ADMIN_V1_AUDIT.md` §10 remains the admin panel's plan of record; this file records what has
+landed and what is still open across the whole repo.
 
 > **New session? Read [`docs/HANDOFF.md`](HANDOFF.md) first.** It is the two-minute version of
 > this file plus the parts no document was saying: how to open a screen in a browser without the
@@ -18,6 +18,59 @@ the "What next (2026-09-18)" list, whose items 2-6 are still open but whose fram
 the admin work. It is true as history; it is not the current focus.
 
 ---
+
+## Now — 2026-09-23 · the queue is empty (PRs #83-#90 merged)
+
+| | |
+| --- | --- |
+| `main` | `50215b3` (PR #84) — what https://darz-web.vercel.app is serving |
+| `development` | `f580eed` (PR #90) — **18 commits ahead of `main`** |
+| Open PRs | none |
+| Gate (re-measured 2026-09-23) | **620 unit** across 56 files · **82 E2E** (collector 25 · desks 54 · smoke 3) · typecheck · lint **0** · format · build · `npm audit` **0** |
+| CI | Node **22** both jobs · `push` on `main` only · concurrency cancels superseded PR runs · actions `@v5` |
+
+**Every merge in this range was made by the owner personally** — consistent with `CLAUDE.md`'s
+rule that merging is asked for per request and is never a standing permission.
+
+### What landed
+
+| PR | What |
+| --- | --- |
+| #83 / #84 | The collector **questionnaire** and **membership** screens (the last two unbuilt Phase 9 items), **G-CLUB-2** + **G-MEMB-1** (two admin count strips, and the strip geometry that was wrong on all eight strip desks), **G-HEALTH-1** (the Data Health counts panel), **TD-3** (the invoice bank block), **TD-8** (`admin.css` split into six parts, verified pixel-identical across 34 desks) — then the release to `main`. |
+| #85 | **A silently-disabled optimistic lock on three admin editors** (see below), 40 component tests, Phase 7 and Phase 13 closed, and four "remaining" phases verified as backend dead ends. |
+| #86 | `docs/HANDOFF.md` rewritten as the start-here doc; `Segment` / `Toast` component tests. |
+| #87 | **vitest 3 → 5**, clearing `GHSA-82fw-gwwq-j7x9` (dev-only path traversal in vite's dev server). `npm audit` is 0. Node 22 became the `engines` floor, because `jsdom@30` needs it. |
+| #88 | **The i18n engine, shipped OFF** exactly as the old app ships it — see the Phases 12+ i18n row for the full account and **G-I18N-1**. |
+| #89 | `docs/NOTES-FOR-ARIAN.md` — the four open owner decisions in one place. |
+| #90 | **CI stops running the gate twice.** A release PR has `development` as its head, so every push to it fired `push` *and* `pull_request` on the same commit: the whole gate, twice, ~18 wasted minutes per release. `push` now lists `main` only (`pull_request` already runs against the **merge** commit, so nothing is tested less), a `concurrency` group cancels superseded PR runs, and every action is pinned `@v5` (`v4` runs on Node 20, deprecated 2025-09-19). |
+
+**The find worth remembering from #85:** `updateCollector`, `updateTeamUser` and
+`updateMembershipCode` sent the lock field as `version`, but the API wants `expected_version` —
+and it is **optional**, so the server skipped the lock and wrote anyway. Collectors, Memberships
+and Team logins were last-write-wins with no 409, and on Team the raced field is `role`.
+TypeScript could not catch it: both spellings are a `number` and `version` is a real field on each
+model. `src/api/optimisticLock.test.ts` now pins the **wire format** for all six locking calls.
+
+### What next (2026-09-23) — nothing starts without one of these
+
+1. **Release `development` → `main`.** 18 commits, including the lock fix. Needs the owner's word,
+   per request (`CLAUDE.md`). The live site has none of it.
+2. **The real `VITE_API_BASE_URL`.** `.env.production` is the deliberate `api.invalid`
+   placeholder, so the live site is visual-only. One line; nothing else changes.
+3. **i18n — G-I18N-1**: which languages ship, whether RTL gets a real layout audit, whether the
+   picker is visible. Wiring the ~430 remaining call sites before (2) is answered causes rework.
+4. **`/artists` has no menu entry** — nav, Market screen, or deep link only? ~30 minutes.
+5. **G-LOCK-1** (backend): the optimistic lock on Accounting and Auction Records, which are
+   last-write-wins today. **G-6** (Intelligence · Marketing · Document Builder) stays deferred
+   unless the owner reverses it.
+6. **Phase 5b** — the Database desk's four hard filters (completeness, size ranges, duplicate
+   images, Gallery Portal). The only item needing nobody's decision, but it is **backend work
+   first**; the desk already names those filters as unavailable.
+
+Everything else open is either backend-blocked (Phases 20/21/22, Auction Sales, PWA push — all
+verified 2026-09-22 against the API's complete namespace list) or one of the recorded gaps
+`G-Q-1 · G-MEMB-3/6/7 · G-HEALTH-2/3/4 · G-DOC-1 · G-SALE-4 · G-CLUB-3 · G-AUC-4 · G-REC-1 ·
+G-CHAT-2`, each stated on the screen it belongs to.
 
 ## Since 2026-09-19 — the admin panel (PRs #61-#68)
 
@@ -93,7 +146,7 @@ the header, chroma line and nav survive, and it does not print the error message
 act on one, a collector cannot. Two E2E tests over a `/_boom` route that exists only in the E2E
 build keep it honest.
 
-### What next (2026-09-22)
+### What next (2026-09-22) — *superseded; kept as history. The current list is §"What next (2026-09-23)" at the top of this file.*
 
 1. ~~**Finish Phase 6**~~ — **done 2026-09-22.** Every remaining desk compared against its
    capture; `docs/ADMIN_V1_AUDIT.md` §10 "Phase 6 DoD — met" has the full account. The
@@ -238,7 +291,7 @@ below, a whole panel's worth of API with no frontend UI.
    **removed** it, so porting that would have shipped something the old app deleted. Both plan steps
    are done; `docs/PHASE_24_35_PLAN.md` has the decisions and what was deliberately left out.
 1. ~~CI~~ — **done 2026-09-18.** `.github/workflows/quality.yml` runs typecheck · lint ·
-   format:check · test · build on every PR and on pushes to `main`/`development`, modelled on
+   format:check · test · build on every PR and on pushes to `main`, modelled on
    `darzstudio.art`'s `Quality`. Verified before landing against a real clean checkout
    (`git archive` + `npm ci`, no `.env.local`): all five steps pass, so its first run is green
    rather than red. `lint` exits 0 on the 3 pre-existing warnings, so they do not gate. Every
@@ -634,7 +687,9 @@ point the brief says to stop. Frontend only: **no backend, API-contract or `sche
 
 Matches backend V1 exactly — the only admin surfaces that currently exist.
 
-- [ ] Catalog CRUD (Artist/Artwork/ArtworkImage) — includes the multipart image upload flow
+- [x] Catalog CRUD (Artist/Artwork/ArtworkImage) — `ArtworkEditorPage` (with the multipart image
+      flow and the selection grants), `ArtistsPage`. *Checkbox corrected 2026-09-22: it was still
+      unticked long after the desks shipped.*
 - [x] Unified CRM request feed (filterable by kind/status/assignee/archived) + transition actions —
       `AdminRequestsPage` at `/admin/requests` over `AdminRequestsController extends ListController`.
       Chrome ported from `darz-studio.html`'s `.ad-h`/`.ad-toolbar`/`.ad-card`/`.ad-tbl`. Statuses
@@ -654,8 +709,17 @@ Matches backend V1 exactly — the only admin surfaces that currently exist.
       piece of new markup — a bar with the signed-in identity and "LEAVE THE ROOM" — because the
       desk sits outside the collector `AppShell` and a team member would otherwise have no way out.
       The real admin shell is Phase 11; that bar should be deleted when it lands, not grown.
-- [ ] Sales CRUD + transition/payment/delivery-status actions
-- [ ] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI)
+- [x] Sales CRUD + transition/payment/delivery-status actions — `SalesPage`, `SaleDetailPage`,
+      `DealEditorPage`. *Checkbox corrected 2026-09-22.*
+- [x] Respect the optimistic-lock pattern everywhere (`expected_version`, handle 409s in the UI) —
+      **completed 2026-09-22, and it found a real bug rather than confirming the row.** Three
+      services (`updateCollector`, `updateTeamUser`, `updateMembershipCode`) took a `version`
+      property and sent it as `version`; the API field is `expected_version` and it is OPTIONAL, so
+      the server saw no lock and wrote anyway. Collectors, Memberships and **Team logins** were
+      last-write-wins with no 409 — on the Team desk the raced field is `role`. Fixed, the three
+      forms now show a conflict message, and `src/api/optimisticLock.test.ts` pins the wire format
+      for all six locking calls (verified by reintroducing the bug and watching it fail).
+      Accounting and Auction Records remain genuinely unlockable server-side — **G-LOCK-1**.
 
 ## Phase 8 — Collector: auctions ✅ all 4 steps merged (hidden in v0.1 behind `features.auctions`) — see `docs/PHASE_8_PLAN.md`
 
@@ -996,7 +1060,13 @@ the order and the gaps (G-CAT-1…8, recorded 2026-09-18).
       create → invite → lot → go-live → artwork Reserved → queue resolve → approve → paddle #1 →
       close early → passed → artwork back to Available. (Redis joined the local stack for the
       Channels lot-state broadcast.)
-- [ ] **Step 6 — Auction Sales** `[!]` — `Sale` has no source axis (G-SALE-4); auction settlement
+- [ ] **Step 6 — Auction Sales** `[!]` — **re-verified against the schema 2026-09-22 and still
+      blocked, but the recorded reason needed sharpening.** "`Sale` has no source axis" is not
+      quite right: `SaleAdmin` carries two source-ish fields. Neither helps. `seller_source` is a
+      free string naming who sold the work, and `source_request` is "the confirmed PurchaseIntent
+      this sale was created from" — a CRM request, not an auction. Nothing on a Sale says it came
+      from an auction, **and the admin sales filterset accepts `status` only**, so even a field
+      that did exist could not be filtered on. G-SALE-4 stands; auction settlement
       is its own loop. Waits on the backend decision. Bulk selection (status/publish) also
       returns in a later pass.
 - [x] **Step 7 — Accounting: the four-ledger books** ✅ 2026-09-19 (overnight run) —
@@ -1039,21 +1109,45 @@ Old-app surfaces the current backend has no model for (from `DarzStudio/docs/eng
 owner decision 2026-09-04: scope all seven now). Faithful-port rule applies — read the old app's real
 surface before building each. Ordered by V1 relevance:
 
-- [ ] **Curated-set catalogue (`selected`/`private_selection`)** — **unblocked 2026-09-17**: backend
-      Phase 24 merged (`GET /api/catalog/artworks/selections/`, grant-gated, admin
-      `admin/artworks/{id}/selection-grants/`). Old `[!]` blocker on this line is stale.
-      **This unblocks the "Partial" half of frontend Phase 4 (flow 2).**
-- [ ] **Collector questionnaire** — **unblocked 2026-09-17**: backend Phase 25 merged (same endpoint
-      as Phase 9's Questionnaire item above — build once, wire both).
-- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — still
-      not built.
-- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — still
-      not built.
-- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — still not built.
+- [x] **Curated-set catalogue (`selected`/`private_selection`)** — built: the collector side is the
+      "Curated for You" chip (`CuratedChip.tsx`) on the catalogue, the admin side is the Collector
+      Club desk plus the artwork editor's selection grants. *Checkbox corrected 2026-09-22.*
+- [x] **Collector questionnaire** — ✅ **built 2026-09-22**, see Phase 9. *Checkbox corrected.*
+- [ ] **Logistics & Payment desk** `[!]` backend Phase 20 (`DARZ_LOGI_SCHEMA`, large surface) — not
+      built, and **verified backend-blocked 2026-09-22**: there is no `/api/logistics/` namespace at
+      all. The API's full set is accounting · admin · app-theme · auctions · auth · catalog · crm ·
+      dashboard · documents · gallery · health · marketing · notifications · options · projects ·
+      recommendations · sales. Phase 20 was planned, never merged.
+- [ ] **Library + pricelist builders** `[!]` backend Phase 21 (two builders; `savedItems`) — not
+      built, and **verified backend-blocked 2026-09-22**: the only pricelist endpoints in the whole
+      schema are the gallery-portal pair (`/gallery/admin/links/{id}/pricelists/` and
+      `/gallery/portal/{token}/pricelists/`), both already built in Phase 10. There is no
+      standalone builder API.
+- [ ] **Insights & Stories** `[!]` backend Phase 22 (`storiesView`) — not built, and **verified
+      backend-blocked 2026-09-22**: no stories or insights endpoint exists.
 - [x] **Projects / Data Health / Import desks** — **unblocked 2026-09-17**: backend Phase 23 merged,
       full faithful port. Data Health + Import shipped in Phase 11b, Projects in Phase 11c
       (2026-09-19) — this bullet stays only as the Phases-12+ cross-reference.
-- [ ] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 (lowest priority) — still not built.
+- [~] **i18n + white-label (BlueArt)** `[!]` backend Phase 26 — **the engine is built and shipped
+      OFF, 2026-09-22.** `src/i18n/`: the old app's language registry (`en · fa · fr · es · ar`),
+      its full 144-entry dictionary ported verbatim, `I18nController` on the shared `Observable`
+      base, a `useT()` hook, and `<html lang/dir>` applied at boot. The nav is wired as the first
+      surface. **Default is unchanged behaviour**: with no `theme.langs` the app is English-only,
+      `?lang=` is ignored, and an E2E test guards that.
+
+      **Mechanism deliberately differs from the old app's, and that is the one liberty taken.**
+      `darz_i18n.js` translates by sweeping the DOM after every render; in React that fights the
+      renderer (a MutationObserver rewriting text React owns is undone on the next commit). Same
+      dictionary, same theme keys, same defaults — substitution moved to a `t()` lookup.
+
+      **Still open, and now with evidence — G-I18N-1.** Enabling Farsi was verified in a browser:
+      direction flips, the nav translates, the layout mirrors. But the ~430 strings NOT yet wired
+      to `t()` stay English, and English inside an RTL container produces bidi artifacts — a
+      screenshot showed the hero lede rendering as `.Contemporary Iranian works…` with its period
+      moved to the left. So the remaining work is not "translate the strings", it is **two
+      decisions**: (1) which languages actually ship, and (2) whether RTL gets a real layout audit
+      (the old engine injects a stylesheet of RTL overrides that this port does not carry). Wiring
+      call sites before (2) is answered is what would cause rework.
 
 ## Phase 13 — Testing
 
@@ -1065,8 +1159,23 @@ surface before building each. Ordered by V1 relevance:
       two tiers' claims and the rule of thumb (a new desk gets its real-backend walk before it
       ships; the smoke only grows with the boot/shell contract).
 
-- [ ] Component tests for shared/base components
-- [ ] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
+- [x] Component tests for shared/base components — **built 2026-09-22**, now **53 tests** across
+      `Dropdown` (14), `Sheet` (9), the form primitives (17) and `Segment` / `Toast` (13, added in
+      #86). `vitest.config.ts` now runs **two
+      projects**: `logic` (`*.test.ts`, node, no DOM) and `components` (`*.test.tsx`, jsdom). The
+      split is deliberate rather than incidental — the node project having no `localStorage` is
+      what proves `QuestionnaireController` and `bankDetails` survive a private window, and giving
+      the whole suite a DOM would quietly delete that guarantee. Deps added: `jsdom`,
+      `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, all dev.
+- [~] E2E on critical flows (login, browse→detail→request, admin CRUD, optimistic-lock conflict)
+      — **partly done, and honestly bounded.** 82 Playwright tests now run in CI against the stub:
+      `desks.spec.ts` (54) walks every admin desk, `collector.spec.ts` (25) the collector journeys,
+      `smoke.spec.ts` (3) the boot/gate/sign-in contract. **Both sign-ins are covered; reads are
+      covered.** What is *not*: **admin CRUD writes** and the **409 conflict path**, because the
+      stub holds no state and the real-backend tier is local-only (the one `TeamUser`'s password is
+      recorded nowhere — `docs/HANDOFF.md` §5). The conflict path is covered at the unit level
+      instead, by `src/api/optimisticLock.test.ts` pinning the wire format of all six locking
+      calls. Closing this row for real needs a seeded backend in CI, which is backend work.
 
 ## Phase 14 — Deploy & cutover `[~]` config landed; deploy blocked on a Vercel permission
 

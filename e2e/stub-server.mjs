@@ -118,7 +118,16 @@ function bearerIsCollector(req) {
 }
 
 const routes = {
-  'GET /api/app-theme/': () => envelope({ theme: {} }),
+  // `?langs=` turns the multilingual engine on for one walk. The app ships it
+  // OFF (no `theme.langs`), and the default here reproduces that — so the stub
+  // proves both halves: English-only by default, and a real language when the
+  // owner publishes one.
+  'GET /api/app-theme/': (req) => {
+    const on = new URL(req.url, 'http://x').searchParams.get('langs');
+    return envelope({
+      theme: on ? { langs: { enabled: ['en', 'fa'], def: on } } : {},
+    });
+  },
   'POST /api/auth/team/login/': () => envelope(TOKENS.team),
   // The collector gate's own sign-in — first name + access key, the credential
   // model D4 kept (`docs/PHASE_24_35_PLAN.md`).

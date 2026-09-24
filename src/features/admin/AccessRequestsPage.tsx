@@ -75,7 +75,7 @@ export function AccessRequestsPage() {
           const note = 'From access request' + (bits.length ? ' · ' + bits.join(' · ') : '');
           await adminAccounts.updateCollector(c.id, {
             notes: c.notes ? `${c.notes}\n${note}` : note,
-            version: c.version,
+            expected_version: c.version,
           });
         } catch {
           setError('Key issued, but the request note could not be written to the collector.');

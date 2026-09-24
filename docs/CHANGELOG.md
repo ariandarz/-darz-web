@@ -5,6 +5,68 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-23 — The docs are brought level with what is merged
+
+- **`HANDOFF.md`, `TASKLIST.md`, `NOTES-FOR-ARIAN.md` and `CLAUDE.md` updated together.** They
+  still described a `development` 6 commits ahead and three open PRs; #86-#90 are all merged and
+  it is 18 ahead. Gate re-measured, not copied: **620 unit · 82 E2E · typecheck · lint 0 · format ·
+  build · `npm audit` 0**.
+- **No code changed.** Nothing was in flight and nothing was half-built; this is a record pass.
+
+## 2026-09-22 — CI stops running the gate twice
+
+- **`push` now lists `main` only.** A release pull request has `development` as its head, so every
+  push to it fired `push` *and* `pull_request` on the same commit — the full gate, twice, at once.
+  `pull_request` already runs against the merge commit, so nothing is tested less.
+- **A `concurrency` group cancels superseded pull-request runs.** Pushing three commits no longer
+  leaves two stale runs to finish. `push` runs on `main` are exempt: that one is the post-merge
+  record of a deployed commit.
+- **Every action pinned to `@v5`.** `v4` runs on Node 20, deprecated 2025-09-19 — the runner was
+  already forcing them onto Node 24 and warning on every job.
+
+## 2026-09-22 — The optimistic lock was off on three desks, and Phase 13's last row closed (#85)
+
+- **`updateCollector`, `updateTeamUser` and `updateMembershipCode` sent `version`; the API wants
+  `expected_version`.** The field is *optional*, so the server skipped the lock and wrote anyway —
+  Collectors, Memberships and Team logins were last-write-wins with no 409, and on Team the raced
+  field is `role`. TypeScript could not catch it: both spellings are a `number`.
+- **`src/api/optimisticLock.test.ts` pins the wire format** for all six locking calls, so the next
+  rename cannot silently disable it again.
+- **40 component tests** across `Dropdown`, `Sheet` and the form primitives; `vitest.config.ts` now
+  runs two projects (`logic`, node/no-DOM · `components`, jsdom). Phase 7 and Phase 13 closed, and
+  four "remaining" phases verified as backend dead ends.
+
+## 2026-09-22 — The handoff doc, and two more component suites (#86)
+
+- **`docs/HANDOFF.md` rewritten** as the two-minute start-here: state, what is next, the traps —
+  including the claims in these docs that turned out false when checked.
+- **`Segment` and `Toast` tests** added on top of #85's 40.
+
+## 2026-09-22 — vitest 3 → 5, clearing a dev-only advisory (#87)
+
+- **`GHSA-82fw-gwwq-j7x9`** (path traversal in `vite`'s dev server) is gone; `npm audit` reports
+  **0 vulnerabilities**, dev and prod. Never shipped — the dev server is not in the bundle.
+- **Node 22 became the floor** (`engines`), because `jsdom@30` requires it. On Node 20 the suite
+  fails *dishonestly*: the `.test.tsx` files never load and vitest still prints a green count.
+
+## 2026-09-22 — The i18n engine, shipped OFF exactly as the old app ships it (#88)
+
+- **`src/i18n/`**: the old app's registry (`en · fa · fr · es · ar`), its 144-entry dictionary
+  ported verbatim, `I18nController` on the shared `Observable` base, a `useT()` hook, and
+  `<html lang/dir>` applied at boot. The nav is the first wired surface.
+- **Default behaviour is unchanged** — with no `theme.langs` the app is English-only and `?lang=`
+  is ignored; an E2E test guards that. One liberty taken, and stated: `darz_i18n.js` translates by
+  sweeping the DOM after every render, which fights React, so substitution moved to a `t()` lookup.
+- **G-I18N-1 stays open with evidence.** Farsi was enabled in a browser — direction flips, the nav
+  translates — but English inside an RTL container has bidi artifacts (the hero lede rendered as
+  `.Contemporary Iranian works…`). Wiring the ~430 remaining strings before the RTL decision is
+  what would cause rework.
+
+## 2026-09-22 — The owner's four open decisions, in one place (#89)
+
+- **`docs/NOTES-FOR-ARIAN.md`**: the release, the real API URL, the i18n decisions, and the
+  `/artists` menu entry — each with what it unblocks and what it costs.
+
 ## 2026-09-22 — The container is built and run, and it had three bugs
 
 - **`Dockerfile` and `nginx.conf` are no longer unverified.** Built, started,

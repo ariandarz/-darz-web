@@ -462,7 +462,13 @@ export class AdminAccountsService extends ResourceService {
     return this.create<CollectorAdmin>('/collectors/', body);
   }
   /** PATCH with the row's own `version` — a stale one 409s (Phase 7 rule). */
-  updateCollector(id: string, body: Partial<CollectorAdmin> & { version: number }) {
+  /** **`expected_version`, not `version`** — the optimistic-lock field on
+   * `PatchedCollectorUpdate`. This took `version` until 2026-09-22, which the
+   * server does not read: the lock was silently OFF and two admins editing the
+   * same collector overwrote each other with no 409 and no warning. Same bug
+   * was in `updateTeamUser` and `updateMembershipCode`; the catalog and sales
+   * services always had it right. */
+  updateCollector(id: string, body: Partial<CollectorAdmin> & { expected_version: number }) {
     return this.client.send<CollectorAdmin>('PATCH', `${this.basePath}/collectors/${id}/`, {
       body,
     });
@@ -518,7 +524,12 @@ export class AdminAccountsService extends ResourceService {
   createMembershipCode(body: Partial<MembershipCodeAdmin>) {
     return this.create<MembershipCodeAdmin>('/membership-codes/', body);
   }
-  updateMembershipCode(id: string, body: Partial<MembershipCodeAdmin> & { version: number }) {
+  /** `expected_version` — see `updateCollector` for what taking `version`
+   * here silently did until 2026-09-22. */
+  updateMembershipCode(
+    id: string,
+    body: Partial<MembershipCodeAdmin> & { expected_version: number },
+  ) {
     return this.client.send<MembershipCodeAdmin>(
       'PATCH',
       `${this.basePath}/membership-codes/${id}/`,
@@ -542,7 +553,9 @@ export class AdminAccountsService extends ResourceService {
   createTeamUser(body: { email: string; name?: string; role?: string }) {
     return this.create<TeamUserAdmin & { password: string }>('/team-users/', body);
   }
-  updateTeamUser(id: string, body: Partial<TeamUserAdmin> & { version: number }) {
+  /** `expected_version` — see `updateCollector`. A silent overwrite matters
+   * more here than anywhere: this endpoint sets a teammate's ROLE. */
+  updateTeamUser(id: string, body: Partial<TeamUserAdmin> & { expected_version: number }) {
     return this.client.send<TeamUserAdmin>('PATCH', `${this.basePath}/team-users/${id}/`, {
       body,
     });
