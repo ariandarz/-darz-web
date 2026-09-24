@@ -4,7 +4,7 @@
 **Sources:** `darzstudio.art` `darz-studio.html` (the old admin app — _not_ `app.html`) ·
 `darz-backend-api` @ `development` `12988db` · this repo @ `development`.
 
-The panel is **14 groups and 55 tabs**. `docs/PHASE_11B_PLAN.md` covers 11 of those tabs; this
+The panel is **14 groups and 55 tabs**. `docs/archive/PHASE_11B_PLAN.md` covers 11 of those tabs; this
 document covers all of them, and the shared decisions that make them one system rather than 55
 pages. It is the answer to "is this accounted for, and how does it fit together".
 
@@ -234,7 +234,7 @@ theme.design      -> colours, layout, stats strip, per-page buttons
   though the store does not.
 - Versions give the owner _try it, revert it_: publish, look, `activate` the previous checkpoint.
 
-**This also closes several open items in `docs/API_INTEGRATION_GAPS.md` at once** — the WhatsApp
+**This also closes several open items in `docs/archive/API_INTEGRATION_GAPS.md` at once** — the WhatsApp
 number, hero copy, About text, social links, `shipNote` and Terms/Privacy are hardcoded today and
 have nowhere to live; `theme.copy` is that home.
 
@@ -309,7 +309,7 @@ Everything below assumes the desk kit, which is done.
 | **6** | Documents studio                                                                     | §5. After the catalogue, because a pricelist and a proposal both reference works.                                                                                                                            |
 | **7** | Galleries + Sources & Partners + Market Portal                                       | The gallery loop, including the no-login portal.                                                                                                                                                             |
 | **8** | Auctions admin · Intelligence · Data Health · Import                                 |                                                                                                                                                                                                              |
-| **9** | Projects (Phase 11c) ✅ 2026-09-19                                                   | Its own plan (`docs/PHASE_11C_PLAN.md`) — ~2,300 lines of old source, eight sub-tabs; seven desks + the record with its stage rail and one-click proposal. Gaps G-PROJ-1…5.                                  |
+| **9** | Projects (Phase 11c) ✅ 2026-09-19                                                   | Its own plan (`docs/archive/PHASE_11C_PLAN.md`) — ~2,300 lines of old source, eight sub-tabs; seven desks + the record with its stage rail and one-click proposal. Gaps G-PROJ-1…5.                                  |
 | —     | Social · Logistics · Analytics · Languages · Strategy · Automations                  | Blocked on the backend. UI-only work is possible for **Insights & Stories** if the owner wants it ahead of its API.                                                                                          |
 
 ---

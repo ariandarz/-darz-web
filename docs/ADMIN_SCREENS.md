@@ -3,7 +3,7 @@
 The admin panel is a faithful port of `darz-studio.html`'s, and until 2026-09-21 every fidelity
 claim in this repo was a **line citation** rather than a picture — there was no design package for
 the panel the way `DarzStudio/design/market-app/` is one for the collector app
-(`docs/ADMIN_V1_AUDIT.md` §6.3). There is now:
+(`docs/archive/ADMIN_V1_AUDIT.md` §6.3). There is now:
 
 > **`../DarzStudio/design/admin-panel/`** — 52 screens of the live old panel, each in
 > desktop/mobile × dark/light, captured offline by a Playwright harness that can be re-run.
@@ -38,7 +38,7 @@ bars in it, or anything whose shape depends on data. Those stay the real-backend
    actually saw. Then `light/`, then the two `mobile/` sets.
 3. Where a `-full` variant exists, use it for anything below the fold.
 4. Run the new desk at the same viewport and compare.
-5. **A difference is not automatically a bug.** `docs/ADMIN_V1_AUDIT.md` §6.2 lists seven divergences
+5. **A difference is not automatically a bug.** `docs/archive/ADMIN_V1_AUDIT.md` §6.2 lists seven divergences
    that are already recorded and accepted. Add to that list rather than silently closing a gap —
    the faithful-port rule in `CLAUDE.md` cuts both ways.
 
