@@ -1,10 +1,10 @@
 # Handoff — start here
 
-**Rewritten 2026-09-22, end of the session that shipped PRs #83, #84 and #85.**
+**Rewritten 2026-09-23, after PRs #86-#90 all merged to `development`. No work is in flight.**
 
-`docs/TASKLIST.md` is the progress record and `docs/ADMIN_V1_AUDIT.md` is the plan. This file is
-the two-minute version: where things stand, what is genuinely next, and the traps that have
-already cost time.
+`docs/TASKLIST.md` is the progress record, `docs/ADMIN_V1_AUDIT.md` is the admin plan, and
+`docs/NOTES-FOR-ARIAN.md` is the owner's decision list. This file is the two-minute version: where
+things stand, what is genuinely next, and the traps that have already cost time.
 
 ---
 
@@ -13,19 +13,20 @@ already cost time.
 | | |
 | --- | --- |
 | `main` | `50215b3` (PR #84) |
-| `development` | `05bf997` (PR #85) — **6 commits ahead of `main`** |
-| Open PRs | none |
-| Gate | **589 unit · 81 E2E** · typecheck · lint 0 · format · build |
-| CI | Node **22** (both jobs) |
-| Live | https://darz-web.vercel.app — auto-deploys `main`, so it does **not** yet have PR #85 |
+| `development` | `f580eed` (PR #90) — **18 commits ahead of `main`** |
+| Working branch | `claude/kind-ptolemy-vntmfh`, cut from `f580eed`; carries this doc sync only |
+| Open PRs | none at the time of writing (the doc-sync PR is the exception, if still open) |
+| Gate | **620 unit** (56 files) · **82 E2E** (collector 25 · desks 54 · smoke 3) · typecheck · lint 0 · format · build · `npm audit` **0** |
+| CI | Node **22** both jobs · `push` on `main` only · concurrency cancels superseded PR runs · actions `@v5` |
+| Live | https://darz-web.vercel.app — auto-deploys **`main`**, so it has **none** of the 18 commits |
 
-**The admin panel and the collector app are functionally complete for V1.** Everything that was
-unblocked has been built. What remains is either backend-blocked, owner-deferred, or one owner
-decision (§3).
+**The admin panel and the collector app are functionally complete for V1, and every buildable task
+is built and merged.** What remains is backend-blocked, owner-deferred, or one of the four owner
+decisions in §3.
 
 ---
 
-## 2 · What the last session shipped
+## 2 · What the last two sessions shipped
 
 **PR #83 / #84 — the collector app's Phase 9 line, and five admin items.**
 The **questionnaire** (`/questionnaire`) and **membership** (Settings › Membership) screens, the
@@ -34,7 +35,28 @@ Data Health counts panel), TD-3 (the invoice bank block) and TD-8 (`admin.css` s
 parts).
 
 **PR #85 — Phase 7 and Phase 13 closed, and a real bug.**
-See §4 for the bug. Also 40 component tests, and four "remaining" phases verified as dead ends.
+The silently-disabled optimistic lock on three admin editors (§4). Also 40 component tests, and
+four "remaining" phases verified as dead ends.
+
+**PR #86 — this file's previous rewrite**, plus `Segment` and `Toast` component tests.
+
+**PR #87 — vitest 3 → 5**, clearing `GHSA-82fw-gwwq-j7x9` (a dev-only path-traversal advisory in
+`vite`'s dev server). `npm audit` is 0, dev and prod.
+
+**PR #88 — the i18n engine, shipped OFF**, exactly as the old app ships it. `src/i18n/`: the old
+registry (`en · fa · fr · es · ar`), the 144-entry dictionary ported verbatim, `I18nController` on
+the shared `Observable` base, `useT()`, and `<html lang/dir>` at boot. Two decisions remain before
+the ~430 call sites are wired — **G-I18N-1**, §3.
+
+**PR #89 — `docs/NOTES-FOR-ARIAN.md`**, the four open owner decisions in one place.
+
+**PR #90 — CI stops running the gate twice.** A release PR has `development` as its head, so every
+push to it fired `push` *and* `pull_request` on the same commit: the whole gate, twice, ~18 wasted
+minutes per release. `push` now lists `main` only (`pull_request` already runs against the *merge*
+commit, so nothing is tested less), a `concurrency` group cancels superseded PR runs, and every
+action is pinned `@v5` (`v4` runs on Node 20, deprecated 2025-09-19).
+
+**All eight of those merges were done by the owner personally** — no merge was made from a session.
 
 ---
 
@@ -44,10 +66,11 @@ See §4 for the bug. Also 40 component tests, and four "remaining" phases verifi
 
 | Ref | Question |
 | --- | --- |
-| **Release** | `development` is 6 commits ahead of `main`. Say "release to main" to ship the lock fix, the component tests and the Node 22 CI fix. Merging is never a standing permission — ask per request (`CLAUDE.md`). |
-| **API URL** | `.env.production` is the deliberate `api.invalid` placeholder, so the live site is **visual-only**: layout, routing, both themes and fonts are real; sign-in and data are not. This is the single biggest thing between the owner and a working site. |
-| **i18n** | The only remaining buildable item — see `docs/TASKLIST.md`'s Phase 26 row for the full scoping. It is a real port (the old app ships `darz_i18n.js`, 31KB, with en · fa · fr · es · ar), **but the old app ships it OFF** and three answers are needed first: which languages ship, whether Farsi/Arabic get real **RTL layout** (the old CSS is LTR-only — guessing wrong means redoing the work), and whether the picker is visible. |
-| **G-LOCK-1** | Backend: put the optimistic lock on Accounting and Auction Records. They are last-write-wins today, and `enforce_version` is only called from catalog, accounts, projects, crm and sales. A silent overwrite in the ledger costs money. |
+| **Release** | `development` is **18 commits ahead of `main`**, so the live site has none of it. Say "release to main" and the whole thing runs: PR → CI → merge → merge-back → confirm level → confirm Vercel deployed. Merging is never a standing permission — ask per request (`CLAUDE.md`). |
+| **API URL** | `.env.production` is the deliberate `api.invalid` placeholder, so the live site is **visual-only**: layout, routing, both themes and fonts are real; sign-in and data are not. This is the single biggest thing between the owner and a working site. One line changes. |
+| **i18n — G-I18N-1** | The engine is built and off. Three answers unblock the rest: **which languages ship**, whether Farsi/Arabic get a **real RTL layout audit** (our CSS has never been audited; the old engine ships an RTL override sheet this port does not carry — guessing wrong means redoing the work), and whether the picker is visible. Recommendation on file: **Farsi first, with a real RTL pass.** |
+| **`/artists` menu entry** | The artist index exists at `/artists` and nothing links to it. Nav, Market screen, or deep link only? ~30 minutes once answered. |
+| **G-LOCK-1** | Backend: put the optimistic lock on Accounting and Auction Records. They are last-write-wins today — `enforce_version` is called only from catalog, accounts, projects, crm and sales. A silent overwrite in the ledger costs money. |
 | **G-6** | Intelligence · Marketing · Document Builder — deferred 2026-09-21. Still deferred unless the owner reverses it. |
 
 ### Backend-blocked — verified 2026-09-22, do not re-check
@@ -72,6 +95,13 @@ membership" read — `tier` is the CRM segmentation every collector has) · `G-M
 `source_type` on an artwork, no deleted-row count, no `created_after`) · `G-DOC-1` (nowhere to edit
 the studio's bank details except by issuing an invoice) · `G-SALE-4` · `G-CLUB-3` · `G-AUC-4` ·
 `G-REC-1` · `G-CHAT-2`.
+
+### Buildable without anyone — the honest remainder
+
+Nothing is queued. The only frontend work that does not need an answer first is **Phase 5b** (the
+Database desk's four hard filters — completeness, size ranges, duplicate images, Gallery Portal),
+and that needs backend work before the frontend has anything to call; the desk already names those
+filters as unavailable.
 
 ---
 
@@ -101,6 +131,14 @@ Each of these cost real time:
   When a screen misbehaves under the stub, ask first whether the stub is wrong.
 - **`src/api/schema.d.ts` is stale** — it under-reports 409s. Regenerate against a running backend
   before trusting it for conflict behaviour.
+- **A sibling session's report is not about this repo until proven.** One was titled *"Stop CI
+  running twice per pull request"* and cited PR numbers that all exist here — it was working on a
+  different repository. Three primary-source checks settled it (this repo's `quality.yml` was
+  untouched; our PR of that number had a different subject; our PR carried no comment from it).
+  Check before pausing work for an overlap, and check before assuming one.
+- **`npm run format` does not cover `docs/`.** `format:check` is
+  `prettier --check "src/**/*.{ts,tsx,css}" "*.{ts,json,html}"` — running prettier over `docs/`
+  reflows hundreds of unrelated lines and CI never asked for it. Edit Markdown by hand.
 
 ---
 
@@ -154,10 +192,13 @@ Reach for **`asArray()`** (`src/api/shapes.ts`) by default; `normaliseFacets` /
   not the rendered result.
 - **A field the old app has and this backend cannot support is a flag, not a deletion.** Say so in a
   comment and to the owner.
-- **Merging needs the owner to ask, per request.** "Keep things moving" is not authorisation.
+- **Merging needs the owner to ask, per request.** "Keep things moving" is not authorisation, and
+  neither is the owner marking a PR ready for review.
 - **Tests:** `vitest.config.ts` runs two projects — `logic` (`*.test.ts`, **node, no DOM**) and
   `components` (`*.test.tsx`, jsdom). The node project's lack of a DOM is deliberate: it is what
   proves `QuestionnaireController` and `bankDetails` survive a private window. Do not merge them.
 - **Node 22 is the floor** (`engines`), because `jsdom@30` requires it. On Node 20 it fails
-  *dishonestly* — the `.test.tsx` files never load and vitest still prints "549 passed".
+  *dishonestly* — the `.test.tsx` files never load and vitest still prints a green count.
 - **Never bare `git stash`** in a worktree — the stack is shared with the main checkout.
+- **Every env value comes from `.env`** — `resolveBaseUrl()` throws when `VITE_API_BASE_URL` is
+  unset. No hardcoded fallbacks, ever.
