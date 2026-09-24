@@ -14,67 +14,207 @@
  * stay registered but redirect to Market, so a deep link, a bookmark or a
  * typed URL cannot reach it — the old app's `render()` guard (app.html:5673).
  */
+import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import App from './App';
 import { useSession } from './api/hooks';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { RequireTeam } from './features/auth/RequireTeam';
-import { TeamLoginPage } from './features/auth/TeamLoginPage';
 import { ArtistDetailPage } from './features/catalogue/ArtistDetailPage';
 import { ArtistListPage } from './features/catalogue/ArtistListPage';
 import { ArtworkCacheProvider } from './features/catalogue/ArtworkCacheProvider';
 import { ArtworkDetailPage } from './features/catalogue/ArtworkDetailPage';
 import { CataloguePage } from './features/catalogue/CataloguePage';
-import { AdminRequestsPage } from './features/admin/AdminRequestsPage';
-import { ArtistsPage } from './features/admin/ArtistsPage';
-import { AuctionAdminDetailPage } from './features/admin/AuctionAdminDetailPage';
-import { AccountingPage } from './features/admin/AccountingPage';
-import { DealEditorPage } from './features/admin/DealEditorPage';
-import { LedgerEntryPage } from './features/admin/LedgerEntryPage';
-import { AuctionsAdminPage } from './features/admin/AuctionsAdminPage';
-import { RegistrationsPage } from './features/admin/RegistrationsPage';
-import { RecordEditorPage } from './features/admin/RecordEditorPage';
-import { RecordsAdminPage } from './features/admin/RecordsAdminPage';
-import { DocumentDetailPage } from './features/admin/DocumentDetailPage';
-import { DocumentsPage } from './features/admin/DocumentsPage';
-import { PublishedPage } from './features/admin/PublishedPage';
-import { SaleDetailPage } from './features/admin/SaleDetailPage';
-import { SourceDetailPage } from './features/admin/SourceDetailPage';
-import { ExhibitionComposePage } from './features/admin/ExhibitionComposePage';
-import { ExhibitionServicesPage } from './features/admin/exhibitions/ExhibitionServicesPage';
-import { IssueDocumentPage } from './features/admin/exhibitions/IssueDocumentPage';
-import { SourcesPage } from './features/admin/SourcesPage';
-import { SalesPage } from './features/admin/SalesPage';
-import { ArtworkEditorPage } from './features/admin/ArtworkEditorPage';
-import { ArtworksPage } from './features/admin/ArtworksPage';
-import { AccessRequestsPage } from './features/admin/AccessRequestsPage';
-import { AdminChatPage } from './features/admin/AdminChatPage';
-import { CollectorDetailPage } from './features/admin/CollectorDetailPage';
-import { CollectorsPage } from './features/admin/CollectorsPage';
-import { ClubPage } from './features/admin/ClubPage';
-import { DesignPage } from './features/admin/DesignPage';
-import { DataHealthPage } from './features/admin/DataHealthPage';
-import { ImportBatchPage } from './features/admin/ImportBatchPage';
-import { ImportPage } from './features/admin/ImportPage';
-import { MembershipsPage } from './features/admin/MembershipsPage';
-import { TeamPage } from './features/admin/TeamPage';
-import { SettingsPage as AdminSettingsPage } from './features/admin/SettingsPage';
+// The admin panel is 41% of the app and no collector loads it, so every admin
+// page (and the team-login gate) is code-split with `React.lazy`: the pages
+// leave the main bundle and download only when a team session opens `/admin`.
+// The route table below is unchanged — only HOW these components arrive is —
+// so paths and structure stay byte-for-byte identical. Each `.then` maps the
+// module's named export onto `lazy`'s expected `{ default }`. The `<Suspense>`
+// that catches them is inside `AdminShell` (around its `<Outlet/>`); the one
+// eager path, `/admin/login`, carries its own inline `<Suspense>` below.
+const TeamLoginPage = lazy(() =>
+  import('./features/auth/TeamLoginPage').then((m) => ({ default: m.TeamLoginPage })),
+);
+const AdminRequestsPage = lazy(() =>
+  import('./features/admin/AdminRequestsPage').then((m) => ({ default: m.AdminRequestsPage })),
+);
+const ArtistsPage = lazy(() =>
+  import('./features/admin/ArtistsPage').then((m) => ({ default: m.ArtistsPage })),
+);
+const AuctionAdminDetailPage = lazy(() =>
+  import('./features/admin/AuctionAdminDetailPage').then((m) => ({
+    default: m.AuctionAdminDetailPage,
+  })),
+);
+const AccountingPage = lazy(() =>
+  import('./features/admin/AccountingPage').then((m) => ({ default: m.AccountingPage })),
+);
+const DealEditorPage = lazy(() =>
+  import('./features/admin/DealEditorPage').then((m) => ({ default: m.DealEditorPage })),
+);
+const LedgerEntryPage = lazy(() =>
+  import('./features/admin/LedgerEntryPage').then((m) => ({ default: m.LedgerEntryPage })),
+);
+const AuctionsAdminPage = lazy(() =>
+  import('./features/admin/AuctionsAdminPage').then((m) => ({ default: m.AuctionsAdminPage })),
+);
+const RegistrationsPage = lazy(() =>
+  import('./features/admin/RegistrationsPage').then((m) => ({ default: m.RegistrationsPage })),
+);
+const RecordEditorPage = lazy(() =>
+  import('./features/admin/RecordEditorPage').then((m) => ({ default: m.RecordEditorPage })),
+);
+const RecordsAdminPage = lazy(() =>
+  import('./features/admin/RecordsAdminPage').then((m) => ({ default: m.RecordsAdminPage })),
+);
+const DocumentDetailPage = lazy(() =>
+  import('./features/admin/DocumentDetailPage').then((m) => ({
+    default: m.DocumentDetailPage,
+  })),
+);
+const DocumentsPage = lazy(() =>
+  import('./features/admin/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
+);
+const PublishedPage = lazy(() =>
+  import('./features/admin/PublishedPage').then((m) => ({ default: m.PublishedPage })),
+);
+const SaleDetailPage = lazy(() =>
+  import('./features/admin/SaleDetailPage').then((m) => ({ default: m.SaleDetailPage })),
+);
+const SourceDetailPage = lazy(() =>
+  import('./features/admin/SourceDetailPage').then((m) => ({ default: m.SourceDetailPage })),
+);
+const ExhibitionComposePage = lazy(() =>
+  import('./features/admin/ExhibitionComposePage').then((m) => ({
+    default: m.ExhibitionComposePage,
+  })),
+);
+const ExhibitionServicesPage = lazy(() =>
+  import('./features/admin/exhibitions/ExhibitionServicesPage').then((m) => ({
+    default: m.ExhibitionServicesPage,
+  })),
+);
+const IssueDocumentPage = lazy(() =>
+  import('./features/admin/exhibitions/IssueDocumentPage').then((m) => ({
+    default: m.IssueDocumentPage,
+  })),
+);
+const SourcesPage = lazy(() =>
+  import('./features/admin/SourcesPage').then((m) => ({ default: m.SourcesPage })),
+);
+const SalesPage = lazy(() =>
+  import('./features/admin/SalesPage').then((m) => ({ default: m.SalesPage })),
+);
+const ArtworkEditorPage = lazy(() =>
+  import('./features/admin/ArtworkEditorPage').then((m) => ({ default: m.ArtworkEditorPage })),
+);
+const ArtworksPage = lazy(() =>
+  import('./features/admin/ArtworksPage').then((m) => ({ default: m.ArtworksPage })),
+);
+const AccessRequestsPage = lazy(() =>
+  import('./features/admin/AccessRequestsPage').then((m) => ({
+    default: m.AccessRequestsPage,
+  })),
+);
+const AdminChatPage = lazy(() =>
+  import('./features/admin/AdminChatPage').then((m) => ({ default: m.AdminChatPage })),
+);
+const CollectorDetailPage = lazy(() =>
+  import('./features/admin/CollectorDetailPage').then((m) => ({
+    default: m.CollectorDetailPage,
+  })),
+);
+const CollectorsPage = lazy(() =>
+  import('./features/admin/CollectorsPage').then((m) => ({ default: m.CollectorsPage })),
+);
+const ClubPage = lazy(() =>
+  import('./features/admin/ClubPage').then((m) => ({ default: m.ClubPage })),
+);
+const DesignPage = lazy(() =>
+  import('./features/admin/DesignPage').then((m) => ({ default: m.DesignPage })),
+);
+const DataHealthPage = lazy(() =>
+  import('./features/admin/DataHealthPage').then((m) => ({ default: m.DataHealthPage })),
+);
+const ImportBatchPage = lazy(() =>
+  import('./features/admin/ImportBatchPage').then((m) => ({ default: m.ImportBatchPage })),
+);
+const ImportPage = lazy(() =>
+  import('./features/admin/ImportPage').then((m) => ({ default: m.ImportPage })),
+);
+const MembershipsPage = lazy(() =>
+  import('./features/admin/MembershipsPage').then((m) => ({ default: m.MembershipsPage })),
+);
+const TeamPage = lazy(() =>
+  import('./features/admin/TeamPage').then((m) => ({ default: m.TeamPage })),
+);
+const AdminSettingsPage = lazy(() =>
+  import('./features/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+);
+const ProjectsDashboardPage = lazy(() =>
+  import('./features/admin/projects/ProjectsDashboardPage').then((m) => ({
+    default: m.ProjectsDashboardPage,
+  })),
+);
+const ProjectsListPage = lazy(() =>
+  import('./features/admin/projects/ProjectsListPage').then((m) => ({
+    default: m.ProjectsListPage,
+  })),
+);
+const NewProjectPage = lazy(() =>
+  import('./features/admin/projects/NewProjectPage').then((m) => ({
+    default: m.NewProjectPage,
+  })),
+);
+const ProjectPage = lazy(() =>
+  import('./features/admin/projects/ProjectPage').then((m) => ({ default: m.ProjectPage })),
+);
+const ProjectReportPage = lazy(() =>
+  import('./features/admin/projects/ProjectReportPage').then((m) => ({
+    default: m.ProjectReportPage,
+  })),
+);
+const ProjectPipelinePage = lazy(() =>
+  import('./features/admin/projects/ProjectPipelinePage').then((m) => ({
+    default: m.ProjectPipelinePage,
+  })),
+);
+const PackagesPage = lazy(() =>
+  import('./features/admin/projects/PackagesPage').then((m) => ({ default: m.PackagesPage })),
+);
+const PackageEditorPage = lazy(() =>
+  import('./features/admin/projects/PackageEditorPage').then((m) => ({
+    default: m.PackageEditorPage,
+  })),
+);
+const ProjectsCalculatorPage = lazy(() =>
+  import('./features/admin/projects/ProjectsCalculatorPage').then((m) => ({
+    default: m.ProjectsCalculatorPage,
+  })),
+);
+const ProjectPartnersPage = lazy(() =>
+  import('./features/admin/projects/ProjectPartnersPage').then((m) => ({
+    default: m.ProjectPartnersPage,
+  })),
+);
+const ProjectsReportsPage = lazy(() =>
+  import('./features/admin/projects/ProjectsReportsPage').then((m) => ({
+    default: m.ProjectsReportsPage,
+  })),
+);
+const AdminThreadPage = lazy(() =>
+  import('./features/admin/AdminThreadPage').then((m) => ({ default: m.AdminThreadPage })),
+);
+const DashboardPage = lazy(() =>
+  import('./features/admin/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
+// Eager: the desk layout, its guards and its nav helpers. `AdminShell` is the
+// route element that hosts the lazy pages (and holds their `<Suspense>`), so it
+// must resolve synchronously; the guards and `adminNav` run before any page.
 import { RequireOwner } from './features/admin/RequireOwner';
 import { AdminShell } from './features/admin/AdminShell';
-import { ProjectsDashboardPage } from './features/admin/projects/ProjectsDashboardPage';
-import { ProjectsListPage } from './features/admin/projects/ProjectsListPage';
-import { NewProjectPage } from './features/admin/projects/NewProjectPage';
-import { ProjectPage } from './features/admin/projects/ProjectPage';
-import { ProjectReportPage } from './features/admin/projects/ProjectReportPage';
-import { ProjectPipelinePage } from './features/admin/projects/ProjectPipelinePage';
-import { PackagesPage } from './features/admin/projects/PackagesPage';
-import { PackageEditorPage } from './features/admin/projects/PackageEditorPage';
-import { ProjectsCalculatorPage } from './features/admin/projects/ProjectsCalculatorPage';
-import { ProjectPartnersPage } from './features/admin/projects/ProjectPartnersPage';
-import { ProjectsReportsPage } from './features/admin/projects/ProjectsReportsPage';
-import { AdminThreadPage } from './features/admin/AdminThreadPage';
-import { DashboardPage } from './features/admin/DashboardPage';
 import { asAdminRole, firstVisiblePath } from './features/admin/adminNav';
 import { AuctionEventPage } from './features/auctions/AuctionEventPage';
 import { AuctionListPage } from './features/auctions/AuctionListPage';
@@ -308,7 +448,12 @@ export function AppRoutes() {
           /* Gated too, so the whole `/admin` prefix obeys FEATURE_ROUTES: with
              `adminDesk` off there must be no team gate to find either. */
           <Gate flag="adminDesk">
-            <TeamLoginPage />
+            {/* Inline Suspense: this is the one lazy admin route that does not
+                render inside `AdminShell`, so it cannot use the shell's
+                boundary. */}
+            <Suspense fallback={null}>
+              <TeamLoginPage />
+            </Suspense>
           </Gate>
         }
       />
