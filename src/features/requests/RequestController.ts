@@ -27,7 +27,8 @@ import type { CrmService } from '../../api/services';
 import type {
   Artwork,
   CollectorRequest,
-  RequestDetail,
+  Currency,
+  RequestDetailInput,
   RequestKind,
   ViewingMode,
 } from '../../api/types';
@@ -210,7 +211,7 @@ export class RequestController extends Observable<RequestSnapshot> {
    * Resolves true once the backend confirmed the request (created, or
    * replayed on the same `client_req_id`); false on a failure or a refused
    * double-tap — the caller keeps its sheet open only in that case. */
-  act(artwork: Artwork, verb: ActionVerb, detail?: RequestDetail): Promise<boolean> {
+  act(artwork: Artwork, verb: ActionVerb, detail?: RequestDetailInput): Promise<boolean> {
     return this.file(
       RequestController.actKey(artwork.id, verb),
       verb,
@@ -235,14 +236,15 @@ export class RequestController extends Observable<RequestSnapshot> {
   }
 
   /** Make an offer. `amount` is already validated by the caller (the sheet owns
-   * the empty/floor messages so it can put them next to the field). */
-  offer(artwork: Artwork, amount: number, currency: string): Promise<boolean> {
+   * the empty/floor messages so it can put them next to the field). It goes on
+   * the wire as a decimal string, the schema's own type for it (G-F1-1). */
+  offer(artwork: Artwork, amount: number, currency: Currency | ''): Promise<boolean> {
     return this.file(
       RequestController.offerKey(artwork.id, amount),
       'offer',
       subjectOf(artwork),
       {
-        amount,
+        amount: String(amount),
         currency,
       },
     );
@@ -289,7 +291,7 @@ export class RequestController extends Observable<RequestSnapshot> {
     key: string,
     verb: ActionVerb,
     subject: Subject,
-    detail?: RequestDetail,
+    detail?: RequestDetailInput,
     copy: { title: string; message: string } = CONFIRM_COPY[verb],
   ): Promise<boolean> {
     const { pending } = this.getSnapshot();
@@ -352,7 +354,10 @@ function withoutKey(set: ReadonlySet<string>, key: string): ReadonlySet<string> 
 }
 
 /** app.html:10182 — `(artist + ' — ' + title)`, with a leading dash trimmed. */
-export function workLine(artwork: Pick<Artwork, 'artist' | 'title'>): string {
+export function workLine(artwork: {
+  artist?: { display_name?: string | null } | null;
+  title?: string | null;
+}): string {
   const artist = artwork.artist?.display_name ?? '';
   const title = artwork.title ?? '';
   return [artist, title].filter(Boolean).join(' — ');

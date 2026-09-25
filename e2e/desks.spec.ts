@@ -166,3 +166,114 @@ for (const route of DETAIL_ROUTES) {
     expect(thrown, `page errors on ${route}`).toEqual([]);
   });
 }
+
+/**
+ * G-LOCK-1 — the ledger entry and auction-record PATCHes REQUIRE the lock
+ * (`expected_version`; a PATCH without it fails, a stale one is a 409). Both
+ * desks were last-write-wins until 2026-09-25. Each walk serves one row, answers
+ * its save with the 409 another editor's save would cause, and asserts the lock
+ * went out on the wire and the conflict banner — not a generic error — came up.
+ */
+const LOCK_ID = '00000000-0000-4000-8000-00000000f00d';
+const conflict409 = {
+  status: 409,
+  contentType: 'application/json',
+  body: JSON.stringify({
+    success: false,
+    error: { code: 'CONFLICT', message: 'This record was modified by someone else.' },
+    timestamp: new Date().toISOString(),
+  }),
+};
+const ok = (data: unknown) => ({
+  status: 200,
+  contentType: 'application/json',
+  body: JSON.stringify({
+    success: true,
+    data,
+    message: '',
+    timestamp: new Date().toISOString(),
+  }),
+});
+
+test('a stale auction-record save sends its version and shows the conflict banner', async () => {
+  thrown = [];
+  const sent: unknown[] = [];
+  const url = `**/api/auctions/admin/records/${LOCK_ID}/`;
+  await page.route(url, (route) => {
+    if (route.request().method() === 'PATCH') {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill(conflict409);
+    }
+    return route.fulfill(
+      ok({ id: LOCK_ID, house: 'Christie’s', lot_title: 'Heech', artist: null, version: 3 }),
+    );
+  });
+  try {
+    await page.goto(`/admin/auction-records/${LOCK_ID}`);
+    await page.getByRole('button', { name: 'Save record' }).click();
+    await expect(
+      page.getByText('Someone else saved this record in the meantime'),
+    ).toBeVisible();
+    expect((sent[0] as { expected_version?: number }).expected_version).toBe(3);
+  } finally {
+    await page.unroute(url);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('a stale ledger-entry save sends its version and shows the conflict banner', async () => {
+  thrown = [];
+  const sent: unknown[] = [];
+  const entry = {
+    id: LOCK_ID,
+    book: 'darz',
+    entry_type: 'expense',
+    category: 'Rent',
+    amount: '1200.00',
+    currency: 'USD',
+    entry_date: '2026-09-20',
+    status: 'pending',
+    note: '',
+    has_receipt: false,
+    is_counted: true,
+    attachments: [],
+    arian_review: null,
+    version: 5,
+  };
+  const matches = (u: URL) => u.pathname.startsWith('/api/accounting/admin/ledger/');
+  await page.route(matches, (route) => {
+    const req = route.request();
+    if (req.method() === 'PATCH') {
+      sent.push(req.postDataJSON());
+      return route.fulfill(conflict409);
+    }
+    if (new URL(req.url()).pathname.endsWith(`${LOCK_ID}/`)) return route.fulfill(ok(entry));
+    if (new URL(req.url()).pathname !== '/api/accounting/admin/ledger/')
+      return route.fallback();
+    return route.fulfill(
+      ok({
+        pagination: {
+          page: 1,
+          per_page: 25,
+          total_pages: 1,
+          total_count: 1,
+          has_next: false,
+          has_previous: false,
+        },
+        results: [entry],
+      }),
+    );
+  });
+  try {
+    await page.goto('/admin/accounting?view=books&book=darz');
+    await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Save entry' }).click();
+    await expect(
+      page.getByText('Someone else saved this entry in the meantime'),
+    ).toBeVisible();
+    expect((sent[0] as { expected_version?: number }).expected_version).toBe(5);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});

@@ -52,7 +52,7 @@ import type {
   PublishedRecommendation,
   CollectorQuestionnaire,
   QuestionnaireAnswer,
-  RequestDetail,
+  RequestDetailInput,
   RequestKind,
   RequestMessage,
   RequestMessageQuery,
@@ -190,13 +190,18 @@ export class CrmService extends ResourceService {
   requests(query: CollectorRequestQuery = {}) {
     return this.list<CollectorRequest>('/requests/', query as RequestOptions['query']);
   }
+  /** One of the collector's own requests (`GET /api/crm/requests/{id}/`,
+   * G-P5-3) — what a cold deep link to a thread reads, instead of the list. */
+  request(id: string) {
+    return this.retrieve<CollectorRequest>(`/requests/${id}/`);
+  }
   /** File a request. `client_req_id` is the idempotency key the backend
    * dedupes on per collector: the same key answers 200 with the row it
    * already holds instead of creating a second one (`replayed: true`). */
   async createRequest(body: {
     kind: RequestKind;
     artwork?: string | null;
-    detail?: RequestDetail;
+    detail?: RequestDetailInput;
     client_req_id?: string;
   }): Promise<CreatedRequest> {
     const res = await this.client.sendEnveloped<CollectorRequest>(
@@ -1166,7 +1171,10 @@ export class AuctionsAdminService extends ResourceService {
   createRecord(body: Partial<AuctionRecord>) {
     return this.create<AuctionRecord>('/records/', body);
   }
-  updateRecord(id: string, body: Partial<AuctionRecord>) {
+  /** `expected_version` is mandatory (G-LOCK-1): a stale one is a 409
+   * `ConflictError`, and a PATCH without it fails server-side (today a 500 —
+   * the view pops a key its partial serializer never required). */
+  updateRecord(id: string, body: Partial<AuctionRecord> & { expected_version: number }) {
     return this.client.send<AuctionRecord>('PATCH', `${this.basePath}/records/${id}/`, {
       body,
     });
@@ -1208,7 +1216,10 @@ export class AccountingAdminService extends ResourceService {
   createEntry(body: Record<string, unknown>) {
     return this.create<LedgerEntryAdmin>('/ledger/', body);
   }
-  updateEntry(id: string, body: Record<string, unknown>) {
+  /** `expected_version` is mandatory (G-LOCK-1): a stale one is a 409
+   * `ConflictError`, and a PATCH without it fails server-side (today a 500 —
+   * the view pops a key its partial serializer never required). */
+  updateEntry(id: string, body: Record<string, unknown> & { expected_version: number }) {
     return this.client.send<LedgerEntryAdmin>('PATCH', `${this.basePath}/ledger/${id}/`, {
       body,
     });
@@ -1477,11 +1488,9 @@ export class AuthService extends ResourceService {
    * Lands in the admin review queue, where a human issues a key or declines;
    * it mints no credential by itself.
    *
-   * `client_req_id` is sent because the old app sends one (app.html:2559) and
-   * the day the backend honours it the client already complies. Today it is
-   * **ignored** — `AccessRequestService.create` is a plain `objects.create`
-   * with no uniqueness, so a double-tap still makes two pending rows
-   * (docs/PHASE_24_35_API_GAPS.md G-P34-1, owner decision D3).
+   * `client_req_id` dedupes (G-P34-1): a repeat of a key answers 200 with the
+   * row already filed, a new one 201 — both resolve here. The endpoint is
+   * rate-limited per IP (G-P34-2), so a burst ends in a 429 `HttpError`.
    */
   requestAccess(body: AccessRequestInput) {
     return this.create<AccessRequest>('/access-requests/', body);

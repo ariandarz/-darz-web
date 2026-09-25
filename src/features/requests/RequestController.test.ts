@@ -101,7 +101,7 @@ describe('RequestController — filing an action', () => {
     expect(crm.createRequest).toHaveBeenCalledTimes(2);
   });
 
-  it('sends the offer amount and currency as the request detail', async () => {
+  it('sends the offer amount (as a decimal string) and currency as the request detail', async () => {
     const crm = fakeCrm();
     const c = make(crm);
 
@@ -110,7 +110,7 @@ describe('RequestController — filing an action', () => {
     expect(crm.createRequest).toHaveBeenCalledWith({
       kind: 'offer',
       artwork: 'aw1',
-      detail: { amount: 9500, currency: 'USD' },
+      detail: { amount: '9500', currency: 'USD' },
       client_req_id: expect.any(String),
     });
     expect(c.getSnapshot().confirmation?.title).toBe('Offer received');

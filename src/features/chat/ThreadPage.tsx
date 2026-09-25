@@ -41,11 +41,18 @@ function stamp(iso: string): string {
 export function ThreadPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { controller: conversations, status: listStatus } = useConversations();
+  const { controller: conversations } = useConversations();
   const request = conversations.byId(id!);
+  // A cold deep link reads its one request (G-P5-3) rather than waiting for
+  // the whole list; a no-op once the list already holds it.
+  useEffect(() => {
+    if (id) void conversations.open(id);
+  }, [conversations, id]);
   const thread = useThread(id!);
-  const lookup = useArtworks([request?.artwork]);
-  const artwork = lookup(request?.artwork);
+  // The row nests the work's id/title/artist/image (G-P5-2); the request card
+  // also shows year and medium, so the full artwork still comes from the cache.
+  const lookup = useArtworks([request?.artwork?.id]);
+  const artwork = lookup(request?.artwork?.id);
   const [draft, setDraft] = useState('');
   const [removing, setRemoving] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -77,7 +84,7 @@ export function ThreadPage() {
     el.style.height = Math.min(el.scrollHeight, 150) + 'px';
   };
 
-  if (!request && listStatus !== 'ready') return <p className="dz-state">Loading…</p>;
+  if (!request && !conversations.isMissing(id!)) return <p className="dz-state">Loading…</p>;
   if (!request) return <p className="dz-state">This conversation is not available.</p>;
 
   const isInquiry = request.kind === 'information' && !!request.artwork;
@@ -91,8 +98,10 @@ export function ThreadPage() {
         sender: 'collector',
         body: detail.message,
         artwork_refs: [],
+        document_refs: [],
         seen_by_collector: true,
         seen_by_team: true,
+        archived: false,
         created_at: request.created_at,
       }
     : null;

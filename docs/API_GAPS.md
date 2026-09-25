@@ -28,22 +28,22 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Area | Gap | State | Note |
 | --- | --- | --- | --- | --- |
-| G-P34-2 | access-request | No rate limit on public `POST /auth/access-requests/` | ✅ Closed | Throttle `5/hour`/IP (env). FE: handle 429. |
-| G-P34-1 | access-request | No `client_req_id` dedupe | ✅ Closed | 200 replay / 201 new. FE: treat 200 as success. |
-| G-LOCK-1 | accounting, auctions | Ledger + auction-record editors last-write-wins | ✅ Closed | `expected_version` → 409. FE: wire `ConflictBanner` on those 2 desks. |
+| G-P34-2 | access-request | No rate limit on public `POST /auth/access-requests/` | ✅ Closed | Throttle `5/hour`/IP (env). FE adopted 2026-09-25: a 429 reads "Too many attempts — try again shortly." |
+| G-P34-1 | access-request | No `client_req_id` dedupe | ✅ Closed | 200 replay / 201 new. FE adopted 2026-09-25: both are success; the key is reused across retries of the same values (`AccessRequestKey`). |
+| G-LOCK-1 | accounting, auctions | Ledger + auction-record editors last-write-wins | ✅ Closed | `expected_version` mandatory → 409 when stale; **without it the view 500s** (`partial=True` skips the required check, then `validated.pop('expected_version')` raises — backend should 400). FE adopted 2026-09-25: both desks send it and show `ConflictBanner`; wire format pinned in `optimisticLock.test.ts` (8 calls). |
 
 ## CRM — collector requests (Phase 5 / Flow 1)
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-P5-1 | Untyped `detail` on collector **output** | ✅ Closed | Polymorphic union in schema. FE: delete hand-typed union in `src/api/types.ts`. |
-| G-F1-1 | Untyped `detail` on **create** input | ✅ Closed | `RequestCreate.detail` now types as the `RequestDetail` union (B4). FE: use the typed create body; drop any `unknown` cast. |
-| G-P5-2 | Bare artwork uuid on collector rows | ✅ Closed | Nested `{id,title,artist,image}`. FE: drop the `ArtworkCache` second read. |
-| G-P5-3 | No single-request read | ✅ Closed | `GET /crm/requests/{id}/`. |
-| G-P5-6 | Hold expiry not applied on read | ✅ Closed | Lazy expiry now server-side. |
+| G-P5-1 | Untyped `detail` on collector **output** | ✅ Closed | Polymorphic union in schema; FE uses it (2026-09-25). One hand type stays: `HoldDetail.expires_at` — `HoldDetailSerializer` has no input fields, so the generated union has no hold member. |
+| G-F1-1 | Untyped `detail` on **create** input | ✅ Closed | `RequestCreate.detail` types as the `RequestDetail` union (B4). FE adopted 2026-09-25: `RequestDetailInput` (generated members minus the read-only `counter_*`); offer `amount` now sent as a decimal string. |
+| G-P5-2 | Bare artwork uuid on collector rows | ✅ Closed | Nested `{id,title,artist,image}`. FE adopted 2026-09-25: Chat, Profile and Acquisitions read it directly (no catalogue read); the thread's request card still resolves the full work by `id` for year · medium. |
+| G-P5-3 | No single-request read | ✅ Closed | `GET /crm/requests/{id}/`. FE adopted 2026-09-25: a deep link to a thread reads its one request (`ConversationsController.open`). |
+| G-P5-6 | Hold expiry not applied on read | ✅ Closed | Lazy expiry now server-side (list + detail). FE 2026-09-25: the client check stays as a backstop for a hold that lapses while the page is open. |
 | G-P5-8 | Pagination params undeclared | ✅ Closed | Schema-only; no FE change. |
-| G-P5-9 | String `amount`; no counter amount | ✅ Closed | `counter_amount`/`counter_currency` on `countered`; amount stays precise string. |
-| G-P5-10 | Viewing `mode` not in `/api/options/` | ✅ Closed | FE: drop hardcoded labels in `ViewingSheet.tsx`. |
+| G-P5-9 | String `amount`; no counter amount | ✅ Closed | `counter_amount`/`counter_currency` on `countered`; amount stays precise string. **FE: owner decision** — neither `app.html` nor the design package has any counter-offer UI or copy, so nothing is rendered yet (`API_ADOPTION_PLAN.md` Batch 3). |
+| G-P5-10 | Viewing `mode` not in `/api/options/` | ✅ Closed | FE adopted 2026-09-25: `ViewingSheet` labels come from `crm.viewing_mode` (`viewingMode.ts`). |
 | G-P5-4 | No durable collector archive | ✅ Closed | `POST /crm/requests/{id}/archive/`. Owner-decision UI. |
 | G-P5-5 | No collector withdraw/cancel | ✅ Closed | `POST …/transition/` (whitelisted). Owner-decision UI. |
 | G-P5-11 | Enquiry has no artist link | ✅ Closed | Nullable `artist` FK both tiers. Owner-decision UI. |
@@ -93,6 +93,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-MEMB-3/6/7 | No collector "my membership" read / expiry surfaced | ✅ Closed | `GET /api/auth/my-membership/` → `{tier, status, active_until}` (B1). `active_until` = most-recent redeemed membership-code expiry (null when none). |
 | Profile edit | No `PATCH /auth/me/` | ✅ Closed | `PATCH /api/auth/me/` (B1) edits phone/city/full_name/preferred_language; team principal 403. `me` GET now returns those contact fields (it didn't before B1). Also closed G-Q-1. |
 | Access-key display | `me` doesn't return the plaintext key | ➖ By design | Keys are hashed and never re-exposed. Not fixable; show the card as "issued", not the value. |
+| G-KEY-1 | No roster-wide access-key list — keys served per collector only, so the old owner "Access" desk couldn't be built | ✅ Closed | 2026-09-25 (PR #50). `GET /api/auth/admin/access-keys/` — every key across the roster, soonest-to-lapse first, plaintext never re-exposed. Filters `?status=` (computed active/locked/**expired**, since the stored status only flips on a login attempt), `?collector=`, `?expiring_soon=true`, and search on collector name. Rows carry collector `{id, display_name}`, computed `is_expired`, and per-collector activity tallies. Plus `GET …/access-keys/summary/` for the desk KPI tiles (totals by state, expiring-soon, logins-today, collector totals). |
 | G-MEMB-1/2/4/5 | (admin strips, tier literals, start date) | Mixed | G-MEMB-1 built (#83); G-MEMB-2/4/5 are literals/`theme.*` — owner-editable copy, not V1 API gaps. |
 
 ## Documents
@@ -100,12 +101,14 @@ trusting any shape (`CLAUDE.md` → "API access").
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
 | G-DOC-1 | Issued documents not exposed to collectors | ✅ Closed | `GET /api/documents/` (B3) — the collector's own shared docs (id/kind/title/ref/pdf_url/shared_at). Admin issues via `POST /documents/admin/documents/{id}/share/`; collector-visible kinds: invoice/certificate/provenance/contract/receipt/proforma/artwork_sheet/condition_report. |
+| document_refs (D19) | No way to attach a document to a collector's chat thread — only share-by-link | ✅ Closed | 2026-09-25 (PR #49). `RequestMessage` now carries `document_refs` (like `artwork_refs`): the admin reply endpoint accepts `document_refs: [id]` (team-only) and **attaching = sharing** (runs the G-DOC-1 share path + collector-visible-kind allowlist), so the doc lands on the collector's documents list and is openable. Reads expose them enriched `[{id, kind, title}]`. Replaces the D19 share-by-link workaround. |
 
 ## Sales / Data Health
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-SALE-4 | `Sale` has no source axis for auction settlement | ✅ Closed | `Sale.source` (market/auction) + `?source=` on the admin sales list (B5) — the Auction Sales tab is now buildable. Note: no auction→Sale automation yet (admin sets `source=auction`); a follow-up backend task is tracked in the API TASKLIST. |
+| G-SALE-4 | `Sale` has no source axis for auction settlement | ✅ Closed | `Sale.source` (market/auction) + `?source=` on the admin sales list (B5) — the Auction Sales tab is now buildable. **Auction→Sale automation now shipped too** (2026-09-25, PR #51): a won lot auto-creates a draft `Sale(source=auction)`, so the tab fills itself. |
+| Auction→Sale automation | Won lots didn't auto-create a Sale (admin entered each by hand) | ✅ Closed | 2026-09-25 (PR #51), follow-up to G-SALE-4. On lot close (won), `LotService.close` auto-creates a **draft** `Sale(source=auction)` with `agreed_price` = hammer + buyer's premium and `commission_amount` = the premium. New `Sale.lot` FK links each sale back to its lot (also the idempotency key). Passed lots create nothing. |
 | G-SALE-1/3 | (cited in `types.ts`) | ✅ Closed (verify) | Carried closed. |
 | G-HEALTH-1 | Data Health real counts panel | ✅ Closed | Built #83. |
 | G-HEALTH-2/3/4 | Three Data Health checks/counts with no backend | ✅ Closed | B5: **G-HEALTH-2** `Artwork.source_type` + `?source_type=` (Gallery/Dealer/Artist-sourced counts); **G-HEALTH-3** `deleted_records` count on the report; **G-HEALTH-4** `?created_after=` (recently-added). |
@@ -123,7 +126,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-6: Intelligence · Marketing Hub · Document Builder | ⛔ Deferred | API ready, no UI. Owner decision. |
 | Phase 20 Logistics | ⛔ Deferred | No `/api/logistics/` namespace. |
 | Phase 21 Library / pricelist builders | ⛔ Deferred | No pricelist endpoints. |
-| Auction Sales | ⚪ Frontend-only | **Unblocked** by G-SALE-4 (B5) — filter the sales list on `?source=auction`. Backend no longer blocks it; building the tab is this repo's work. |
+| Auction Sales | ⚪ Frontend-only | **Unblocked** by G-SALE-4 (B5) — filter the sales list on `?source=auction`. As of 2026-09-25 (PR #51) won lots also **auto-create** the draft sale, so the tab fills itself; each row's `lot` FK links back to the auction lot. Building the tab is this repo's work. |
 | G7 "Refine" filter UI, FE-R1…R4 (Records desk/curation/import/sub-tabs) | ⚪ Frontend-only | Backend ready; UI is this repo's Phase 12+. |
 | Legacy-id lookup / catalogue change-stamp | ⚪ Frontend-only | Endpoints exist; nothing consumes them yet. |
 | G-DEL-1 (three admin deletes) | ✅ Closed | Built Phase 6b (2026-09-22). |
@@ -133,8 +136,9 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 ## What's actually left, in one line each
 
-- **No backend gaps remain.** Both the V1 and Group-B plans are fully merged (backend
-  `development` @ `a140548`); there are no 🔵 rows left.
+- **No backend gaps remain.** The V1 and Group-B plans plus the three follow-up candidates
+  (document_refs D19, G-KEY-1 access-key roster, auction→Sale automation) are all merged (backend
+  `development` @ `57d408c`, PRs #49/#50/#51); there are no 🔵 rows left.
 - **Frontend adoption of the closed backend work** → `API_GAPS_FRONTEND_ADOPTION.md` (start there) —
   this is the main remaining work.
 - **Frontend-only UI** (⚪ rows, incl. the now-unblocked Auction Sales tab) → this repo's `TASKLIST.md`.

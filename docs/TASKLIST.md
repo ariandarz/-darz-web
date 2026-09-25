@@ -48,12 +48,13 @@ now-closed backend gaps, the non-V1 backend gaps, and deferred/backend-blocked f
       owner reverses it.
 
 ### B · Frontend adoption of the now-closed backend gaps → `API_GAPS_FRONTEND_ADOPTION.md`
+**Batch order and progress: `API_ADOPTION_PLAN.md`** (Batches 1–7 buildable now; 8+ need the owner).
 Backend shipped these; the frontend still has the work-arounds. Do **Step 0 (regenerate `schema.d.ts`)**
 first, then:
-- [ ] **Access-request** (G-P34-1): treat 200 replay as success, handle 429. *(launch-gate half)*
-- [ ] **G-LOCK-1**: wire `ConflictBanner` + `expected_version` on `LedgerEntryPage` and `RecordEditorPage`
-      (both were last-write-wins).
-- [ ] **CRM precision cluster** (G-P5-1/2/3/6/9/10): delete the hand-typed `detail` union, use nested
+- [x] **Access-request** (G-P34-1/2): 200 replay = success, one key reused across retries, 429 copy. *(Batch 1)*
+- [x] **G-LOCK-1**: `expected_version` + `ConflictBanner` on the ledger entry form (`AccountingPage`) and
+      `RecordEditorPage` — the backend makes the lock **required**, so every edit on both was failing (a 500 today). *(Batch 2)*
+- [x] **CRM precision cluster** (G-P5-1/2/3/6/10 + G-F1-1, Batches 1+3) — **G-P5-9 counter display waits on the owner** (no old-app UI/copy); delete the hand-typed `detail` union, use nested
       `artwork`, deep-link `GET /crm/requests/{id}/`, drop the client hold-expiry, show `counter_amount`,
       pull viewing-mode labels from `/api/options/`.
 - [ ] **G-P24-1**: curated chip reads `selection_name`. **G-P25-1**: questionnaire branches on `answered`
@@ -75,9 +76,17 @@ not as a backend block:
 
 ### D · Deferred / backend-blocked features (owner-scoped)
 - [ ] **Auction Sales** — **unblocked** (G-SALE-4 shipped B5): `Sale.source` (market/auction) +
-      `?source=` on the admin sales list. Build the tab by filtering `?source=auction`. (Backend note:
-      no auction→Sale automation yet — an admin sets `source=auction`; a follow-up backend task is
-      tracked in the API repo's TASKLIST.)
+      `?source=` on the admin sales list. Build the tab by filtering `?source=auction`. **Backend update
+      2026-09-25 (PR #51): auction→Sale automation is now live** — a won lot auto-creates a draft
+      `Sale(source=auction)` (hammer + buyer's premium; new read-only `lot` FK links back), so the tab
+      fills itself; surface the drafts for review and use `lot` to link back to the auction lot.
+- [ ] **Owner "Access" desk (G-KEY-1)** — **now unblocked** (backend PR #50, 2026-09-25):
+      `GET /api/auth/admin/access-keys/` (roster-wide; filters status/collector/expiring_soon/search) +
+      `…/access-keys/summary/` (KPI tiles). Build the standalone Access desk (see
+      `API_GAPS_FRONTEND_ADOPTION.md`). Plaintext keys never exposed.
+- [ ] **Attach documents to a thread (document_refs / D19)** — **now unblocked** (backend PR #49,
+      2026-09-25): `RequestMessage.document_refs` (team-only attach = share). Wire the admin chat composer
+      to send `document_refs: [id]`; render enriched `[{id,kind,title}]` on messages.
 - [!] **Logistics & Payment desk** (backend Phase 20 — no `/api/logistics/` namespace exists).
 - [!] **Library + pricelist builders** (backend Phase 21 — no standalone pricelist builder API).
 - [!] **Insights & Stories** (backend Phase 22 — no editorial model).

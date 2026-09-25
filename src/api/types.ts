@@ -51,8 +51,8 @@ export type NotificationKind = Schemas['NotificationKindEnum'];
  * in backend Phase 11-admin (BE-R1…R3 closed the Phase 8 gap list): image,
  * medium, estimates, hammer vs realized, sections, highlights. One
  * serializer for collector read and admin CRUD — nothing on it is
- * confidential; `artist_display_name` is the label to show. Admin PATCH is
- * plain (no lock input). */
+ * confidential; `artist_display_name` is the label to show. Admin PATCH
+ * requires `expected_version` (G-LOCK-1). */
 export type AuctionRecord = Schemas['AuctionRecord'];
 
 /** `GET /api/auctions(/admin)/records/` params. */
@@ -124,39 +124,34 @@ export interface CreatedRequest {
  * offer→offer, "Request price"→price, "Ask about"→information. */
 export type RequestKind = Schemas['RequestKindEnum'];
 
-/** Per-kind `detail` shapes, typed **by hand** from the backend's
- * `DETAIL_SERIALIZERS` (`apps/crm/serializers.py:14-51`, `development` @
- * 3801786) because the OpenAPI document still publishes `detail` as an
- * opaque object — `detail_polymorphic_serializer()` exists there with no
- * call site (`docs/PHASE_5_API_GAPS.md` G-P5-1, formerly G-F1-1). Keys
- * outside a kind's serializer are dropped server-side, and the stored
- * `detail` is the serializer's own output (an offer's `amount` comes back as
- * a string). */
+/** Per-kind `detail` — the generated union over the backend's
+ * `DETAIL_SERIALIZERS` (`apps/crm/serializers.py`, G-P5-1 / G-F1-1). Keys
+ * outside a kind's serializer are dropped server-side; an offer's `amount`
+ * and `counter_amount` are decimal **strings** — format them, never coerce. */
+export type RequestDetail = Schemas['RequestDetail'];
+export type OfferDetail = Schemas['OfferDetail'];
+export type ViewingDetail = Schemas['ViewingDetail'];
+export type ViewingMode = Schemas['ModeEnum'];
+export type Currency = Schemas['CurrencyEnum'];
+/** A hold's `detail` — **not** in the generated union: `HoldDetailSerializer`
+ * takes no input, so the schema has nothing to publish for it, yet the stored
+ * row carries the server-set expiry (now + 48 h, `Hold.DEFAULT_TTL`). */
 export interface HoldDetail {
-  /** server-set on create: now + 48 h (`Hold.DEFAULT_TTL`); never sent */
   expires_at?: string;
 }
-export interface OfferDetail {
-  amount: number | string;
-  currency: string;
-  counter_of?: string | null;
-}
-export type ViewingMode = 'in_person' | 'virtual';
-export interface ViewingDetail {
-  /** ISO-8601 — required by the backend */
-  preferred_time: string;
-  /** required by the backend */
-  mode: ViewingMode;
-}
-/** `information` · `price` · `availability` · `message` */
-export interface MessageDetail {
-  message?: string;
-}
-export interface PurchaseDetail {
-  notes?: string;
-}
-export type RequestDetail =
-  HoldDetail | OfferDetail | ViewingDetail | MessageDetail | PurchaseDetail;
+
+/** `detail` as the collector sends it on `POST /api/crm/requests/`. The
+ * generated members, minus what the server sets itself: an offer's
+ * `counter_amount`/`counter_currency` are read-only echoes of an admin counter.
+ * `currency` also admits `''`: a work with no currency can still show Make an
+ * Offer, and sending the blank lets the backend's own 400 reach the collector
+ * — the behaviour this form has always had (flagged in `API_ADOPTION_PLAN.md`). */
+export type OfferDetailInput = Omit<
+  OfferDetail,
+  'counter_amount' | 'counter_currency' | 'currency'
+> & { currency: Currency | '' };
+export type RequestDetailInput =
+  OfferDetailInput | ViewingDetail | Schemas['SimpleDetail'] | Schemas['PurchaseIntentDetail'];
 
 /** Collector's own request list params (`GET /api/crm/requests/`). */
 export interface CollectorRequestQuery {

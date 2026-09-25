@@ -43,7 +43,8 @@ the non-V1 backend gaps, and backend-blocked/deferred features — all in `TASKL
 ## 3 · What is actually next
 
 **The frontend has not yet adopted the closed backend work** — that is the main queue now.
-`docs/API_GAPS_FRONTEND_ADOPTION.md` is the step-by-step; **Step 0 is regenerate `src/api/schema.d.ts`**
+**`docs/API_ADOPTION_PLAN.md` is the batch order (one PR per batch — resume at the first unticked one)**;
+`docs/API_GAPS_FRONTEND_ADOPTION.md` is the per-gap detail. **Step 0 is regenerate `src/api/schema.d.ts`**
 from a running backend, then work the typecheck flags. Highlights: handle the access-request 200/429,
 wire `ConflictBanner` on the two G-LOCK-1 desks, delete the hand-typed `detail` union, use the nested
 `artwork`, pull viewing-mode from `/api/options/`, chip `selection_name`, questionnaire `answered`.
@@ -62,10 +63,12 @@ wire `ConflictBanner` on the two G-LOCK-1 desks, delete the hand-typed `detail` 
 adoption** of them → `API_GAPS_FRONTEND_ADOPTION.md`: G-F1-1 · G-CHAT-2 · G-Q-1 + profile-edit ·
 G-MEMB-3/6/7 · G-DOC-1 · G-AUC-4 · G-REC-1 · G-SALE-4 · G-HEALTH-2/3/4. **Auction Sales** is now
 unblocked (filter `?source=auction`). **Still backend-blocked/deferred:** Logistics (Phase 20),
-Library/pricelist (Phase 21), Insights & Stories (Phase 22). **Still-open distinct backend candidates**
-(raised 2026-09-24, tracked in the API repo's TASKLIST): a `document_refs` on `RequestMessage`
-(attach a document to a thread — distinct from the G-DOC-1 documents list), and a roster-wide
-`GET /admin/access-keys/` list (G-KEY-1).
+Library/pricelist (Phase 21), Insights & Stories (Phase 22). **The three 2026-09-24 backend candidates
+are now ALL shipped & merged (2026-09-25, PRs #49/#50/#51 — backend `development` @ `57d408c`):**
+`document_refs` on `RequestMessage` (attach a document into a thread, team-only, attach = share),
+the roster-wide `GET /api/auth/admin/access-keys/` list + `…/summary/` (G-KEY-1), and auction→Sale
+automation (a won lot auto-creates a draft `Sale(source=auction)`). All three now need **frontend
+adoption** → `API_GAPS_FRONTEND_ADOPTION.md`.
 
 ---
 
@@ -79,7 +82,7 @@ Each of these cost real time:
 - **The optimistic lock was silently OFF on three desks.** `updateCollector`, `updateTeamUser` and
   `updateMembershipCode` sent the field as `version`; the API wants `expected_version`, and it is
   **optional**, so the server skipped the lock and wrote anyway. `src/api/optimisticLock.test.ts` now
-  pins the **wire format** for all six locking calls.
+  pins the **wire format** for all eight locking calls (six until G-LOCK-1 added the ledger entry and the auction record, 2026-09-25).
 - **TD-3 proposed the one place the data must not go.** Invoice bank details "belong under `theme.*`" —
   but `GET /api/app-theme/` is **`AllowAny`**, so a card number/IBAN there would be public. They come
   from the last issued invoice's `Document.fields.bank`.

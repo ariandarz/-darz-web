@@ -62,6 +62,11 @@ const OPTIONS = {
   'crm.request_kind': [{ value: 'purchase', label: 'Purchase' }],
   'crm.request_status_by_kind': { purchase: [{ value: 'new', label: 'New' }] },
   'crm.activity_kind': [{ value: 'view', label: 'View' }],
+  // G-P5-10 — the viewing sheet's two labels come from here, not from the app.
+  'crm.viewing_mode': [
+    { value: 'in_person', label: 'In person' },
+    { value: 'virtual', label: 'Virtual' },
+  ],
   'crm.collector_action': [
     { value: 'purchase', label: 'Buy' },
     { value: 'hold', label: 'Hold' },
@@ -85,6 +90,110 @@ const OPTIONS = {
   'sales.payment_status': [{ value: 'unpaid', label: 'Unpaid' }],
   'sales.delivery_status': [{ value: 'pending', label: 'Pending' }],
 };
+
+/**
+ * The collector's own requests (`GET /api/crm/requests/`), in the shape the
+ * backend serves since G-P5-2: `artwork` is **nested** `{id, title, artist,
+ * image}`, not a bare uuid. One of each shape a list row draws — an inquiry
+ * (Chat), an offer with its decimal-string amount, a hold with its server-set
+ * expiry, and the general chat (no artwork). `unread_count` stays 0 so the
+ * floating reply notice never sits over another walk's screen.
+ */
+const WORK = (id, title) => ({
+  id,
+  title,
+  artist: { id: '00000000-0000-4000-8000-00000000a871', display_name: 'Parviz Tanavoli' },
+  image: null,
+});
+/** The full collector artwork behind each request row — what `ArtworkCache`
+ * reads for the one surface that needs more than the nested four fields (the
+ * request card's year · medium line). Without it these ids fall into the
+ * paginated catch-all and the card would render an envelope as an artwork. */
+const FULL_WORK = (work, year, medium) => ({
+  ...work,
+  artist: {
+    ...work.artist,
+    name_variants: [],
+    bio: '',
+    birth_year: 1937,
+    nationality: 'Iranian',
+  },
+  year,
+  medium,
+  material: '',
+  dimensions: '',
+  edition: '',
+  city: 'Tehran',
+  price_amount: null,
+  currency: 'USD',
+  price_type: 'on_request',
+  availability_status: 'available',
+  public_description: '',
+  tags: [],
+  images: [],
+  allowed_actions: ['purchase', 'hold', 'offer', 'viewing'],
+  is_saved: false,
+  saved_at: null,
+  refine_tags: {},
+});
+const REQUEST_BASE = {
+  artist: null,
+  unread_count: 0,
+  collector_archived: false,
+  version: 1,
+  updated_at: '2026-09-20T10:00:00Z',
+};
+const COLLECTOR_REQUESTS = [
+  {
+    ...REQUEST_BASE,
+    id: '00000000-0000-4000-8000-00000000c101',
+    kind: 'information',
+    status: 'new',
+    artwork: WORK('00000000-0000-4000-8000-00000000a101', 'Heech'),
+    detail: { message: 'Is this still available?' },
+    created_at: '2026-09-20T10:00:00Z',
+  },
+  {
+    ...REQUEST_BASE,
+    id: '00000000-0000-4000-8000-00000000c102',
+    kind: 'offer',
+    status: 'submitted',
+    artwork: WORK('00000000-0000-4000-8000-00000000a102', 'Poet and Bird'),
+    detail: {
+      amount: '9500.00',
+      currency: 'USD',
+      counter_of: null,
+      counter_amount: null,
+      counter_currency: '',
+    },
+    created_at: '2026-09-19T10:00:00Z',
+  },
+  {
+    ...REQUEST_BASE,
+    id: '00000000-0000-4000-8000-00000000c103',
+    kind: 'hold',
+    status: 'active',
+    artwork: WORK('00000000-0000-4000-8000-00000000a103', 'Lovers'),
+    detail: { expires_at: '2099-01-01T00:00:00Z' },
+    created_at: '2026-09-18T10:00:00Z',
+  },
+  {
+    ...REQUEST_BASE,
+    id: '00000000-0000-4000-8000-00000000c104',
+    kind: 'message',
+    status: 'new',
+    artwork: null,
+    detail: { message: '' },
+    created_at: '2026-09-17T10:00:00Z',
+  },
+];
+
+const REQUEST_WORKS = Object.fromEntries(
+  COLLECTOR_REQUESTS.filter((r) => r.artwork).map((r, i) => [
+    r.artwork.id,
+    FULL_WORK(r.artwork, 1975 + i, ['Bronze', 'Oil on canvas', 'Ink on paper'][i]),
+  ]),
+);
 
 const SUMMARY = {
   requests: { new_by_kind: { purchase: 2 }, new_total: 2, resolved_total: 5 },
@@ -136,6 +245,24 @@ const routes = {
     envelope(bearerIsCollector(req) ? TOKENS.collector : TOKENS.team),
   'GET /api/auth/me/': (req) => envelope(bearerIsCollector(req) ? ME_COLLECTOR : ME),
   'GET /api/options/': () => envelope(OPTIONS),
+  'GET /api/crm/requests/': () =>
+    envelope({
+      pagination: {
+        page: 1,
+        per_page: 100,
+        total_pages: 1,
+        total_count: COLLECTOR_REQUESTS.length,
+        has_next: false,
+        has_previous: false,
+      },
+      results: COLLECTOR_REQUESTS,
+    }),
+  // The gate's Request access (G-P34-1). Answers **200** — the backend's
+  // replay of a `client_req_id` it already holds — because that is the answer
+  // the gate used to treat as nothing special and must treat as success; a
+  // first insert (201) takes the same path.
+  'POST /api/auth/access-requests/': () =>
+    envelope({ id: '00000000-0000-4000-8000-00000000acc1', status: 'pending' }),
   // Membership redeem (Phase 13). A POST, so the catch-all 400s it — which is
   // a fine stand-in for a rejected code but never lets the success path run.
   // Answers `basic` so the sheet's active block and the Settings pill appear.
@@ -190,7 +317,32 @@ const routes = {
  * now guard (`asArray`), and these entries stop the stub from being the one
  * telling the lie.
  */
+const notFound = (message) => ({
+  status: 404,
+  body: {
+    success: false,
+    error: { code: 'NOT_FOUND', message },
+    timestamp: new Date().toISOString(),
+  },
+});
+
 const patterns = [
+  // One of the collector's own requests (G-P5-3) — a deep link reads this
+  // instead of waiting for the list. An id the collector does not own is a 404,
+  // as on the real endpoint; the catch-all would hand back a list envelope.
+  [
+    /^\/api\/crm\/requests\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const row = COLLECTOR_REQUESTS.find((r) => r.id === path.split('/')[4]);
+      return row ? envelope(row) : notFound('No request found.');
+    },
+  ],
+  [
+    /^\/api\/catalog\/artworks\/00000000-0000-4000-8000-00000000a10[1-3]\/$/,
+    'GET',
+    (path) => envelope(REQUEST_WORKS[path.split('/')[4]]),
+  ],
   [/^\/api\/catalog\/admin\/artworks\/[^/]+\/images\/$/, 'GET', () => envelope([])],
   [/^\/api\/catalog\/admin\/artworks\/[^/]+\/selection-grants\/$/, 'GET', () => envelope([])],
   [
@@ -225,8 +377,10 @@ const server = http.createServer((req, res) => {
   }
   for (const [re, method, answer] of patterns) {
     if (req.method === method && re.test(url.pathname)) {
-      res.writeHead(200);
-      res.end(JSON.stringify(answer()));
+      const answered = answer(url.pathname);
+      const status = typeof answered.status === 'number' ? answered.status : 200;
+      res.writeHead(status);
+      res.end(JSON.stringify(status === 200 ? answered : answered.body));
       return;
     }
   }
