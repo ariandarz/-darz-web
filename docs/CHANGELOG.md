@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 re-baseline: both repos synced, gap docs re-measured, phased V1 plan written
+
+- Backend V1 = `darz-backend-api` `development` @ `df0421f` (224 paths / 323 ops); web `development` holds every branch. Matrix, admin, collector and backend-contract audits in `docs/audit/2026-09-25/`.
+- New `V1_IMPLEMENTATION_PLAN.md` (Phases 0–10), `V1_CONTRACT_ISSUES.md` (C-1…C-22, Q-1…Q-9), baseline `DARZ_WEB_V1_STATUS.md`; `API_GAPS.md` + `API_GAPS_FRONTEND_ADOPTION.md` re-baselined. Docs only; gate unchanged (636 unit).
+
 ## 2026-09-25 — API adoption Batch 3: thread deep link, viewing-mode labels, hold-expiry backstop
 
 - A deep link to a thread reads its one request (`GET /crm/requests/{id}/`, G-P5-3); ViewingSheet labels come from `crm.viewing_mode` (G-P5-10); the client hold check is now a documented backstop (G-P5-6).

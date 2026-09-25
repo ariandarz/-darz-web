@@ -1,0 +1,64 @@
+# V1 contract issues: resolve or work around before building
+
+**Written 2026-09-25.** Measured against backend `darz-backend-api` `development` @ `df0421f` (PR #70), which this
+repo treats as the **final V1 API**, and `-darz-web` `development` @ `d987910` (PR #100).
+
+This file lists every backend↔frontend contract problem found in the V1 re-baseline. It is written before any
+implementation, as the brief requires. `V1_IMPLEMENTATION_PLAN.md` refers to these IDs (`C-…`). The evidence
+(file:line on both sides) is in `docs/audit/2026-09-25/BACKEND_CONTRACT_REVIEW.md`.
+
+Legend. **Owner:** who has to act (**BE** = backend repo, **FE** = this repo, **Arian** = owner decision).
+**FE stance:** what this repo does until the backend changes.
+
+---
+
+## A · Already broken against the current backend (fix in Phase 0)
+
+| ID | Problem | Owner | FE stance |
+| --- | --- | --- | --- |
+| **C-1** | **Sales rows are nested now (G-SALE-3)**: `artwork {id,title}`, `collector {id,display_name}`, `responsible {id,name}\|null`. The Sales desk and `useSaleRefs` still treat them as uuids. They call `catalogAdmin.artwork(<object>)`, so titles and names never resolve, and the desk is degraded today against backend `development`. Regenerating the schema shows 14 type errors (`SalesPage.tsx`, `SaleDetailPage.tsx`, `useSaleRefs.ts`). **Input is still plain ids.** | FE | Phase 0: read the nested shape; delete the N+1 in `useSaleRefs`; keep id-based input types. |
+| **C-2** | **`ProjectStatusEnum` became `Status2c3Enum`** in the schema. G-PROJ-2 made `status` writable on a second serializer, and drf-spectacular hash-names colliding enums. The name will change again on the next collision. | BE (add `ENUM_NAME_OVERRIDES` in `SPECTACULAR_SETTINGS`) | Phase 0: alias as `Schemas['Project']['status']`, never by enum name. |
+| **C-3** | **G-P25-1 is a live bug.** `GET /recommendations/questionnaire/` now returns 200 `{answers:[], submitted_at:null, answered:false}` on first run. `QuestionnaireController.load()` and the Profile "Get to know you" card treat any 200 as "submitted", so a new collector sees an empty review screen and "Your taste, on file". Hidden in v0.1 (flag off) and in E2E (the stub still 404s). | FE | Phase 0: branch on `answered`; stub → 200. |
+| **C-4** | **Portal entry hangs** on any status other than 401, 404 or a network error (500, 400, 429): `PortalSession.enter` rethrows with the phase stuck on `opening` (`PortalSession.ts:98`), and there is no error boundary on `/portal/:token`. | FE | Phase 0: map every other failure to the retry card; wrap the route in `ScreenBoundary`. |
+| **C-5** | **Lists silently truncate at 100.** The backend clamps `per_page` to 100 (`core/pagination.py:18`). `ArtistsPage` (500), `ArtworksPage` (500), `ArtworkEditorPage` (500), `RecordEditorPage` (500) and `IssueDocumentPage` (200, reference numbering) never follow `has_next`. | FE | Phase 0: one shared `fetchAllPages()` helper, or server search where the backend has it (G-CAT-3). |
+
+## B · Backend defects: raise on `darz-backend-api`, FE works around
+
+| ID | Problem | Severity | FE work-around |
+| --- | --- | --- | --- |
+| **C-6** | **A PATCH without `expected_version` returns 500, not 400, on 18 endpoints.** `partial=True` skips `required`, then `validated.pop("expected_version")` raises `KeyError`. Affected: artworks, artists, sales, projects (+partners, service-catalog, packages, checklists), crm selections, ledger, exhibition-catalogue, question-sets, collectors, membership codes, team users, auctions, lots and auction records. The schema's `Patched*` bodies also mark the lock **optional**, so the compiler can't catch a missing lock. | Should fix (BE) | Add a `Locked<T>` helper type that makes `expected_version: number` required on every PATCH body, and extend `optimisticLock.test.ts` to each new locking call. |
+| **C-7** | `HoldDetailSerializer` has no fields, so the `RequestDetail` union has no hold member, and the union lists `SimpleDetail` 4 times with no discriminator. | Should fix (BE: read-only `expires_at`) | Keep the hand-typed `HoldDetail`; narrow detail by request `kind`. |
+| **C-8** | **The portal state `GET /gallery/portal/{token}/` is declared as `GalleryLink`**, but the view also returns `assigned_artworks[]` (with `image_url`, `funnel`), `pricelists[]` (with `status`, `file_url`, `lines[]`), `messages[]`, `updates[]` and `cover`. None of it is in the generated types. | Should fix (BE schema) | Hand-type `PortalState` in `src/api/types.ts` from `gallery/views.py:95-114` + `PortalUpdateSerializer`; cite the lines. |
+| **C-9** | **The portal PIN travels differently by method.** GET reads `?pin=`; every write reads `pin` from the **body** (a multipart field for uploads). The schema documents `pin` as a *query* param on `…/artworks/{id}/image/` and `…/pricelists/build/`, which gives 401. | Should fix (BE schema) | Always put `pin` in the body or form on writes, as `GalleryPortalService` already does for the existing writes. Pin the wire format in a unit test. |
+| **C-10** | `ErrorResponse` has no `details`, so field errors and the **publish gate's `details.missing`** (`["title","size","medium","artist","price","image"]`, a subset in that order) are untyped. Publish doesn't declare its 400. | Should fix (BE schema) | Type `HttpError.details` by hand; render `missing` as a list on both publish toggles. |
+| **C-11** | Ordinary 4xx refusals come back with `code: "INTERNAL_ERROR"`: auction/lot edit outside draft/scheduled, registration reset on a non-rejected registration, portal update re-review, bids, and collector transitions. | Should fix (BE `ERROR_CODE_MAP`) | Branch on **HTTP status** only; show `error.message`. |
+| **C-12** | A portal `image` update stores a raw `payload.image_key`. The admin gets **no presigned URL** and approving applies nothing, so the desk cannot show the submitted image. | Should fix (BE) before the admin image review UI | Phase 5 builds the portal upload. The admin preview waits on the backend; until then the desk shows "Image submitted: open via Darz storage". |
+| **C-13** | **Security:** portal reads are unthrottled and there is no `anon` rate, so a 6-digit PIN can be brute-forced per token. Team and collector login are unthrottled. Anonymous portal uploads have no type or size check. The pricelist builder accepts any artwork, not just works assigned to the link. | Should fix (BE, security) | None needed from the FE beyond the existing client-side 6 MB cap. **Flag to the owner before any real portal link is issued.** |
+| **C-14** | `/api/options/` is missing **sale `source`** and **pricelist `status`**. Pricelist-line `availability` is free text with no choice set. `gallery.exhibition_service` still comes from the old Python constant, not the editable table. Artwork `source_type`, collector `preferred_language`, question `question_type` and access-request `status` are also unregistered. | Should fix (BE) | Labels fall back to the raw value, never a hardcoded map (house rule). For the exhibition menu, read `/gallery/admin/exhibition-catalogue/` or the portal catalogue, not options. |
+| **C-15** | Document activity rows are flat `actor` (uuid) + `actor_name`. The backend CHANGELOG says `actor {id,name}`. | Note (BE doc) | Code wins: type the flat shape. |
+| **C-16** | The rollup fields collector `last_activity_at`/`purchase_count` and artist `works_count` are **null on detail, create and PATCH** (they are list-only annotations). | Note | Never overwrite a list row with a detail/PATCH response; merge only edited fields. |
+| **C-17** | Access-key `status` is the **stored** value and lags expiry. | Note | Display: `locked` if `status==='locked'`, else `expired` if `is_expired`, else `active`. |
+| **C-18** | Auction and lot PATCH have no `starts_at < ends_at` check, and moving an auction's window doesn't move its lots. | Should fix (BE) | Client-side validation on the edit forms. Copy: the owner's call (Arian). |
+| **C-19** | `Dockerfile` starts **gunicorn/WSGI**. The compose file that switched to daphne was deleted (`3472f8c`), so auction WebSockets won't work in prod unless the start command is overridden. | Should fix (BE deploy) | The auction room must degrade to polling or a stale-state notice when the socket fails. Verify in Phase 3. |
+| **C-20** | `Project` has a real field named **`results`**, so a single project can be misread as a paginated page by shape sniffing. | Note | Branch on the endpoint, not the shape (`asArray`/pagination helpers must not be applied to a project). |
+| **C-21** | A pricelist `status` has no transition guard, and `accepted` silently supersedes the link's previous accepted list. | Note | Re-fetch the link's pricelists after every status change. |
+| **C-22** | Project totals: decimals are strings; a currency-less line lands in `deal_currency` or the literal `"unknown"`; an unparsable amount counts as 0; `deal_fx_target_currency` is not validated. | Note | Render strings verbatim (no float maths); label the `"unknown"` bucket. |
+
+`claude/phase-18-deploy-prep` (backend) is **not** V1 work: it was squash-merged as #29 and its compose file was
+deliberately deleted later. Don't merge it; it can be deleted.
+
+## C · Owner decisions that gate V1 scope (Arian)
+
+These block **only** the phase items named; everything else can proceed.
+
+| Ref | Question | Blocks | Recommendation |
+| --- | --- | --- | --- |
+| **Q-1** | Does the owner **Access** desk (G-KEY-1 roster) stay owner-only as in the old nav, or open to standard admins as the backend allows? The same question applies to Access Requests (UI owner-only, backend any admin). | Phase 8 | Keep the old nav: owner-only. |
+| **Q-2** | **Project money is hidden only in the UI.** The API returns `money`/`internal_notes` to any team user. Accept for V1, or ask the backend to strip them for standard admins? | none (flag) | Ask the backend (security, not UI). |
+| **Q-3** | `preferred_language` stays editable on profile edit while i18n (G-I18N-1) is off? | Phase 1 | Yes: it is a stored preference. |
+| **Q-4** | Counter-offer display (G-P5-9) has no old-app UI or copy. Build it, and with what label? | Phase 9 | One meta row "Darz's counter · 11,000 USD"; the owner supplies the wording. |
+| **Q-5** | Owner-decision UI from `API_ADOPTION_PLAN.md` Batch 8 (G-P24-2, G-P25-2 a/b, G-P5-4/5/11/12, G-P13-1, G-CLUB-3 club section). | Phase 9 | G-P5-11 and G-P25-2(a) yes (no visible change); the rest per owner. |
+| **Q-6** | An offer on a work with no currency 400s with the backend's raw message. Hide the button, default a currency, or keep it? | Phase 1 | Hide "Make an Offer" when the work has no currency. |
+| **Q-7** | Pricelist-line `availability`: offer `catalog.availability_status` values as the options, or keep it free text? | Phase 5 | Offer the catalogue values (C-14). |
+| **Q-8** | Intelligence, Marketing Hub and Document Builder (G-6): still deferred? The API is ready for the first two. | V1 scope | Keep deferred (not V1). |
+| **Q-9** | A real `VITE_API_BASE_URL` for production. | Go-live, not code | — |

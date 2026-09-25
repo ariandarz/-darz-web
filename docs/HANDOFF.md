@@ -42,6 +42,13 @@ the non-V1 backend gaps, and backend-blocked/deferred features — all in `TASKL
 
 ## 3 · What is actually next
 
+> **2026-09-25 re-baseline: start with `V1_IMPLEMENTATION_PLAN.md`.** It measures both repos (backend V1 =
+> `darz-backend-api` `development` @ `df0421f`, 323 operations) and orders the work as Phases 0–10. Phase 0
+> fixes four live defects against the current backend: the Sales desk with nested rows (C-1), the first-run
+> questionnaire (C-3), the portal entry hang (C-4), and lists capped at 100 (C-5). Contract problems and owner
+> questions: `V1_CONTRACT_ISSUES.md`. Status: `DARZ_WEB_V1_STATUS.md` (baseline edition). The rest of this
+> section is the 2026-09-24 view, kept for context.
+
 **The frontend has not yet adopted the closed backend work** — that is the main queue now.
 **`docs/API_ADOPTION_PLAN.md` is the batch order (one PR per batch — resume at the first unticked one)**;
 `docs/API_GAPS_FRONTEND_ADOPTION.md` is the per-gap detail. **Step 0 is regenerate `src/api/schema.d.ts`**

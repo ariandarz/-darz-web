@@ -13,6 +13,110 @@ Gap IDs (`G-P…`, `G-LOCK-1`) match `docs/PHASE_5_API_GAPS.md`, `docs/PHASE_24_
 backend plan — after adopting each, delete or update its note in those files so the two repos stay
 honest.
 
+## ⟶ 2026-09-25 re-baseline (read this first)
+
+Measured against backend `development` @ `df0421f` (PR #70, **final V1: 224 paths / 323 operations**) and
+`-darz-web` `development` @ `d987910` (PR #100). Per-operation evidence is in
+`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`. The order of work is **`V1_IMPLEMENTATION_PLAN.md`**; the
+per-gap sections further down stay valid as *how-to* notes, except where § "Outdated entries" says otherwise.
+
+### Backend V1 availability vs frontend adoption, by app
+
+| App | Operations | Integrated | Partial | Bound, no UI | Not bound | Final V1 disposition of the not-bound ones |
+| --- | --- | --- | --- | --- | --- | --- |
+| accounts / auth | 36 | 29 | – | – | 7 | access-keys roster + summary (Ph 8); collectors summary (Ph 4); `PATCH me` + `my-membership` (Ph 1); single membership-code/team-user reads: **not needed** (list rows suffice) |
+| catalog | 37 | 32 | – | – | 5 | `selections/` + `seen` (Ph 9, G-P24-2); admin artist detail: not needed; `change-stamp`, `legacy-lookup`: **excluded** (no V1 surface consumes them) |
+| crm | 25 | 18 | 2 | – | 5 | message archive (Ph 6); collector archive/transition (Ph 9); `GET activity/` (Ph 9, G-P5-12); admin selection detail: not needed |
+| auctions | 38 | 30 | 1 | – | 7 | auction PATCH/archive/cover, lot PATCH, registration reset (Ph 3); `records/highlights/`: **excluded** (the Records screen filters `?section=`) |
+| accounting | 24 | 23 | – | 1 | – | deal attachments list: bound, a render in Ph 10 if the old deal card showed them |
+| sales | 12 | 7 | – | – | 5 | summary, follow-up, notes (Ph 2); DELETE (Ph 2, only if the old desk deletes) |
+| documents | 15 | 10 | – | – | 5 | collector `GET /documents/` + `public/{kind}/` (Ph 1); activity + share (Ph 6) |
+| gallery | 52 | 35 | – | 3 | 14 | all in Ph 5, except portal `GET messages/`, `GET status/` and `GET exhibitions/{id}/`: **not needed** (embedded in portal state / the list); link DELETE: Ph 5 if the old desk had it |
+| projects | 32 | 28 | – | 3 | 1 | totals (Ph 7); single reads: not needed |
+| recommendations | 28 | 2 | – | 2 | 24 | question-set collector read (Ph 9); **24 admin ops = Intelligence + question-set editor: excluded from V1 (G-6, Q-8)** unless the owner reverses it |
+| notifications | 3 | – | – | – | 3 | VAPID + push subscribe (Ph 9, G-P13-1) |
+| marketing | 9 | – | – | – | 9 | **excluded from V1** (G-6, Q-8) |
+| dashboard, core/options/theme/audit, health | 12 | 11 | – | – | – | `GET /api/health/` is backend-only |
+
+### Partially integrated
+- `POST /crm/admin/requests/{id}/messages/` and the collector `POST /crm/requests/{id}/messages/` send
+  `body` + `artwork_refs` but never `document_refs`. Ph 6 does the admin attach; the collector side doesn't
+  attach in the old app either (it only renders), so no change there.
+- `POST /auctions/admin/auctions/` omits `terms` / `terms_required` → Ph 3.
+
+### Existing UI not correctly connected to the API (bugs)
+- **C-1** Sales desk vs nested rows (G-SALE-3) → Ph 0.
+- **C-3** questionnaire and Profile card vs 200 `answered:false` (G-P25-1) → Ph 0.
+- **C-4** portal entry hangs on an unexpected status → Ph 0.
+- **C-5** five lists silently capped at 100 → Ph 0.
+- Portal "image needs updating" sends a flag with no file. "Withdrawn" goes out as an availability update, not the
+  `withdraw` kind. Pricelist rows always read "Received". The "Sent" pills are lost on reload → Ph 5.
+- The admin withdraw-approval confirm says "changes nothing automatically", but the backend unassigns the work → Ph 5.
+- Document `owner_lock` is displayed but not enforced: a standard admin gets a 403 on Save/Upload/Confirm/Sign/Archive → Ph 6.
+- Compose never sends line `quantity` → Ph 5.
+
+### Missing UI for existing APIs (V1)
+Sales summary, filters, follow-up, notes and the Auction Sales tab (Ph 2). Auction/lot edit, archive, cover,
+registration reset and the house filter (Ph 3). Database filters, thumbs, publish `missing`, artists search and
+pager, collectors summary and sorts, club thumb, Data Health tiles (Ph 4). Portal images, cover, history,
+replacement upload, ask/withdraw and pricelist builder; admin reissue, partner search, pricelist
+status/cap/file/lines, and the exhibition-catalogue editor (Ph 5). Document History tab and share, chat attach,
+message archive (Ph 6). Projects quick/partner, status/stages, FX and totals (Ph 7). The Access desk (Ph 8).
+Profile edit, documents, my-membership (Ph 1).
+
+### Missing forms / actions / tables / filters / pagination / search
+- **Forms:** profile edit (Ph 1), auction edit, lot edit (Ph 3), exhibition-catalogue item (Ph 5), project
+  FX (Ph 7), pricelist builder (Ph 5).
+- **Actions:** follow-up set/clear, add note (Ph 2), archive/restore auction, cover upload, registration reset
+  (Ph 3), link reissue, pricelist status (Ph 5), document share, message archive, attach doc (Ph 6), extend or
+  revoke from the roster (Ph 8).
+- **Tables:** Auction Sales (Ph 2), access-key roster (Ph 8), document history (Ph 6), exhibition catalogue (Ph 5).
+- **Filters and search:** sales `search/payment_status/delivery_status/source/ordering`; artworks
+  `gallery_portal/complete/duplicate_images/size/source_type/created_after`; artists `search/ordering`;
+  collectors `ordering=activity|purchases`; projects `quick/partner`; auctions `archived`; records `house`;
+  links `search`; admin thread `include_archived`.
+- **Pagination:** C-5 (Ph 0); admin auctions list and Club list load `per_page: 100` with no pager (Ph 3, Ph 4).
+
+### Missing loading / error / empty states
+- Profile has no loading state; its tiles read 0 while loading (Ph 1).
+- Auction event lots have no loading or empty state (Ph 3).
+- Portal entry has no error path for 5xx/4xx (C-4, Ph 0).
+- Every admin list desk renders all three through `DeskList`, and `DeskBoundary`/`ScreenBoundary` catch render
+  throws.
+
+### Authentication / authorisation gaps
+- The UI owner gates match the backend's `IsOwner` set exactly (accounting, memberships, team users, audit
+  log), plus Access Requests, which is **stricter in the UI** than the backend (Q-1).
+- **UI-only gates (cosmetic):**
+  - Project `money`/`internal_notes` are hidden from standard admins, but the API returns them (Q-2).
+  - Document delete is owner-only in the UI, but the endpoint accepts any admin.
+  - A standard admin can't pick a sale's "responsible", because team users are `IsOwner`. The nested
+    `responsible` now covers the read.
+- **Backend security defects (C-13):** portal PIN brute force, unthrottled logins, unvalidated anonymous
+  uploads. The FE's 429 copy never fires on login.
+- Token refresh, logout and the two principals (collector key vs team password) are complete. The portal uses
+  `PortalClient` (no bearer) with the PIN rules per C-9.
+
+### Payload mismatches (backend vs frontend expectations)
+C-1 nested sales rows · C-2 project status enum name · C-3 questionnaire 200 · C-6 optional-typed but
+required lock (500 when missing) · C-7 no hold member · C-8 portal state untyped · C-9 pin placement ·
+C-10 untyped error `details` · C-15 document activity actor shape · C-16 list-only rollups · C-17 access-key
+status lag · C-20 `Project.results` · C-22 string decimals in totals. All are in `V1_CONTRACT_ISSUES.md`.
+
+### Outdated entries in this file (as of 2026-09-25)
+- **§ P0 G-P34-1/2, § P1 G-LOCK-1, § P2 G-P5-1/2/3/6/10, § Group-B G-F1-1** are **done** (#99). Their
+  sections are history.
+- **Step 0** cites backend `5f6d7ea`; regenerate from `df0421f` or later. The committed `schema.d.ts` predates
+  PRs #67–#70 and G-SALE-3 (11 paths missing, 15 type errors on regen).
+- **§ Phase 5b** says "four unavailable filters". They are still unwired and are joined by `source_type` and
+  `created_after`.
+- **§ G-KEY-1** calls it owner-only. The backend is `IsStandardAdminOrOwner`, so the gate is Q-1.
+- Everything in the 2026-09-25 backend additions (G-SALE-1/2/3/5, G-AUC-1/2/3, G-COL-1/2, G-CAT-1/3/8, G-CLUB-1,
+  G-DOC-2, G-PROJ-1/2/3/8/9, G-PORT-1…16) has **no section below**. Its adoption detail is the matching phase
+  in `V1_IMPLEMENTATION_PLAN.md` plus `API_GAPS.md` § "2026-09-25 backend additions".
+
+---
+
 ## Step 0 — regenerate the typed client first (do this before any task)
 
 Several tasks below are "the schema now types this correctly." They only land once `schema.d.ts` is

@@ -1,0 +1,458 @@
+# darz-web V1: implementation plan (phase by phase)
+
+**Written 2026-09-25.** This file defines the target **darz-web V1** and the order in which to reach it. It
+**supersedes `API_ADOPTION_PLAN.md` from its Batch 4 onward**; Batches 1–3 are done (#99) and are the base here.
+
+Inputs, all measured on 2026-09-25 rather than copied from older docs:
+
+| Input | Where |
+| --- | --- |
+| Backend V1 = `darz-backend-api` `development` @ `df0421f` (PR #70): **224 paths / 323 operations** | `docs/audit/2026-09-25/backend-v1-endpoints.txt` |
+| Per-operation adoption state (225 integrated · 3 partial · 9 bound-no-UI · 85 not bound · 1 backend-only) | `docs/audit/2026-09-25/API_ADOPTION_MATRIX.md` |
+| Panel/Admin desk-by-desk audit | `docs/audit/2026-09-25/ADMIN_AUDIT.md` |
+| Collector app + gallery portal audit | `docs/audit/2026-09-25/COLLECTOR_AUDIT.md` |
+| Backend contract review | `docs/audit/2026-09-25/BACKEND_CONTRACT_REVIEW.md` → summarised as `C-…` in **`V1_CONTRACT_ISSUES.md`** |
+| Gap index | `API_GAPS.md` (state) · `API_GAPS_FRONTEND_ADOPTION.md` (per-gap adoption detail) |
+
+Baseline gate on `development` @ `d987910`: typecheck ✅ · lint 0 ✅ · format ✅ · **636/636 unit** ✅ · build ✅.
+
+---
+
+## 1 · The rules for every phase
+
+1. **Branch from the latest `development`.** Name it `v1/phase-N-<slug>` and open one PR per phase against
+   `development`.
+2. **Merging.** The 2026-09-25 brief asks for every phase to be merged into `development` before the next one
+   starts. `CLAUDE.md` still requires the owner's per-request "merge it". So the PR is opened and the phase is
+   *ready to merge*, and the merge happens on that instruction. Each phase is written to be mergeable on its
+   own, and the next phase branches from `development` only after the merge. No long-lived branch holds
+   several phases.
+3. **Faithful port (`CLAUDE.md`).** Every new control is traced to `app.html` or the design package
+   (`design/market-app/`). If the old app has no UI for a new API field, **flag it (owner question) instead of
+   inventing it.** The IDs are in `V1_CONTRACT_ISSUES.md` § C.
+4. **Reuse, don't duplicate.** Use `ResourceService` subclasses in `services.ts`, `useListController` +
+   `DeskList` (`admin/kit`), `ConflictBanner`, `asArray`/`normalise*` (`shapes.ts`), `DeskBoundary`/`ScreenBoundary`,
+   and labels from `/api/options/` via `useOptions`.
+5. **The gate, run before every push:**
+   `npm run typecheck && npm run lint && npm run format:check && npm test && npm run build && npm run e2e`.
+6. **Stub.** `e2e/stub-server.mjs` is updated **in the same PR** to the new shape, so E2E exercises the new API
+   and not the old one (see the `HANDOFF.md` §4 "the stub was lying" trap).
+7. **Render check.** Screenshot every touched screen in dark and light, at mobile and desktop widths, and
+   compare with the design package capture or the `app.html` reading (`HANDOFF.md` §5). A behaviour change on a
+   shipped screen still gets one.
+8. **Docs in the same PR.** Flip the rows in `API_GAPS.md` and in `docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`
+   (status column), add one 3-line `CHANGELOG.md` entry, tick the phase in §5 below, and delete every stale
+   on-screen "backend gap G-…" note the phase makes false.
+9. **Locking.** Every PATCH to a locked endpoint sends `expected_version` (C-6), and every new locking call gets a
+   wire-format case in `src/api/optimisticLock.test.ts`.
+
+---
+
+## 2 · V1 scope
+
+For each module, **V1 = the old app's approved surface, bound to every backend V1 endpoint that serves it.**
+The "Not V1" rows are excluded on purpose, with the reason recorded; they are not forgotten.
+
+| Module | In V1 | Not V1 (reason) |
+| --- | --- | --- |
+| Collector: Market, artwork, artists, saved, records | ✅ | Insights & Stories (no backend, Phase 22) |
+| Collector: Chat, requests, conversations | ✅ | Counter-offer display (Q-4, until the owner answers) |
+| Collector: Profile, Settings, Membership, Questionnaire | ✅ incl. profile edit, documents and my-membership | Push opt-in (Q-5) |
+| Collector: Auctions | ✅ (behind the `features.auctions` flag) | — |
+| Gallery portal (`/portal/:token`) | ✅ incl. P1/P3a/P3b/P4 | Referral/Introduce (G-PORT-5), drawn signature (G-PORT-7), offer engine (G-PORT-8), formatted pricelist download (P3c): **no backend** |
+| Admin: Requests, Chat, Dashboard | ✅ | AI Monitor, conversation assignee (no backend) |
+| Admin: Catalogue (Database, editor, Artists, Import, Published, Data Health) | ✅ | PDF/image import intake (D15), bulk actions |
+| Admin: Collectors, Club, Access Requests, Memberships | ✅ | "Notify collectors" (no admin push-send endpoint) |
+| Admin: **Access desk** (G-KEY-1) | ✅ (Q-1 decides the role gate) | — |
+| Admin: Sales (Market + **Auction Sales**) | ✅ | — |
+| Admin: Auctions (Live, Records, Registrations) | ✅ | — |
+| Admin: Sources/Galleries, Exhibitions, Issue document, Exhibition Services | ✅ incl. the **exhibition-catalogue editor** | — |
+| Admin: Documents (list, detail, **History**) | ✅ | Pricelists & saved items library (Phase 21), Document Builder/Studio (D18, G-6) |
+| Admin: Projects suite | ✅ incl. FX + totals | Proposal builder composition (backend not built) |
+| Admin: Accounting, Team, Settings, App Design | ✅ (complete today) | Settlement calculator, theme editors (D17) |
+| Admin: **Intelligence** (5 tabs), **Marketing Hub** | ❌ | G-6: owner-deferred, although the API is ready (Q-8) |
+| Admin: Logistics, Analytics, Social ×4, Strategy, Automations, Languages, Team Workspace | ❌ | No backend |
+
+---
+
+## 3 · Phases
+
+Dependency order: **0 → 1…8 in any order (each needs only 0) → 9 (owner-gated) → 10 (final).** The numbering
+below is the recommended order, by risk and size: live bugs first, then the busiest desks.
+
+### Phase 0: Foundation, schema regen, and live bugs
+- **Objective:** make `development` correct against backend V1 before any feature work.
+- **Sections:** Sales desk (C-1), Projects types (C-2), Questionnaire and Profile (C-3), Gallery portal entry (C-4),
+  Artists/Database/editors/Issue document (C-5), the shared API layer.
+- **APIs:** all of them, through the schema regen. In particular `GET /sales/admin/sales/` (nested rows),
+  `GET /recommendations/questionnaire/`, `GET /gallery/portal/{token}/`, and every list over 100 rows.
+- **UI work:**
+  - Sales list and detail read the nested `artwork.title`, `collector.display_name` and `responsible.name`.
+  - The questionnaire opens on the intro when `answered:false`, and the Profile card follows the same rule.
+  - Portal: any unexpected entry error shows the retry card; add `ScreenBoundary` on `/portal/:token`.
+- **API-binding work:**
+  - Regenerate `src/api/schema.d.ts` with the recipe in `API_ADOPTION_PLAN.md` "Step 0" (drf-spectacular,
+    no DB needed).
+  - `ProjectStatus = Schemas['Project']['status']`.
+  - Add `Locked<T>`, a type that makes `expected_version: number` required, and apply it to every existing PATCH
+    type.
+  - Type `HttpError.details` (C-10).
+  - Add a `fetchAllPages(list, query)` helper on `ResourceService` that walks `has_next`, and use it at the five
+    capped call sites (C-5).
+  - Delete the per-row retrieves in `useSaleRefs.ts`. The team-user roster stays for the owner-only
+    "responsible" picker.
+  - Hand-type `PortalState` from `gallery/views.py:95-114` (C-8). This phase adds the type only; Phase 5 uses it.
+- **Files:** `src/api/schema.d.ts`, `types.ts`, `services.ts`, `HttpClient.ts`/`errors.ts`, `shapes.ts`,
+  `features/admin/{SalesPage,SaleDetailPage,useSaleRefs,ArtistsPage,ArtworksPage,ArtworkEditorPage,RecordEditorPage}.tsx`,
+  `admin/exhibitions/IssueDocumentPage.tsx`, `questionnaire/QuestionnaireController.ts`, `profile/ProfilePage.tsx`,
+  `portal/PortalSession.ts`, `routes.tsx`, `e2e/stub-server.mjs` (nested sale rows, questionnaire 200, a portal
+  500 case, 150 artists across 2 pages).
+- **Dependencies:** none.
+- **Acceptance:**
+  - Typecheck is clean on the regenerated schema.
+  - The Sales desk shows titles and names with **no** per-row catalogue/collector requests (check the network
+    panel).
+  - A first-run collector sees the questionnaire intro.
+  - A portal 500 shows the retry card.
+  - The Artists desk shows all 150 stub artists.
+- **Validation:** full gate; new unit tests for `fetchAllPages`, the questionnaire `answered` branch and
+  `PortalSession` error mapping; E2E desk walk for Sales and Artists; render check of Sales, Artists,
+  Questionnaire and the portal gate.
+
+### Phase 1: Collector account and small reads (old Batch 4, plus documents from old Batch 5)
+- **Objective:** close the collector-side adoption with no owner decision needed.
+- **Sections:** Profile (Account, Documents), Settings, Membership sheet, Questionnaire contact step, Market
+  curated chip, Settings legal links.
+- **APIs:** `PATCH /auth/me/`, `GET /auth/my-membership/`, `GET /documents/`, `selection_name` on
+  `GET /catalog/artworks/selections/`, `GET /documents/public/{kind}/`.
+- **UI work:**
+  - Profile → Account edit form (`full_name`, `phone`, `city`, `preferred_language`; Q-3), ported from the old
+    edit form in `app.html`, with inline validation errors from `details`.
+  - Settings "Edit profile" opens that form.
+  - Membership sheet shows status and "Active until …" (`null` → no end date).
+  - "Your documents: invoices, certificates & provenance" list, with loading, empty and error states. Opening a
+    row uses `pdf_url`, plus the old app's "New" badge from `shared_at`.
+  - The chip text is `selection_name ?? 'Curated for You'`.
+  - The Terms/Privacy links resolve through `/documents/public/{kind}/` when a confirmed public doc exists, and
+    fall back to today's URLs otherwise.
+  - Hide "Make an Offer" when the work has no currency (Q-6, if the owner agrees).
+- **API-binding work:**
+  - `AuthService.updateMe`, `AuthService.myMembership`, a collector `DocumentsService` (kept separate from
+    `/documents/admin`) and `PublicDocumentsService.byKind`.
+  - `AuthSession` refreshes the cached `me` after a PATCH.
+  - The questionnaire contact step writes through `updateMe` (G-Q-1).
+- **Files:** `profile/ProfilePage.tsx` + new `profile/AccountForm.tsx` and `profile/Documents.tsx`,
+  `settings/SettingsPage.tsx`, `membership/MembershipSheet.tsx`, `catalogue/CuratedChip.tsx`,
+  `useCuratedCount.ts`, `questionnaire/QuestionnaireController.ts`, `services.ts`, `AuthSession.ts`, the stub.
+- **Dependencies:** Phase 0. Q-3 and Q-6 (non-blocking; default to the recommendation).
+- **Acceptance:**
+  - A profile edit round-trips and survives a reload.
+  - A 400 shows the error under the field.
+  - Documents render 2 stub rows plus the empty variant.
+  - Membership shows its end date.
+  - The chip shows the selection name.
+- **Validation:** gate; unit tests for `updateMe` payload shaping and the questionnaire contact write; collector
+  E2E walk extended; render check of Profile, Settings and Membership.
+
+### Phase 2: Sales desk and Auction Sales (G-SALE-1…5, G-SALE-4)
+- **Objective:** the biggest admin adoption backlog. Bring the Sales desk to the old deal-card parity and add
+  the Auction Sales tab.
+- **Sections:** Sales → Market Sales (list and detail); Sales → Auction Sales (new route).
+- **APIs:**
+  - `GET /sales/admin/sales/summary/`
+  - `GET /sales/admin/sales/?search&status&payment_status&delivery_status&source&ordering`
+  - `POST …/{id}/follow-up/`
+  - `GET/POST …/{id}/notes/`
+  - `DELETE /sales/admin/sales/{id}/` (bind it only if the old desk has a delete)
+  - `lot` on the row
+- **UI work:**
+  - Header tiles from `summary`, including the old "Need attention" tile (follow-up overdue), replacing the 4
+    `per_page=1` counts.
+  - Search box plus payment, delivery and source filter chips, and a sort.
+  - Detail page: follow-up date setter (set/clear), the overdue flag, and an append-only notes thread.
+  - The **Auction Sales** tab (`/admin/sales?source=auction`, or a dedicated route matching `adminNav`) lists the
+    auto-created drafts, each linking to its lot. Columns are ported from the old tab in `app.html`.
+  - Remove the stale G-SALE notes on screen and in the nav.
+- **API-binding work:** `SalesService.summary/followUp/notes/addNote`; `SaleQuery` gets the new params;
+  `source` labels fall back to the raw value until C-14 is fixed.
+- **Files:** `admin/SalesPage.tsx`, `SaleDetailPage.tsx`, `SalesController.ts`, `saleForm.ts`, `adminNav.ts`,
+  `routes.tsx`, `services.ts`, `types.ts`, the stub.
+- **Dependencies:** Phase 0 (nested rows).
+- **Acceptance:**
+  - The tiles match the summary counts.
+  - Each filter changes the request's query string (unit test on the controller).
+  - A follow-up in the past shows as overdue.
+  - A note appears without a reload.
+  - An auction sale links to its lot.
+- **Validation:** gate; controller unit tests; the desk E2E walk covers both tabs; render check.
+
+### Phase 3: Auctions admin, plus the collector auction cover (G-AUC-1…4, G-REC-1, poster)
+- **Objective:** make auctions editable and archivable, and replace the per-card lot read.
+- **Sections:** Live Auctions list and detail, Register to Bid, Auction Records (admin), collector Auctions list.
+- **APIs:**
+  - `PATCH /auctions/admin/auctions/{id}/` (lock; draft or scheduled only) and `terms`/`terms_required` on create
+  - `PATCH /auctions/admin/lots/{id}/` (lock; scheduled lots only)
+  - `POST /auctions/admin/auctions/{id}/archive/` and `?archived=`
+  - `POST/DELETE …/{id}/cover-image/` (multipart)
+  - `POST /auctions/admin/registrations/{id}/reset/`
+  - `?house=` on both records lists
+  - `cover_image_url` on the collector side
+- **UI work:**
+  - An auction edit form (title, description, currency, window, terms) with `ConflictBanner`, disabled with the
+    reason once the auction is live, closed or cancelled.
+  - A lot edit form with the same pattern.
+  - An archive/restore action and a "Show archived" toggle.
+  - Cover upload/remove on the detail page.
+  - ↺ Reset on rejected registrations.
+  - An "All auction houses" dropdown on Records.
+  - Collector cards read `cover_image_url`, and the first-lot read is deleted (`useAuctions.ts:57-70`).
+  - Client-side `starts_at < ends_at` validation (C-18).
+  - Verify that the room degrades when the WebSocket fails (C-19).
+- **API-binding work:** `AuctionsAdminService.update/updateLot/archive/uploadCover/removeCover/resetRegistration`;
+  `AuctionQuery.archived`; `AuctionRecordQuery.house`; `Locked<>` bodies; 400 refusals branch on status (C-11).
+- **Files:** `admin/AuctionsAdminPage.tsx`, `AuctionAdminDetailPage.tsx`, `RegistrationsPage.tsx`,
+  `RecordsAdminPage.tsx`, `auctions/useAuctions.ts`, `auctions/AuctionListPage.tsx`, `records/RecordsPage.tsx`
+  (only if the old app had the house filter there), `services.ts`, `types.ts`, `optimisticLock.test.ts`, the stub.
+- **Dependencies:** Phase 0.
+- **Acceptance:**
+  - Editing a scheduled auction saves, and a stale save shows the banner.
+  - A live auction's edit is disabled with the reason.
+  - Archive hides the auction by default.
+  - The cover shows on the collector card with one request per page (network panel).
+  - Reset returns a registration to pending.
+- **Validation:** gate; wire-format tests for the auction and lot locks; desk E2E; render check (admin and
+  collector auctions).
+
+### Phase 4: Catalogue, Collectors, Club and Data Health desks
+- **Objective:** use the 09-25 catalogue and collector work.
+- **Sections:** Database (artworks list), Artwork editor, Artists, Published works, Collectors, Collector Club,
+  Data Health, Dashboard tiles.
+- **APIs:**
+  - `thumb`/`artist_name` on admin artworks
+  - `?gallery_portal&complete&duplicate_images&size&source_type&created_after` (list + facets)
+  - the publish 400 `details.missing`
+  - admin artists `?search&ordering` and `works_count`
+  - `GET /auth/admin/collectors/summary/`, `last_activity_at`, `purchase_count`, `?ordering=activity|purchases`
+  - club selection `thumb`
+  - data-health `deleted_records`
+  - admin `?published=` for the Published desk
+- **UI work:**
+  - The Database row leads with the thumbnail and resolved artist name.
+  - The four Phase 5b filter chips, plus source-type and "recently added" chips (the same chip pattern as #66).
+  - Publish failure lists the missing essentials (worded from the old desk's copy).
+  - Artists desk: server search, sort (name/created/works) and a pager, with a works count.
+  - Collectors strip: Collectors · VIP · Active-30d · Engaged, plus "Recently active" and "Most purchases" sorts.
+  - Club card cover from `thumb`.
+  - Data Health: Gallery-, Dealer- and Artist-sourced tiles, "Deleted (permanent)" and "Recently added".
+  - Published desk lists every published work through the admin list.
+  - Dashboard catalogue tiles link to the filtered Database.
+  - The editor gets `source_type` only if the old editor had it; otherwise flag it.
+- **API-binding work:** extend `ArtworkAdminQuery`, the `artists()` query, `CollectorAdminQuery.ordering`,
+  `AdminAccountsService.collectorsSummary`; merge rules for list-only rollups (C-16).
+- **Files:** `admin/ArtworksPage.tsx`, `ArtworksController.ts`, `ArtworkEditorPage.tsx`, `ArtistsPage.tsx`,
+  `PublishedPage.tsx`, `CollectorsPage.tsx`, `collectorTiles.ts`, `ClubPage.tsx`, `DataHealthPage.tsx`,
+  `healthCounts.ts`, `DashboardPage.tsx`, `services.ts`, `types.ts`, the stub.
+- **Dependencies:** Phase 0 (`fetchAllPages` and error details).
+- **Acceptance:**
+  - Each filter maps to its query param (unit test).
+  - A publish of an incomplete work lists exactly the missing items.
+  - The Artists desk pages past 100.
+  - The collector tiles equal the summary.
+- **Validation:** gate; desk E2E; `diff-desks.mjs` against a baseline for layout regressions; render check.
+
+### Phase 5: Gallery portal and Sources desk (G-PORT-1…4, 6, 9, 11–16)
+- **Objective:** bring the portal and its admin desk up to backend P1/P3a/P3b/P4.
+- **Sections:** `/portal/:token` (Works, Pricelists, History, header); admin Sources list, Source detail,
+  Exhibition compose, Exhibition Services, and the new exhibition-catalogue editor.
+- **APIs:**
+  - Portal: `GET portal/{token}/` (typed per C-8), `POST …/artworks/{id}/image/` (multipart, `pin` in the form),
+    `POST …/updates/` with kinds `ask` and `withdraw`, `POST …/pricelists/build/`
+  - Admin: `POST links/{id}/reissue/`, `?search=` on links, `POST pricelists/{id}/status/`,
+    `GET links/{id}/pricelists/cap/`, `file_url`, exhibition-catalogue CRUD, `quantity` on compose lines, and
+    `description` on service-catalog (G-PROJ-8)
+- **UI work:**
+  - **Portal:**
+    - Work cards show `image_url`, and the header shows `cover`.
+    - A "Replace image" file picker replaces the checkbox-only flag.
+    - Per-work **Ask** and **Withdraw** actions.
+    - "Sent" pills and a Pending-review count from the server `updates[]`, plus a History list.
+    - Pricelist rows show `status`.
+    - An in-portal pricelist **builder** (lines: work or title, price, currency, availability, note). File
+      upload stays as the alternative.
+  - **Admin:**
+    - Reissue credentials (shown once).
+    - Server-side partner search.
+    - Open a pricelist file (`file_url`), render structured lines, set status, and show the soft-cap notice.
+    - Fix the **withdraw** confirm copy (the backend now unassigns the work).
+    - Render `ask` updates with an answer path through the thread.
+    - Image updates show a "submitted" state until C-12 lands.
+    - Exhibition-catalogue editor desk (add/edit/deactivate items; key read-only on edit; lock).
+    - Compose sends and shows `quantity`.
+    - Service descriptions come from the API; delete the `DESCRIPTIONS` map.
+- **API-binding work:**
+  - `GalleryPortalService.replaceImage/buildPricelist`.
+  - The update kinds come from options (`gallery.update_kind`).
+  - `GalleryAdminService.reissue/setPricelistStatus/pricelistCap/exhibitionCatalogue*`.
+  - `ExhibitionLineInput.quantity`.
+  - A wire test pins `pin` in the body/form on every portal write (C-9).
+- **Files:** `portal/*` (`PortalPage`, `PortalSession`, `PortalWorks`, `PortalPricelists`, `portalForm.ts`, new
+  `PortalHistory.tsx`), `admin/SourcesPage.tsx`, `SourceDetailPage.tsx`, `SourceDocuments.tsx`,
+  `ExhibitionComposePage.tsx`, `exhibitions/{issueForm,servicesLibrary,ExhibitionServicesPage}.ts(x)`, new
+  `admin/ExhibitionCatalogPage.tsx`, `adminNav.ts`, `routes.tsx`, `services.ts`, `types.ts`, the stub (full portal
+  state).
+- **Dependencies:** Phase 0 (`PortalState` type and entry fix). Q-7 (non-blocking). C-12 limits the admin image
+  preview; C-13 must be raised before any real link is issued.
+- **Acceptance:**
+  - The portal shows images and cover.
+  - A replacement image appears as a pending update in History after a reload.
+  - Ask and withdraw are sent with the right `kind`.
+  - A built pricelist appears as "Submitted".
+  - Admin reissue gives new credentials and the old ones get 401 (stub).
+  - An accepted pricelist supersedes the previous one after a re-fetch.
+  - A catalogue edit shows in the portal's exhibition menu.
+- **Validation:** gate; portal unit tests (form → payload per kind); a new portal E2E beyond the gate screen
+  (the stub now serves state); desk E2E; render check of every portal tab.
+
+### Phase 6: Documents and Chat (G-DOC-1 share, G-DOC-2, D19 `document_refs`, G-CHAT-2)
+- **Objective:** document history and sharing, attaching documents in chat, and archiving chat messages.
+- **Sections:** Documents list and detail, Documents → History tab, admin Chat thread, collector Chat thread
+  (rendering attached docs).
+- **APIs:**
+  - `GET /documents/admin/documents/{id}/activity/`
+  - `POST/DELETE …/{id}/share/`
+  - `document_refs` on `POST /crm/admin/requests/{id}/messages/`, and its enriched read on both threads
+  - `POST /crm/admin/messages/{id}/archive/` and `?include_archived=`
+- **UI work:**
+  - A History tab per document (action, who, when, changes).
+  - Share/unshare with the collector.
+  - Enforce `owner_lock` in the UI: disable Save/Upload/Confirm/Sign/Archive for a standard admin and state the
+    reason.
+  - A document picker in the admin composer (collector-visible kinds only).
+  - Documents render as chips on messages in both threads and open through the collector documents list.
+  - Per-message archive/restore plus an "Include archived" toggle, admin-only.
+  - Remove the stale G-CHAT-2 and G-DOC-2 copy.
+- **API-binding work:** `AdminDocumentsService.activity/share/unshare`; `adminPostMessage` accepts
+  `document_refs`; `AdminThreadController` gets the archive and include-archived query.
+- **Files:** `admin/DocumentsPage.tsx`, `DocumentDetailPage.tsx`, new `admin/DocumentHistory.tsx`, `adminNav.ts`,
+  `AdminThreadPage.tsx`, `AdminThreadController.ts`, `AdminChatPage.tsx`, `chat/ThreadPage.tsx`, `services.ts`,
+  `types.ts`, the stub.
+- **Dependencies:** Phase 1 (the collector documents list is the open target for a shared doc).
+- **Acceptance:**
+  - An attached doc shows on both threads and in the collector's Documents list.
+  - An archived message disappears from the admin thread unless the toggle is on, and is never hidden from the
+    collector.
+  - A locked doc's actions are disabled for a standard admin.
+- **Validation:** gate; unit test for the composer payload; desk and collector E2E; render check.
+
+### Phase 7: Projects suite (G-PROJ-1, 2, 3, 8, 9)
+- **Objective:** replace the client-side walks and read-only fields with the served API.
+- **Sections:** Projects Dashboard, List, Pipeline, Partners, Project record, Packages.
+- **APIs:**
+  - `?quick=active|delayed|awaiting_approval|unpaid` and `?partner=`
+  - `status` and `stages` on PATCH (lock)
+  - the FX fields (`deal_currency`, `deal_fx_target_currency`, `deal_fx_rate`, `deal_fx_rate_date`)
+  - `GET …/projects/{id}/totals/`
+  - service `description`
+- **UI work:**
+  - Quick cards and the Partners count come from server filters.
+  - The Overview Status `<select>` (as in the old app).
+  - The stage sub-state (delayed/awaiting-approval, checklist seeding on a stage move) is written, so the
+    dashboard tiles stop reading 0.
+  - A manual FX block on the record, plus a totals panel (per currency, and the converted total only when a
+    rate is set; string decimals, C-22).
+  - Package descriptions come from the API.
+  - Remove the stale G-PROJ notes.
+- **API-binding work:** `ProjectQuery.quick/partner`, `ProjectsService.totals`, and the `ProjectPatch` fields.
+- **Files:** `admin/projects/*`, `services.ts`, `types.ts`, the stub.
+- **Dependencies:** Phase 0 (C-2 alias). Q-2 is a flag only.
+- **Acceptance:**
+  - "Delayed" shows the server count.
+  - A status set on the record persists until the next stage move.
+  - The totals match the backend for a mixed-currency stub project.
+- **Validation:** gate; unit test for the stage/sub-state payload; desk E2E; render check.
+
+### Phase 8: Owner Access desk (G-KEY-1)
+- **Objective:** build the old owner "Access" desk over the roster-wide key list.
+- **Sections:** Owner → Access (new route; the nav tab is currently `path: null`).
+- **APIs:** `GET /auth/admin/access-keys/?status&collector&expiring_soon&search` and `GET …/access-keys/summary/`,
+  reusing the existing extend and revoke actions.
+- **UI work:**
+  - KPI tiles from the summary.
+  - A filterable table (collector, computed status per C-17, issued, expires, last used, activity tallies).
+  - Extend and revoke per row.
+  - An "Expiring soon" chip.
+  - A link to the collector.
+  - The copy and columns come from the old desk in `app.html`.
+- **API-binding work:** `AdminAccountsService.accessKeysRoster/accessKeysSummary`, `AccessKeyRosterQuery`.
+- **Files:** new `admin/AccessDeskPage.tsx` (+ controller), `adminNav.ts`, `routes.tsx` (`RequireOwner` per Q-1),
+  `services.ts`, `types.ts`, the stub.
+- **Dependencies:** Phase 0; **Q-1** (role gate).
+- **Acceptance:**
+  - The tiles equal the summary.
+  - A lapsed key with a stored status of `active` shows "Expired".
+  - Extend refreshes the row.
+- **Validation:** gate; desk E2E; render check.
+
+### Phase 9: Owner-decision items (only the ones the owner says yes to)
+- **Objective:** build the answered items from `V1_CONTRACT_ISSUES.md` § C.
+- **Candidates:**
+  - **G-P5-11:** send `artist` on an artist enquiry. No visible change.
+  - **G-P25-2(a):** the collector questionnaire is driven by `GET /recommendations/question-set/`, and the
+    `questions.ts` bank is deleted. (b) An admin question-set editor desk.
+  - **G-P24-2:** the "selection ready" notice (`/catalog/selections/` + `seen`).
+  - **G-P5-4:** durable activity archive.
+  - **G-P5-5:** collector withdraw offer / cancel viewing.
+  - **G-P5-12:** an activity read-back surface.
+  - **G-P13-1:** push opt-in (`vapid-public-key`, `push/subscribe|unsubscribe`, a service worker).
+  - **G-CLUB-3:** the Club "Auction access" section.
+  - **G-P5-9:** counter-offer display.
+  - `RecommendationService.published/dismiss`: "Curated for you" (part of G-6 unless the owner says otherwise).
+- **Each answered item** gets its own sub-branch `v1/phase-9x-<slug>`, with the same gate, stub, render and docs
+  rules.
+- **Dependencies:** owner answers.
+
+### Phase 10: Final verification and V1 status
+- **Objective:** prove the result and write it down.
+- **Work:**
+  - Re-run the matrix method (see the header of `docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`) against the
+    then-current backend.
+  - Every operation ends as Integrated, Backend-only, Excluded (not V1, with a reason) or Blocked (with a
+    reason). No "Not bound" row may remain unexplained.
+  - Re-review `API_GAPS.md` and `API_GAPS_FRONTEND_ADOPTION.md`.
+  - Finalise `DARZ_WEB_V1_STATUS.md`.
+  - Confirm that no `v1/phase-*` branch is unmerged, and that `development` builds and passes the full gate
+    including E2E.
+  - Walk every screen for loading, empty and error states (the audits list the current misses: Profile
+    loading, auction event lots loading/empty).
+- **Acceptance:** the final gate output is recorded in `DARZ_WEB_V1_STATUS.md`; `HANDOFF.md` and `TASKLIST.md`
+  point to it.
+
+---
+
+## 4 · Cross-cutting fixes, and which phase takes them
+
+| Item | Phase |
+| --- | --- |
+| Profile has no loading state (tiles read 0 while loading) | 1 |
+| Auction event lots have no loading or empty state | 3 |
+| Hardcoded labels that `/options/` serves (availability, record, lot/auction status, request kind) | Take each one in the phase that touches its screen (1 → catalogue/requests, 3 → auctions/records); the request-kind wording is an owner call |
+| Market hero copy not read from `/app-theme/` | 1 (only if the old theme keys exist; otherwise flag) |
+| Nav "Insights" → `/stories` with no route | Not V1: hide the tab or leave it as the old app did (flag) |
+| Stale on-screen "backend gap" notes (≈20, listed in `ADMIN_AUDIT.md`) | Removed by whichever phase makes each one false |
+| `docs/ADMIN_SCREENS.md:118` lists the Settings route as missing | 10 |
+
+## 5 · Progress
+
+| Phase | Scope | Branch | State | PR |
+| --- | --- | --- | --- | --- |
+| 0 | Schema regen · C-1…C-5 live bugs · `Locked<>` · `fetchAllPages` · `PortalState` | `v1/phase-0-foundation` | `[ ]` | |
+| 1 | Profile edit · my-membership · documents · chip · G-Q-1 · public docs | `v1/phase-1-collector-account` | `[ ]` | |
+| 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[ ]` | |
+| 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[ ]` | |
+| 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[ ]` | |
+| 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[ ]` | |
+| 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[ ]` | |
+| 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[ ]` | |
+| 8 | Owner Access desk | `v1/phase-8-access-desk` | `[ ]` (Q-1) | |
+| 9 | Owner-decision items | `v1/phase-9x-*` | waiting on owner | |
+| 10 | Final verification + `DARZ_WEB_V1_STATUS.md` | `v1/phase-10-final` | `[ ]` | |
