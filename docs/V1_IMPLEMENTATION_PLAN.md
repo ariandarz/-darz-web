@@ -544,6 +544,56 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 - **E2E gotcha:** a `<label>` wrapping a `<textarea>` takes the textarea's text into its own, so
   `getByLabel(…, {exact:true})` cannot find it — use `getByRole('textbox', {name})`.
 
+## 3e · What Phase 4 did differently from the plan (recorded 2026-09-25)
+
+- **Filters are the old selects, not new chips.** The Phase 5b filters sit in "More filters" as the old
+  desk's own controls (`darz-studio.html:26668-26685`): Gallery Portal ("In any portal" / "Not in a
+  portal"), the Images select's "Duplicates (same image)" pick (one select over `has_images` +
+  `duplicate_images`), Details ("Missing required fields" = `complete=false`) and Size. Not offered (no
+  server filter): the per-portal entries, four of the five Details picks, Oversized / Bigger / Smaller /
+  custom W×H, Chosen by Darz, Categories. **Size buckets are the backend's** (≤ 50 · 50–120 · > 120 cm,
+  owner decision 2026-09-24), labelled with those numbers, not the old 40/100/200.
+- **`source_type` and `created_after` are link chips only.** The old desk had no select for either (it
+  reached "recently added" only from the Data Health tile, as the "Latest 50 added" chip, `:26717`). The
+  desk now opens pre-filtered from the URL (`artworkQueryFromParams`, the Requests-desk pattern), and the
+  chip reads "Added since <date>" (the filter is a date, not a count of 50).
+- **"More filters" keeps the user's open intent** (old v582 `_dbMoreOpen`, `:26676`). Found by the E2E:
+  clearing the last active select used to collapse the panel under the pointer.
+- **Publish refusal** is the old `togglePub` popup verbatim (`:41959`: "This artwork isn’t ready for the
+  Market App yet. / Please complete: … / Collectors only ever see complete listings…", Complete it now /
+  Not now) with the backend tokens in the old `_appMissing` words and order (`:23971`: image, size,
+  artist name, title, medium, price (or turn on “Price on request”)). Shared as `PublishRefusal`.
+- **The editor gets no `source_type` field — flagged (owner question).** The old editor's source block was
+  four partner pickers (Gallery / Dealer / Artist / Collector source, linked to Sources & Partners,
+  `:34127-34137`); the backend field is a bare enum with no partner link. Until decided, the sourced
+  counts only see works typed elsewhere (import / Django admin).
+- **Artists sorts:** "Sort: Most works" (the old default, `:33359`) and "Name A–Z"; the old "Recently
+  updated" became **"Recently added"** (`-created`) — there is no updated ordering, and a client sort
+  would order one page only (flagged). Paged by the kit (100 per page); "Showing n of m" = the search's
+  `total_count` of the roster's `total_count` (one `per_page=1` read). The Database/editor/record
+  pickers still walk the roster (they need every name).
+- **Collectors** open on "Recently active" (`-activity`, the old default `:32633`); "Tier" sort has no
+  server ordering; the earlier Oldest first / Name Z–A stay. Rows gain Purchases + "Last active" (old card
+  `:32649`, `:32654`) as table columns (G-4 kept the table). "Notify collectors" note corrected: VAPID is
+  served, the blocker is the missing admin push-send endpoint.
+- **Club:** cover = first work's thumb (old `works[0]`, `:33740`) with the old `gc-top` scrim. **The
+  "Auction access" section and "Private auctions" tile stay out — Phase 9 (Q-5)**; invite-only is managed
+  on the auction page. The header's G-CLUB-3 "blocked" claim is corrected. Selections are walked.
+- **Data Health:** all nine catalogue boxes, with the three old band headings back. Deleted's line is
+  **"Removed from the Database"**, not the old "Tombstoned — can’t come back" (a soft delete can be restored
+  server-side; flagged). **Deviation, flagged:** the three Sourced boxes open the Database filtered to the
+  works counted, where the old ones opened the Sources & Partners sections (partners, not works) — the
+  `:21349` "counter equals the list" rule. Archived and Deleted are not links.
+- **Published** reads the admin list `?published=true` (the Database's own controller); the tile is the old
+  "Live for collectors". A non-public card names its visibility (addition, flagged).
+- **Dashboard:** Available / On hold / Reserved / Sold open the Database filtered to that status (the old
+  tiles opened the unfiltered Database, `:21483-21486`). Today's tiles stay plain numbers (no list equals
+  them).
+- **Stub:** the Database now has rows, so `smoke.spec`'s empty-state walk opens `?source_type=other`.
+  Visibility labels were added to the stub's options.
+- Pre-existing, not changed: the Published card's "Remove from Market App" button overruns its card at
+  1280 (seen in the render check).
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -565,7 +615,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | 1 | Profile edit · my-membership · documents · chip · G-Q-1 · public docs | `v1/phase-1-collector-account` | `[x]` 2026-09-25 | see CHANGELOG |
 | 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[x]` 2026-09-25 | see CHANGELOG |
 | 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[x]` 2026-09-25 | see CHANGELOG |
-| 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[ ]` | |
+| 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[x]` 2026-09-25 | see CHANGELOG |
 | 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[ ]` | |
 | 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[ ]` | |
 | 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[ ]` | |

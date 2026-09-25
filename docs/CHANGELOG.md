@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 Phase 4: Database, Artists, Published, Collectors, Club, Data Health, Dashboard
+
+- Database rows lead with `thumb` + `artist_name`; Gallery Portal / Duplicates / Details / Size filters (list + facets), `source_type`/`created_after` link chips; publish `details.missing` → the old refusal popup (row + editor). Artists: server search/sort/pager + Works. Published: admin `?published=true`. Collectors: `summary/` strip + Recently active / Most purchases. Club cover from `thumb`. Data Health: all nine boxes in three bands, linked. Dashboard catalogue tiles link.
+- Matrix: 1 op → Integrated (242/2/9/69/1). **739 unit · 119 E2E** (desks 78). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3e.
+
 ## 2026-09-25 — V1 Phase 3: auctions admin (edit, lot edit, archive, poster, reset, house) + collector cover
 
 - Auction page ports the old Manage-auction modal: poster upload/remove, details + terms form (locked PATCH, ConflictBanner, read-only past scheduled, C-18 checks), lot edit; Live Auctions walks all pages, "Show archived" + Archive/↩ Restore, poster thumbs; Register to Bid ↺ Reset; Records "All auction houses" (`?house=`). Collector cards read `cover_image_url` (per-card lot read gone); event lots get loading/empty states. C-19 already degrades (poll + notice).
