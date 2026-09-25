@@ -48,6 +48,7 @@ now-closed backend gaps, the non-V1 backend gaps, and deferred/backend-blocked f
       owner reverses it.
 
 ### B · Frontend adoption of the now-closed backend gaps → `API_GAPS_FRONTEND_ADOPTION.md`
+**Batch order and progress: `API_ADOPTION_PLAN.md`** (Batches 1–7 buildable now; 8+ need the owner).
 Backend shipped these; the frontend still has the work-arounds. Do **Step 0 (regenerate `schema.d.ts`)**
 first, then:
 - [ ] **Access-request** (G-P34-1): treat 200 replay as success, handle 429. *(launch-gate half)*
