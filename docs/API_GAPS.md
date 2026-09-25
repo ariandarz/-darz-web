@@ -67,9 +67,9 @@ trusting any shape (`CLAUDE.md` → "API access").
 | --- | --- | --- | --- |
 | G-P24-1 | Selection name not exposed to collector | ✅ Closed | `selection_name` on `artworks/selections/`. FE ✅ adopted (Phase 1): the Market chip reads the first row's `selection_name`, else "Curated for You". |
 | G-P24-2 | No change signal for "ready" notice | ✅ Closed | `GET /catalog/selections/` + `POST …/{id}/seen/`. Owner-decision UI. |
-| Phase 5b | Database desk 4 hard filters | ✅ Closed | `gallery_portal`/`complete`/`duplicate_images`/`size` on admin filter set. |
+| Phase 5b | Database desk 4 hard filters | ✅ Closed | `gallery_portal`/`complete`/`duplicate_images`/`size` on admin filter set. **FE adopted (V1 Phase 4):** Gallery Portal · Images "Duplicates (same image)" · Details "Missing required fields" · Size selects in More filters, sent to the list and to facets. |
 | G-P6-1..4 | Saved/favorites loop | ✅ Closed | See `PHASE_6_API_GAPS.md` history. |
-| G-CAT-1/3/8 | Admin row thumb + artist name, artists search/ordering/works_count, publish gate | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". |
+| G-CAT-1/3/8 | Admin row thumb + artist name, artists search/ordering/works_count, publish gate | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". **FE adopted (V1 Phase 4).** |
 | G-CAT-4..7 | Old editor fields with no backend | ➖ Stated on the editor | Not V1 API gaps. |
 | G-CAT-9 | Source-freshness loop | ⛔ Deferred | Backend Phase 10 sources loop. |
 
@@ -122,7 +122,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | Auction→Sale automation | Won lots didn't auto-create a Sale (admin entered each by hand) | ✅ Closed | 2026-09-25 (PR #51), follow-up to G-SALE-4. On lot close (won), `LotService.close` auto-creates a **draft** `Sale(source=auction)` with `agreed_price` = hammer + buyer's premium and `commission_amount` = the premium. New `Sale.lot` FK links each sale back to its lot (also the idempotency key). Passed lots create nothing. |
 | G-SALE-1/2/3 | Sales desk tiles, filters, bare-uuid rows | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". **G-SALE-3 breaks the current desk (C-1).** |
 | G-HEALTH-1 | Data Health real counts panel | ✅ Closed | Built #83. |
-| G-HEALTH-2/3/4 | Three Data Health checks/counts with no backend | ✅ Closed | B5: **G-HEALTH-2** `Artwork.source_type` + `?source_type=` (Gallery/Dealer/Artist-sourced counts); **G-HEALTH-3** `deleted_records` count on the report; **G-HEALTH-4** `?created_after=` (recently-added). |
+| G-HEALTH-2/3/4 | Three Data Health checks/counts with no backend | ✅ Closed | B5: **G-HEALTH-2** `Artwork.source_type` + `?source_type=` (Gallery/Dealer/Artist-sourced counts); **G-HEALTH-3** `deleted_records` count on the report; **G-HEALTH-4** `?created_after=` (recently-added). | **FE adopted (V1 Phase 4):** the Gallery-/Dealer-/Artist-Sourced, Deleted (permanent) and Recently Added boxes (30-day window), each linking to the Database filtered to what it counts (Deleted: no link).
 
 ## 2026-09-25 backend additions (PRs #54–#70) — backend ✅, frontend adoption per `V1_IMPLEMENTATION_PLAN.md`
 
@@ -135,12 +135,12 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-AUC-1 | `PATCH /auctions/admin/auctions/{id}/` (lock; draft/scheduled only) + `terms`/`terms_required` on create | ✅ Adopted (Phase 3): the auction page's details + terms form (ConflictBanner on 409, read-only past scheduled, client-side window check C-18); terms on create | 3 |
 | G-AUC-2 | `PATCH /auctions/admin/lots/{id}/` (lock; scheduled only) | ✅ Adopted (Phase 3): Edit on each scheduled lot (same lock/banner pattern; low ≤ high checked) | 3 |
 | G-AUC-3 | `POST /auctions/admin/registrations/{id}/reset/` (rejected → pending) | ✅ Adopted (Phase 3): ↺ Reset on rejected rows, old confirm + toast | 3 |
-| G-COL-1 | `GET /auth/admin/collectors/summary/` (collectors, vip, active_30d, engaged) | Not bound: tiles substitute "Active" | 4 |
-| G-COL-2 | `last_activity_at`, `purchase_count`, `?ordering=activity\|purchases` (list only, C-16) | Not sendable | 4 |
-| G-CAT-1 | `thumb`, `artist_name` on admin artwork rows | Unused: names resolved from a capped roster | 4 |
-| G-CAT-3 | Admin artists `?search&ordering` + `works_count` | Unused. The truncation at 100 is fixed (Phase 0 walks every page, C-5); server search, ordering and the count are Phase 4 | 4 |
-| G-CAT-8 | Publish gate: 400 `details.missing` | Shown only as flattened text | 4 |
-| G-CLUB-1 | `thumb` on club selection artworks | Unused (cover is always the fallback) | 4 |
+| G-COL-1 | `GET /auth/admin/collectors/summary/` (collectors, vip, active_30d, engaged) | ✅ Adopted (Phase 4): the old strip Collectors · VIP · Active 30d · Engaged from one read; the three `per_page=1` counts and the stand-in "Active" tile are gone | 4 |
+| G-COL-2 | `last_activity_at`, `purchase_count`, `?ordering=activity\|purchases` (list only, C-16) | ✅ Adopted (Phase 4): "Recently active" (`-activity`, the desk's default, as the old one) and "Most purchases" (`-purchases`); Purchases + Last active columns (old card's "Last active …" / "No activity yet"). Rows are never overwritten by a write | 4 |
+| G-CAT-1 | `thumb`, `artist_name` on admin artwork rows | ✅ Adopted (Phase 4): Database rows lead with the thumb (old `.ad-wc`/`.ad-th`) and the row's artist name; Published desk cards too. The roster is still walked for the Artist filter's options | 4 |
+| G-CAT-3 | Admin artists `?search&ordering` + `works_count` | ✅ Adopted (Phase 4): server search, "Sort: Most works" (default) / "Name A–Z" / "Recently added" (`-created`, replacing the old "Recently updated" — no updated ordering), kit pager, Works column, "Showing n of m" from `total_count` | 4 |
+| G-CAT-8 | Publish gate: 400 `details.missing` | ✅ Adopted (Phase 4): the old refusal popup ("This artwork isn’t ready for the Market App yet. Please complete: …", Complete it now / Not now) on the Database row and the editor, tokens in the old `_appMissing` words and order | 4 |
+| G-CLUB-1 | `thumb` on club selection artworks | ✅ Adopted (Phase 4): the card cover is the first work's thumb (old `works[0]`), gradient fallback | 4 |
 | G-DOC-2 | `GET /documents/admin/documents/{id}/activity/` (flat `actor` + `actor_name`, C-15) | Not bound; nav History tab `path: null` | 6 |
 | G-PROJ-1 | `?quick=` + `?partner=` on projects | Not sendable: client-side walks | 7 |
 | G-PROJ-2/3 | `status` and `stages` writable on PATCH | Shown read-only; tiles stay 0 | 7 |

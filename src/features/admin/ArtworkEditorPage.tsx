@@ -34,6 +34,22 @@
  * shipment & payment terms (G-CAT-5), provider contact + WhatsApp forward
  * (G-CAT-6), the per-artwork status-badge / screenshot-card theme toggles
  * (G-CAT-7). One line of copy on the page says so.
+ *
+ * **Publish refusal (G-CAT-8):** the gate's `details.missing` opens the old
+ * "isn’t ready for the Market App yet" popup (`PublishRefusal`), as on the
+ * Database row. "Complete it now" closes it — the editor is where the old
+ * button led (`DarzAdmin.edit(id)`).
+ *
+ * **`source_type` (G-HEALTH-2) is NOT a field here — flagged.** The old
+ * editor's source block was four partner pickers — "Gallery source · Dealer
+ * source · Artist source · Collector source" under "Artwork source — assign this work to the gallery,
+ * dealer, artist and/or collector it came from. Each list is managed in
+ * Sources & Partners" (`:34127-34137`, `spArtType` `:26864` derived the type
+ * from which one was set). The backend's `source_type` is a bare enum with no
+ * partner link, so porting the pickers would write nothing they promise, and a
+ * lone "Source type" select has no old control to port. Owner question; until
+ * then the Data Health sourced tiles count only works whose type was set
+ * elsewhere (import / Django admin).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -59,6 +75,8 @@ import {
   type ArtworkDraft,
 } from './artworkForm';
 import { StatusPill } from './ArtworksPage';
+import { publishMissing } from './artworkQuery';
+import { PublishRefusal } from './PublishRefusal';
 import {
   ConfirmDialog,
   ConflictBanner,
@@ -183,6 +201,8 @@ export function ArtworkEditorPage() {
     }
   };
 
+  const [refused, setRefused] = useState<string[] | null>(null);
+
   const togglePublish = async () => {
     if (busy || isNew || !artwork) return;
     setBusy(true);
@@ -193,7 +213,9 @@ export function ArtworkEditorPage() {
         : await catalogAdmin.publishArtwork(id!);
       setArtwork(updated);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not change publication.');
+      const missing = publishMissing(err);
+      if (missing) setRefused(missing);
+      else setError(err instanceof Error ? err.message : 'Could not change publication.');
     } finally {
       setBusy(false);
     }
@@ -249,6 +271,13 @@ export function ArtworkEditorPage() {
         />
       )}
       {error && <DeskBanner>{error}</DeskBanner>}
+      {refused && (
+        <PublishRefusal
+          items={refused}
+          onComplete={() => setRefused(null)}
+          onCancel={() => setRefused(null)}
+        />
+      )}
 
       {/* ---- status & reach (edit only — a new artwork starts internal) ---- */}
       {artwork && (

@@ -8,10 +8,16 @@
  *  - the toolbar's shape (`:26661-26668`): one search box, then the filter
  *    dropdowns, then every ACTIVE filter as a removable dark chip with
  *    "Clear all" (`:26686`) — here the kit's `FilterChips`;
- *  - the row anatomy (`:26756`): artist · title, year · id · the status
- *    pill (`_statusPill`, `:26500` — "Status by Darz — this is what
- *    collectors see"), and the Market App checkbox-button (`dbAppBox`,
- *    `:23957` — ✓ APP) wired to the real per-work publish/unpublish;
+ *  - the row anatomy (`:26755`): the thumbnail (`adThumbImg(w,'ad-th',140)`,
+ *    an empty grey box when the work has no image), then artist · title,
+ *    year · id · the status pill (`_statusPill`, `:26500` — "Status by Darz —
+ *    this is what collectors see"), and the Market App checkbox-button
+ *    (`dbAppBox`, `:23957` — ✓ APP) wired to the real per-work
+ *    publish/unpublish. Thumb and artist come straight off the row since
+ *    G-CAT-1 (`thumb`, `artist_name`) — no roster name map;
+ *  - the publish refusal (`togglePub`, `:41959`): the old "isn’t ready for the
+ *    Market App yet — Please complete: …" popup with "Complete it now" / "Not
+ *    now", its list read from the gate's `details.missing` (C-10);
  *  - the empty copy "No artworks match these filters." (`:26764`);
  *  - Edit / Remove per row (`:26762`), Remove soft-deletes after a confirm.
  *
@@ -19,14 +25,24 @@
  * title, medium, dimensions — not the old promise of ID/source (`:26661`),
  * which this API's `search` does not cover.
  *
+ * **Opening filtered.** A tile elsewhere (Dashboard catalogue, Data Health)
+ * opens this desk through `databaseLink()` — the old `dbGo({…})` (`:38120`) —
+ * and the desk reads its opening filters from the URL once
+ * (`artworkQueryFromParams`), as the Requests desk does.
+ *
  * **Not ported, stated (hybrid rule + gaps):**
- *  - thumbnails — the admin list row carries no images (G-CAT-1), so the
- *    Work cell is textual; images live on the editor;
- *  - ~~the Year / Source / "Market App: shown|hidden" filters~~ — **shipped
- *    2026-09-21 with G-2**, over the new `/catalog/admin/artworks/facets/`
- *    endpoint, so Year and Source are narrowing dropdowns rather than the free
- *    text G-CAT-2 once forced. This line said otherwise until the fidelity
- *    pass read it against the desk it describes;
+ *  - the per-portal entries of the Gallery Portal select (`:26678`) — the API
+ *    filters "in any portal / not in a portal" only (`gallery_portal`);
+ *  - four of the Details select's five picks (`:26683`) and the size
+ *    select's Oversized / Bigger / Smaller / custom range (`:26685`) — no
+ *    server filter; the three size buckets are the backend's (≤ 50 · 50–120 ·
+ *    > 120 cm, owner decision 2026-09-24), not the old 40/100/200;
+ *  - "Chosen by Darz" (`:26680`) and "All Categories" (`:26673`) — no field;
+ *  - `source_type` and `created_after` have no old dropdown (the old desk
+ *    reached "recently added" only from the Data Health tile, as the "Latest 50
+ *    added" chip, `:26717`) — so here they are chips a link sets, never a
+ *    select; the chip reads "Added since <date>" (the old "Latest 50" was a
+ *    count, this filter is a date);
  *  - bulk selection & its action groups (`:26723`) — documents, auctions
  *    and portals are later phases; a bar of dead buttons is worse than a
  *    stated absence (the D15 rule). Bulk status/publish returns with it;
@@ -35,7 +51,7 @@
  *  - the sold-by / provider lane (§75) — the gallery-portal phase's.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type {
@@ -47,6 +63,21 @@ import type {
 } from '../../api/types';
 import { useListController } from '../shared/useListController';
 import { EMPTY_FACETS, normaliseFacets } from './artworkFacets';
+import {
+  DETAILS_CHOICES,
+  IMAGES_CHOICES,
+  PORTAL_CHOICES,
+  SIZE_CHOICES,
+  addedSinceChip,
+  artworkQueryFromParams,
+  boolFrom,
+  boolPick,
+  imagesPatch,
+  imagesPick,
+  publishMissing,
+  sizeChip,
+} from './artworkQuery';
+import { PublishRefusal } from './PublishRefusal';
 import { ArtworksController } from './ArtworksController';
 import {
   ConfirmDialog,
@@ -79,15 +110,19 @@ export function ArtworksPage() {
   const { catalogAdmin } = useApi();
   const options = useOptions();
   const navigate = useNavigate();
+  // The opening filter comes from the URL (a tile's `databaseLink`), read
+  // once as the controller's initial query — after that the controller owns it.
+  const [params] = useSearchParams();
 
   const { state, setQuery, setPage, reload } = useListController<
     ArtworkAdmin,
     ArtworkAdminQuery
-  >(() => new ArtworksController(catalogAdmin));
+  >(() => new ArtworksController(catalogAdmin, artworkQueryFromParams(params)));
 
-  // The artists roster, fetched once: resolves artist uuids to names on the
-  // rows (G-CAT-1 — the list row carries no artist object) and feeds the
-  // Artist filter. Walked whole — `per_page` is clamped to 100 (C-5).
+  // The artists roster, fetched once, for the Artist filter's options and its
+  // chip (rows carry `artist_name` since G-CAT-1, so no name map for them).
+  // Walked whole — `per_page` is clamped to 100 (C-5); the old dropdown listed
+  // every artist (`dbUniq(all,'artist')`, `:26666`).
   const [artists, setArtists] = useState<ArtistAdmin[]>([]);
   useEffect(() => {
     let alive = true;
@@ -112,6 +147,8 @@ export function ArtworksPage() {
   const [deleting, setDeleting] = useState<ArtworkAdmin | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** The publish gate's refusal — the work and its missing essentials. */
+  const [refused, setRefused] = useState<{ id: string; items: string[] } | null>(null);
 
   /** The old `togglePub` — the per-row ✓ APP button, on the real per-work
    * publish/unpublish endpoints. */
@@ -124,7 +161,12 @@ export function ArtworksPage() {
       else await catalogAdmin.publishArtwork(w.id);
       await reload();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Could not change publication.');
+      // G-CAT-8: a 400 whose `details.missing` names what the listing lacks —
+      // the old popup, not the flattened "Validation failed: …" string.
+      const missing = publishMissing(err);
+      if (missing) setRefused({ id: w.id, items: missing });
+      else
+        setActionError(err instanceof Error ? err.message : 'Could not change publication.');
     } finally {
       setBusyId(null);
     }
@@ -140,8 +182,7 @@ export function ArtworksPage() {
     }
   };
 
-  const nameOf = (w: ArtworkAdmin) =>
-    (w.artist && artistName.get(w.artist)) || w.artist_name_raw || '';
+  const nameOf = (w: ArtworkAdmin) => w.artist_name || w.artist_name_raw || '';
 
   const columns: ReadonlyArray<Column<ArtworkAdmin>> = [
     {
@@ -154,17 +195,26 @@ export function ArtworksPage() {
           title="Open & edit"
           onClick={() => navigate(`/admin/artworks/${w.id}`)}
         >
-          {/* :26756 — artist · title, year · id · status pill */}
-          <span className="ad-cellmain">{nameOf(w) || '—'}</span>
-          <span className="ad-cellsub">
-            {w.title}
-            {w.year ? `, ${w.year}` : ''}
+          {/* :26755 — the thumb, then artist · title, year · id · status pill */}
+          <span className="ad-wc">
+            {w.thumb ? (
+              <img className="ad-th" src={w.thumb} alt="" loading="lazy" decoding="async" />
+            ) : (
+              <span className="ad-th" aria-hidden="true" />
+            )}
+            <span className="ad-wc-t">
+              <span className="ad-cellmain">{nameOf(w) || '—'}</span>
+              <span className="ad-cellsub">
+                {w.title}
+                {w.year ? `, ${w.year}` : ''}
+              </span>
+              <span className="ad-workid">{w.id.slice(0, 8)}</span>
+              <StatusPill
+                status={w.availability_status}
+                label={label(statuses, w.availability_status)}
+              />
+            </span>
           </span>
-          <span className="ad-workid">{w.id.slice(0, 8)}</span>
-          <StatusPill
-            status={w.availability_status}
-            label={label(statuses, w.availability_status)}
-          />
         </button>
       ),
     },
@@ -316,11 +366,46 @@ export function ArtworksPage() {
       label: q.published ? 'In the app' : 'Not in the app',
       onClear: () => setQuery({ published: undefined }),
     });
-  if (q.has_images !== undefined)
+  const img = imagesPick(q);
+  if (img)
     chips.push({
-      key: 'has_images',
-      label: q.has_images ? 'With images' : 'Without images',
-      onClear: () => setQuery({ has_images: undefined }),
+      key: 'images',
+      // :26712 — "Duplicates (same image)" / "With images" / "Without images"
+      label: IMAGES_CHOICES.find((c) => c.value === img)!.label,
+      onClear: () => setQuery(imagesPatch(undefined)),
+    });
+  if (q.gallery_portal !== undefined)
+    chips.push({
+      key: 'gallery_portal',
+      // :26710 — "Portal: any" / "Portal: none"
+      label: q.gallery_portal ? 'Portal: any' : 'Portal: none',
+      onClear: () => setQuery({ gallery_portal: undefined }),
+    });
+  if (q.complete !== undefined)
+    chips.push({
+      key: 'complete',
+      // :26713 — the Details pick's own words
+      label: q.complete ? 'Complete records' : 'Missing required fields',
+      onClear: () => setQuery({ complete: undefined }),
+    });
+  if (q.size)
+    chips.push({
+      key: 'size',
+      label: sizeChip(q.size),
+      onClear: () => setQuery({ size: undefined }),
+    });
+  if (q.source_type)
+    chips.push({
+      key: 'source_type',
+      // Not in `/api/options/` (C-14) — the raw value, never a hardcoded map.
+      label: `Source type: ${label(choices(options, 'catalog.source_type'), q.source_type)}`,
+      onClear: () => setQuery({ source_type: undefined }),
+    });
+  if (q.created_after)
+    chips.push({
+      key: 'created_after',
+      label: addedSinceChip(q.created_after),
+      onClear: () => setQuery({ created_after: undefined }),
     });
 
   return (
@@ -395,6 +480,12 @@ export function ArtworksPage() {
             source: undefined,
             published: undefined,
             has_images: undefined,
+            duplicate_images: undefined,
+            gallery_portal: undefined,
+            complete: undefined,
+            size: undefined,
+            source_type: undefined,
+            created_after: undefined,
           })
         }
       />
@@ -412,6 +503,18 @@ export function ArtworksPage() {
         rowKey={(w) => w.id}
         empty="No artworks match these filters."
       />
+
+      {refused && (
+        <PublishRefusal
+          items={refused.items}
+          onCancel={() => setRefused(null)}
+          onComplete={() => {
+            const id = refused.id;
+            setRefused(null);
+            navigate(`/admin/artworks/${id}`);
+          }}
+        />
+      )}
 
       {deleting && (
         <ConfirmDialog
@@ -467,22 +570,15 @@ function choices(options: OptionsMap | null, key: string): Choice[] {
  * secondary filters folded away so the toolbar's first line stays the three
  * that get used constantly.
  *
- * Four of the old eight are here (backend G-2). The other four are **not**
- * silently missing, they are listed on the panel as unavailable, because a
- * disclosure that hides nothing is worse than one that explains what it hides:
+ * Every old filter the API serves is here: Year · Source · Market App (G-2),
+ * then the four Phase 5b ones in the old order — Gallery Portal (`:26678`),
+ * the Images select with its "Duplicates (same image)" pick (`:26682`),
+ * Details (`:26683`) and Size (`:26685`). What each select does NOT offer of
+ * the old one is in `artworkQuery.ts` and the page header.
  *
- *  - **Completeness** ("missing required fields", "without size/price/source")
- *  - **Size** (presets, bigger/smaller than, a custom W×H range)
- *  - **Duplicates (same image)**
- *  - **Gallery Portal** membership
- *
- * Each needs real backend work — a dimension parser, an image hash, a portal
- * join — rather than one filter line, which is why G-2 was scoped to these
- * four first. The Data Health desk already answers the duplicate-image and
- * incomplete-record questions as a report.
- *
- * It stays open while any of its filters is active (`:26676`'s own rule), so
- * a narrowed list never hides why it is narrow.
+ * It stays open while any of its filters is active, and while the user left
+ * it open (`:26676`'s own rules), so a narrowed list never hides why it is
+ * narrow.
  */
 function MoreFilters({
   q,
@@ -497,10 +593,24 @@ function MoreFilters({
     q.year !== undefined ||
     q.source !== undefined ||
     q.published !== undefined ||
-    q.has_images !== undefined;
+    q.has_images !== undefined ||
+    q.duplicate_images !== undefined ||
+    q.gallery_portal !== undefined ||
+    q.complete !== undefined ||
+    q.size !== undefined;
+
+  // The old v582 rule (`:26676`): the user's own open intent persists across
+  // the re-render a pick triggers (`_dbMoreOpen`), and an active filter forces
+  // it open. Without the first half, clearing the last active select closed
+  // the panel under the pointer.
+  const [userOpen, setUserOpen] = useState(active);
 
   return (
-    <details className="ad-morefilters" open={active || undefined}>
+    <details
+      className="ad-morefilters"
+      open={active || userOpen}
+      onToggle={(e) => setUserOpen(e.currentTarget.open)}
+    >
       <summary>More filters</summary>
       <div className="ad-morefilters-body">
         <SelectFilter
@@ -520,32 +630,42 @@ function MoreFilters({
         <SelectFilter
           label="Market App"
           anyLabel="Market App: all"
-          value={q.published === undefined ? undefined : String(q.published)}
-          onChange={(v) => setQuery({ published: v === undefined ? undefined : v === 'true' })}
+          value={boolPick(q.published)}
+          onChange={(v) => setQuery({ published: boolFrom(v) })}
           choices={[
             { value: 'true', label: 'In the app' },
             { value: 'false', label: 'Not in the app' },
           ]}
         />
         <SelectFilter
+          label="Gallery Portal"
+          anyLabel="Gallery Portal: all"
+          value={boolPick(q.gallery_portal)}
+          onChange={(v) => setQuery({ gallery_portal: boolFrom(v) })}
+          choices={PORTAL_CHOICES}
+        />
+        <SelectFilter
           label="Images"
           anyLabel="All artworks"
-          value={q.has_images === undefined ? undefined : String(q.has_images)}
-          onChange={(v) =>
-            setQuery({ has_images: v === undefined ? undefined : v === 'true' })
-          }
-          choices={[
-            { value: 'true', label: 'With images' },
-            { value: 'false', label: 'Without images' },
-          ]}
+          value={imagesPick(q)}
+          onChange={(v) => setQuery(imagesPatch(v))}
+          choices={IMAGES_CHOICES}
+        />
+        <SelectFilter
+          label="Details"
+          anyLabel="All details"
+          value={boolPick(q.complete)}
+          onChange={(v) => setQuery({ complete: boolFrom(v) })}
+          choices={DETAILS_CHOICES}
+        />
+        <SelectFilter
+          label="Size"
+          anyLabel="All sizes"
+          value={q.size}
+          onChange={(v) => setQuery({ size: v as ArtworkAdminQuery['size'] })}
+          choices={SIZE_CHOICES}
         />
       </div>
-      <p className="ad-morefilters-note">
-        The old desk also filtered by completeness, size range, duplicate images and Gallery
-        Portal. Each needs backend work rather than a filter line, so they are not here yet —{' '}
-        <a href="/admin/data-health">Data Health</a> answers the duplicate-image and
-        incomplete-record questions as a report meanwhile.
-      </p>
     </details>
   );
 }

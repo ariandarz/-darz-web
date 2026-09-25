@@ -210,7 +210,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/published',
         'ready',
         '12·2',
-        'the collector list endpoint IS the published set (G-CAT-2).',
+        'the admin list filtered ?published=true — every published work (V1 Phase 4).',
       ),
       // App Design is in this group AND under Operations — one screen, two
       // entry points (:11730 and :11764). A fact to port, not a bug to fix.

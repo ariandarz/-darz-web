@@ -18,6 +18,13 @@
  * desk, so every tile was tappable; here a tile that looked tappable and did
  * nothing would be worse than a plain number.
  *
+ * **Catalogue tiles link (V1 Phase 4).** The old Works / Available / Reserved /
+ * Sold tiles all opened the Database (`mc(…,'DarzAdmin.go(\'database\')')`,
+ * `:21483-21486`); here each opens it filtered to that `availability_status`
+ * (`databaseLink`), so the list equals the count (:21349). "New collectors",
+ * "Collector sign-ins" and "Bids" stay plain numbers: they count TODAY's
+ * events, and no list opens on exactly those rows.
+ *
  * **Not ported, and listed rather than dropped** — backend Phase 29 scoped them
  * out deliberately and there is no endpoint behind either:
  *
@@ -33,6 +40,7 @@ import { Link } from 'react-router-dom';
 import { useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type { Choice, DashboardSummary } from '../../api/types';
+import { databaseLink } from './artworkQuery';
 import { DeskBanner, DeskPage } from './kit';
 import { useDashboard } from './useDashboard';
 import './admin.css';
@@ -116,10 +124,26 @@ function Tiles({
       </Section>
 
       <Section title="Catalogue" note={`${catalogue.total} works`}>
-        <Tile label="Available" value={catalogue.available} />
-        <Tile label="On hold" value={catalogue.on_hold} />
-        <Tile label="Reserved" value={catalogue.reserved} />
-        <Tile label="Sold" value={catalogue.sold} />
+        <Tile
+          label="Available"
+          value={catalogue.available}
+          to={databaseLink({ availability_status: 'available' })}
+        />
+        <Tile
+          label="On hold"
+          value={catalogue.on_hold}
+          to={databaseLink({ availability_status: 'on_hold' })}
+        />
+        <Tile
+          label="Reserved"
+          value={catalogue.reserved}
+          to={databaseLink({ availability_status: 'reserved' })}
+        />
+        <Tile
+          label="Sold"
+          value={catalogue.sold}
+          to={databaseLink({ availability_status: 'sold' })}
+        />
       </Section>
 
       <Section title="Auctions">

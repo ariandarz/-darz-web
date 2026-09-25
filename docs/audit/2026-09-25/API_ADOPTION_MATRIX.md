@@ -16,9 +16,9 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/auth/admin/access-requests/ | `AdminAccountsService.accessRequests` | `admin/AccessRequestsController.ts` | Integrated | FE also sends `?search` (supported by AccessRequestFilterSet though not in schema). |
 | POST | /api/auth/admin/access-requests/{id}/approve/ | `AdminAccountsService.approveAccessRequest` | `admin/AccessRequestsPage.tsx` | Integrated |  |
 | POST | /api/auth/admin/access-requests/{id}/decline/ | `AdminAccountsService.declineAccessRequest` | `admin/AccessRequestsPage.tsx` | Integrated |  |
-| GET | /api/auth/admin/collectors/ | `AdminAccountsService.collectors` | `admin/ArtworkEditorPage.tsx`, `admin/AuctionAdminDetailPage.tsx`, `admin/ClubPage.tsx`, `admin/CollectorsController.ts`, `admin/CollectorsPage.tsx`, `admin/SalesPage.tsx` | Integrated | All schema filters in CollectorAdminQuery. |
+| GET | /api/auth/admin/collectors/ | `AdminAccountsService.collectors` | `admin/ArtworkEditorPage.tsx`, `admin/AuctionAdminDetailPage.tsx`, `admin/ClubPage.tsx`, `admin/CollectorsController.ts`, `admin/CollectorsPage.tsx`, `admin/SalesPage.tsx` | Integrated | All schema filters in CollectorAdminQuery. V1 Phase 4: `?ordering=-activity` (the default) and `-purchases` sent; `last_activity_at`/`purchase_count` shown (list-only, C-16). |
 | POST | /api/auth/admin/collectors/ | `AdminAccountsService.createCollector` | `admin/CollectorForm.tsx` | Integrated |  |
-| GET | /api/auth/admin/collectors/summary/ | none | — | Not bound | Collectors KPI summary — no binding; CollectorsPage/ClubPage compute counts with repeated `per_page=1` list calls. |
+| GET | /api/auth/admin/collectors/summary/ | `AdminAccountsService.collectorsSummary` | `admin/CollectorsPage.tsx` | Integrated | V1 Phase 4 (2026-09-25): the Collectors strip (Collectors · VIP · Active 30d · Engaged). ClubPage's "Collector keys" tile still reads the roster's `total_count`. |
 | GET | /api/auth/admin/collectors/{collector_pk}/access-keys/ | `AdminAccountsService.accessKeys` | `admin/CollectorDetailPage.tsx` | Integrated |  |
 | POST | /api/auth/admin/collectors/{collector_pk}/access-keys/ | `AdminAccountsService.issueAccessKey` | `admin/CollectorDetailPage.tsx` | Integrated |  |
 | GET | /api/auth/admin/collectors/{collector_pk}/login-events/ | `AdminAccountsService.loginEvents` | `admin/CollectorDetailPage.tsx` | Integrated |  |
@@ -49,14 +49,14 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/catalog/admin/artists/ | `CatalogAdminService.artists` | `admin/ArtistsPage.tsx`, `admin/ArtworkEditorPage.tsx`, `admin/ArtworksPage.tsx`, `admin/RecordEditorPage.tsx` | Integrated | `?search`, `?ordering` unsent — desks fetch `per_page=500` and search client-side; service comment ("backend list takes NO filters, G-CAT-3") is stale. |
+| GET | /api/catalog/admin/artists/ | `CatalogAdminService.artists` | `admin/ArtistsPage.tsx`, `admin/ArtworkEditorPage.tsx`, `admin/ArtworksPage.tsx`, `admin/RecordEditorPage.tsx` | Integrated | V1 Phase 4: the Artists desk sends `?search`, `?ordering` (works · name · -created) and pages with the kit; `works_count` shown. The editor/Database/record pickers still walk every page. |
 | POST | /api/catalog/admin/artists/ | `CatalogAdminService.createArtist` | `admin/ArtistsPage.tsx` | Integrated |  |
 | GET | /api/catalog/admin/artists/{id}/ | none | — | Not bound | Single read unbound (PATCH/DELETE bound). |
 | PATCH | /api/catalog/admin/artists/{id}/ | `CatalogAdminService.updateArtist` | `admin/ArtistsPage.tsx` | Integrated |  |
 | DELETE | /api/catalog/admin/artists/{id}/ | `CatalogAdminService.deleteArtist` | `admin/ArtistsPage.tsx` | Integrated |  |
-| GET | /api/catalog/admin/artworks/ | `CatalogAdminService.artworks` | `admin/ArtworksController.ts`, `admin/AuctionAdminDetailPage.tsx`, `admin/ClubPage.tsx`, `admin/DataHealthPage.tsx`, `admin/SalesPage.tsx`, `admin/SourceDetailPage.tsx` | Integrated | Unsent (not in ArtworkAdminQuery): `complete, created_after, duplicate_images, gallery_portal, price_min, price_max, size, source_type, tag, refine_*`. |
+| GET | /api/catalog/admin/artworks/ | `CatalogAdminService.artworks` | `admin/ArtworksController.ts`, `admin/AuctionAdminDetailPage.tsx`, `admin/ClubPage.tsx`, `admin/DataHealthPage.tsx`, `admin/SalesPage.tsx`, `admin/SourceDetailPage.tsx` | Integrated | V1 Phase 4: `gallery_portal, complete, duplicate_images, size, source_type, created_after` sent (Database filters + link chips, Data Health counts, `?published=true` on the Published desk). Still unsent: `price_min, price_max, tag, refine_*`. |
 | POST | /api/catalog/admin/artworks/ | `CatalogAdminService.createArtwork` | `admin/ArtworkEditorPage.tsx` | Integrated |  |
-| GET | /api/catalog/admin/artworks/facets/ | `CatalogAdminService.artworkFacets` | `admin/ArtworksPage.tsx` | Integrated | Same unsent set as the artworks list. |
+| GET | /api/catalog/admin/artworks/facets/ | `CatalogAdminService.artworkFacets` | `admin/ArtworksPage.tsx` | Integrated | Takes the Database's live query, the Phase 4 filters included. |
 | GET | /api/catalog/admin/artworks/{artwork_pk}/images/ | `CatalogAdminService.artworkImages` | `admin/ArtworkEditorPage.tsx` | Integrated |  |
 | POST | /api/catalog/admin/artworks/{artwork_pk}/images/ | `CatalogAdminService.uploadArtworkImage` | `admin/ArtworkEditorPage.tsx` | Integrated |  |
 | DELETE | /api/catalog/admin/artworks/{artwork_pk}/images/{image_pk}/ | `CatalogAdminService.deleteArtworkImage` | `admin/ArtworkEditorPage.tsx` | Integrated |  |
@@ -66,10 +66,10 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/catalog/admin/artworks/{id}/ | `CatalogAdminService.artwork` | `admin/ArtworkEditorPage.tsx`, `admin/AuctionAdminDetailPage.tsx`, `admin/useSaleRefs.ts (SalesPage, SaleDetailPage)` | Integrated |  |
 | PATCH | /api/catalog/admin/artworks/{id}/ | `CatalogAdminService.updateArtwork` | `admin/ArtworkEditorPage.tsx` | Integrated |  |
 | DELETE | /api/catalog/admin/artworks/{id}/ | `CatalogAdminService.deleteArtwork` | `admin/ArtworksPage.tsx` | Integrated |  |
-| POST | /api/catalog/admin/artworks/{id}/publish/ | `CatalogAdminService.publishArtwork` | `admin/ArtworkEditorPage.tsx`, `admin/ArtworksPage.tsx` | Integrated |  |
+| POST | /api/catalog/admin/artworks/{id}/publish/ | `CatalogAdminService.publishArtwork` | `admin/ArtworkEditorPage.tsx`, `admin/ArtworksPage.tsx` | Integrated | V1 Phase 4: the 400's `details.missing` renders as the old refusal popup (G-CAT-8). |
 | POST | /api/catalog/admin/artworks/{id}/transition/ | `CatalogAdminService.transitionArtwork` | `admin/ArtworkEditorPage.tsx` | Integrated |  |
 | POST | /api/catalog/admin/artworks/{id}/unpublish/ | `CatalogAdminService.unpublishArtwork` | `admin/ArtworkEditorPage.tsx`, `admin/ArtworksPage.tsx`, `admin/PublishedPage.tsx` | Integrated |  |
-| GET | /api/catalog/admin/data-health/ | `CatalogAdminService.dataHealth` | `admin/DataHealthPage.tsx`, `admin/PublishedPage.tsx` | Integrated |  |
+| GET | /api/catalog/admin/data-health/ | `CatalogAdminService.dataHealth` | `admin/DataHealthPage.tsx`, `admin/PublishedPage.tsx` | Integrated | V1 Phase 4: `deleted_records.count` read (Deleted (permanent) box). |
 | GET | /api/catalog/admin/import/batches/ | `CatalogAdminService.importBatches` | `admin/ImportPage.tsx` | Integrated |  |
 | POST | /api/catalog/admin/import/batches/ | `CatalogAdminService.stageImportBatch` | `admin/ImportPage.tsx` | Integrated |  |
 | PATCH | /api/catalog/admin/import/batches/{batch_pk}/rows/{id}/ | `CatalogAdminService.updateImportRow` | `admin/ImportBatchPage.tsx` | Integrated |  |
@@ -409,15 +409,16 @@ Counts updated by V1 Phase 1 (2026-09-25): four operations moved from Not bound 
 `GET /api/documents/public/{kind}/`. V1 Phase 2 (2026-09-25) moved five more — the sales
 `summary/`, `DELETE …/sales/{id}/`, `…/follow-up/`, and `…/notes/` GET + POST. V1 Phase 3 (2026-09-25)
 moved six Not bound (auction PATCH, archive, cover POST/DELETE, lot PATCH, registration reset) and one
-Partial (auction create, now with terms) to Integrated. Status cells elsewhere
-are the 2026-09-25 baseline unless a row says otherwise.
+Partial (auction create, now with terms) to Integrated. V1 Phase 4 (2026-09-25) moved one Not bound
+(`GET /api/auth/admin/collectors/summary/`) to Integrated and sent the catalogue/collector params listed
+below. Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
 
 | Status | Count |
 |---|---|
-| Integrated | 241 |
+| Integrated | 242 |
 | Partial | 2 |
 | Bound, no UI | 9 |
-| Not bound | 70 |
+| Not bound | 69 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
@@ -443,7 +444,6 @@ are the 2026-09-25 baseline unless a row says otherwise.
 - `GET /api/auctions/records/highlights/`
 - `GET /api/auth/admin/access-keys/`
 - `GET /api/auth/admin/access-keys/summary/`
-- `GET /api/auth/admin/collectors/summary/`
 - `GET /api/auth/admin/membership-codes/{id}/`
 - `GET /api/auth/admin/team-users/{id}/`
 - `GET /api/catalog/admin/artists/{id}/`
@@ -517,8 +517,8 @@ are the 2026-09-25 baseline unless a row says otherwise.
 
 ### Notable unsent query params on integrated endpoints
 
-- `GET /api/catalog/admin/artists/` — `?search`, `?ordering` unsent — desks fetch `per_page=500` and search client-side; service comment ("backend list takes NO filters, G-CAT-3") is stale.
-- `GET /api/catalog/admin/artworks/` — Unsent (not in ArtworkAdminQuery): `complete, created_after, duplicate_images, gallery_portal, price_min, price_max, size, source_type, tag, refine_*`.
+- `GET /api/catalog/admin/artists/` — ~~`?search`, `?ordering` unsent~~ sent by the Artists desk since V1 Phase 4; the pickers walk every page without them (by design).
+- `GET /api/catalog/admin/artworks/` — Unsent: `price_min, price_max, tag, refine_*` (the old Database desk had no control for them). `complete, created_after, duplicate_images, gallery_portal, size, source_type` sent since V1 Phase 4.
 - `GET /api/projects/admin/projects/` — `?partner`, `?quick` unsent (ProjectQuery lacks them); `archived` sent as True/False.
 - `GET /api/auctions/records/` — `?house` typed but unsent by decision (Phase 3: the collector Records page is the Artist view).
 - `GET /api/gallery/admin/links/` — `?search` unsent (query type has source_type/page/per_page only).
