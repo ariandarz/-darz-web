@@ -13,12 +13,15 @@
  * card (:560-563); a transport failure gets the retry card (:813 — "the
  * link is fine, so offer a retry rather than blaming the link").
  *
- * Sections (old portnav, v766): Your works · Status (only with
- * `feat_funnel`, v923) · Pricelists · Messages (unread dot when Darz spoke
- * last, :935) · Exhibitions (§78). Tabs the old page grew that have no
- * serving endpoint yet are ABSENT with their gap recorded, not dead
- * (docs/ADMIN_ARCHITECTURE.md §2: G-PORT-3 introduce/referral, G-PORT-5
- * asks, G-PORT-2 history, G-PORT-7 agreement).
+ * Sections (old portnav, v766, and `passport-v1.js::tabs`): Your works ·
+ * Status (only with `feat_funnel`, v923) · Pricelists · Messages (unread dot
+ * when Darz spoke last, :935) · Exhibitions (§78) · History (§83 — shown
+ * once the portal has sent something, the old non-V1 rule). The header
+ * carries the cover (`renderCover`, :852-856; `cover` in the state, G-PORT-9)
+ * and the dashboard's fourth tile, "Pending review" (:1140), both from the
+ * server's own state (G-PORT-2). Tabs the old page grew that still have no
+ * backend are ABSENT, not dead: Share/referral (G-PORT-5) and the signed
+ * collaboration Agreement (G-PORT-7).
  *
  * Theme: the portal follows ITS LINK's `theme` (old :707/:824), never the
  * app's ThemeController — a gallery's portal looks the same on every device
@@ -32,16 +35,17 @@ import type { PortalState } from '../../api/types';
 import { Toast } from '../../components';
 import { PortalSession } from './PortalSession';
 import { PortalExhibitions } from './PortalExhibitions';
+import { PortalHistory } from './PortalHistory';
 import { PortalMessages } from './PortalMessages';
 import { PortalPricelists } from './PortalPricelists';
 import { PortalStatus } from './PortalStatus';
 import { PortalWorks } from './PortalWorks';
-import { portalIsDark, srcLabels } from './portalForm';
+import { coverOf, pendingCount, portalIsDark, srcLabels } from './portalForm';
 import './portal.css';
 
 const PIN_LENGTH = 6; // apps/gallery/keys.py::PIN_LENGTH (the old page drew 4)
 
-type Section = 'artworks' | 'status' | 'pricelists' | 'messages' | 'exhibition';
+type Section = 'artworks' | 'status' | 'pricelists' | 'messages' | 'exhibition' | 'history';
 
 export function PortalPage() {
   const { token = '' } = useParams();
@@ -283,8 +287,13 @@ function Shell({
     ['pricelists', 'Pricelists', false],
     ['messages', 'Messages', unanswered],
     ['exhibition', 'Exhibitions', false],
+    ['history', 'History', false],
   ];
-  const visible = tabs.filter(([id]) => id !== 'status' || data.feat_funnel);
+  const visible = tabs.filter(
+    ([id]) =>
+      (id !== 'status' || data.feat_funnel) && (id !== 'history' || data.updates.length > 0),
+  );
+  const cover = coverOf(data);
 
   return (
     <div className={`gp-root${portalIsDark(data.theme) ? ' dark' : ''}`}>
@@ -303,6 +312,12 @@ function Shell({
           {/* v1166: assignment IS the curation in the new backend — every
               portal is "Chosen by Darz" (there is no all-inventory mode). */}
           <div className="modetag">Chosen by Darz</div>
+          {cover && (
+            <div className="top-cover">
+              <img src={cover.url} alt="" />
+              <span className="top-cover-cap">{cover.caption}</span>
+            </div>
+          )}
           <p className="lede">
             Confirm which works are still available, update anything that has changed, and add
             new works for Darz to consider. Nothing is published — every update is reviewed by
@@ -337,10 +352,10 @@ function Shell({
               className={section === id ? 'on' : ''}
               onClick={() => {
                 setSection(id);
-                // opening Messages refetches the state — a desk reply sent
-                // mid-session must show without a page reload (Exhibitions
-                // forces its own fetch the same way)
-                if (id === 'messages') void session.reload();
+                // opening Messages or History refetches the state — a desk
+                // reply or review made mid-session must show without a page
+                // reload (Exhibitions forces its own fetch the same way)
+                if (id === 'messages' || id === 'history') void session.reload();
               }}
             >
               {label}
@@ -353,11 +368,14 @@ function Shell({
           <PortalWorks session={session} options={options} staff={staff} notify={notify} />
         )}
         {section === 'status' && <PortalStatus data={data} options={options} />}
-        {section === 'pricelists' && <PortalPricelists session={session} notify={notify} />}
+        {section === 'pricelists' && (
+          <PortalPricelists session={session} options={options} notify={notify} />
+        )}
         {section === 'messages' && <PortalMessages session={session} notify={notify} />}
         {section === 'exhibition' && (
           <PortalExhibitions session={session} options={options} notify={notify} />
         )}
+        {section === 'history' && <PortalHistory data={data} options={options} />}
       </div>
 
       <footer className="ft">darzmarket.art · Private portal</footer>
@@ -366,10 +384,8 @@ function Shell({
   );
 }
 
-/** The KPI strip (old renderDash, :1136). The old fourth tile — "Pending
- * review" — needs the server's pending list, which `portal_state` does not
- * carry (G-PORT-2); a number that resets to zero on every reload would
- * misreport, so the tile is absent rather than wrong. */
+/** The KPI strip (old renderDash, :1136-1143) — all four tiles; "Pending
+ * review" counts the pending rows of the server's `updates[]` (G-PORT-2). */
 function Dash({ data }: { data: PortalState }) {
   const works = data.assigned_artworks ?? [];
   const avail = works.filter(
@@ -382,6 +398,7 @@ function Dash({ data }: { data: PortalState }) {
     ['Works assigned', works.length],
     ['Available', avail],
     ['Sold / unavailable', gone],
+    ['Pending review', pendingCount(data.updates)],
   ];
   return (
     <div className="dash">

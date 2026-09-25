@@ -148,13 +148,21 @@ export function IssueDocumentPage() {
       const composed = ev.service_lines ?? [];
       if (composed.length) {
         setLines(
-          composed.map((l) => ({
-            key: l.service_key,
-            title: l.title,
-            description: l.description,
-            qty: '1',
-            unitPrice: l.price === null || l.price === '' ? '' : String(num(String(l.price))),
-          })),
+          composed.map((l) => {
+            // G-PORT-16: a composed line's price is its AMOUNT for `quantity`
+            // units; the document's line is qty × unit price, so split it back
+            const qty = Math.max(1, Math.floor(Number(l.quantity) || 1));
+            return {
+              key: l.service_key,
+              title: l.title,
+              description: l.description,
+              qty: String(qty),
+              unitPrice:
+                l.price === null || l.price === ''
+                  ? ''
+                  : String(Math.round((num(String(l.price)) / qty) * 100) / 100),
+            };
+          }),
         );
         return;
       }

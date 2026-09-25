@@ -68,13 +68,18 @@ describe('seedLines — the composer never opens empty on a request', () => {
           currency: 'TMN',
           status: 'confirmed' as const,
           admin_note: '',
+          quantity: 3,
           position: 0,
           created_at: '',
         },
       ],
     };
     expect(seedLines(ev, CAT)).toHaveLength(1);
-    expect(seedLines(ev, CAT)[0]).toMatchObject({ price: '900,000.00', status: 'confirmed' });
+    expect(seedLines(ev, CAT)[0]).toMatchObject({
+      price: '900,000.00',
+      status: 'confirmed',
+      quantity: '3',
+    });
   });
 });
 
@@ -176,5 +181,41 @@ describe('buildDocumentFields — a self-contained snapshot', () => {
     );
     expect(f.billed_to).toBe('Night Gallery');
     expect(f.bank).toMatchObject({ iban: 'IR38' });
+  });
+});
+
+describe('toLineInputs — quantity (G-PORT-16)', () => {
+  it('sends a whole quantity ≥ 1 and leaves the price as the line amount', () => {
+    const lines = seedLines({ ...EV, gallery_selected: ['photo'] }, CAT);
+    expect(toLineInputs(lines)[0]).toMatchObject({ quantity: 1, price: '700000' });
+    const three = toLineInputs([{ ...lines[0], quantity: '3' }])[0];
+    expect(three).toMatchObject({ quantity: 3, price: '700000' });
+    for (const bad of ['', '0', '-2', 'x'])
+      expect(toLineInputs([{ ...lines[0], quantity: bad }])[0].quantity).toBe(1);
+  });
+});
+
+describe('describeUpdate — the Phase 5 kinds', () => {
+  it('shows an ask’s question (G-PORT-4)', () => {
+    expect(
+      describeUpdate({
+        kind: 'ask',
+        payload: { artist: 'A', title: 'T', question: 'Is it framed?' },
+      }),
+    ).toEqual([
+      { label: 'Work', to: 'A — T' },
+      { label: 'Question', to: 'Is it framed?' },
+    ]);
+  });
+  it('says a withdraw asks to remove the work (G-PORT-6)', () => {
+    expect(describeUpdate({ kind: 'withdraw', payload: { title: 'T' } })).toContainEqual({
+      label: 'Asks',
+      to: 'remove this work from their portal',
+    });
+  });
+  it('says an uploaded photo arrived, with no preview to offer (C-12)', () => {
+    expect(describeUpdate({ kind: 'image', payload: { image_key: 'gallery/x.jpg' } })).toEqual(
+      [{ label: 'Image', to: 'Image submitted — open via Darz storage' }],
+    );
   });
 });

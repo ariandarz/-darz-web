@@ -49,6 +49,7 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   // draw the partners desk's copy for as long as they did.
   ['/admin/sources?type=gallery', 'Galleries'],
   ['/admin/exhibition-services', 'Exhibition Services'],
+  ['/admin/exhibition-catalogue', 'Service checklist'],
   ['/admin/issue', 'Issue a document'],
   ['/admin/sales', 'Market Sales'],
   // The Sales group's second tab — the same desk scoped to `source=auction`,
@@ -984,5 +985,229 @@ test('Dashboard: a catalogue tile opens the Database filtered to its status', as
   } finally {
     await list.stop();
   }
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * V1 Phase 5 — the Sources desk, Source detail, the exhibition menu and
+ * compose, against the stub's gallery links. The desk drives the Golestan
+ * link only (`portal.spec.ts` owns Aria), so a re-issue here cannot lock the
+ * portal walk out.
+ */
+const STUB = 'http://127.0.0.1:8787';
+const GL_DESK = '00000000-0000-4000-8000-000000005a02';
+const GEX_ID = '00000000-0000-4000-8000-000000005e01';
+
+test('Sources: the partner search is server-side (G-PORT-15)', async () => {
+  thrown = [];
+  const links = watchQueries('/api/gallery/admin/links/');
+  await links.start();
+  try {
+    await page.goto('/admin/sources');
+    await expect(page.getByText('Aria Gallery')).toBeVisible();
+    await page.getByLabel('Find a partner').fill('leila');
+    await expect.poll(() => links.last()?.get('search')).toBe('leila');
+    await expect(page.getByText('Golestan Gallery')).toBeVisible();
+    await expect(page.getByText('Aria Gallery')).toHaveCount(0);
+  } finally {
+    await links.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Source Updates: an ask shows its question, an image says it arrived, a withdraw says it unassigns', async () => {
+  thrown = [];
+  await page.goto('/admin/sources?view=updates');
+  // the portal walk may add Aria's own rows in parallel — read Golestan's
+  const golestan = page.locator('.ad-updrow').filter({ hasText: 'Golestan Gallery' });
+  const ask = golestan.filter({ hasText: 'Ask about a work' });
+  await expect(ask).toContainText('Is the frame included?');
+  await expect(ask.getByRole('button', { name: 'Mark handled' })).toBeVisible();
+  await expect(
+    golestan.filter({ hasText: 'Image submitted — open via Darz storage' }),
+  ).toHaveCount(1);
+  const withdraw = golestan.filter({ hasText: 'Withdraw a work' });
+  await withdraw.getByRole('button', { name: 'Approve' }).click();
+  await expect(page.locator('.ad-confirm-m')).toContainText(
+    'The work is removed from the partner’s portal',
+  );
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/approve\/$/.test(r.url())),
+    page.locator('.ad-confirm-ok').click(),
+  ]);
+  expect(new URL(req.url()).pathname).toContain('/api/gallery/admin/updates/');
+  await expect(withdraw).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Source detail: Regenerate shows a new pair once; the old one stops, the status stays (G-PORT-13)', async () => {
+  thrown = [];
+  await page.goto(`/admin/sources/${GL_DESK}`);
+  await expect(page.getByRole('heading', { name: 'Golestan Gallery' })).toBeVisible();
+  await page.getByRole('button', { name: 'Regenerate' }).click();
+  // the old passport's confirm, plus what the backend leaves alone
+  await expect(page.locator('.ad-confirm-m')).toContainText(
+    'Replace the current link with a new secure link? The old link stops working immediately.',
+  );
+  await expect(page.locator('.ad-confirm-m')).toContainText('The portal stays disabled');
+  await page.getByRole('button', { name: 'Replace link' }).click();
+  const secret = page.locator('.ad-secret-v');
+  await expect(secret.first()).toContainText('/portal/e2e-reissued-');
+  const url = (await secret.first().innerText()).trim();
+  const token = url.split('/portal/')[1];
+  const pin = (await secret.nth(1).innerText()).trim();
+  expect(pin).toMatch(/^\d{6}$/);
+  // the old credentials no longer resolve; the new ones do, and the link
+  // is still disabled (re-issue is credentials only)
+  const old = await page.request.get(`${STUB}/api/gallery/portal/e2e-desk/?pin=135790`);
+  expect(old.status()).toBe(404);
+  const now = await page.request.get(`${STUB}/api/gallery/portal/${token}/?pin=${pin}`);
+  expect(now.status()).toBe(401);
+  expect((await now.json()).error.message).toContain('no longer active');
+  await expect(page.locator('.ad-invite-text')).toHaveValue(new RegExp(token));
+  expect(thrown).toEqual([]);
+});
+
+test('Source detail: pricelists open their file, show built lines, and a status change re-reads the list (P3a, C-21)', async () => {
+  thrown = [];
+  const lists = watchQueries(`/api/gallery/admin/links/${GL_DESK}/pricelists/`);
+  await lists.start();
+  try {
+    await page.goto(`/admin/sources/${GL_DESK}`);
+    const upload = page.locator('.ad-plrow', { hasText: 'golestan-2026.pdf' });
+    await expect(upload.getByRole('link', { name: 'Open file' })).toHaveAttribute(
+      'href',
+      /\/files\/pricelist\.pdf$/,
+    );
+    await expect(upload.locator('.ad-stpill')).toHaveText('Accepted');
+    const built = page.locator('.ad-plrow', { hasText: 'Built in portal — 2 works' });
+    await expect(built.locator('.ad-pllines')).toContainText('Untitled, 1974');
+    await expect(built.locator('.ad-pllines')).toContainText('52,000.00 USD');
+    // the soft cap is advisory: a line, nothing disabled
+    await expect(page.getByText(/over the soft cap of 1/)).toBeVisible();
+
+    const before = lists.seen.length;
+    const [req] = await Promise.all([
+      page.waitForRequest((r) => r.method() === 'POST' && /\/status\/$/.test(r.url())),
+      built.getByRole('button', { name: 'Mark accepted' }).click(),
+    ]);
+    expect(req.postDataJSON()).toEqual({ status: 'accepted' });
+    await expect.poll(() => lists.seen.length).toBeGreaterThan(before);
+    await expect(built.locator('.ad-stpill')).toHaveText('Accepted');
+    // accepting one superseded the other — only the re-read can show that
+    await expect(upload.locator('.ad-stpill')).toHaveText('Superseded');
+  } finally {
+    await lists.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Service checklist: add, edit with the lock, a stale save is a 409, and the portal menu follows (G-PORT-12b)', async () => {
+  thrown = [];
+  await page.goto('/admin/exhibition-catalogue');
+  await expect(page.getByRole('heading', { name: 'Service checklist' })).toBeVisible();
+  await expect(page.locator('.ad-gxe-row')).toHaveCount(4);
+
+  // add — the key follows the title until typed
+  await page.getByRole('button', { name: '+ Add service' }).click();
+  const form = page.locator('.ad-form');
+  await form.getByLabel('Service').fill('Opening Reel');
+  await expect(form.getByLabel('Key · fixed once saved')).toHaveValue('opening_reel');
+  await form.getByLabel(/^Price/).fill('3000000');
+  const [created] = await Promise.all([
+    page.waitForRequest(
+      (r) => r.method() === 'POST' && /exhibition-catalogue\/$/.test(r.url()),
+    ),
+    form.getByRole('button', { name: 'Add service' }).click(),
+  ]);
+  expect(created.postDataJSON()).toMatchObject({
+    key: 'opening_reel',
+    title: 'Opening Reel',
+    default_price: '3000000',
+    is_active: true,
+  });
+  await expect(page.locator('.ad-gxe-row')).toHaveCount(5);
+
+  // edit — the PATCH carries expected_version, never the key
+  const first = page.locator('.ad-gxe-row').first();
+  await first.getByLabel('Price').fill('750000');
+  const [patched] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'PATCH'),
+    first.getByRole('button', { name: 'Save' }).click(),
+  ]);
+  expect(patched.postDataJSON()).toMatchObject({
+    default_price: '750000',
+    expected_version: 1,
+  });
+  expect(patched.postDataJSON()).not.toHaveProperty('key');
+  await expect(page.locator('.dz-toast.show')).toHaveText('Saved ✓');
+
+  // stale — another admin saved row 2 in the meantime
+  await page.request.post(
+    `${STUB}/__stub/exhibition-catalogue/00000000-0000-4000-8000-00000000ec02/touch/`,
+  );
+  const second = page.locator('.ad-gxe-row').nth(1);
+  await second.getByLabel('Service').fill('Video Documentation (edited)');
+  await second.getByRole('button', { name: 'Save' }).click();
+  await expect(
+    page.getByText('Someone else saved this service in the meantime — reload to continue.'),
+  ).toBeVisible();
+
+  // the portal reads the same table: the new service is on its menu
+  const menu = await page.request.get(
+    `${STUB}/api/gallery/portal/e2e-portal/exhibitions/catalogue/?pin=246810`,
+  );
+  const services = (await menu.json()).data.services as Array<{ key: string }>;
+  expect(services.map((x) => x.key)).toContain('opening_reel');
+  expect(thrown).toEqual([]);
+});
+
+test('Compose: the menu is the exhibition catalogue, and each line sends its quantity (G-PORT-16)', async () => {
+  thrown = [];
+  await page.goto(`/admin/sources/${GL_DESK}/exhibitions/${GEX_ID}`);
+  await expect(page.getByRole('heading', { name: 'Autumn Group Show' })).toBeVisible();
+  // seeded from the gallery's ticks, priced from the catalogue
+  const line = page.locator('.ad-exhline').first();
+  await expect(line.getByLabel('Service title')).toHaveValue('Exhibition Photo Coverage');
+  await expect(line.getByLabel('Price')).toHaveValue('750,000');
+  await expect(line.getByLabel('Quantity')).toHaveValue('1');
+  await line.getByLabel('Quantity').fill('3');
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/compose\/$/.test(r.url())),
+    page.getByRole('button', { name: 'Save package' }).click(),
+  ]);
+  const body = req.postDataJSON() as {
+    lines: Array<{ service_key: string; quantity: number }>;
+  };
+  expect(body.lines[0]).toMatchObject({ service_key: 'exhibition_photo', quantity: 3 });
+  expect(body.lines[1]).toMatchObject({ service_key: 'darz_listing', quantity: 1 });
+  // the server's lines are the truth after a save — and they keep the 3
+  await expect(page.locator('.ad-exhline').first().getByLabel('Quantity')).toHaveValue('3');
+  expect(thrown).toEqual([]);
+});
+
+test('Exhibition Services: descriptions come from the API and save back (G-PROJ-8)', async () => {
+  thrown = [];
+  await page.goto('/admin/exhibition-services');
+  // a search opens every group that matches
+  await page.getByLabel('Find a service').fill('interview');
+  await expect(
+    page.getByText('An editorial interview with the artist, in Farsi and English.'),
+  ).toBeVisible();
+  await page.getByLabel('Find a service').fill('Darz Listing');
+  const row = page.locator('.dzx-row', { hasText: 'Darz Listing' });
+  await row.getByRole('button', { name: 'Edit' }).click();
+  const editor = page.locator('.dzx-row.is-editing');
+  await editor
+    .getByLabel('Service description')
+    .fill('Listed for the Darz collector network.');
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'PATCH' && /service-catalog/.test(r.url())),
+    editor.getByRole('button', { name: 'Save' }).click(),
+  ]);
+  expect(req.postDataJSON()).toMatchObject({
+    description: 'Listed for the Darz collector network.',
+    expected_version: 1,
+  });
   expect(thrown).toEqual([]);
 });

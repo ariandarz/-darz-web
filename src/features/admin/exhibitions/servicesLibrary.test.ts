@@ -12,10 +12,16 @@ import {
   type LibraryService,
 } from './servicesLibrary';
 
-const row = (name: string, price?: string, currency = 'TMN'): ServiceCatalogItemAdmin =>
+const row = (
+  name: string,
+  price?: string,
+  currency = 'TMN',
+  description?: string,
+): ServiceCatalogItemAdmin =>
   ({
     id: `id-${name}`,
     name,
+    description,
     price,
     currency,
     unit: 'piece',
@@ -34,17 +40,17 @@ const svc = (id: string, over: Partial<LibraryService> = {}): LibraryService => 
 });
 
 describe('toLibrary', () => {
-  it('fills the description from Darz’s own menu, by name', () => {
-    const [s] = toLibrary([row('Exhibition Photo Coverage', '700000')]);
-    expect(s.description).toContain('photographic documentation');
+  it('reads the description off the row itself (G-PROJ-8)', () => {
+    const [s] = toLibrary([
+      row('Exhibition Photo Coverage', '700000', 'TMN', 'Installation views and details.'),
+    ]);
+    expect(s.description).toBe('Installation views and details.');
     expect(s.price).toBe(700000);
   });
 
-  it('matches the name however it is cased or spaced', () => {
-    expect(toLibrary([row('  video documentation ', '1')])[0].description).toContain('video');
-  });
-
-  it('leaves a hand-added service without a description rather than inventing one', () => {
+  it('never fills a description in from a local menu — a row without one stays blank', () => {
+    // the hardcoded name → text map is gone: the API is the one source
+    expect(toLibrary([row('Exhibition Photo Coverage', '700000')])[0].description).toBe('');
     expect(toLibrary([row('Something Darz added', '5')])[0].description).toBe('');
   });
 
@@ -133,7 +139,10 @@ describe('libraryCurrency', () => {
 });
 
 describe('search', () => {
-  const list = toLibrary([row('Exhibition Photo Coverage', '1'), row('Darz Listing', '1')]);
+  const list = toLibrary([
+    row('Exhibition Photo Coverage', '1'),
+    row('Darz Listing', '1', 'TMN', 'Selected artworks listed for a network of collectors.'),
+  ]);
 
   it('returns everything for an empty query', () => {
     expect(search(list, '  ')).toHaveLength(2);

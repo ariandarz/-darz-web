@@ -7,6 +7,8 @@
  * inside Projects.
  *
  * Deliberately small: name · description · price, edit in place, add a line.
+ * The description is the row's own (`description`, G-PROJ-8), read and
+ * written through the API — no local name → text map.
  * No categories, no units matrix, no margin columns — those belong to the
  * Projects desk, which still reads the same rows. Editing here is the whole
  * point (prices are expected to change), so the edit is inline rather than a
@@ -98,6 +100,7 @@ export function ExhibitionServicesPage() {
     id?: string;
     version?: number;
     name: string;
+    description: string;
     price: string;
   }) => {
     if (busy) return;
@@ -108,12 +111,14 @@ export function ExhibitionServicesPage() {
       if (draft.id) {
         await projectsAdmin.updateService(draft.id, {
           name: draft.name.trim(),
+          description: draft.description.trim(),
           price,
           expected_version: draft.version ?? 0,
         });
       } else {
         await projectsAdmin.createService({
           name: draft.name.trim(),
+          description: draft.description.trim(),
           price,
           currency: currency as ServiceCatalogItemAdmin['currency'],
           unit: 'piece',
@@ -209,7 +214,7 @@ export function ExhibitionServicesPage() {
           currencyLabel={currencyLabel}
           busy={busy}
           onCancel={() => setEditing(null)}
-          onSave={(name, price) => void save({ name, price })}
+          onSave={(name, description, price) => void save({ name, description, price })}
         />
       )}
 
@@ -251,8 +256,14 @@ export function ExhibitionServicesPage() {
                         currencyLabel={currencyLabel}
                         busy={busy}
                         onCancel={() => setEditing(null)}
-                        onSave={(name, price) =>
-                          void save({ id: sv.id, version: sv.version, name, price })
+                        onSave={(name, description, price) =>
+                          void save({
+                            id: sv.id,
+                            version: sv.version,
+                            name,
+                            description,
+                            price,
+                          })
                         }
                       />
                     ) : (
@@ -334,9 +345,8 @@ export function ExhibitionServicesPage() {
       )}
 
       <p className="dzx-note">
-        Descriptions come from Darz’s own service menus — the backend stores a name, a unit and
-        a price only (G-PROJ-8), so a service you add here has no description until you type
-        one onto the document line.{' '}
+        A service’s description is what its document line prints — edit it here and the next
+        document follows.{' '}
         <button type="button" className="ad-ghostbtn" onClick={() => navigate('/admin/issue')}>
           Issue a document →
         </button>
@@ -480,10 +490,11 @@ function ServiceEditor({
   service?: LibraryService;
   currencyLabel: string;
   busy: boolean;
-  onSave: (name: string, price: string) => void;
+  onSave: (name: string, description: string, price: string) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(service?.name ?? '');
+  const [description, setDescription] = useState(service?.description ?? '');
   const [price, setPrice] = useState(
     service?.price === null ? '' : String(service?.price ?? ''),
   );
@@ -498,7 +509,14 @@ function ServiceEditor({
           onChange={(e) => setName(e.target.value)}
           autoFocus
         />
-        {service?.description && <div className="dzx-rowd">{service.description}</div>}
+        <textarea
+          className="dzx-input"
+          aria-label="Service description"
+          placeholder="What it covers — printed on the document line"
+          rows={2}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
       </div>
       <div className="dzx-rowp">
         <input
@@ -516,7 +534,7 @@ function ServiceEditor({
           type="button"
           className="ad-rowbtn is-primary"
           disabled={busy || !name.trim()}
-          onClick={() => onSave(name, price)}
+          onClick={() => onSave(name, description, price)}
         >
           Save
         </button>

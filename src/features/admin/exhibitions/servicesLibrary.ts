@@ -12,12 +12,10 @@
  * store; it reads the same rows the composer prices from, so a price edited
  * here reaches the next proposal with nothing to sync.
  *
- * WHERE THE WORDS LIVE. `ProjectServiceCatalogItem` stores a name, a unit and
- * a price and has NO description field (G-PROJ-8), while a document line
- * plainly needs one. So the description comes from Darz's own service menus,
- * carried in `standardSet.ts` as documentation and matched by name here. A
- * service an owner adds by hand has no description until they type one onto
- * the line — which the library says rather than leaving it to be discovered.
+ * WHERE THE WORDS LIVE. On the row: `ProjectServiceCatalogItem.description`
+ * (G-PROJ-8), read and written through the API like the name and the price.
+ * A row with none is blank until an owner types one — the standard-set seed
+ * writes Darz's own menu text into it (`standardSet.ts::serviceInput`).
  */
 import type { PackageTemplateAdmin, ServiceCatalogItemAdmin } from '../../../api/types';
 import { STANDARD_SERVICES, nameKey } from '../projects/standardSet';
@@ -26,7 +24,7 @@ import { STANDARD_SERVICES, nameKey } from '../projects/standardSet';
 export interface LibraryService {
   id: string;
   name: string;
-  /** From Darz's own menus, or '' for a line the owner added by hand. */
+  /** The row's own `description` (G-PROJ-8), '' when none is stored. */
   description: string;
   /** null = not priced yet. Never 0, which would read as free. */
   price: number | null;
@@ -45,8 +43,6 @@ export interface LibraryPackage {
   /** Ids the catalogue no longer has — named rather than silently dropped. */
   missing: number;
 }
-
-const DESCRIPTIONS = new Map(STANDARD_SERVICES.map((s) => [nameKey(s.name), s.about]));
 
 /** Which programme a service belongs to, as Darz's own menu groups them —
  * the heading the library folds it under. */
@@ -104,7 +100,7 @@ export function toLibrary(rows: readonly ServiceCatalogItemAdmin[]): LibraryServ
     .map((r) => ({
       id: r.id,
       name: r.name ?? '',
-      description: DESCRIPTIONS.get(nameKey(r.name ?? '')) ?? '',
+      description: r.description ?? '',
       price: amount(r.price),
       currency: r.currency ?? '',
       unit: r.unit ?? 'piece',
