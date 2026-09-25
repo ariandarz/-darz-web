@@ -91,9 +91,9 @@ trusting any shape (`CLAUDE.md` → "API access").
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
 | G-CLUB-3 | No invitation-only auctions | ✅ Closed | `Auction.invite_only` + `invited_collectors` (Phase 35). FE: admin toggle optional; collector side already filtered server-side. |
-| G-AUC-4 | No `archived` on an auction | ✅ Closed | `Auction.archived` + `POST /auctions/admin/auctions/{id}/archive/` + `?archived=` (hidden by default) (B2). |
-| G-REC-1 | No auction-house facet on records list | ✅ Closed | Exact `?house=` on both records lists (B2). |
-| Auction poster | No `cover_image_url` on `Auction` | ✅ Closed | `cover_image_url` on `AuctionSerializer` + `POST`/`DELETE …/{id}/cover-image/` (B2). FE: drop the per-card first-lot image read. |
+| G-AUC-4 | No `archived` on an auction | ✅ Closed | `Auction.archived` + `POST /auctions/admin/auctions/{id}/archive/` + `?archived=` (hidden by default) (B2) — FE ✅ adopted (Phase 3): Live Auctions' "Show archived" toggle + Archive / ↩ Restore on the list and the auction page. The collector list does not filter `archived` (backend candidate). |
+| G-REC-1 | No auction-house facet on records list | ✅ Closed | Exact `?house=` on both records lists (B2) — FE ✅ adopted (Phase 3) on the admin Records desk ("All auction houses"; options = standard houses + a walk of the records — no facet endpoint, backend candidate). The collector Records page is the Artist view, where the old app hid the filter. |
+| Auction poster | No `cover_image_url` on `Auction` | ✅ Closed | `cover_image_url` on `AuctionSerializer` + `POST`/`DELETE …/{id}/cover-image/` (B2). FE ✅ adopted (Phase 3): collector cards and the event hero read `cover_image_url`, the per-card first-lot read is deleted; the auction page uploads/removes the poster; the Live Auctions row shows it. |
 | Records `?section=` | No server split Past/Upcoming/Live/Highlights | ✅ Closed | `?section=` already served on both records lists (was implemented; the earlier "pending" was a doc error). |
 | G-AUC-1/2/3 | Auction edit + terms, lot edit, registration reset | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". |
 
@@ -132,9 +132,9 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-SALE-2 | `?search&payment_status&delivery_status&source&ordering` on the admin sales list | ✅ Adopted (Phase 2): search + Stage/Payment/Delivery/Source/Sort, each one param (`SalesController.test.ts`) | 2 |
 | G-SALE-3 | Nested `artwork{id,title}`, `collector{id,display_name}`, `responsible{id,name}` on rows (input stays ids) | ✅ Adopted (Phase 0): read off the row; only the artist line is still a cached per-work read | 0 |
 | G-SALE-5 | `follow_up_at` + `follow_up_overdue`, `POST …/follow-up/`, append-only `GET/POST …/notes/` | ✅ Adopted (Phase 2): the deal card's follow-up (presets/date/Clear, "due" from the server) and notes thread; the row's "Follow-up … · due" line; the Need attention tile | 2 |
-| G-AUC-1 | `PATCH /auctions/admin/auctions/{id}/` (lock; draft/scheduled only) + `terms`/`terms_required` on create | Not bound; on-screen copy says "no edit endpoint" | 3 |
-| G-AUC-2 | `PATCH /auctions/admin/lots/{id}/` (lock; scheduled only) | Not bound; copy says "create-only" | 3 |
-| G-AUC-3 | `POST /auctions/admin/registrations/{id}/reset/` (rejected → pending) | Not bound | 3 |
+| G-AUC-1 | `PATCH /auctions/admin/auctions/{id}/` (lock; draft/scheduled only) + `terms`/`terms_required` on create | ✅ Adopted (Phase 3): the auction page's details + terms form (ConflictBanner on 409, read-only past scheduled, client-side window check C-18); terms on create | 3 |
+| G-AUC-2 | `PATCH /auctions/admin/lots/{id}/` (lock; scheduled only) | ✅ Adopted (Phase 3): Edit on each scheduled lot (same lock/banner pattern; low ≤ high checked) | 3 |
+| G-AUC-3 | `POST /auctions/admin/registrations/{id}/reset/` (rejected → pending) | ✅ Adopted (Phase 3): ↺ Reset on rejected rows, old confirm + toast | 3 |
 | G-COL-1 | `GET /auth/admin/collectors/summary/` (collectors, vip, active_30d, engaged) | Not bound: tiles substitute "Active" | 4 |
 | G-COL-2 | `last_activity_at`, `purchase_count`, `?ordering=activity\|purchases` (list only, C-16) | Not sendable | 4 |
 | G-CAT-1 | `thumb`, `artist_name` on admin artwork rows | Unused: names resolved from a capped roster | 4 |

@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 Phase 3: auctions admin (edit, lot edit, archive, poster, reset, house) + collector cover
+
+- Auction page ports the old Manage-auction modal: poster upload/remove, details + terms form (locked PATCH, ConflictBanner, read-only past scheduled, C-18 checks), lot edit; Live Auctions walks all pages, "Show archived" + Archive/↩ Restore, poster thumbs; Register to Bid ↺ Reset; Records "All auction houses" (`?house=`). Collector cards read `cover_image_url` (per-card lot read gone); event lots get loading/empty states. C-19 already degrades (poll + notice).
+- Matrix: 7 ops → Integrated (241/2/9/70/1). **720 unit · 111 E2E** (desks 70). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3d.
+
 ## 2026-09-25 — V1 Phase 2: Sales desk (summary, filters, follow-up, notes) and Auction Sales
 
 - Market Sales: strip from `summary/` (+ Need attention = overdue follow-ups), search + Stage/Payment/Delivery/Source/Sort; deal page gains follow-up set/clear, append-only notes, Source/Lot rows, Delete deal. Auction Sales at `/admin/sales?source=auction`, each sale linking to its lot. Stale G-SALE notes removed.

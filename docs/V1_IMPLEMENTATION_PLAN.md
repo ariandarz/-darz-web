@@ -509,6 +509,41 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 - **Follow-up toasts** follow the old split: the presets toast "Follow-up set for <date>"; the date field
   and Clear write silently. Notes toast "Note added".
 
+## 3d · What Phase 3 did differently from the plan (recorded 2026-09-25)
+
+- **The edit forms port the old Manage-auction modal** (`editAuc`/`saveAuc`, `darz-studio.html:32027-32172`)
+  onto the auction page, in its order: Cover & poster · Auction details · Terms & financial settings ·
+  lots. Cut from the modal (no backend): the cover-ARTWORK search, the poster text over the cover, the
+  Document Builder poster designer, Type (timed/live), the Status select, cascade stagger and max
+  bidders. Buyer's premium and Anti-snipe seconds are per lot here (lot fields). "or PDF" is dropped
+  from "↑ Upload poster": the cover is drawn as an image. Terms keep the old rule — opens on the Darz
+  default, a save equal to it stores `''`; "No terms gate" is `terms_required: false`.
+- **No save toast.** The old "Auction saved → live in the App" is false for a draft; the button's
+  `DeskSave` "✓ Saved" flash confirms. The PATCH sends changed fields only (+ `expected_version`).
+- **Read-only reason is the server's own sentence** ("Only a draft or scheduled auction can be
+  edited."), shown on live/closed/cancelled auctions; C-11 refusals show `error.message`.
+- **Validation copy (C-18) is a placeholder** — no old-app source; owner to confirm.
+- **Archived = a "Show archived" toggle** (the old Archived sub-tab): `?archived=true` lists only
+  archived. Copy cut where it would be false: the backend's collector list does **not** hide archived
+  auctions, so "…and the Market App" / "removed from the Market App" are dropped from the sub-line,
+  confirm and toast ("Archived — moved to the archived list"; "Restored to Live & upcoming").
+  Backend candidate: exclude `archived` from `GET /auctions/`.
+- **↺ Reset shows on rejected rows only** (the old desk showed it on every row; the endpoint only
+  resets `rejected`). The toast drops the old "— Collector <key>" suffix.
+- **House filter:** single select (old was a multi-select popover; the API takes one exact house).
+  Options = the old `REC_KNOWN_HOUSES` ∪ houses from one walk of the records (no facet endpoint —
+  backend candidate), stored spelling wins so the exact filter matches. **Collector `RecordsPage` gets
+  no house filter**: it ports the Artist sub-tab, where the old app hid it (`app.html:5082`).
+- **Collector cover:** cards read `cover_image_url` only (no cover-artwork field for the old fallback);
+  the event hero falls back to the first lot's artwork from the lots it already reads. Event lots gain
+  "Loading…" and an empty state that borrows the old lots-list line "No lots in this view."
+  (`app.html:7530`) — the old event page had none (flagged).
+- **C-19 needed no change** — see `V1_CONTRACT_ISSUES.md`.
+- **Whole lists:** Live Auctions and the Registrations auction titles walk every page (the latter
+  archived included); the auction page's lots stay one `per_page=100` read.
+- **E2E gotcha:** a `<label>` wrapping a `<textarea>` takes the textarea's text into its own, so
+  `getByLabel(…, {exact:true})` cannot find it — use `getByRole('textbox', {name})`.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -528,7 +563,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | 0 | Schema regen · C-1…C-5 live bugs · `Locked<>` · `walkPages` | `v1/phase-0-foundation` | `[x]` 2026-09-25 | see CHANGELOG |
 | 1 | Profile edit · my-membership · documents · chip · G-Q-1 · public docs | `v1/phase-1-collector-account` | `[x]` 2026-09-25 | see CHANGELOG |
 | 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[x]` 2026-09-25 | see CHANGELOG |
-| 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[ ]` | |
+| 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[x]` 2026-09-25 | see CHANGELOG |
 | 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[ ]` | |
 | 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[ ]` | |
 | 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[ ]` | |

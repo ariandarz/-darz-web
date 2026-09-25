@@ -122,23 +122,23 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
 | GET | /api/auctions/ | `AuctionService.auctions` | `auctions/AuctionListController.ts` | Integrated |  |
-| GET | /api/auctions/admin/auctions/ | `AuctionsAdminService.auctions` | `admin/AuctionsAdminPage.tsx`, `admin/RegistrationsPage.tsx` | Integrated | `?archived` unsent (AuctionsAdmin.auctions takes page/per_page only) — archived auctions cannot be listed/hidden. |
-| POST | /api/auctions/admin/auctions/ | `AuctionsAdminService.createAuction` | `admin/AuctionsAdminPage.tsx` | Partial | createAuction body omits `terms` / `terms_required` (backend accepts both). |
+| GET | /api/auctions/admin/auctions/ | `AuctionsAdminService.auctions` | `admin/AuctionsAdminPage.tsx`, `admin/RegistrationsPage.tsx` | Integrated | Phase 3 (2026-09-25): `?archived=true` is the "Show archived" view; both desks walk every page. |
+| POST | /api/auctions/admin/auctions/ | `AuctionsAdminService.createAuction` | `admin/AuctionsAdminPage.tsx` | Integrated | Phase 3 (2026-09-25): `terms` / `terms_required` sent (old terms block, blank = the Darz default). |
 | GET | /api/auctions/admin/auctions/{auction_pk}/lots/ | `AuctionsAdminService.lots` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
 | POST | /api/auctions/admin/auctions/{auction_pk}/lots/ | `AuctionsAdminService.createLot` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
 | GET | /api/auctions/admin/auctions/{id}/ | `AuctionsAdminService.auction` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
-| PATCH | /api/auctions/admin/auctions/{id}/ | none | — | Not bound | Edit auction (title, description, currency, dates, terms, terms_required; expected_version). Service doc-comment still says "no edit endpoint, G-AUC-1" — stale. |
+| PATCH | /api/auctions/admin/auctions/{id}/ | `AuctionsAdminService.updateAuction` | `admin/AuctionAdminDetailPage.tsx` | Integrated | Phase 3 (2026-09-25): `Locked<>` body, changed fields only; 409 → ConflictBanner; read-only past scheduled. |
 | DELETE | /api/auctions/admin/auctions/{id}/ | `AuctionsAdminService.deleteAuction` | `admin/AuctionsAdminPage.tsx` | Integrated |  |
-| POST | /api/auctions/admin/auctions/{id}/archive/ | none | — | Not bound | Archive auction — no binding. |
-| POST | /api/auctions/admin/auctions/{id}/cover-image/ | none | — | Not bound | Cover image upload (multipart `file`) — no binding. |
-| DELETE | /api/auctions/admin/auctions/{id}/cover-image/ | none | — | Not bound | Cover image remove — no binding. |
+| POST | /api/auctions/admin/auctions/{id}/archive/ | `AuctionsAdminService.archiveAuction` | `admin/AuctionsAdminPage.tsx`, `admin/AuctionAdminDetailPage.tsx` | Integrated | Phase 3 (2026-09-25): Archive / ↩ Restore (`{archived:false}`). |
+| POST | /api/auctions/admin/auctions/{id}/cover-image/ | `AuctionsAdminService.uploadCover` | `admin/AuctionAdminDetailPage.tsx` | Integrated | Phase 3 (2026-09-25): "↑ Upload poster" (multipart `file`). |
+| DELETE | /api/auctions/admin/auctions/{id}/cover-image/ | `AuctionsAdminService.removeCover` | `admin/AuctionAdminDetailPage.tsx` | Integrated | Phase 3 (2026-09-25): "Remove uploaded poster". |
 | GET | /api/auctions/admin/auctions/{id}/invite-only/ | `AuctionsAdminService.inviteList` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
 | POST | /api/auctions/admin/auctions/{id}/invite-only/ | `AuctionsAdminService.setInviteOnly` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
 | GET | /api/auctions/admin/lots/{id}/ | `AuctionsAdminService.lot` | `admin/AuctionAdminDetailPage.tsx`, `admin/useSaleRefs.ts` | Integrated | Phase 2: also resolves an auction sale's `lot` to its auction + number (the Lot link). |
-| PATCH | /api/auctions/admin/lots/{id}/ | none | — | Not bound | Edit lot (numbers/estimates/reserve/dates; expected_version) — no binding; lots are create-only in FE. |
+| PATCH | /api/auctions/admin/lots/{id}/ | `AuctionsAdminService.updateLot` | `admin/AuctionAdminDetailPage.tsx` | Integrated | Phase 3 (2026-09-25): Edit on scheduled lots, `Locked<>` body, 409 → ConflictBanner. |
 | POST | /api/auctions/admin/lots/{id}/close/ | `AuctionsAdminService.closeLot` | `admin/AuctionAdminDetailPage.tsx` | Integrated | `?force` sent when closing early. |
 | POST | /api/auctions/admin/lots/{id}/go-live/ | `AuctionsAdminService.goLive` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
-| GET | /api/auctions/admin/records/ | `AuctionsAdminService.records` | `admin/RecordsAdminPage.tsx` | Integrated | `?house` unsent (AuctionRecordQuery lacks it). |
+| GET | /api/auctions/admin/records/ | `AuctionsAdminService.records` | `admin/RecordsAdminPage.tsx` | Integrated | Phase 3 (2026-09-25): `?house=` from the "All auction houses" select (options from a walk). |
 | POST | /api/auctions/admin/records/ | `AuctionsAdminService.createRecord` | `admin/RecordEditorPage.tsx` | Integrated |  |
 | GET | /api/auctions/admin/records/{id}/ | `AuctionsAdminService.record` | `admin/RecordEditorPage.tsx` | Integrated |  |
 | PATCH | /api/auctions/admin/records/{id}/ | `AuctionsAdminService.updateRecord` | `admin/RecordEditorPage.tsx` | Integrated |  |
@@ -146,13 +146,13 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/auctions/admin/registrations/ | `AuctionsAdminService.registrations` | `admin/RegistrationsPage.tsx` | Integrated |  |
 | POST | /api/auctions/admin/registrations/{id}/approve/ | `AuctionsAdminService.approveRegistration` | `admin/RegistrationsPage.tsx` | Integrated |  |
 | POST | /api/auctions/admin/registrations/{id}/reject/ | `AuctionsAdminService.rejectRegistration` | `admin/RegistrationsPage.tsx` | Integrated |  |
-| POST | /api/auctions/admin/registrations/{id}/reset/ | none | — | Not bound | Reset registration to pending — no binding. |
+| POST | /api/auctions/admin/registrations/{id}/reset/ | `AuctionsAdminService.resetRegistration` | `admin/RegistrationsPage.tsx` | Integrated | Phase 3 (2026-09-25): ↺ Reset on rejected rows. |
 | GET | /api/auctions/lots/{id}/ | `AuctionService.lot` | `auctions/LotController.ts` | Integrated |  |
 | GET | /api/auctions/lots/{id}/bids/ | `AuctionService.bidHistory` | `auctions/useAuctions.ts` | Integrated |  |
 | POST | /api/auctions/lots/{id}/bids/ | `AuctionService.placeBid` | `auctions/LotController.ts` | Integrated |  |
 | GET | /api/auctions/notifications/ | `AuctionService.notifications` | `auctions/AuctionNotificationsController.ts` | Integrated |  |
 | POST | /api/auctions/notifications/{id}/read/ | `AuctionService.markRead` | `auctions/AuctionNotificationsController.ts` | Integrated |  |
-| GET | /api/auctions/records/ | `AuctionService.records` | `auctions/RecordsController.ts`, `records/RecordsArchiveController.ts` | Integrated | `?house` unsent (AuctionRecordQuery lacks it). |
+| GET | /api/auctions/records/ | `AuctionService.records` | `auctions/RecordsController.ts`, `records/RecordsArchiveController.ts` | Integrated | `?house` now typed (Phase 3) but unsent by decision: the collector page is the Artist view, where the old app hid the house filter (`app.html:5082`). |
 | GET | /api/auctions/records/highlights/ | none | — | Not bound | "Auction highlights" strip — no binding (only the admin Records desk uses `?is_highlight=True` on the list). |
 | GET | /api/auctions/records/{id}/ | `AuctionService.record` | `auctions/useAuctions.ts` | Integrated |  |
 | GET | /api/auctions/registrations/ | `AuctionService.registrations` | `auctions/RegistrationController.ts` | Integrated |  |
@@ -407,21 +407,22 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 Counts updated by V1 Phase 1 (2026-09-25): four operations moved from Not bound to Integrated —
 `PATCH /api/auth/me/`, `GET /api/auth/my-membership/`, `GET /api/documents/`,
 `GET /api/documents/public/{kind}/`. V1 Phase 2 (2026-09-25) moved five more — the sales
-`summary/`, `DELETE …/sales/{id}/`, `…/follow-up/`, and `…/notes/` GET + POST. Status cells elsewhere
+`summary/`, `DELETE …/sales/{id}/`, `…/follow-up/`, and `…/notes/` GET + POST. V1 Phase 3 (2026-09-25)
+moved six Not bound (auction PATCH, archive, cover POST/DELETE, lot PATCH, registration reset) and one
+Partial (auction create, now with terms) to Integrated. Status cells elsewhere
 are the 2026-09-25 baseline unless a row says otherwise.
 
 | Status | Count |
 |---|---|
-| Integrated | 234 |
-| Partial | 3 |
+| Integrated | 241 |
+| Partial | 2 |
 | Bound, no UI | 9 |
-| Not bound | 76 |
+| Not bound | 70 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
 ### Partial
 
-- `POST /api/auctions/admin/auctions/` — createAuction body omits `terms` / `terms_required` (backend accepts both).
 - `POST /api/crm/admin/requests/{id}/messages/` — FE sends `body` + `artwork_refs` only; `document_refs` never sent.
 - `POST /api/crm/requests/{id}/messages/` — FE sends `body` + `artwork_refs` only; `document_refs` (supported) never sent.
 
@@ -439,12 +440,6 @@ are the 2026-09-25 baseline unless a row says otherwise.
 
 ### Not bound
 
-- `PATCH /api/auctions/admin/auctions/{id}/`
-- `POST /api/auctions/admin/auctions/{id}/archive/`
-- `POST /api/auctions/admin/auctions/{id}/cover-image/`
-- `DELETE /api/auctions/admin/auctions/{id}/cover-image/`
-- `PATCH /api/auctions/admin/lots/{id}/`
-- `POST /api/auctions/admin/registrations/{id}/reset/`
 - `GET /api/auctions/records/highlights/`
 - `GET /api/auth/admin/access-keys/`
 - `GET /api/auth/admin/access-keys/summary/`
@@ -525,9 +520,7 @@ are the 2026-09-25 baseline unless a row says otherwise.
 - `GET /api/catalog/admin/artists/` — `?search`, `?ordering` unsent — desks fetch `per_page=500` and search client-side; service comment ("backend list takes NO filters, G-CAT-3") is stale.
 - `GET /api/catalog/admin/artworks/` — Unsent (not in ArtworkAdminQuery): `complete, created_after, duplicate_images, gallery_portal, price_min, price_max, size, source_type, tag, refine_*`.
 - `GET /api/projects/admin/projects/` — `?partner`, `?quick` unsent (ProjectQuery lacks them); `archived` sent as True/False.
-- `GET /api/auctions/admin/auctions/` — `?archived` unsent (AuctionsAdmin.auctions takes page/per_page only) — archived auctions cannot be listed/hidden.
-- `GET /api/auctions/records/` — `?house` unsent (AuctionRecordQuery lacks it).
-- `GET /api/auctions/admin/records/` — `?house` unsent (AuctionRecordQuery lacks it).
+- `GET /api/auctions/records/` — `?house` typed but unsent by decision (Phase 3: the collector Records page is the Artist view).
 - `GET /api/gallery/admin/links/` — `?search` unsent (query type has source_type/page/per_page only).
 - `GET /api/crm/requests/` — `?archived` unsent (CollectorRequestQuery lacks it).
 - `GET /api/crm/admin/requests/{id}/messages/` — `?include_archived` unsent.
