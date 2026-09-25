@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 Phase 1: collector account (profile edit, my-membership, documents, chip, G-Q-1, legal links)
+
+- Profile › Account is editable via `PATCH /auth/me/` (`AuthService.updateMe`, session `me` refreshed); "Your documents" (G-DOC-1) ported from `dzDocsSectionHTML`; Settings membership row + sheet read `/auth/my-membership/`; chip shows `selection_name`; questionnaire writes phone/lang; legal links use `/documents/public/{kind}/`; "Make an offer" hidden without a currency (Q-6); Profile tiles wait with `.dz-state`.
+- Stub reads request bodies (and now answers a cold-load refresh with the right principal). **677 unit · 97 E2E** (collector 35).
+
 ## 2026-09-25 — V1 Phase 0: schema regen + four live bugs (C-1…C-5)
 
 - `schema.d.ts` regenerated from backend `df0421f`. Sales desk reads the nested G-SALE-3 rows; `ProjectStatus` is aliased through the field (C-2); the questionnaire and Profile card branch on `answered` (C-3); a portal entry error no longer freezes the gate (C-4).
