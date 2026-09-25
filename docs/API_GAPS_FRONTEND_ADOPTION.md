@@ -263,10 +263,14 @@ screen. All use the standard envelope.
 - **Frontend:** add a house filter/dropdown to the Records desk (distinct from the free-text search).
 
 ### G-SALE-4 · Auction Sales tab (now unblocked)
-- **Backend now:** `Sale.source` (`market`/`auction`) + `?source=` on the admin sales list.
-- **Frontend:** build the deferred **Auction Sales** tab by filtering `?source=auction` (and set
-  `source` on sale create where relevant). Note: no auction→Sale automation yet — an admin sets
-  `source=auction`; a follow-up backend task is tracked in the API repo.
+- **Backend now:** `Sale.source` (`market`/`auction`) + `?source=` on the admin sales list. **And, as of
+  2026-09-25 (PR #51), auction→Sale automation is live:** a won lot auto-creates a **draft**
+  `Sale(source=auction)` (agreed_price = hammer + buyer's premium, commission_amount = the premium), with
+  a new read-only `lot` FK on each sale linking back to the auction lot.
+- **Frontend:** build the deferred **Auction Sales** tab by filtering `?source=auction`. The rows now
+  arrive on their own after each lot closes (as `draft`) — surface them for the admin to review/confirm,
+  and use `lot` to link a row back to its auction lot. Manual `source=auction` create still works for
+  off-platform auction sales.
 
 ### G-HEALTH-2/3/4 · Data Health desk counts
 - **Backend now:** `Artwork.source_type` (gallery/artist/collector/dealer/other) + `?source_type=`
@@ -275,6 +279,28 @@ screen. All use the standard envelope.
 - **Frontend:** fill the three previously-absent counts tiles — the source-type band via `?source_type=`
   filtered counts, the "Deleted (permanent)" tile from `deleted_records.count`, and "Recently Added"
   via a `?created_after=<iso>` count. Also surface `source_type` in the artwork editor if wanted.
+
+### document_refs (D19) · Attach a document into a collector thread
+- **Backend now (PR #49):** `RequestMessage.document_refs`. The admin reply endpoint
+  (`POST /api/crm/admin/requests/{id}/messages/`) accepts `document_refs: [<document id>]` (team-only) and
+  **attaching = sharing** — the doc is run through the G-DOC-1 share path (collector-visible-kind allowlist
+  enforced), so it lands on the collector's Documents list and is openable. Thread reads return
+  `document_refs` **enriched** as `[{id, kind, title}]`.
+- **Frontend:** in the admin chat/thread composer, add a "attach document" picker that sends
+  `document_refs` alongside `body`; render attached docs on each message from the enriched shape. This
+  replaces the D19 share-by-link workaround on `DocumentDetailPage` (keep link as a fallback).
+
+### G-KEY-1 · Owner "Access" desk (roster-wide keys)
+- **Backend now (PR #50):** `GET /api/auth/admin/access-keys/` — every key across the roster,
+  soonest-to-lapse first, plaintext never returned. Filters: `?status=` (computed
+  active/locked/**expired**), `?collector=`, `?expiring_soon=true`, and `?search=` on collector name. Each
+  row: `{id, collector:{id,display_name}, status, is_expired, issued_at, expires_at, last_used_at,
+  activity:{saved,holds,offers,requests,auction,logins}, created_at}`. Plus
+  `GET /api/auth/admin/access-keys/summary/` → `{total_keys, active_keys, locked_keys, expired_keys,
+  expiring_soon, logins_today, total_collectors, active_collectors}`.
+- **Frontend:** build the standalone owner **Access** desk — KPI tiles from `…/summary/`, the key table +
+  filters from the list, the "expiring/expired — extend or lapse" review via `?expiring_soon=true` /
+  `?status=expired`. Revoke/extend already exist per-key. Never show a plaintext key (issued-only).
 
 ---
 
@@ -291,6 +317,9 @@ screen. All use the standard envelope.
    regen; profile-edit + G-Q-1; my-membership; records `?house=`), then the screen builds
    (collector Documents, admin chat archive, auction archive + cover image, Auction Sales tab, the
    Data Health count tiles).
+7. **The three 2026-09-25 follow-ups** (PRs #49/#50/#51): `document_refs` attach in the chat composer,
+   the Auction Sales tab now that lots auto-settle, and the standalone owner **Access** desk (G-KEY-1) —
+   all after a schema regen.
 
 After each, update/remove the matching note in `docs/PHASE_5_API_GAPS.md` /
 `docs/PHASE_24_35_API_GAPS.md` so a later reader doesn't re-flag a closed gap.

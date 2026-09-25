@@ -76,9 +76,17 @@ not as a backend block:
 
 ### D · Deferred / backend-blocked features (owner-scoped)
 - [ ] **Auction Sales** — **unblocked** (G-SALE-4 shipped B5): `Sale.source` (market/auction) +
-      `?source=` on the admin sales list. Build the tab by filtering `?source=auction`. (Backend note:
-      no auction→Sale automation yet — an admin sets `source=auction`; a follow-up backend task is
-      tracked in the API repo's TASKLIST.)
+      `?source=` on the admin sales list. Build the tab by filtering `?source=auction`. **Backend update
+      2026-09-25 (PR #51): auction→Sale automation is now live** — a won lot auto-creates a draft
+      `Sale(source=auction)` (hammer + buyer's premium; new read-only `lot` FK links back), so the tab
+      fills itself; surface the drafts for review and use `lot` to link back to the auction lot.
+- [ ] **Owner "Access" desk (G-KEY-1)** — **now unblocked** (backend PR #50, 2026-09-25):
+      `GET /api/auth/admin/access-keys/` (roster-wide; filters status/collector/expiring_soon/search) +
+      `…/access-keys/summary/` (KPI tiles). Build the standalone Access desk (see
+      `API_GAPS_FRONTEND_ADOPTION.md`). Plaintext keys never exposed.
+- [ ] **Attach documents to a thread (document_refs / D19)** — **now unblocked** (backend PR #49,
+      2026-09-25): `RequestMessage.document_refs` (team-only attach = share). Wire the admin chat composer
+      to send `document_refs: [id]`; render enriched `[{id,kind,title}]` on messages.
 - [!] **Logistics & Payment desk** (backend Phase 20 — no `/api/logistics/` namespace exists).
 - [!] **Library + pricelist builders** (backend Phase 21 — no standalone pricelist builder API).
 - [!] **Insights & Stories** (backend Phase 22 — no editorial model).

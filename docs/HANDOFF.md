@@ -63,10 +63,12 @@ wire `ConflictBanner` on the two G-LOCK-1 desks, delete the hand-typed `detail` 
 adoption** of them → `API_GAPS_FRONTEND_ADOPTION.md`: G-F1-1 · G-CHAT-2 · G-Q-1 + profile-edit ·
 G-MEMB-3/6/7 · G-DOC-1 · G-AUC-4 · G-REC-1 · G-SALE-4 · G-HEALTH-2/3/4. **Auction Sales** is now
 unblocked (filter `?source=auction`). **Still backend-blocked/deferred:** Logistics (Phase 20),
-Library/pricelist (Phase 21), Insights & Stories (Phase 22). **Still-open distinct backend candidates**
-(raised 2026-09-24, tracked in the API repo's TASKLIST): a `document_refs` on `RequestMessage`
-(attach a document to a thread — distinct from the G-DOC-1 documents list), and a roster-wide
-`GET /admin/access-keys/` list (G-KEY-1).
+Library/pricelist (Phase 21), Insights & Stories (Phase 22). **The three 2026-09-24 backend candidates
+are now ALL shipped & merged (2026-09-25, PRs #49/#50/#51 — backend `development` @ `57d408c`):**
+`document_refs` on `RequestMessage` (attach a document into a thread, team-only, attach = share),
+the roster-wide `GET /api/auth/admin/access-keys/` list + `…/summary/` (G-KEY-1), and auction→Sale
+automation (a won lot auto-creates a draft `Sale(source=auction)`). All three now need **frontend
+adoption** → `API_GAPS_FRONTEND_ADOPTION.md`.
 
 ---
 

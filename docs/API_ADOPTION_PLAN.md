@@ -10,8 +10,9 @@ individual gaps in `TASKLIST.md` / `API_GAPS.md` / `CHANGELOG.md` as usual.
 
 ## What was measured today (not copied from a doc)
 
-Backend `darz-backend-api` `development` @ `2ca75f0` (docs-only commits past the `a140548` the other
-docs cite). Schema generated from it and diffed against ours:
+Backend `darz-backend-api` `development` @ `57d408c` (2026-09-25 — past the `2ca75f0`/`a140548` the
+older passages cite; now includes PRs #49/#50/#51: `document_refs`, the access-key roster + summary
+(G-KEY-1), and auction→Sale automation). Schema generated from it and diffed against ours:
 
 - **All 16 new endpoints are in the schema:** `PATCH /auth/me/`, `GET /auth/my-membership/`,
   `GET /documents/`, `GET /crm/requests/{id}/`, `POST /crm/requests/{id}/archive/`,
@@ -149,8 +150,14 @@ figure; ViewingSheet shows labels from options.
 | G-HEALTH-4 | "Recently added" = count with `?created_after=<iso>` (window from the old app). | same |
 | G-SALE-4 | Build the Auction Sales tab: `/admin/sales` filtered `?source=auction`; `source` on sale create where relevant. Port the old tab's columns from `app.html`. | `admin/SalesPage.tsx`, `SalesController.ts`, `adminNav.ts`, `saleForm.ts` |
 
-**Flag to the owner in the PR:** no auction→Sale automation yet — an admin must set `source=auction`
-by hand, so the tab starts empty.
+**Update 2026-09-25 (PR #51):** auction→Sale automation is now live — a won lot auto-creates a draft
+`Sale(source=auction)` (hammer + buyer's premium; new read-only `lot` FK links back), so the tab fills
+itself. Surface the drafts for review/confirm; use `lot` to link a row to its auction lot. Manual
+`source=auction` create still works for off-platform auction sales.
+
+**Also newly landed (regen the schema):** `document_refs` on `RequestMessage` (attach a doc into a chat
+thread, team-only) and the roster-wide access-key desk endpoints (G-KEY-1). See
+`API_GAPS_FRONTEND_ADOPTION.md` for both.
 
 ## Batch 8+ — Owner-decision UI (do **not** start without a yes)
 
