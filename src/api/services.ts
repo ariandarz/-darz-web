@@ -19,6 +19,7 @@ import type {
   Artist,
   ArtistQuery,
   Artwork,
+  ArtworkSelection,
   Auction,
   AuctionNotification,
   AuctionQuery,
@@ -28,6 +29,7 @@ import type {
   BidHistoryItem,
   CatalogueQuery,
   CollectorActivity,
+  CollectorDocument,
   CollectorRequest,
   AccessKeyAdmin,
   AccessRequestAdmin,
@@ -44,6 +46,9 @@ import type {
   CollectorLoginEvent,
   CollectorRequestQuery,
   MembershipCodeAdmin,
+  MeUpdate,
+  MyMembership,
+  PublicDocument,
   TeamUserAdmin,
   DashboardSummary,
   CreatedRequest,
@@ -169,7 +174,10 @@ export class CatalogService extends ResourceService {
    * behaviour. Needs a collector session; a team token gets a 403.
    */
   artworkSelections(query: CatalogueQuery = {}) {
-    return this.list<Artwork>('/artworks/selections/', query as RequestOptions['query']);
+    return this.list<ArtworkSelection>(
+      '/artworks/selections/',
+      query as RequestOptions['query'],
+    );
   }
   artwork(id: string) {
     return this.retrieve<Artwork>(`/artworks/${id}/`);
@@ -798,6 +806,35 @@ export class SalesAdminService extends ResourceService {
     return this.create<SaleAdmin>(`/sales/${id}/delivery-status/`, {
       delivery_status: deliveryStatus,
     });
+  }
+}
+
+/** `GET /api/documents/` — the signed-in collector's own documents (G-DOC-1):
+ * the invoices, certificates and provenance Darz has shared with them.
+ * Collector-only, read-only, paginated, newest-shared first. Kept apart from
+ * `DocumentsAdminService` on purpose — a different principal, a different
+ * serializer (no `fields`, no lifecycle), and no write of any kind. */
+export class DocumentsService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/documents');
+  }
+
+  mine(query: { page?: number; per_page?: number } = {}) {
+    return this.list<CollectorDocument>('/', query);
+  }
+}
+
+/** `GET /api/documents/public/{kind}/` — genuinely public content (the legal
+ * briefs: `legal_terms` and its siblings), `AllowAny`. Only ever the latest
+ * **confirmed, public-visibility** document of that kind; a kind with nothing
+ * published answers 404, which callers treat as "use the fallback". */
+export class PublicDocumentsService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/documents/public');
+  }
+
+  byKind(kind: string) {
+    return this.retrieve<PublicDocument>(`/${encodeURIComponent(kind)}/`);
   }
 }
 
@@ -1455,8 +1492,9 @@ export class OptionsService extends ResourceService {
   }
 }
 
-/** Auth — delegates the token lifecycle to `AuthSession`, adds the one
- * authenticated auth endpoint that isn't part of it (`membership/redeem/`). */
+/** Auth — delegates the token lifecycle to `AuthSession`, and adds the
+ * collector's own authenticated account endpoints that aren't part of it:
+ * the profile edit, the membership read and the redeem. */
 export class AuthService extends ResourceService {
   private readonly session: AuthSession;
 
@@ -1476,6 +1514,25 @@ export class AuthService extends ResourceService {
   }
   me(): Promise<Me> {
     return this.session.loadMe();
+  }
+  /**
+   * The collector's own profile edit (`PATCH /auth/me/`, G-B1) — only
+   * `full_name` · `phone` · `city` · `preferred_language` (`MeUpdate`). The
+   * response is the whole updated `Me`, and it replaces the session's cached
+   * one, so the header, Settings and Profile all read the edit at once.
+   * A 400 is a `ValidationError` whose `fields` name the rejected field; a
+   * team principal gets a 403.
+   */
+  async updateMe(body: MeUpdate): Promise<Me> {
+    const me = await this.client.send<Me>('PATCH', '/auth/me/', { body });
+    this.session.adoptMe(me);
+    return me;
+  }
+  /** The collector's membership summary (G-MEMB-3/6/7) — what the Settings
+   * row's pill and the sheet's "Active membership" block read. Collector-only
+   * (a team token 403s). */
+  myMembership() {
+    return this.retrieve<MyMembership>('/my-membership/');
   }
   /** **Unbound — waiting on its screen, not dead.** Membership redeem is a
    * backend-ready collector item that v0.1 hid (`docs/TASKLIST.md`, "What

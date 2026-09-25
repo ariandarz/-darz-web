@@ -191,17 +191,29 @@ test('the profile overview opens the questionnaire', async () => {
  *
  * Worth a walk rather than a unit test alone because the two things most
  * likely to break are both integration: the six-month discount has to reach
- * the rendered card, and the redeemed plan has to be LABELLED from
- * `GET /api/options/` rather than the old app's basic/premium mapping, which
- * would print "Basic Access" for a VIP (`tiers.ts`).
+ * the rendered card, and the plan has to be LABELLED from `GET /api/options/`
+ * rather than the old app's basic/premium mapping, which would print "Basic
+ * Access" for a VIP (`tiers.ts`). The standing membership is the server's
+ * (`GET /api/auth/my-membership/`, G-MEMB-3/6/7): the stub answers an active
+ * VIP until 2027-03-12.
  */
-test('the membership sheet prices both terms and confirms a redeem', async () => {
+test('the membership row and sheet read my-membership, price both terms, and redeem', async () => {
   thrown = [];
   await page.goto('/settings');
   await page.waitForLoadState('networkidle');
 
-  await page.getByRole('button', { name: /Membership/ }).click();
-  await expect(page.locator('.mb-h')).toHaveText('Choose your access');
+  // app.html:9925-9926 — the plan sub-line and the green pill
+  const row = page.getByRole('button', { name: /Membership/ });
+  await expect(row).toContainText(/VIP · active until /);
+  await expect(row.locator('.mb-pill.on')).toHaveText('ACTIVE');
+
+  await row.click();
+  await expect(page.locator('.mb-h')).toHaveText('Your membership');
+  await expect(page.locator('.mb-active-lab')).toHaveText('Active membership');
+  await expect(page.locator('.mb-active-plan')).toHaveText('VIP');
+  await expect(page.locator('.mb-active-plan')).not.toHaveText(/Basic Access/);
+  await expect(page.locator('.mb-active-sub')).toContainText('Active until');
+  await expect(page.locator('.mb-redeem-t')).toHaveText('Enter a new access code');
   await expect(page.locator('.mb-tier').first()).toContainText('5,000,000 Toman / month');
 
   await page.getByRole('button', { name: '6 months · save 10%' }).click();
@@ -209,16 +221,225 @@ test('the membership sheet prices both terms and confirms a redeem', async () =>
   await expect(page.locator('.mb-tier').first()).toContainText('27,000,000 Toman / 6 months');
   await expect(page.locator('.mb-tier').last()).toContainText('49,000,000 Toman / 6 months');
 
+  const reread = page.waitForRequest((r) => r.url().endsWith('/api/auth/my-membership/'));
   await page.fill('.mb-code', 'dz-p-abc123');
   await page.getByRole('button', { name: 'Activate' }).click();
-
-  // The stub redeems a `vip` code. The label must come from the options map —
-  // "VIP", never the old mapping's fallback "Basic Access".
-  await expect(page.locator('.mb-active-plan')).toHaveText('VIP');
-  await expect(page.locator('.mb-active-plan')).not.toHaveText(/Basic Access/);
-  await expect(page.locator('.mb-h')).toHaveText('Your membership');
+  await reread;
+  // `Lib.toast('✓ '+plan+' activated')` (:10355), labelled from the options map
+  await expect(page.locator('.toast.show')).toHaveText('✓ VIP activated');
 
   expect(thrown, 'page errors in the membership sheet').toEqual([]);
+});
+
+test('a collector with no membership sees the plans and the default row', async () => {
+  thrown = [];
+  await page.route('**/api/auth/my-membership/', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: { tier: null, status: 'invited', active_until: null },
+        message: '',
+        timestamp: '',
+      }),
+    }),
+  );
+  await page.goto('/settings');
+  await page.waitForLoadState('networkidle');
+  const row = page.getByRole('button', { name: /Membership/ });
+  await expect(row).toContainText('View plans and your access to the private room');
+  await expect(row.locator('.mb-pill')).toHaveCount(0);
+  await row.click();
+  await expect(page.locator('.mb-h')).toHaveText('Choose your access');
+  await expect(page.locator('.mb-active')).toHaveCount(0);
+  await page.unroute('**/api/auth/my-membership/');
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * Profile › Account — the editable card (`profAccountHTML`, app.html:9765),
+ * saved through `PATCH /api/auth/me/` (G-B1). A text field saves when it is
+ * left, the language the moment it is picked; each PATCH carries only what
+ * changed.
+ */
+test('profile account edits round-trip through PATCH /auth/me/', async () => {
+  thrown = [];
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.locator('.pf-grp').first()).toHaveText('Account details');
+  await expect(page.locator('#pf-full_name')).toHaveValue('E2E Collector');
+  await expect(page.locator('#pf-city')).toHaveValue('Tehran');
+  // the old note is gone: the card is editable now
+  await expect(page.getByText('write to Darz in Chat')).toHaveCount(0);
+
+  const cityPatch = page.waitForRequest(
+    (r) => r.method() === 'PATCH' && r.url().endsWith('/api/auth/me/'),
+  );
+  await page.fill('#pf-city', 'Isfahan');
+  await page.locator('#pf-city').blur();
+  expect((await cityPatch).postDataJSON()).toEqual({ city: 'Isfahan' });
+  await expect(page.locator('.toast.show')).toHaveText('Saved');
+  await expect(page.locator('#pf-city')).toHaveValue('Isfahan');
+
+  const langPatch = page.waitForRequest(
+    (r) => r.method() === 'PATCH' && r.url().endsWith('/api/auth/me/'),
+  );
+  await page.getByRole('button', { name: 'Preferred communication language' }).click();
+  await page.getByRole('option', { name: 'Farsi' }).click();
+  expect((await langPatch).postDataJSON()).toEqual({ preferred_language: 'fa' });
+
+  // leaving a field unchanged sends nothing
+  let extra = 0;
+  const count = (r: { method: () => string }) => r.method() === 'PATCH' && extra++;
+  page.on('request', count);
+  await page.locator('#pf-full_name').focus();
+  await page.locator('#pf-full_name').blur();
+  await page.waitForLoadState('networkidle');
+  page.off('request', count);
+  expect(extra).toBe(0);
+
+  expect(thrown).toEqual([]);
+});
+
+test('a rejected profile field shows the server’s message under that field', async () => {
+  thrown = [];
+  await page.route('**/api/auth/me/', (route) =>
+    route.request().method() === 'PATCH'
+      ? route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Invalid input.',
+              details: { phone: ['Ensure this field has no more than 50 characters.'] },
+            },
+            timestamp: '',
+          }),
+        })
+      : route.fallback(),
+  );
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+  await page.fill('#pf-phone', '9'.repeat(60));
+  await page.locator('#pf-phone').blur();
+  await expect(page.locator('#pf-phone')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('.dz-field-err')).toHaveText(
+    'Ensure this field has no more than 50 characters.',
+  );
+  await page.unroute('**/api/auth/me/');
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * G-DOC-1 — "Your documents" (`dzDocsSectionHTML`, app.html:7909), from
+ * `GET /api/documents/`: collapsed, counted, each row "New" until it is opened
+ * on this device (`darz_docs_seen`).
+ */
+test('your documents list renders from /api/documents/ and marks an opened one seen', async () => {
+  thrown = [];
+  await page.evaluate(() => localStorage.removeItem('darz_docs_seen'));
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+
+  const docs = page.locator('details.pf-docs');
+  await expect(docs).toBeVisible();
+  await expect(docs.locator('summary')).toContainText('Your documents');
+  await expect(docs.locator('summary')).toContainText('Invoices, certificates & provenance');
+  await expect(docs.locator('.pf-docs-n')).toHaveText('2');
+  await expect(docs.locator('.pf-docs-dot')).toHaveCount(1);
+
+  await docs.locator('summary').click();
+  const rows = docs.locator('.pf-doc');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0).locator('.l')).toHaveText('Invoice');
+  await expect(rows.nth(1).locator('.l')).toHaveText('Certificate');
+  await expect(rows.nth(0)).toContainText('Parviz Tanavoli — Heech');
+  await expect(docs.locator('.pf-doc-new')).toHaveCount(2);
+  await expect(rows.nth(0)).toHaveAttribute('href', /inv-0001\.pdf$/);
+
+  const popup = page.waitForEvent('popup');
+  await rows.nth(0).click();
+  await (await popup).close();
+  await expect(rows.nth(0).locator('.pf-doc-view')).toContainText('View');
+  await expect(docs.locator('.pf-doc-new')).toHaveCount(1);
+  expect(thrown).toEqual([]);
+});
+
+test('no documents, no section — the old app hid it', async () => {
+  thrown = [];
+  await page.route(/\/api\/documents\/(\?.*)?$/, (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          pagination: {
+            page: 1,
+            per_page: 100,
+            total_pages: 1,
+            total_count: 0,
+            has_next: false,
+            has_previous: false,
+          },
+          results: [],
+        },
+        message: '',
+        timestamp: '',
+      }),
+    }),
+  );
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('#pf-full_name')).toBeVisible();
+  await expect(page.locator('details.pf-docs')).toHaveCount(0);
+  await page.unroute(/\/api\/documents\/(\?.*)?$/);
+  expect(thrown).toEqual([]);
+});
+
+test('settings: edit profile leads to the editable card; terms resolve to the published document', async () => {
+  thrown = [];
+  await page.goto('/settings');
+  await page.waitForLoadState('networkidle');
+  // the stub publishes `legal_terms` only; privacy keeps its fallback
+  await expect(page.getByRole('link', { name: /Terms & Conditions/ })).toHaveAttribute(
+    'href',
+    /legal_terms\.pdf$/,
+  );
+  await expect(page.getByRole('link', { name: /Privacy Policy/ })).toHaveAttribute(
+    'href',
+    'https://darzmarket.art/privacy',
+  );
+  await page.getByRole('link', { name: /Edit profile/ }).click();
+  await expect(page).toHaveURL(/\/profile\?tab=account$/);
+  await expect(page.locator('#pf-full_name')).toBeVisible();
+  expect(thrown).toEqual([]);
+});
+
+/** G-P24-1 — the chip carries the selection's name. */
+test('the curated chip shows the selection name', async () => {
+  thrown = [];
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('.dz-curchip .dz-curl')).toHaveText('Autumn Selection');
+  await expect(page.locator('.dz-curchip .dz-curn')).toHaveText('1');
+  expect(thrown).toEqual([]);
+});
+
+/** Q-6 — no "Make an offer" on a work without a currency. */
+test('make an offer is hidden on a work with no currency', async () => {
+  thrown = [];
+  await page.goto('/artwork/00000000-0000-4000-8000-00000000a101');
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('button', { name: 'Make an offer' })).toBeVisible();
+
+  await page.goto('/artwork/00000000-0000-4000-8000-00000000a104');
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('button', { name: '48h hold' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Make an offer' })).toHaveCount(0);
+  expect(thrown).toEqual([]);
 });
 
 /**

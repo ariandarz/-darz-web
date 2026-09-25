@@ -39,9 +39,9 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | POST | /api/auth/collector/login/ | `AuthService.loginCollector` | `App.tsx`, `auth/LoginPage.tsx` | Integrated |  |
 | POST | /api/auth/logout/ | `AuthService.logout` | `App.tsx`, `admin/AdminShell.tsx`, `profile/ProfilePage.tsx`, `settings/SettingsPage.tsx`, `shell/AppShell.tsx` | Integrated |  |
 | GET | /api/auth/me/ | `AuthService.me`, `AuthSession.loadMe` | `after login (AuthSession.completeLogin)`, `api/ApiProvider.tsx (resume)`, `membership/MembershipSheet.tsx` | Integrated | Via AuthSession.loadMe (resume + after login) and AuthService.me. |
-| PATCH | /api/auth/me/ | none | — | Not bound | Self-edit profile (full_name, phone, city, preferred_language) — no binding. |
+| PATCH | /api/auth/me/ | `AuthService.updateMe` | `profile/AccountForm.tsx`, `questionnaire/QuestionnaireController.ts` | Integrated | Phase 1 (2026-09-25): Profile › Account edit + questionnaire contact write (G-Q-1); the response replaces the session's `me` (`AuthSession.adoptMe`). |
 | POST | /api/auth/membership/redeem/ | `AuthService.redeemMembership` | `membership/MembershipSheet.tsx` | Integrated | MembershipSheet redeem flow. |
-| GET | /api/auth/my-membership/ | none | — | Not bound | No binding; MembershipSheet derives state from `/auth/me/`. |
+| GET | /api/auth/my-membership/ | `AuthService.myMembership` | `membership/useMyMembership.ts` (Settings row + `MembershipSheet`) | Integrated | Phase 1 (2026-09-25): row sub-line + ACTIVE/EXPIRED pill, the sheet's active/ended block; re-read after a redeem. |
 | POST | /api/auth/team/login/ | `AuthService.loginTeam` | `auth/TeamLoginPage.tsx` | Integrated |  |
 | POST | /api/auth/token/refresh/ | `AuthSession.refresh` | `api/ApiClient.ts (401 retry)`, `api/ApiProvider.tsx (resume)`, `auctions/LotSocket.ts` | Integrated | AuthSession.refresh — 401 retry in ApiClient, LotSocket reconnect, resume on boot. |
 
@@ -81,7 +81,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/catalog/artists/{id}/ | `CatalogService.artist` | `catalogue/ArtistDetailPage.tsx` | Integrated |  |
 | GET | /api/catalog/artworks/ | `CatalogService.artworks` | `admin/PublishedPage.tsx`, `catalogue/CatalogueController.ts` | Integrated | All schema filters present in CatalogueQuery. |
 | GET | /api/catalog/artworks/change-stamp/ | none | — | Not bound | Catalogue change-stamp (Phase 19) — no binding. |
-| GET | /api/catalog/artworks/selections/ | `CatalogService.artworkSelections` | `catalogue/CatalogueController.ts`, `catalogue/useCuratedCount.ts` | Integrated |  |
+| GET | /api/catalog/artworks/selections/ | `CatalogService.artworkSelections` | `catalogue/CatalogueController.ts`, `catalogue/useCuratedCount.ts` | Integrated | Phase 1: `selection_name` read for the chip label (G-P24-1). |
 | GET | /api/catalog/artworks/{id}/ | `CatalogService.artwork` | `catalogue/ArtworkCache.ts`, `catalogue/ArtworkDetailPage.tsx` | Integrated |  |
 | GET | /api/catalog/legacy-lookup/ | none | — | Not bound | Legacy id → UUID (`?legacy_id`) — no binding. |
 | GET | /api/catalog/selections/ | none | — | Not bound | Collector's named curated selections + change signal — no binding (FE uses `/catalog/artworks/selections/`). |
@@ -210,7 +210,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/documents/ | none | — | Not bound | Collector "My documents" — no binding. |
+| GET | /api/documents/ | `DocumentsService.mine` | `profile/Documents.tsx` | Integrated | Phase 1 (2026-09-25): Profile › Account › "Your documents" (G-DOC-1). |
 | GET | /api/documents/admin/documents/ | `DocumentsAdminService.documents` | `admin/DocumentsPage.tsx`, `admin/exhibitions/IssueDocumentPage.tsx`, `admin/projects/ProjectProposal.tsx` | Integrated | `?kind` is hand-parsed (not in schema); DocumentQuery sends it. |
 | POST | /api/documents/admin/documents/ | `DocumentsAdminService.createDocument` | `admin/DocumentsPage.tsx`, `admin/projects/ProjectProposal.tsx` | Integrated |  |
 | GET | /api/documents/admin/documents/{id}/ | `DocumentsAdminService.document` | `admin/DocumentDetailPage.tsx` | Integrated |  |
@@ -224,7 +224,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | POST | /api/documents/admin/documents/{id}/sign/ | `DocumentsAdminService.signDocument` | `admin/DocumentDetailPage.tsx` | Integrated |  |
 | POST | /api/documents/admin/documents/{id}/upload/ | `DocumentsAdminService.uploadPdf` | `admin/DocumentDetailPage.tsx`, `admin/projects/ProjectProposal.tsx` | Integrated |  |
 | GET | /api/documents/admin/documents/{id}/versions/ | `DocumentsAdminService.versions` | `admin/DocumentDetailPage.tsx` | Integrated |  |
-| GET | /api/documents/public/{kind}/ | none | — | Not bound | Latest confirmed public document of a kind — no binding. |
+| GET | /api/documents/public/{kind}/ | `PublicDocumentsService.byKind` | `settings/useLegalLinks.ts` | Integrated | Phase 1 (2026-09-25): Settings › LEGAL links use the PDF of `legal_terms` / `legal_privacy` / `legal_auction` when published, else the public-site URL (only `legal_terms` is a backend-documented kind). |
 
 ## gallery
 
@@ -404,12 +404,17 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 ## Summary
 
+Counts updated by V1 Phase 1 (2026-09-25): four operations moved from Not bound to Integrated —
+`PATCH /api/auth/me/`, `GET /api/auth/my-membership/`, `GET /api/documents/`,
+`GET /api/documents/public/{kind}/`. Status cells elsewhere are the 2026-09-25 baseline unless a row
+says otherwise.
+
 | Status | Count |
 |---|---|
-| Integrated | 225 |
+| Integrated | 229 |
 | Partial | 3 |
 | Bound, no UI | 9 |
-| Not bound | 85 |
+| Not bound | 81 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
@@ -445,8 +450,6 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 - `GET /api/auth/admin/collectors/summary/`
 - `GET /api/auth/admin/membership-codes/{id}/`
 - `GET /api/auth/admin/team-users/{id}/`
-- `PATCH /api/auth/me/`
-- `GET /api/auth/my-membership/`
 - `GET /api/catalog/admin/artists/{id}/`
 - `GET /api/catalog/artworks/change-stamp/`
 - `GET /api/catalog/legacy-lookup/`
@@ -457,11 +460,9 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 - `GET /api/crm/admin/selections/{id}/`
 - `POST /api/crm/requests/{id}/archive/`
 - `POST /api/crm/requests/{id}/transition/`
-- `GET /api/documents/`
 - `GET /api/documents/admin/documents/{id}/activity/`
 - `POST /api/documents/admin/documents/{id}/share/`
 - `DELETE /api/documents/admin/documents/{id}/share/`
-- `GET /api/documents/public/{kind}/`
 - `GET /api/gallery/admin/exhibition-catalogue/`
 - `POST /api/gallery/admin/exhibition-catalogue/`
 - `GET /api/gallery/admin/exhibition-catalogue/{id}/`

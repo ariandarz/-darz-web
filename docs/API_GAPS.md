@@ -59,13 +59,13 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-P5-12 | Activity write-only | ✅ Closed | `GET /crm/activity/`. |
 | G-F1-2..7 | Offer floor, allowed_actions, status vocab, idempotency, nested admin artwork | ✅ Closed | Flow-1 loop; see `FLOW_1_API_GAPS.md` history. |
 | G-CHAT-2 | Nothing archives a message | ✅ Closed | `POST /crm/admin/messages/{id}/archive/` (B4) — admin-desk-only hide, distinct from soft-delete; `?include_archived=` on the admin thread. Collector view untouched. |
-| G-Q-1 | Questionnaire contact step can't write collector contact | ✅ Closed | `PATCH /api/auth/me/` (B1) writes phone/city/full_name/preferred_language. FE: point the contact step at it. |
+| G-Q-1 | Questionnaire contact step can't write collector contact | ✅ Closed | `PATCH /api/auth/me/` (B1) writes phone/city/full_name/preferred_language. FE ✅ adopted (Phase 1): after a successful submit the contact step's phone and language (English→`en`, Farsi→`fa`) go through `AuthService.updateMe`, best-effort; email is not writable and stays an answer only. |
 
 ## Catalog — selections, curation, filters
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-P24-1 | Selection name not exposed to collector | ✅ Closed | `selection_name` on `artworks/selections/`. |
+| G-P24-1 | Selection name not exposed to collector | ✅ Closed | `selection_name` on `artworks/selections/`. FE ✅ adopted (Phase 1): the Market chip reads the first row's `selection_name`, else "Curated for You". |
 | G-P24-2 | No change signal for "ready" notice | ✅ Closed | `GET /catalog/selections/` + `POST …/{id}/seen/`. Owner-decision UI. |
 | Phase 5b | Database desk 4 hard filters | ✅ Closed | `gallery_portal`/`complete`/`duplicate_images`/`size` on admin filter set. |
 | G-P6-1..4 | Saved/favorites loop | ✅ Closed | See `PHASE_6_API_GAPS.md` history. |
@@ -101,8 +101,8 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-MEMB-3/6/7 | No collector "my membership" read / expiry surfaced | ✅ Closed | `GET /api/auth/my-membership/` → `{tier, status, active_until}` (B1). `active_until` = most-recent redeemed membership-code expiry (null when none). |
-| Profile edit | No `PATCH /auth/me/` | ✅ Closed | `PATCH /api/auth/me/` (B1) edits phone/city/full_name/preferred_language; team principal 403. `me` GET now returns those contact fields (it didn't before B1). Also closed G-Q-1. |
+| G-MEMB-3/6/7 | No collector "my membership" read / expiry surfaced | ✅ Closed | `GET /api/auth/my-membership/` → `{tier, status, active_until}` (B1). `active_until` = most-recent redeemed membership-code expiry (null when none). FE ✅ adopted (Phase 1): Settings row sub-line + ACTIVE/EXPIRED pill and the sheet's "Active membership" / "Membership ended" blocks (`membership.ts`). The redeemed code is not returned, so the old "Code …" line is not shown. |
+| Profile edit | No `PATCH /auth/me/` | ✅ Closed | `PATCH /api/auth/me/` (B1) edits phone/city/full_name/preferred_language; team principal 403. `me` GET now returns those contact fields (it didn't before B1). Also closed G-Q-1. FE ✅ adopted (Phase 1): Profile › Account is the editable card (`AccountForm`, `AuthService.updateMe`, session `me` refreshed). `email` is neither returned nor writable for a collector, so the old Email field is not shown (backend candidate: return it read-only). |
 | Access-key display | `me` doesn't return the plaintext key | ➖ By design | Keys are hashed and never re-exposed. Not fixable; show the card as "issued", not the value. |
 | G-KEY-1 | No roster-wide access-key list — keys served per collector only, so the old owner "Access" desk couldn't be built | ✅ Closed | 2026-09-25 (PR #50). `GET /api/auth/admin/access-keys/` — every key across the roster, soonest-to-lapse first, plaintext never re-exposed. Filters `?status=` (computed active/locked/**expired**, since the stored status only flips on a login attempt), `?collector=`, `?expiring_soon=true`, and search on collector name. Rows carry collector `{id, display_name}`, computed `is_expired`, and per-collector activity tallies. Plus `GET …/access-keys/summary/` for the desk KPI tiles (totals by state, expiring-soon, logins-today, collector totals). |
 | G-MEMB-1/2/4/5 | (admin strips, tier literals, start date) | Mixed | G-MEMB-1 built (#83); G-MEMB-2/4/5 are literals/`theme.*` — owner-editable copy, not V1 API gaps. |
@@ -111,7 +111,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-DOC-1 | Issued documents not exposed to collectors | ✅ Closed | `GET /api/documents/` (B3) — the collector's own shared docs (id/kind/title/ref/pdf_url/shared_at). Admin issues via `POST /documents/admin/documents/{id}/share/`; collector-visible kinds: invoice/certificate/provenance/contract/receipt/proforma/artwork_sheet/condition_report. |
+| G-DOC-1 | Issued documents not exposed to collectors | ✅ Closed | `GET /api/documents/` (B3) — the collector's own shared docs (id/kind/title/ref/pdf_url/shared_at). Admin issues via `POST /documents/admin/documents/{id}/share/`; collector-visible kinds: invoice/certificate/provenance/contract/receipt/proforma/artwork_sheet/condition_report. FE ✅ adopted (Phase 1): Profile › Account › "Your documents" (`DocumentsService`), opening `pdf_url`; "New" is per device (`darz_docs_seen`, as the old app). |
 | document_refs (D19) | No way to attach a document to a collector's chat thread — only share-by-link | ✅ Closed | 2026-09-25 (PR #49). `RequestMessage` now carries `document_refs` (like `artwork_refs`): the admin reply endpoint accepts `document_refs: [id]` (team-only) and **attaching = sharing** (runs the G-DOC-1 share path + collector-visible-kind allowlist), so the doc lands on the collector's documents list and is openable. Reads expose them enriched `[{id, kind, title}]`. Replaces the D19 share-by-link workaround. |
 
 ## Sales / Data Health

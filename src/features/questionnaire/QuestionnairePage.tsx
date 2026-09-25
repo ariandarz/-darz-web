@@ -19,9 +19,9 @@
  *                       profile, and a read-only copy of what was sent.
  *
  * The flow itself is `QuestionnaireController`; this file is the view. What is
- * NOT ported, and why, is recorded there — chiefly that the contact step
- * cannot write back to the collector's account record, because this backend
- * has no collector self-update endpoint (G-Q-1).
+ * NOT ported, and why, is recorded there — chiefly that the contact step's
+ * email cannot reach the account (only phone and language do, through
+ * `PATCH /api/auth/me/`, G-Q-1).
  *
  * Two of the old screen's trailing actions are deliberately absent, and both
  * are dead ends rather than features: `qSummaryText` / `qSummaryHTML`
@@ -38,18 +38,24 @@ import {
   QuestionnaireController,
   type QuestionnaireSnapshot,
 } from './QuestionnaireController';
+import { labelForLanguage } from '../profile/account';
 import { COMM_LANGS, liveIntro } from './questions';
 import './questionnaire.css';
 
 export function QuestionnairePage() {
-  const { recommendations } = useApi();
+  const { recommendations, auth, session } = useApi();
   const navigate = useNavigate();
-  const [controller] = useState(() => new QuestionnaireController(recommendations));
+  const [controller] = useState(() => new QuestionnaireController(recommendations, auth));
   const [intro] = useState(liveIntro);
 
   useEffect(() => {
-    void controller.load();
-  }, [controller]);
+    // pre-fill from the account, as `startQ` did from the collector (:10015)
+    const me = session.me;
+    void controller.load({
+      phone: me?.phone ?? '',
+      lang: labelForLanguage(me?.preferred_language),
+    });
+  }, [controller, session]);
 
   const state = useSyncExternalStore(
     (cb) => controller.subscribe(cb),

@@ -34,10 +34,22 @@ const ME_COLLECTOR = {
   principal: 'collector',
   id: '00000000-0000-4000-8000-0000000000c0',
   display_name: 'E2E Collector',
+  // The collector's own contact fields (G-B1) — `_collector_me_payload` sends
+  // them, and the Profile › Account card is seeded from them. No `email`: the
+  // backend does not return one for a collector.
+  full_name: 'E2E Collector',
+  phone: '0912 000 0000',
+  city: 'Tehran',
+  preferred_language: 'en',
   // Also `CollectorTierEnum`, for the same reason as the options key above.
   tier: 'active',
   access_status: 'active',
+  preferences: {},
 };
+
+/** `PATCH /api/auth/me/` — only these four are accepted (`CollectorProfileUpdateSerializer`);
+ * anything else in the body is ignored, as the real serializer ignores it. */
+const ME_EDITABLE = ['full_name', 'phone', 'city', 'preferred_language'];
 
 const ME = {
   principal: 'team',
@@ -195,6 +207,62 @@ const REQUEST_WORKS = Object.fromEntries(
   ]),
 );
 
+/** A fixed-price work with **no currency** (Q-6): its detail must not offer
+ * "Make an offer", because the backend 400s an offer on it. */
+const NO_CURRENCY_ID = '00000000-0000-4000-8000-00000000a104';
+REQUEST_WORKS[NO_CURRENCY_ID] = {
+  ...FULL_WORK(WORK(NO_CURRENCY_ID, 'Untitled'), 1979, 'Bronze'),
+  price_type: 'fixed',
+  price_amount: '12000.00',
+  currency: null,
+};
+
+/** The collector's curated works (`GET /api/catalog/artworks/selections/`):
+ * one granted work carrying its selection's name (G-P24-1), which the Market
+ * chip prints instead of "Curated for You". */
+const SELECTIONS = [
+  {
+    ...REQUEST_WORKS['00000000-0000-4000-8000-00000000a101'],
+    selection_name: 'Autumn Selection',
+  },
+];
+
+/** The collector's shared documents (`GET /api/documents/`, G-DOC-1) —
+ * `CollectorDocumentSerializer`, paginated, newest-shared first. */
+const COLLECTOR_DOCUMENTS = [
+  {
+    id: '00000000-0000-4000-8000-00000000d0c1',
+    kind: 'invoice',
+    title: 'Parviz Tanavoli — Heech',
+    ref: 'INV-0001',
+    pdf_url: 'http://127.0.0.1:8787/files/inv-0001.pdf',
+    shared_at: '2026-09-21T10:00:00Z',
+    created_at: '2026-09-20T10:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000d0c2',
+    kind: 'certificate',
+    title: 'Parviz Tanavoli — Heech',
+    ref: 'COA-0001',
+    pdf_url: 'http://127.0.0.1:8787/files/coa-0001.pdf',
+    shared_at: '2026-09-20T10:00:00Z',
+    created_at: '2026-09-20T10:00:00Z',
+  },
+];
+
+const page = (results) =>
+  envelope({
+    pagination: {
+      page: 1,
+      per_page: 25,
+      total_pages: 1,
+      total_count: results.length,
+      has_next: false,
+      has_previous: false,
+    },
+    results,
+  });
+
 const SUMMARY = {
   requests: { new_by_kind: { purchase: 2 }, new_total: 2, resolved_total: 5 },
   today: { requests_created: 1, collectors_created: 0, bids_placed: 0, collector_logins: 3 },
@@ -241,9 +309,47 @@ const routes = {
   // The collector gate's own sign-in — first name + access key, the credential
   // model D4 kept (`docs/PHASE_24_35_PLAN.md`).
   'POST /api/auth/collector/login/': () => envelope(TOKENS.collector),
-  'POST /api/auth/token/refresh/': (req) =>
-    envelope(bearerIsCollector(req) ? TOKENS.collector : TOKENS.team),
+  // A cold load (a reload, a `page.goto`) refreshes with NO bearer — the
+  // refresh token is in the body. Until the stub read bodies this answered
+  // every cold load with the TEAM pair, so a collector walk silently became a
+  // team session after its first navigation (the Profile card then had no
+  // contact fields to show). The body decides now; the header stays as the
+  // fallback for a caller that sends one.
+  'POST /api/auth/token/refresh/': (req, body) =>
+    envelope(
+      String(body?.refresh || '').includes('e2e-collector') || bearerIsCollector(req)
+        ? TOKENS.collector
+        : TOKENS.team,
+    ),
   'GET /api/auth/me/': (req) => envelope(bearerIsCollector(req) ? ME_COLLECTOR : ME),
+  // The collector's own profile edit (G-B1). Echoes the stored collector with
+  // the accepted fields applied — stateless, like every route here, so a
+  // reload reads the fixture again. A team token is a 403, as on the backend.
+  'PATCH /api/auth/me/': (req, body) => {
+    if (!bearerIsCollector(req)) {
+      return {
+        status: 403,
+        body: {
+          success: false,
+          error: {
+            code: 'PERMISSION_DENIED',
+            message: 'Only a collector can edit their profile here.',
+          },
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+    const accepted = Object.fromEntries(
+      Object.entries(body || {}).filter(([k]) => ME_EDITABLE.includes(k)),
+    );
+    return envelope({ ...ME_COLLECTOR, ...accepted });
+  },
+  // G-MEMB-3/6/7 — `{tier, status, active_until}`, an active VIP with an end
+  // date, so the Settings row carries its pill and the sheet its active block.
+  'GET /api/auth/my-membership/': () =>
+    envelope({ tier: 'vip', status: 'active', active_until: '2027-03-12' }),
+  'GET /api/documents/': () => page(COLLECTOR_DOCUMENTS),
+  'GET /api/catalog/artworks/selections/': () => page(SELECTIONS),
   'GET /api/options/': () => envelope(OPTIONS),
   'GET /api/crm/requests/': () =>
     envelope({
@@ -265,7 +371,7 @@ const routes = {
     envelope({ id: '00000000-0000-4000-8000-00000000acc1', status: 'pending' }),
   // Membership redeem (Phase 13). A POST, so the catch-all 400s it — which is
   // a fine stand-in for a rejected code but never lets the success path run.
-  // Answers `basic` so the sheet's active block and the Settings pill appear.
+  // Answers `vip`, labelled "VIP" from the options map (never "Basic Access").
   'POST /api/auth/membership/redeem/': () =>
     envelope({ plan: 'vip', tier: 'vip', redeemed_at: new Date().toISOString() }),
   // the REAL path: DashboardService = '/dashboard' + '/admin/summary/'.
@@ -321,6 +427,32 @@ const notFound = (message) => ({
 });
 
 const patterns = [
+  // Public documents (`AllowAny`): only `legal_terms` is published here, as a
+  // confirmed public `Document`; any other kind is the backend's 404.
+  [
+    /^\/api\/documents\/public\/[^/]+\/$/,
+    'GET',
+    (path) =>
+      path.split('/')[4] === 'legal_terms'
+        ? envelope({
+            id: '00000000-0000-4000-8000-00000000d0e1',
+            kind: 'legal_terms',
+            ref: '',
+            title: 'Terms & Conditions',
+            fields: {},
+            object_key: 'public/documents/legal_terms.pdf',
+            pdf_url: 'http://127.0.0.1:8787/files/legal_terms.pdf',
+            visibility: 'public',
+            status: 'confirmed',
+            owner_lock: false,
+            collector: null,
+            shared_at: null,
+            created_by: null,
+            confirmed_at: '2026-09-01T10:00:00Z',
+            confirmed_by: null,
+          })
+        : notFound('No published document of that kind.'),
+  ],
   // One of the collector's own requests (G-P5-3) — a deep link reads this
   // instead of waiting for the list. An id the collector does not own is a 404,
   // as on the real endpoint; the catch-all would hand back a list envelope.
@@ -333,7 +465,7 @@ const patterns = [
     },
   ],
   [
-    /^\/api\/catalog\/artworks\/00000000-0000-4000-8000-00000000a10[1-3]\/$/,
+    /^\/api\/catalog\/artworks\/00000000-0000-4000-8000-00000000a10[1-4]\/$/,
     'GET',
     (path) => envelope(REQUEST_WORKS[path.split('/')[4]]),
   ],
@@ -347,6 +479,26 @@ const patterns = [
 ];
 
 const server = http.createServer((req, res) => {
+  // Writes carry a JSON body a route may read (the profile PATCH echoes it);
+  // collect it first, then answer.
+  if (req.method === 'GET' || req.method === 'OPTIONS' || req.method === 'HEAD') {
+    respond(req, res, undefined);
+    return;
+  }
+  let raw = '';
+  req.on('data', (chunk) => (raw += chunk));
+  req.on('end', () => {
+    let body;
+    try {
+      body = raw ? JSON.parse(raw) : undefined;
+    } catch {
+      body = undefined;
+    }
+    respond(req, res, body);
+  });
+});
+
+function respond(req, res, body) {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const key = `${req.method} ${url.pathname}`;
   const hit = routes[key];
@@ -363,7 +515,7 @@ const server = http.createServer((req, res) => {
   if (hit) {
     // A handler may answer `{status, body}` when the endpoint's real answer is
     // not a 200 (e.g. an error branch a test drives).
-    const answered = hit(req);
+    const answered = hit(req, body);
     const status = answered && typeof answered.status === 'number' ? answered.status : 200;
     res.writeHead(status);
     res.end(JSON.stringify(status === 200 ? answered : answered.body));
@@ -392,7 +544,7 @@ const server = http.createServer((req, res) => {
       timestamp: new Date().toISOString(),
     }),
   );
-});
+}
 
 // 127.0.0.1 explicitly — the health URL and the browser both dial ipv4
 server.listen(PORT, '127.0.0.1', () => {

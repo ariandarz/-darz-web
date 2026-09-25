@@ -9,7 +9,11 @@
  * the crash this repo has now written eight times (docs/HANDOFF.md §6).
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { QuestionnaireController, isQuestionnaireAnswered } from './QuestionnaireController';
+import {
+  QuestionnaireController,
+  contactPatch,
+  isQuestionnaireAnswered,
+} from './QuestionnaireController';
 import { QB_DEFAULT, QVER } from './questions';
 import { __resetOwnerSettings } from '../shell/ownerSettings';
 
@@ -349,5 +353,68 @@ describe('isQuestionnaireAnswered', () => {
     expect(isQuestionnaireAnswered({ answered: true, submitted_at: null })).toBe(true);
     expect(isQuestionnaireAnswered({ submitted_at: '2026-09-01T00:00:00Z' })).toBe(true);
     expect(isQuestionnaireAnswered({ submitted_at: null })).toBe(false);
+  });
+});
+
+/** G-Q-1 — the contact step reaches the account through `PATCH /auth/me/`. */
+describe('the contact step writes the account', () => {
+  it('shapes only what the account takes: phone and the language code, never email', () => {
+    expect(contactPatch({ email: 'a@b.c', phone: ' 0912 ', lang: 'Farsi' })).toEqual({
+      phone: '0912',
+      preferred_language: 'fa',
+    });
+    expect(contactPatch({ email: '', phone: '', lang: 'English' })).toEqual({
+      preferred_language: 'en',
+    });
+    // French has no backend value; an empty form sends nothing at all
+    expect(contactPatch({ email: 'a@b.c', phone: '', lang: 'French' })).toEqual({});
+  });
+
+  it('sends it after a successful submit', async () => {
+    const updateMe = vi.fn(() => Promise.resolve({}));
+    const c = new QuestionnaireController(api() as never, { updateMe });
+    await c.load();
+    c.setContact('phone', '0912 000');
+    c.setContact('lang', 'English');
+    await expect(c.submit()).resolves.toBe(true);
+    expect(updateMe).toHaveBeenCalledWith({ phone: '0912 000', preferred_language: 'en' });
+  });
+
+  it('does not write the account when the send fails', async () => {
+    const updateMe = vi.fn(() => Promise.resolve({}));
+    const c = new QuestionnaireController(
+      api({ submitQuestionnaire: () => Promise.reject(new Error('down')) }) as never,
+      { updateMe },
+    );
+    await c.load();
+    c.setContact('phone', '0912');
+    await c.submit();
+    expect(updateMe).not.toHaveBeenCalled();
+  });
+
+  it('a failed account write never turns a sent profile into an error', async () => {
+    const c = new QuestionnaireController(api() as never, {
+      updateMe: () => Promise.reject(new Error('403')),
+    });
+    await c.load();
+    c.setContact('phone', '0912');
+    await expect(c.submit()).resolves.toBe(true);
+    expect(c.getSnapshot().stage).toBe('done');
+    expect(c.getSnapshot().error).toBeNull();
+  });
+
+  it('pre-fills the contact from the account when there is no draft', async () => {
+    const c = make();
+    await c.load({ phone: '0912', lang: 'Farsi' });
+    expect(c.getSnapshot().contact).toEqual({ email: '', phone: '0912', lang: 'Farsi' });
+  });
+
+  it('a draft wins over the account pre-fill', async () => {
+    const first = make();
+    await first.load();
+    first.setContact('phone', '0935');
+    const second = make();
+    await second.load({ phone: '0912' });
+    expect(second.getSnapshot().contact.phone).toBe('0935');
   });
 });

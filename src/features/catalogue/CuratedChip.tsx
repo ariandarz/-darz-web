@@ -15,8 +15,8 @@
  * empty curated set never saw the chip at all, and an empty curated grid was
  * not a state that screen could reach.
  *
- * **Two pieces of the original are deliberately absent**, both for want of an
- * API signal (docs/PHASE_24_35_API_GAPS.md, owner decisions D5 / D6):
+ * **One piece of the original is deliberately absent**, for want of an API
+ * signal (docs/PHASE_24_35_API_GAPS.md, owner decisions D5 / D6):
  *
  *  - the `.neu` flash and `.dz-curdot` — they mark an *unseen new batch*, and
  *    there are no batches here: the backend replaced the old named selection
@@ -24,11 +24,14 @@
  *    serializer exposes no `created_at` to compare against (G-P24-2). A
  *    localStorage heuristic would be invention, not a port, and would misfire
  *    whenever a work *left* the set.
- *  - a selection **name** on the label. The old chip reads
- *    `(s[0]&&s[0].name)||'Curated for You'` (:3458); grants have no name, so
- *    only the fallback is reachable (G-P24-1). Note the shipped ternary is
- *    `(on?'Curated for You':'Curated for You')` — identical either way — so
- *    the label here is faithful to what actually rendered.
+ *
+ * **The label is the selection's name** when the grant came from a named
+ * selection (`selection_name`, G-P24-1), else "Curated for You" — the old
+ * `curatedTitle()`, `(s[0]&&s[0].name)||'Curated for You'` (:3458). Flag for
+ * the owner: the shipped v669 chip itself rendered the literal
+ * `(on?'Curated for You':'Curated for You')` (:8590) and never called
+ * `curatedTitle()`; the name is used here because the V1 plan (Phase 1) and
+ * the backend's G-P24-1 were built for exactly this label.
  */
 
 // :8589 — the star, verbatim
@@ -49,11 +52,14 @@ const IC_STAR = (
 
 export function CuratedChip({
   count,
+  name,
   on,
   onToggle,
 }: {
   /** how many works the collector has been granted; 0 hides the chip */
   count: number;
+  /** the granting selection's name (`selection_name`), if it has one */
+  name?: string | null;
   on: boolean;
   onToggle: (on: boolean) => void;
 }) {
@@ -73,7 +79,7 @@ export function CuratedChip({
         onClick={() => onToggle(!on)}
       >
         {IC_STAR}
-        <span className="dz-curl">Curated for You</span>
+        <span className="dz-curl">{name || 'Curated for You'}</span>
         <span className="dz-curn">{count}</span>
       </button>
     </div>

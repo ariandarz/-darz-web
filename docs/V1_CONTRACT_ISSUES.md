@@ -55,10 +55,10 @@ These block **only** the phase items named; everything else can proceed.
 | --- | --- | --- | --- |
 | **Q-1** | Does the owner **Access** desk (G-KEY-1 roster) stay owner-only as in the old nav, or open to standard admins as the backend allows? The same question applies to Access Requests (UI owner-only, backend any admin). | Phase 8 | Keep the old nav: owner-only. |
 | **Q-2** | **Project money is hidden only in the UI.** The API returns `money`/`internal_notes` to any team user. Accept for V1, or ask the backend to strip them for standard admins? | none (flag) | Ask the backend (security, not UI). |
-| **Q-3** | `preferred_language` stays editable on profile edit while i18n (G-I18N-1) is off? | Phase 1 | Yes: it is a stored preference. |
+| **Q-3** ✅ resolved in code (Phase 1, recommendation) | `preferred_language` stays editable on profile edit while i18n (G-I18N-1) is off? | Phase 1 | Yes: it is a stored preference. Built: the Account card's "Preferred communication language" saves `en`/`fa`; French (old `COMM_LANGS`) has no backend value and is not offered. |
 | **Q-4** | Counter-offer display (G-P5-9) has no old-app UI or copy. Build it, and with what label? | Phase 9 | One meta row "Darz's counter · 11,000 USD"; the owner supplies the wording. |
 | **Q-5** | Owner-decision UI from `API_ADOPTION_PLAN.md` Batch 8 (G-P24-2, G-P25-2 a/b, G-P5-4/5/11/12, G-P13-1, G-CLUB-3 club section). | Phase 9 | G-P5-11 and G-P25-2(a) yes (no visible change); the rest per owner. |
-| **Q-6** | An offer on a work with no currency 400s with the backend's raw message. Hide the button, default a currency, or keep it? | Phase 1 | Hide "Make an Offer" when the work has no currency. |
+| **Q-6** ✅ resolved in code (Phase 1, recommendation) | An offer on a work with no currency 400s with the backend's raw message. Hide the button, default a currency, or keep it? | Phase 1 | Hide "Make an Offer" when the work has no currency. Built in `ActionButtons.tsx`. |
 | **Q-7** | Pricelist-line `availability`: offer `catalog.availability_status` values as the options, or keep it free text? | Phase 5 | Offer the catalogue values (C-14). |
 | **Q-8** | Intelligence, Marketing Hub and Document Builder (G-6): still deferred? The API is ready for the first two. | V1 scope | Keep deferred (not V1). |
 | **Q-9** | A real `VITE_API_BASE_URL` for production. | Go-live, not code | — |

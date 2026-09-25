@@ -447,6 +447,34 @@ below is the recommended order, by risk and size: live bugs first, then the busi
   closed at its source instead: `PortalSession.enter` now maps every failure to a phase (C-4).
 - **`PortalState` hand-typing moves to Phase 5**, which is its only consumer.
 
+## 3b · What Phase 1 did differently from the plan (recorded 2026-09-25)
+
+- **No Email field on the Account card.** The old card has one (app.html:9783); `PATCH /auth/me/` does not
+  accept it and `/auth/me/` does not return a collector's email, so a read-only field would always be empty.
+  Flagged in `profile/account.ts`; backend candidate: return it read-only on `Me`.
+- **Save behaviour.** The old card saved on every keystroke to `localStorage`. Here a text field saves on
+  blur/Enter when changed, the language on pick, each with the old `Lib.toast('Saved')`. No Save button
+  (none in the old card or the design capture).
+- **Language labels.** `preferred_language` is not in `/api/options/` (C-14): values are the schema enum
+  (`en`/`fa`), labels are the old `COMM_LANGS` words ("English", "Farsi") unless options ever serves
+  `accounts.preferred_language`. French has no backend value and is not offered.
+- **"New" on documents is per device** (`darz_docs_seen`, as the old app), not derived from `shared_at` —
+  `shared_at` says when Darz shared it, not whether the collector opened it. Rows open `pdf_url` in a new tab
+  (the old in-app DarzDocs viewer is not rebuilt). Loading and a failed read hide the section, like empty.
+- **Membership.** The sheet's "Code …" line is not shown (the summary does not return the code). The
+  earlier invented "Membership activated / Darz holds your renewal date" block is gone; after a redeem the
+  sheet re-reads `/auth/my-membership/` and shows the old toast `✓ <Plan> activated`.
+- **Legal links** point at the published PDF of `legal_terms` / `legal_privacy` / `legal_auction`, else the
+  public-site URL. Only `legal_terms` is a backend-documented kind; the other two are a naming convention the
+  owner must publish under. The old long-form in-app sheet is not rebuilt.
+- **Chip label**: the old shipped chip printed the literal "Curated for You" either way (:8590); the name
+  (`curatedTitle()`, :3458) is used as the plan asks — flagged for the owner.
+- **The Account card no longer shows the read-only "Membership" line** (it was a v0.1 stand-in with no
+  old-app source); membership lives in Settings as in the old app.
+- **E2E stub**: now reads request bodies; this exposed that a cold-load token refresh (body, no bearer)
+  always answered the *team* pair, so collector walks silently became team sessions after their first
+  navigation. Fixed in the stub.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -464,7 +492,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | Phase | Scope | Branch | State | PR |
 | --- | --- | --- | --- | --- |
 | 0 | Schema regen · C-1…C-5 live bugs · `Locked<>` · `walkPages` | `v1/phase-0-foundation` | `[x]` 2026-09-25 | see CHANGELOG |
-| 1 | Profile edit · my-membership · documents · chip · G-Q-1 · public docs | `v1/phase-1-collector-account` | `[ ]` | |
+| 1 | Profile edit · my-membership · documents · chip · G-Q-1 · public docs | `v1/phase-1-collector-account` | `[x]` 2026-09-25 | see CHANGELOG |
 | 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[ ]` | |
 | 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[ ]` | |
 | 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[ ]` | |
