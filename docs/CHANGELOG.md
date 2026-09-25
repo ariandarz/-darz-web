@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — API adoption Batch 2: the lock on the ledger entry and auction-record editors (G-LOCK-1)
+
+- **Both PATCHes now send `expected_version`** — the backend made it *required*, so every ledger/record edit was failing (a 500) until this. A stale save shows `ConflictBanner`; Reload re-reads the row.
+- `optimisticLock.test.ts` pins 8 calls (was 6); two desk E2E walks assert the lock on the wire and the banner. **630 unit · 86 E2E**.
+
 ## 2026-09-25 — API adoption Batch 1: schema regen, typed request detail, nested artwork, access-request replay/429
 
 - **`schema.d.ts` regenerated** from backend `development` @ `021ce07`; the 11 flags fixed. Hand-typed `detail` union → generated (G-P5-1/G-F1-1); Chat/Profile/Acquisitions read the nested artwork (G-P5-2).

@@ -5,15 +5,16 @@
  * estimates · hammer vs realized · sale metadata · texts · the highlight).
  *
  * The artist links to the catalogue roster when a confident match exists;
- * the raw reported name stays the fallback — the model's own pair. PATCH is
- * plain (no lock input on this serializer).
+ * the raw reported name stays the fallback — the model's own pair. PATCH
+ * carries the lock (`expected_version`, required since G-LOCK-1): a record
+ * someone else saved in the meantime is a 409 and the conflict banner.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
 import type { ArtistAdmin, AuctionRecord, Choice } from '../../api/types';
-import { DeskBanner, DeskPage } from './kit';
+import { ConflictBanner, DeskBanner, DeskPage, isConflict } from './kit';
 import './admin.css';
 
 type Draft = Record<string, string>;
@@ -63,6 +64,10 @@ export function RecordEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [artists, setArtists] = useState<ArtistAdmin[]>([]);
+  // The loaded record's lock counter — sent back as `expected_version`, which
+  // the record PATCH requires (G-LOCK-1).
+  const [version, setVersion] = useState<number | null>(null);
+  const [conflict, setConflict] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -75,7 +80,7 @@ export function RecordEditorPage() {
     };
   }, [catalogAdmin]);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (isNew || !id) return;
     auctionsAdmin.record(id).then(
       (r) => {
@@ -85,11 +90,13 @@ export function RecordEditorPage() {
           d[k] = v == null ? '' : k === 'is_highlight' ? (v ? 'yes' : '') : String(v);
         }
         setDraft(d);
+        setVersion(r.version);
       },
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load the record.'),
     );
   }, [auctionsAdmin, id, isNew]);
+  useEffect(load, [load]);
 
   const set = (k: string, v: string) => setDraft((d) => (d ? { ...d, [k]: v } : d));
 
@@ -101,6 +108,7 @@ export function RecordEditorPage() {
     }
     setBusy(true);
     setError(null);
+    setConflict(false);
     const num = (v: string) => (v.trim() === '' ? null : v.trim());
     const body: Partial<AuctionRecord> = {
       artist: draft.artist || null,
@@ -138,11 +146,13 @@ export function RecordEditorPage() {
         const created = await auctionsAdmin.createRecord(body);
         navigate(`/admin/auction-records/${created.id}`, { replace: true });
       } else {
-        await auctionsAdmin.updateRecord(id!, body);
+        // A second editor saving the same record is a 409, not an overwrite.
+        await auctionsAdmin.updateRecord(id!, { ...body, expected_version: version ?? 0 });
         navigate('/admin/auction-records');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save the record.');
+      if (isConflict(err)) setConflict(true);
+      else setError(err instanceof Error ? err.message : 'Could not save the record.');
     } finally {
       setBusy(false);
     }
@@ -186,6 +196,15 @@ export function RecordEditorPage() {
         </>
       }
     >
+      {conflict && (
+        <ConflictBanner
+          noun="record"
+          onReload={() => {
+            setConflict(false);
+            load();
+          }}
+        />
+      )}
       {error && <DeskBanner>{error}</DeskBanner>}
 
       <div className="ad-card ad-form">

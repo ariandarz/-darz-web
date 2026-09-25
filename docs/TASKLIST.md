@@ -52,8 +52,8 @@ now-closed backend gaps, the non-V1 backend gaps, and deferred/backend-blocked f
 Backend shipped these; the frontend still has the work-arounds. Do **Step 0 (regenerate `schema.d.ts`)**
 first, then:
 - [x] **Access-request** (G-P34-1/2): 200 replay = success, one key reused across retries, 429 copy. *(Batch 1)*
-- [ ] **G-LOCK-1**: wire `ConflictBanner` + `expected_version` on `LedgerEntryPage` and `RecordEditorPage`
-      (both were last-write-wins).
+- [x] **G-LOCK-1**: `expected_version` + `ConflictBanner` on the ledger entry form (`AccountingPage`) and
+      `RecordEditorPage` — the backend makes the lock **required**, so every edit on both was failing (a 500 today). *(Batch 2)*
 - [~] **CRM precision cluster** (G-P5-1/2/3/6/9/10) — **G-P5-1/2 + G-F1-1 done (Batch 1)**; delete the hand-typed `detail` union, use nested
       `artwork`, deep-link `GET /crm/requests/{id}/`, drop the client hold-expiry, show `counter_amount`,
       pull viewing-mode labels from `/api/options/`.

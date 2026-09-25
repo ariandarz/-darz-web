@@ -1166,7 +1166,10 @@ export class AuctionsAdminService extends ResourceService {
   createRecord(body: Partial<AuctionRecord>) {
     return this.create<AuctionRecord>('/records/', body);
   }
-  updateRecord(id: string, body: Partial<AuctionRecord>) {
+  /** `expected_version` is mandatory (G-LOCK-1): a stale one is a 409
+   * `ConflictError`, and a PATCH without it fails server-side (today a 500 —
+   * the view pops a key its partial serializer never required). */
+  updateRecord(id: string, body: Partial<AuctionRecord> & { expected_version: number }) {
     return this.client.send<AuctionRecord>('PATCH', `${this.basePath}/records/${id}/`, {
       body,
     });
@@ -1208,7 +1211,10 @@ export class AccountingAdminService extends ResourceService {
   createEntry(body: Record<string, unknown>) {
     return this.create<LedgerEntryAdmin>('/ledger/', body);
   }
-  updateEntry(id: string, body: Record<string, unknown>) {
+  /** `expected_version` is mandatory (G-LOCK-1): a stale one is a 409
+   * `ConflictError`, and a PATCH without it fails server-side (today a 500 —
+   * the view pops a key its partial serializer never required). */
+  updateEntry(id: string, body: Record<string, unknown> & { expected_version: number }) {
     return this.client.send<LedgerEntryAdmin>('PATCH', `${this.basePath}/ledger/${id}/`, {
       body,
     });

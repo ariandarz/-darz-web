@@ -30,7 +30,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | --- | --- | --- | --- | --- |
 | G-P34-2 | access-request | No rate limit on public `POST /auth/access-requests/` | ✅ Closed | Throttle `5/hour`/IP (env). FE adopted 2026-09-25: a 429 reads "Too many attempts — try again shortly." |
 | G-P34-1 | access-request | No `client_req_id` dedupe | ✅ Closed | 200 replay / 201 new. FE adopted 2026-09-25: both are success; the key is reused across retries of the same values (`AccessRequestKey`). |
-| G-LOCK-1 | accounting, auctions | Ledger + auction-record editors last-write-wins | ✅ Closed | `expected_version` → 409. FE: wire `ConflictBanner` on those 2 desks. |
+| G-LOCK-1 | accounting, auctions | Ledger + auction-record editors last-write-wins | ✅ Closed | `expected_version` mandatory → 409 when stale; **without it the view 500s** (`partial=True` skips the required check, then `validated.pop('expected_version')` raises — backend should 400). FE adopted 2026-09-25: both desks send it and show `ConflictBanner`; wire format pinned in `optimisticLock.test.ts` (8 calls). |
 
 ## CRM — collector requests (Phase 5 / Flow 1)
 

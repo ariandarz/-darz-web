@@ -82,7 +82,7 @@ Each of these cost real time:
 - **The optimistic lock was silently OFF on three desks.** `updateCollector`, `updateTeamUser` and
   `updateMembershipCode` sent the field as `version`; the API wants `expected_version`, and it is
   **optional**, so the server skipped the lock and wrote anyway. `src/api/optimisticLock.test.ts` now
-  pins the **wire format** for all six locking calls.
+  pins the **wire format** for all eight locking calls (six until G-LOCK-1 added the ledger entry and the auction record, 2026-09-25).
 - **TD-3 proposed the one place the data must not go.** Invoice bank details "belong under `theme.*`" —
   but `GET /api/app-theme/` is **`AllowAny`**, so a card number/IBAN there would be public. They come
   from the last issued invoice's `Document.fields.bank`.

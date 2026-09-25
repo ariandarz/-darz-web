@@ -51,8 +51,8 @@ export type NotificationKind = Schemas['NotificationKindEnum'];
  * in backend Phase 11-admin (BE-R1…R3 closed the Phase 8 gap list): image,
  * medium, estimates, hammer vs realized, sections, highlights. One
  * serializer for collector read and admin CRUD — nothing on it is
- * confidential; `artist_display_name` is the label to show. Admin PATCH is
- * plain (no lock input). */
+ * confidential; `artist_display_name` is the label to show. Admin PATCH
+ * requires `expected_version` (G-LOCK-1). */
 export type AuctionRecord = Schemas['AuctionRecord'];
 
 /** `GET /api/auctions(/admin)/records/` params. */
