@@ -8,6 +8,13 @@ import type { components } from './schema';
 
 type Schemas = components['schemas'];
 
+/** A PATCH body whose optimistic lock is **required**. drf-spectacular types every
+ * `Patched*` body with `expected_version` optional, yet the backend needs it:
+ * without it the view 500s (a `KeyError` on `validated.pop`, C-6), with a stale
+ * one it 409s. Wrap every locked PATCH body in this so the compiler catches a
+ * missing lock. */
+export type Locked<T> = Omit<T, 'expected_version'> & { expected_version: number };
+
 /** `artist` is nullable at the DB level (`on_delete=SET_NULL` — legacy rows
  * with an unmatched artist name) even though the generated type omits `null`;
  * every consumer must handle it. `allowed_actions` (G-F1-3), `is_saved`/
@@ -493,13 +500,18 @@ export interface ArtworkFacets {
   sources: string[];
 }
 
-/** A sale — `SaleAdminSerializer` (backend Phase 7 sales admin). `artwork` /
- * `collector` / `responsible` / `source_request` are bare uuids (G-SALE-3);
- * the desk resolves them. The commercial snapshot (price/commission/discount/
- * fees) is draft-only editable — locked once confirmed (R7); `status` moves
- * only through `/transition/` on the linear chain, `payment_status` /
+/** A sale — `SaleAdminSerializer` (backend Phase 7 sales admin). Since G-SALE-3
+ * the row nests `artwork {id,title}`, `collector {id,display_name}` and
+ * `responsible {id,name} | null`; `source_request` and `lot` stay bare uuids.
+ * **Input still takes plain ids** (`SaleCreateInput` / `SalePatch`), so the read
+ * and write shapes differ on purpose. The commercial snapshot (price/commission/
+ * discount/fees) is draft-only editable — locked once confirmed (R7); `status`
+ * moves only through `/transition/` on the linear chain, `payment_status` /
  * `delivery_status` through their own setters. */
 export type SaleAdmin = Schemas['SaleAdmin'];
+export type SaleCreateInput = Schemas['SaleCreate'];
+/** `PATCH …/sales/{id}/` — the lock is required (C-6). */
+export type SalePatch = Locked<Schemas['PatchedSaleUpdate']>;
 
 /** The sales list takes exactly one filter: `status`. No search, no payment/
  * delivery filter, no aggregates (G-SALE-1/2). */
@@ -919,7 +931,10 @@ export type ProjectAdmin = Schemas['Project'];
 export type ProjectPartnerRef = Schemas['_ProjectPartnerOrg'];
 export type ProjectCategory = Schemas['ProjectCategoryEnum'];
 export type ProjectStage = Schemas['StageEnum'];
-export type ProjectStatus = Schemas['ProjectStatusEnum'];
+/** Named through the field, not the enum: drf-spectacular renamed the colliding
+ * enum (`ProjectStatusEnum` → `Status2c3Enum`) once G-PROJ-2 made `status`
+ * writable, and it will rename it again on the next collision (C-2). */
+export type ProjectStatus = Schemas['Project']['status'];
 export type ProjectCreateInput = Schemas['ProjectCreate'];
 /** `PATCH …/projects/{id}/` — the optimistic lock is required, not optional. */
 export type ProjectPatch = Omit<Schemas['PatchedProjectUpdate'], 'expected_version'> & {

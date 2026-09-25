@@ -281,23 +281,17 @@ const routes = {
   // route makes the stub tell the truth about the endpoint's real shape.
   'GET /api/catalog/admin/artworks/facets/': () => envelope({ years: [], sources: [] }),
   // The collector questionnaire. Both halves are registered because the
-  // catch-all cannot express either: a GET **404s** until the collector has
-  // submitted one — the documented answer, not a failure — and the catch-all's
-  // paginated 200 would instead tell the app a profile already exists and send
-  // it straight to the review with no answers. POST answers the stored object.
-  'GET /api/recommendations/questionnaire/': () => ({
-    status: 404,
-    body: {
-      success: false,
-      error: { code: 'not_found', message: 'No questionnaire on file.' },
-      timestamp: new Date().toISOString(),
-    },
-  }),
+  // catch-all cannot express either: a never-submitted collector reads **200
+  // with `answered: false`** (G-P25-1 — the backend used to 404 here), and the
+  // catch-all's paginated 200 would carry no `answered` flag at all. POST
+  // answers the stored object.
+  'GET /api/recommendations/questionnaire/': () =>
+    envelope({ answers: [], submitted_at: null, answered: false }),
   // The stub reads no request bodies anywhere, so this does not echo what was
   // sent — it answers the shape and the timestamp, which is all the app reads
   // back (the thank-you screen renders from its own state, not the response).
   'POST /api/recommendations/questionnaire/': () =>
-    envelope({ answers: [], submitted_at: new Date().toISOString() }),
+    envelope({ answers: [], submitted_at: new Date().toISOString(), answered: true }),
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
       healthy: true,
@@ -368,7 +362,7 @@ const server = http.createServer((req, res) => {
   }
   if (hit) {
     // A handler may answer `{status, body}` when the endpoint's real answer is
-    // not a 200 — the questionnaire's "never submitted" 404 is the first.
+    // not a 200 (e.g. an error branch a test drives).
     const answered = hit(req);
     const status = answered && typeof answered.status === 'number' ? answered.status : 200;
     res.writeHead(status);

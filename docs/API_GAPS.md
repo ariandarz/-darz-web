@@ -77,7 +77,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-P25-1 | `GET questionnaire` 404 on first run | ✅ Closed | Returns 200 `{answers,submitted_at,answered}`. **FE: live bug (C-3):** the controller and the Profile card treat any 200 as submitted → Phase 0. |
+| G-P25-1 | `GET questionnaire` 404 on first run | ✅ Closed | Returns 200 `{answers,submitted_at,answered}`. FE ✅ adopted (Phase 0): the controller and the Profile card branch on `answered` (`isQuestionnaireAnswered`). |
 | G-P25-2 | Question set not served (hardcoded) | ✅ Closed | `GET /recommendations/question-set/` + admin CRUD. FE: drive the screen from it. |
 
 ## Notifications — web push
@@ -130,7 +130,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | --- | --- | --- | --- |
 | G-SALE-1 | `GET /sales/admin/sales/summary/` (total + per status/payment/delivery/source) | Not bound: tiles use 4 `per_page=1` counts | 2 |
 | G-SALE-2 | `?search&payment_status&delivery_status&source&ordering` on the admin sales list | Not sendable (`SaleQuery` has `status` only) | 2 |
-| G-SALE-3 | Nested `artwork{id,title}`, `collector{id,display_name}`, `responsible{id,name}` on rows (input stays ids) | **Broken:** desk treats them as uuids (C-1) | **0** |
+| G-SALE-3 | Nested `artwork{id,title}`, `collector{id,display_name}`, `responsible{id,name}` on rows (input stays ids) | ✅ Adopted (Phase 0): read off the row; only the artist line is still a cached per-work read | 0 |
 | G-SALE-5 | `follow_up_at` + `follow_up_overdue`, `POST …/follow-up/`, append-only `GET/POST …/notes/` | Not bound | 2 |
 | G-AUC-1 | `PATCH /auctions/admin/auctions/{id}/` (lock; draft/scheduled only) + `terms`/`terms_required` on create | Not bound; on-screen copy says "no edit endpoint" | 3 |
 | G-AUC-2 | `PATCH /auctions/admin/lots/{id}/` (lock; scheduled only) | Not bound; copy says "create-only" | 3 |
@@ -138,7 +138,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-COL-1 | `GET /auth/admin/collectors/summary/` (collectors, vip, active_30d, engaged) | Not bound: tiles substitute "Active" | 4 |
 | G-COL-2 | `last_activity_at`, `purchase_count`, `?ordering=activity\|purchases` (list only, C-16) | Not sendable | 4 |
 | G-CAT-1 | `thumb`, `artist_name` on admin artwork rows | Unused: names resolved from a capped roster | 4 |
-| G-CAT-3 | Admin artists `?search&ordering` + `works_count` | Unused: desk fetches 500 → **truncates at 100** (C-5) | 0 / 4 |
+| G-CAT-3 | Admin artists `?search&ordering` + `works_count` | Unused. The truncation at 100 is fixed (Phase 0 walks every page, C-5); server search, ordering and the count are Phase 4 | 4 |
 | G-CAT-8 | Publish gate: 400 `details.missing` | Shown only as flattened text | 4 |
 | G-CLUB-1 | `thumb` on club selection artworks | Unused (cover is always the fallback) | 4 |
 | G-DOC-2 | `GET /documents/admin/documents/{id}/activity/` (flat `actor` + `actor_name`, C-15) | Not bound; nav History tab `path: null` | 6 |

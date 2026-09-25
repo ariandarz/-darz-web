@@ -36,20 +36,8 @@ import {
   withQuantities,
   type LibraryService,
 } from './servicesLibrary';
+import { walkPages } from '../../../api/paging';
 import './exhibitions.css';
-
-/** Every page of a list the backend paginates. */
-async function walkAll<T>(
-  load: (page: number) => Promise<{ results: T[]; pagination?: { has_next?: boolean } }>,
-) {
-  const out: T[] = [];
-  for (let page = 1; page <= 20; page += 1) {
-    const p = await load(page);
-    out.push(...p.results);
-    if (!p.pagination?.has_next) break;
-  }
-  return out;
-}
 
 export function ExhibitionServicesPage() {
   const { projectsAdmin } = useApi();
@@ -69,8 +57,8 @@ export function ExhibitionServicesPage() {
 
   const load = useCallback(() => {
     Promise.all([
-      walkAll((page) => projectsAdmin.services({ page, per_page: 100 })),
-      walkAll((page) => projectsAdmin.packages({ page, per_page: 100 })),
+      walkPages((page) => projectsAdmin.services({ page, per_page: 100 })),
+      walkPages((page) => projectsAdmin.packages({ page, per_page: 100 })),
     ]).then(
       ([s, p]) => {
         setRows(s);

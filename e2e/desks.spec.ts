@@ -277,3 +277,95 @@ test('a stale ledger-entry save sends its version and shows the conflict banner'
   }
   expect(thrown).toEqual([]);
 });
+
+/** A paginated envelope page, the backend's shape. */
+const pageOf = (results: unknown[], n: number, hasNext: boolean, total: number) =>
+  ok({
+    pagination: {
+      page: n,
+      per_page: 100,
+      total_pages: hasNext ? n + 1 : n,
+      total_count: total,
+      has_next: hasNext,
+      has_previous: n > 1,
+    },
+    results,
+  });
+
+test('the Artists desk reads the whole roster past the 100-row clamp (C-5)', async () => {
+  thrown = [];
+  const artist = (i: number) => ({
+    id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+    display_name: `Stub Artist ${i}`,
+    intro: '',
+    version: 1,
+  });
+  const matches = (u: URL) => u.pathname === '/api/catalog/admin/artists/';
+  await page.route(matches, (route) => {
+    const n = Number(new URL(route.request().url()).searchParams.get('page') || '1');
+    const rows = Array.from({ length: n === 1 ? 100 : 50 }, (_, k) =>
+      artist((n - 1) * 100 + k + 1),
+    );
+    return route.fulfill(pageOf(rows, n, n === 1, 150));
+  });
+  try {
+    await page.goto('/admin/artists');
+    await expect(page.getByText('Showing 150 of 150 artists')).toBeVisible();
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('the Sales desk reads the nested row refs (G-SALE-3, C-1)', async () => {
+  thrown = [];
+  const sale = {
+    id: LOCK_ID,
+    artwork: { id: '00000000-0000-4000-8000-0000000000a1', title: 'Nested Title' },
+    collector: {
+      id: '00000000-0000-4000-8000-0000000000c1',
+      display_name: 'Nested Collector',
+    },
+    responsible: { id: '00000000-0000-4000-8000-0000000000e1', name: 'Nested Owner' },
+    source_request: null,
+    seller_source: '',
+    source: 'market',
+    lot: null,
+    agreed_price: '1000.00',
+    currency: 'USD',
+    commission_amount: '100.00',
+    discount_amount: null,
+    fees_tax: null,
+    payment_status: 'unpaid',
+    delivery_status: 'pending',
+    status: 'draft',
+    confirmed_at: null,
+    follow_up_at: null,
+    follow_up_overdue: false,
+    version: 1,
+    created_at: '2026-09-25T00:00:00Z',
+    updated_at: '2026-09-25T00:00:00Z',
+  };
+  const badRefs: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('[object')) badRefs.push(r.url());
+  });
+  const matches = (u: URL) => u.pathname.startsWith('/api/sales/admin/sales/');
+  await page.route(matches, (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/sales/admin/sales/') return route.fulfill(pageOf([sale], 1, false, 1));
+    if (path.endsWith(`${LOCK_ID}/`)) return route.fulfill(ok(sale));
+    return route.fallback();
+  });
+  try {
+    await page.goto('/admin/sales');
+    await expect(page.getByText('Nested Title')).toBeVisible();
+    await expect(page.getByText('Nested Collector')).toBeVisible();
+    await page.goto(`/admin/sales/${LOCK_ID}`);
+    await expect(page.getByText('Nested Owner')).toBeVisible();
+    expect(badRefs).toEqual([]);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});

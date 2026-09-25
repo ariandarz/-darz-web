@@ -61,6 +61,7 @@ import {
   type Column,
 } from './kit';
 import './admin.css';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 
 /** The old sort list's survivors — the tokens this API serves (`:26663` had
  * ten; complete/size/width/height ranked client-side fields that no longer
@@ -86,13 +87,12 @@ export function ArtworksPage() {
 
   // The artists roster, fetched once: resolves artist uuids to names on the
   // rows (G-CAT-1 — the list row carries no artist object) and feeds the
-  // Artist filter. The roster endpoint takes no search (G-CAT-3), so one
-  // large page is the practical whole.
+  // Artist filter. Walked whole — `per_page` is clamped to 100 (C-5).
   const [artists, setArtists] = useState<ArtistAdmin[]>([]);
   useEffect(() => {
     let alive = true;
-    catalogAdmin.artists({ per_page: 500 }).then(
-      (page) => alive && setArtists(page.results),
+    walkPages((page) => catalogAdmin.artists({ page, per_page: MAX_PER_PAGE })).then(
+      (all) => alive && setArtists(all),
       () => alive && setArtists([]),
     );
     return () => {

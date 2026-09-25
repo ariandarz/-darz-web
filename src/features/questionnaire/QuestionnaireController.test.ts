@@ -9,7 +9,7 @@
  * the crash this repo has now written eight times (docs/HANDOFF.md §6).
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { QuestionnaireController } from './QuestionnaireController';
+import { QuestionnaireController, isQuestionnaireAnswered } from './QuestionnaireController';
 import { QB_DEFAULT, QVER } from './questions';
 import { __resetOwnerSettings } from '../shell/ownerSettings';
 
@@ -48,7 +48,11 @@ globalThis.localStorage = new MemoryStorage();
 globalThis.Storage = MemoryStorage as unknown as typeof Storage;
 
 type Api = {
-  questionnaire: () => Promise<{ answers?: unknown; submitted_at: string }>;
+  questionnaire: () => Promise<{
+    answers?: unknown;
+    submitted_at: string | null;
+    answered?: boolean;
+  }>;
   submitQuestionnaire: (
     answers: Array<{ q: string; a: string }>,
   ) => Promise<{ answers?: unknown; submitted_at: string }>;
@@ -76,12 +80,35 @@ beforeEach(() => {
 });
 
 describe('load', () => {
-  it('opens on the intro when the collector has never submitted (404)', async () => {
+  it('opens on the intro when the read fails (an older backend 404s)', async () => {
     const c = make();
     await c.load();
     expect(c.getSnapshot().stage).toBe('intro');
     expect(c.getSnapshot().submitted).toBe(false);
     expect(c.getSnapshot().status).toBe('idle');
+  });
+
+  it('opens on the intro on the 200 "never answered" read (G-P25-1)', async () => {
+    // The current backend answers a first-run collector with 200, not 404 —
+    // treating any 200 as "submitted" showed an empty review (C-3).
+    const c = make({
+      questionnaire: () =>
+        Promise.resolve({ answers: [], submitted_at: null, answered: false }),
+    });
+    await c.load();
+    expect(c.getSnapshot().stage).toBe('intro');
+    expect(c.getSnapshot().submitted).toBe(false);
+    expect(c.getSnapshot().status).toBe('idle');
+  });
+
+  it('opens on the review when the read says answered', async () => {
+    const c = make({
+      questionnaire: () =>
+        Promise.resolve({ answers: [], submitted_at: '2026-09-01T00:00:00Z', answered: true }),
+    });
+    await c.load();
+    expect(c.getSnapshot().stage).toBe('review');
+    expect(c.getSnapshot().submitted).toBe(true);
   });
 
   it('opens a returning collector straight on the review', async () => {
@@ -313,5 +340,14 @@ describe('submit', () => {
     expect(() => c.pick(1, 'Abstraction', true)).not.toThrow();
     expect(c.getSnapshot().answers[1]).toEqual(['Abstraction']);
     setItem.mockRestore();
+  });
+});
+
+describe('isQuestionnaireAnswered', () => {
+  it('trusts the flag when present, else falls back to submitted_at', () => {
+    expect(isQuestionnaireAnswered({ answered: false, submitted_at: 'x' })).toBe(false);
+    expect(isQuestionnaireAnswered({ answered: true, submitted_at: null })).toBe(true);
+    expect(isQuestionnaireAnswered({ submitted_at: '2026-09-01T00:00:00Z' })).toBe(true);
+    expect(isQuestionnaireAnswered({ submitted_at: null })).toBe(false);
   });
 });

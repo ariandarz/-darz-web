@@ -47,6 +47,18 @@ import { Observable } from '../shared/Observable';
 import { QVER, liveBank, type Question } from './questions';
 
 /** Which screen the flow is on — `qintro` / `qform` / `qreview` / `qDone`. */
+/** Whether a `GET …/questionnaire/` read means "already sent". The backend now
+ * answers a never-submitted collector with 200 and `answered: false` (G-P25-1),
+ * so a successful read is not proof. A payload without the flag (an older
+ * backend) falls back to `submitted_at`. */
+export function isQuestionnaireAnswered(saved: {
+  answered?: boolean | null;
+  submitted_at?: string | null;
+}): boolean {
+  if (typeof saved.answered === 'boolean') return saved.answered;
+  return Boolean(saved.submitted_at);
+}
+
 export type QStage = 'intro' | 'step' | 'review' | 'done';
 
 export interface Contact {
@@ -132,10 +144,13 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
    * profile was already sent. A returning collector lands on the review; a new
    * one sees the intro.
    *
-   * A 404 is the documented "never submitted" answer, not a failure — and any
-   * other error is treated the same way on purpose: a questionnaire that
-   * cannot be read is still one the collector can fill in, and refusing to
-   * open the screen over it would be worse than starting fresh.
+   * The backend answers 200 `{answers: [], submitted_at: null, answered: false}`
+   * for a collector who never sent one (G-P25-1) — so the 200 alone means
+   * nothing; `answered` decides (`isQuestionnaireAnswered`). An older backend
+   * answered that case with a 404, and any error is still treated as "not yet"
+   * on purpose: a questionnaire that cannot be read is still one the collector
+   * can fill in, and refusing to open the screen over it would be worse than
+   * starting fresh.
    */
   async load(): Promise<void> {
     const draft = readDraft();
@@ -152,6 +167,10 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
 
     try {
       const saved = await this.api.questionnaire();
+      if (!isQuestionnaireAnswered(saved)) {
+        this.patch({ submitted: false, status: 'idle', stage: 'intro' });
+        return;
+      }
       const answers = asArray<{ q?: unknown; a?: unknown }>(saved.answers);
       this.patch({
         submitted: true,

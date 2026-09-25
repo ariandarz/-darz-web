@@ -429,6 +429,24 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 
 ---
 
+## 3a · What Phase 0 did differently from the plan (recorded 2026-09-25)
+
+- **`fetchAllPages` → `walkPages`.** The walker already existed three times (`projectForm.ts` plus two
+  private `walkAll` copies in the exhibitions desks). It moved to `src/api/paging.ts` (with `MAX_PER_PAGE`)
+  and all three copies use it, rather than adding a fourth on `ResourceService`. The collector's own
+  auction registrations (`per_page: 200`) had the same cap and were walked too.
+- **`Locked<T>`** is applied to the Sales PATCH, the only locked body typed straight from a `Patched*`
+  schema. Every other locked call already required `expected_version: number` by hand.
+- **Error `details` (C-10)** needed no new type: `ValidationError.fields` already carries
+  `error.details`, so the publish gate's list arrives as `fields.missing`. Phase 4 renders it.
+- **Sales artist line.** The nested artwork is `{id,title}` with no artist. The title, collector and
+  responsible now read straight off the row. The artist line under the title is still one cached
+  retrieve per distinct work (backend candidate: `artist_name` on `_SaleArtworkBrief`).
+- **No `ScreenBoundary` on `/portal/:token`.** Its copy tells the reader to "use the bar", which the
+  portal does not have, and inventing portal copy is off-limits (`CLAUDE.md`). The known crash path is
+  closed at its source instead: `PortalSession.enter` now maps every failure to a phase (C-4).
+- **`PortalState` hand-typing moves to Phase 5**, which is its only consumer.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -445,7 +463,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 
 | Phase | Scope | Branch | State | PR |
 | --- | --- | --- | --- | --- |
-| 0 | Schema regen · C-1…C-5 live bugs · `Locked<>` · `fetchAllPages` · `PortalState` | `v1/phase-0-foundation` | `[ ]` | |
+| 0 | Schema regen · C-1…C-5 live bugs · `Locked<>` · `walkPages` | `v1/phase-0-foundation` | `[x]` 2026-09-25 | see CHANGELOG |
 | 1 | Profile edit · my-membership · documents · chip · G-Q-1 · public docs | `v1/phase-1-collector-account` | `[ ]` | |
 | 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[ ]` | |
 | 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[ ]` | |

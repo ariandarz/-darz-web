@@ -34,7 +34,6 @@ import type {
   Choice,
   PackageTemplateAdmin,
   PackageTemplateInput,
-  Paginated,
   ProjectAdmin,
   ProjectPatch,
   ServiceCatalogItemAdmin,
@@ -42,6 +41,7 @@ import type {
 import type { OptionsMap, ProjectsAdminService } from '../../../api/services';
 import type { DocumentPdfFields } from '../pdf/renderPdf';
 import { fmtThousands } from '../../portal/portalForm';
+import { walkPages } from '../../../api/paging';
 
 export { fmtDate } from '../../portal/portalForm';
 
@@ -1201,22 +1201,10 @@ export function buildProposalFields(
    replaces that (G-PROJ-1). One walker, one cap, so the desks cannot differ
    on how much of a list they actually read. */
 
-/** The page cap — 50 pages × 100 rows is far past any real roster, and it
- * stops a bad `has_next` from looping forever. */
-export const WALK_MAX_PAGES = 50;
-
-/** Every page of a list, in order. */
-export async function walkPages<T>(
-  fetchPage: (page: number) => Promise<Paginated<T>>,
-): Promise<T[]> {
-  const out: T[] = [];
-  for (let page = 1; page <= WALK_MAX_PAGES; page++) {
-    const res = await fetchPage(page);
-    out.push(...res.results);
-    if (!res.pagination.has_next) break;
-  }
-  return out;
-}
+/* `WALK_MAX_PAGES` / `walkPages` now live in `src/api/paging.ts` (every desk that
+   reads a list whole shares them); re-exported so the desks here keep importing
+   from this file. */
+export { WALK_MAX_PAGES, walkPages } from '../../../api/paging';
 
 /** Every project of one archive state (the board, the quick filters, the
  * per-partner counts, the project picks). */
