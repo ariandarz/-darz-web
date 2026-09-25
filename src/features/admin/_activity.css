@@ -38,16 +38,31 @@
   display: flex;
   flex-direction: column;
 }
-/* :33747's fallback — always, see G-CLUB-1 */
+/* `gc-top` (`darz-studio.html:19548-19550`): the first work's image as a
+   cover (inline `background-image`, `:33741`), the gradient when there is
+   none, and the old bottom scrim so the title stays legible over a photo. */
 .ad-clubtop {
   position: relative;
   min-height: 96px;
   background: linear-gradient(135deg, #2b2620, #6b6b6b);
+  background-size: cover;
+  background-position: center;
   color: #fff;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+}
+.ad-clubtop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 30%, rgba(0, 0, 0, 0.66));
+  pointer-events: none;
+}
+.ad-clubtop > * {
+  position: relative;
+  z-index: 1;
 }
 .ad-clubbadge {
   position: absolute;
@@ -1037,4 +1052,30 @@ a.ad-ghostbtn {
   font-size: 11px;
   color: var(--ink3);
   margin-top: 4px;
+}
+
+/* The Database Work cell's thumbnail (`.ad-wc` / `.ad-th`, `darz-studio.html:
+   8775-8776`, the row at `:26755`): a 60px rounded square, object-fit cover,
+   the grey box on its own when the work has no image (`adThumbImg`'s empty
+   `<img>`, `:26478`). Colours are tokens where the old rule has literals. */
+.ad-wc {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.ad-wc-t {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+.ad-th {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  flex: 0 0 auto;
+  display: block;
 }

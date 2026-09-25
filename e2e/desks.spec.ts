@@ -295,13 +295,16 @@ const pageOf = (results: unknown[], n: number, hasNext: boolean, total: number) 
     results,
   });
 
-test('the Artists desk reads the whole roster past the 100-row clamp (C-5)', async () => {
+test('the Artists desk pages past the 100-row clamp with nothing dropped (C-5)', async () => {
   thrown = [];
   const artist = (i: number) => ({
     id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
     display_name: `Stub Artist ${i}`,
-    intro: '',
+    bio: '',
+    works_count: 1,
     version: 1,
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
   });
   const matches = (u: URL) => u.pathname === '/api/catalog/admin/artists/';
   await page.route(matches, (route) => {
@@ -313,7 +316,12 @@ test('the Artists desk reads the whole roster past the 100-row clamp (C-5)', asy
   });
   try {
     await page.goto('/admin/artists');
+    // the total is the server's count, not the rows on screen
     await expect(page.getByText('Showing 150 of 150 artists')).toBeVisible();
+    await expect(page.getByText('Stub Artist 100', { exact: true })).toBeVisible();
+    // and the pager reaches the rest — nothing past 100 is silently cut
+    await page.locator('.pager').getByRole('button', { name: '2', exact: true }).click();
+    await expect(page.getByText('Stub Artist 150', { exact: true })).toBeVisible();
   } finally {
     await page.unroute(matches);
   }
@@ -754,6 +762,227 @@ test('Auction Records: the house select sends ?house= (G-REC-1)', async () => {
     await expect(page.getByText('Heech and Chair')).toHaveCount(0);
   } finally {
     await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * V1 Phase 4 — the catalogue and collectors desks against the stub's rows:
+ * three admin artworks (thumb + artist_name; one refused by the publish gate),
+ * three artists, three collectors with the G-COL-2 rollups, one Club selection.
+ */
+const ADM_INCOMPLETE = '00000000-0000-4000-8000-00000000a203';
+
+/** Record the query of every request to one path (the page's own reads). */
+function watchQueries(path: string) {
+  const seen: URLSearchParams[] = [];
+  const matches = (u: URL) => u.pathname === path;
+  const handler = (route: import('@playwright/test').Route) => {
+    seen.push(new URL(route.request().url()).searchParams);
+    return route.fallback();
+  };
+  return {
+    seen,
+    last: () => seen[seen.length - 1],
+    start: () => page.route(matches, handler),
+    stop: () => page.unroute(matches, handler),
+  };
+}
+
+test('Database: rows lead with thumb + artist, and each Phase-5b filter reaches list and facets', async () => {
+  thrown = [];
+  const list = watchQueries('/api/catalog/admin/artworks/');
+  const facets = watchQueries('/api/catalog/admin/artworks/facets/');
+  await list.start();
+  await facets.start();
+  try {
+    await page.goto('/admin/artworks');
+    await expect(page.getByText('Heech in a Cage')).toBeVisible();
+    // G-CAT-1: the row's own artist name and thumbnail, no roster lookup
+    await expect(
+      page.locator('.ad-cellmain', { hasText: 'Monir Farmanfarmaian' }),
+    ).toBeVisible();
+    await expect(page.locator('img.ad-th')).toHaveCount(2);
+    await expect(page.locator('span.ad-th')).toHaveCount(1); // the work with no image
+
+    await page.locator('.ad-morefilters summary').click();
+    await deskFilter('Gallery Portal').locator('select').selectOption('true');
+    await expect.poll(() => list.last()?.get('gallery_portal')).toBe('true');
+    await expect(page.getByText('Untitled Study')).toBeVisible();
+    await expect(page.getByText('Heech in a Cage')).toHaveCount(0);
+    await deskFilter('Gallery Portal').locator('select').selectOption('');
+
+    await deskFilter('Images').locator('select').selectOption('dup');
+    await expect.poll(() => list.last()?.get('duplicate_images')).toBe('true');
+    expect(list.last()?.get('has_images')).toBeNull();
+    await expect(
+      page.locator('.ad-fchip-l', { hasText: 'Duplicates (same image)' }),
+    ).toBeVisible();
+    await deskFilter('Details').locator('select').selectOption('false');
+    await expect.poll(() => list.last()?.get('complete')).toBe('false');
+    await deskFilter('Size').locator('select').selectOption('large');
+    await expect.poll(() => list.last()?.get('size')).toBe('large');
+    // facets ride the same query
+    await expect.poll(() => facets.last()?.get('size')).toBe('large');
+    expect(facets.last()?.get('duplicate_images')).toBe('true');
+    expect(facets.last()?.get('complete')).toBe('false');
+    await expect(page.getByText('No artworks match these filters.')).toBeVisible();
+
+    // source_type and created_after arrive by link, as chips
+    await page.goto(
+      '/admin/artworks?source_type=dealer&created_after=2026-01-01T00:00:00.000Z',
+    );
+    await expect(page.getByText('Mirror Study')).toBeVisible();
+    await expect.poll(() => list.last()?.get('source_type')).toBe('dealer');
+    expect(list.last()?.get('created_after')).toBe('2026-01-01T00:00:00.000Z');
+    await expect(
+      page.locator('.ad-fchip-l', { hasText: 'Source type: dealer' }),
+    ).toBeVisible();
+    await expect(
+      page.locator('.ad-fchip-l', { hasText: 'Added since 1 Jan 2026' }),
+    ).toBeVisible();
+  } finally {
+    await list.stop();
+    await facets.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('the publish gate’s refusal lists exactly the missing items (G-CAT-8)', async () => {
+  thrown = [];
+  await page.goto('/admin/artworks');
+  const row = page.locator('tr').filter({ hasText: 'Untitled Study' });
+  await row.getByRole('button', { name: /APP/ }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('This artwork isn’t ready for the Market App yet.');
+  await expect(dialog).toContainText('Please complete: image, size.');
+  await expect(page.getByRole('alert')).toHaveCount(0); // not the flattened message
+  await dialog.getByRole('button', { name: 'Complete it now' }).click();
+  await page.waitForURL(`**/admin/artworks/${ADM_INCOMPLETE}`);
+  await expect(page.getByRole('heading', { name: 'Edit Artwork' })).toBeVisible();
+
+  // the editor's toggle refuses the same way
+  await page.locator('.ad-reachrow').getByRole('button', { name: /APP/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('Please complete: image, size.');
+  await page.getByRole('dialog').getByRole('button', { name: 'Not now' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Published lists every published work through the admin list, private ones too', async () => {
+  thrown = [];
+  const list = watchQueries('/api/catalog/admin/artworks/');
+  await list.start();
+  try {
+    await page.goto('/admin/published');
+    await expect(page.getByText('Mirror Study')).toBeVisible(); // visibility: selected
+    await expect(page.getByText('Heech in a Cage')).toBeVisible();
+    await expect(page.getByText('Untitled Study')).toHaveCount(0);
+    expect(list.seen.some((q) => q.get('published') === 'true')).toBe(true);
+    await expect(
+      page
+        .locator('.ad-tile')
+        .filter({ hasText: 'Live for collectors' })
+        .locator('.ad-tile-v'),
+    ).toHaveText('2');
+  } finally {
+    await list.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Artists: server search, the old sorts, and the works count', async () => {
+  thrown = [];
+  const list = watchQueries('/api/catalog/admin/artists/');
+  await list.start();
+  try {
+    await page.goto('/admin/artists');
+    await expect(page.getByText('Showing 3 of 3 artists')).toBeVisible();
+    // the old default, "Sort: Most works"
+    expect(list.seen.some((q) => q.get('ordering') === 'works')).toBe(true);
+    const tanavoli = page.locator('tr').filter({ hasText: 'Parviz Tanavoli' });
+    await expect(tanavoli.locator('td').nth(1)).toHaveText('30');
+    await deskFilter('Search').locator('input').fill('Behjat');
+    await expect.poll(() => list.last()?.get('search')).toBe('Behjat');
+    await expect(page.getByText('Showing 1 of 3 artists')).toBeVisible();
+    await deskFilter('Sort').locator('select').selectOption('name');
+    await expect.poll(() => list.last()?.get('ordering')).toBe('name');
+    expect(list.last()?.get('search')).toBe('Behjat');
+  } finally {
+    await list.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Collectors: the strip equals the summary; the old sorts reach ?ordering=', async () => {
+  thrown = [];
+  const list = watchQueries('/api/auth/admin/collectors/');
+  await list.start();
+  try {
+    await page.goto('/admin/collectors');
+    const tile = (l: string) =>
+      page
+        .locator('.ad-tile')
+        .filter({ has: page.locator('.ad-tile-l', { hasText: new RegExp(`^${l}$`) }) })
+        .locator('.ad-tile-v');
+    await expect(tile('Collectors')).toHaveText('3');
+    await expect(tile('VIP')).toHaveText('1');
+    await expect(tile('Active 30d')).toHaveText('2');
+    await expect(tile('Engaged')).toHaveText('2');
+    // opens on the old default, Recently active
+    await expect.poll(() => list.seen[0]?.get('ordering')).toBe('-activity');
+    await expect(page.getByText('No activity yet')).toBeVisible();
+    await deskFilter('Sort').locator('select').selectOption('-purchases');
+    await expect.poll(() => list.last()?.get('ordering')).toBe('-purchases');
+    await expect(page.locator('tbody tr').first()).toContainText('Dariush Kamali');
+    await expect(page.locator('tbody tr').first()).toContainText('3');
+  } finally {
+    await list.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Club: the card cover is the first work’s thumb (G-CLUB-1)', async () => {
+  thrown = [];
+  await page.goto('/admin/club');
+  const top = page.locator('.ad-clubtop').first();
+  await expect(top).toContainText('Autumn private view');
+  await expect(top).toHaveAttribute('style', /thumb-2\.svg/);
+  expect(thrown).toEqual([]);
+});
+
+test('Data Health: the nine boxes read their counts, and Recently Added opens the Database', async () => {
+  thrown = [];
+  await page.goto('/admin/data-health');
+  const box = (t: string) =>
+    page.locator('.ad-ovbox').filter({ hasText: t }).locator('.ad-ovbox-num');
+  await expect(box('Market App Artworks')).toHaveText('2');
+  await expect(box('Gallery-Sourced')).toHaveText('1');
+  await expect(box('Dealer-Sourced')).toHaveText('1');
+  await expect(box('Artist-Sourced')).toHaveText('0');
+  await expect(box('Deleted (permanent)')).toHaveText('7');
+  await expect(box('Recently Added')).toHaveText('1');
+  await expect(box('Archived / Unavailable')).toHaveText('1');
+  await page.locator('a.ad-ovbox').filter({ hasText: 'Recently Added' }).click();
+  await page.waitForURL(/\/admin\/artworks\?created_after=/);
+  await expect(page.getByText('Heech in a Cage')).toBeVisible();
+  await expect(page.getByText('Mirror Study')).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Dashboard: a catalogue tile opens the Database filtered to its status', async () => {
+  thrown = [];
+  const list = watchQueries('/api/catalog/admin/artworks/');
+  await list.start();
+  try {
+    await page.goto('/admin');
+    await page.locator('a.ad-tile').filter({ hasText: 'Sold' }).click();
+    await page.waitForURL('**/admin/artworks?availability_status=sold');
+    await expect.poll(() => list.last()?.get('availability_status')).toBe('sold');
+    await expect(page.getByText('Untitled Study')).toBeVisible();
+    await expect(page.getByText('Heech in a Cage')).toHaveCount(0);
+  } finally {
+    await list.stop();
   }
   expect(thrown).toEqual([]);
 });

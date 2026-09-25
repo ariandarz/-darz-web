@@ -43,6 +43,7 @@ import type {
   DataHealthReport,
   CollectorActivityAdmin,
   CollectorAdmin,
+  CollectorDeskSummary,
   CollectorAdminQuery,
   CollectorSelection,
   CollectorLoginEvent,
@@ -69,6 +70,7 @@ import type {
   ArtworkAdminQuery,
   ArtworkImageAdmin,
   ArtistAdmin,
+  ArtistAdminQuery,
   SaleAdmin,
   SaleDeskSummary,
   SaleNote,
@@ -477,6 +479,10 @@ export class AdminAccountsService extends ResourceService {
   collectors(query: CollectorAdminQuery = {}) {
     return this.list<CollectorAdmin>('/collectors/', query as RequestOptions['query']);
   }
+  /** The Collectors desk strip (G-COL-1) — whole-roster counts. */
+  collectorsSummary() {
+    return this.retrieve<CollectorDeskSummary>('/collectors/summary/');
+  }
   collector(id: string) {
     return this.retrieve<CollectorAdmin>(`/collectors/${id}/`);
   }
@@ -720,10 +726,9 @@ export class CatalogAdminService extends ResourceService {
     );
   }
 
-  /** The admin artists roster — the backend list takes NO filters (G-CAT-3:
-   * no search/ordering/works count), only pagination; the desk fetches a page
-   * and searches client-side. */
-  artists(query: { page?: number; per_page?: number } = {}) {
+  /** The admin artists roster — server `search` and `ordering` and a
+   * list-only `works_count` per row (G-CAT-3). */
+  artists(query: ArtistAdminQuery = {}) {
     return this.list<ArtistAdmin>('/artists/', query as RequestOptions['query']);
   }
   createArtist(body: Partial<ArtistAdmin>) {

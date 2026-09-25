@@ -69,7 +69,11 @@ const OPTIONS = {
     { value: 'fixed', label: 'Fixed' },
     { value: 'on_request', label: 'On request' },
   ],
-  'catalog.visibility': [{ value: 'visible_all', label: 'Visible to all' }],
+  'catalog.visibility': [
+    { value: 'visible_all', label: 'Visible to all' },
+    { value: 'selected', label: 'Selected collectors' },
+    { value: 'gallery_portal', label: 'Gallery portal' },
+  ],
   currency: [{ value: 'USD', label: 'US Dollar' }],
   'crm.request_kind': [{ value: 'purchase', label: 'Purchase' }],
   'crm.request_status_by_kind': { purchase: [{ value: 'new', label: 'New' }] },
@@ -648,6 +652,253 @@ const auctionById = (path) => AUCTIONS.find((a) => a.id === path.split('/')[5]);
  * poster on one card (the card reads `cover_image_url`, no lot request). */
 const COLLECTOR_AUCTIONS = AUCTIONS.filter((a) => !a.archived);
 
+/* ── V1 Phase 4: the catalogue / collectors desks ─────────────────────────
+ * Admin artworks carry `thumb` + `artist_name` (G-CAT-1), and the list
+ * honours the Database's filters (Phase 5b + G-HEALTH-2/4) so a test can see
+ * both the request query and a narrowed answer. One work (INCOMPLETE) is
+ * refused by the publish gate with `details.missing` (G-CAT-8). */
+const DAY = 86_400_000;
+const thumbUrl = (n) => `${STUB_ORIGIN}/files/thumb-${n}.svg`;
+const THUMB_SVG = (hue) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="280" height="280" viewBox="0 0 280 280"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue},32%,22%)"/><stop offset="1" stop-color="hsl(${hue + 40},40%,58%)"/></linearGradient></defs><rect width="280" height="280" fill="url(#g)"/><circle cx="140" cy="130" r="62" fill="hsl(${hue + 180},30%,70%)" opacity=".55"/></svg>`;
+const ADM_BASE = {
+  artist: null,
+  artist_name_raw: '',
+  year: null,
+  medium: '',
+  material: '',
+  dimensions: '',
+  width_cm: null,
+  height_cm: null,
+  edition: '',
+  city: '',
+  price_amount: null,
+  currency: 'USD',
+  price_type: 'on_request',
+  availability_status: 'available',
+  visibility: 'visible_all',
+  source_name: '',
+  source_type: '',
+  public_description: '',
+  internal_notes: '',
+  provenance: '',
+  tags: [],
+  offer_floor: null,
+  allowed_actions: [],
+  is_published: false,
+  published_at: null,
+  legacy_darz_id: null,
+  legacy_airtable_id: null,
+  version: 1,
+  updated_at: '2026-09-20T10:00:00Z',
+};
+const ADM_INCOMPLETE_ID = '00000000-0000-4000-8000-00000000a203';
+const ADMIN_ARTWORKS = [
+  {
+    ...ADM_BASE,
+    id: '00000000-0000-4000-8000-00000000a201',
+    artist: '00000000-0000-4000-8000-00000000a871',
+    artist_name: 'Parviz Tanavoli',
+    thumb: thumbUrl(1),
+    title: 'Heech in a Cage',
+    year: 2005,
+    medium: 'Bronze',
+    dimensions: '150 x 60 cm',
+    width_cm: '150.00',
+    height_cm: '60.00',
+    price_type: 'fixed',
+    price_amount: '120000.00',
+    is_published: true,
+    published_at: '2026-09-01T10:00:00Z',
+    source_type: 'gallery',
+    _complete: true,
+    _dup: false,
+    created_at: new Date(Date.now() - 3 * DAY).toISOString(),
+  },
+  {
+    ...ADM_BASE,
+    id: '00000000-0000-4000-8000-00000000a202',
+    artist: '00000000-0000-4000-8000-00000000a872',
+    artist_name: 'Monir Farmanfarmaian',
+    thumb: thumbUrl(2),
+    title: 'Mirror Study',
+    year: 1975,
+    medium: 'Mirror mosaic',
+    dimensions: '40 x 40 cm',
+    width_cm: '40.00',
+    height_cm: '40.00',
+    availability_status: 'reserved',
+    // published but NOT public — the Published desk must still list it
+    visibility: 'selected',
+    is_published: true,
+    published_at: '2026-08-10T10:00:00Z',
+    source_type: 'dealer',
+    _complete: true,
+    _dup: true,
+    created_at: '2026-05-02T10:00:00Z',
+  },
+  {
+    ...ADM_BASE,
+    id: ADM_INCOMPLETE_ID,
+    artist_name: 'Behjat Sadr',
+    artist_name_raw: 'Behjat Sadr',
+    thumb: null,
+    title: 'Untitled Study',
+    medium: 'Oil on canvas',
+    visibility: 'gallery_portal',
+    availability_status: 'sold',
+    _complete: false,
+    _dup: false,
+    created_at: '2025-11-20T10:00:00Z',
+  },
+];
+/** The Database's filters over the fixture, the server's way. */
+const adminArtworkList = (sp) => {
+  const b = (k) => (sp.get(k) === 'true' ? true : sp.get(k) === 'false' ? false : undefined);
+  const size = (w) => {
+    const side = Math.max(Number(w.width_cm) || 0, Number(w.height_cm) || 0);
+    if (!side) return null;
+    return side <= 50 ? 'small' : side <= 120 ? 'medium' : 'large';
+  };
+  const q = (sp.get('search') || '').toLowerCase();
+  return ADMIN_ARTWORKS.filter(
+    (w) =>
+      (!q || `${w.title} ${w.artist_name || ''}`.toLowerCase().includes(q)) &&
+      (!sp.get('availability_status') ||
+        w.availability_status === sp.get('availability_status')) &&
+      (b('published') === undefined || w.is_published === b('published')) &&
+      (b('has_images') === undefined || !!w.thumb === b('has_images')) &&
+      (b('duplicate_images') === undefined || w._dup === b('duplicate_images')) &&
+      (b('complete') === undefined || w._complete === b('complete')) &&
+      (b('gallery_portal') === undefined ||
+        (w.visibility === 'gallery_portal') === b('gallery_portal')) &&
+      (!sp.get('size') || size(w) === sp.get('size')) &&
+      (!sp.get('source_type') || w.source_type === sp.get('source_type')) &&
+      (!sp.get('created_after') || w.created_at >= sp.get('created_after')),
+  ).map(({ _complete, _dup, ...w }) => w);
+};
+const adminArtwork = (id) => adminArtworkList(new URLSearchParams()).find((w) => w.id === id);
+
+/** The admin artists roster (G-CAT-3): server search + ordering, `works_count`. */
+const ADMIN_ARTISTS = [
+  ['00000000-0000-4000-8000-00000000a871', 'Parviz Tanavoli', 30, '2026-01-10T00:00:00Z'],
+  ['00000000-0000-4000-8000-00000000a872', 'Monir Farmanfarmaian', 12, '2026-03-02T00:00:00Z'],
+  ['00000000-0000-4000-8000-00000000a873', 'Behjat Sadr', 4, '2026-09-01T00:00:00Z'],
+].map(([id, display_name, works_count, created_at]) => ({
+  id,
+  display_name,
+  name_variants: [],
+  bio: '',
+  birth_year: null,
+  nationality: 'Iranian',
+  external_ids: {},
+  works_count,
+  version: 1,
+  created_at,
+  updated_at: created_at,
+}));
+const adminArtistList = (sp) => {
+  const q = (sp.get('search') || '').toLowerCase();
+  const rows = ADMIN_ARTISTS.filter((a) => a.display_name.toLowerCase().includes(q));
+  const by = {
+    name: (a, b) => a.display_name.localeCompare(b.display_name),
+    '-name': (a, b) => b.display_name.localeCompare(a.display_name),
+    created: (a, b) => a.created_at.localeCompare(b.created_at),
+    '-created': (a, b) => b.created_at.localeCompare(a.created_at),
+    works: (a, b) => b.works_count - a.works_count,
+  }[sp.get('ordering') || ''];
+  return by ? [...rows].sort(by) : rows;
+};
+
+/** The admin collectors roster (G-COL-1/2): the summary, and rows with the
+ * list-only `last_activity_at` / `purchase_count`, ordered the server's way. */
+const COLLECTORS_SUMMARY = { collectors: 3, vip: 1, active_30d: 2, engaged: 2 };
+const COL_BASE = {
+  full_name: '',
+  phone: '',
+  city: 'Tehran',
+  access_status: 'active',
+  preferences: {},
+  notes: '',
+  version: 1,
+  updated_at: '2026-09-01T00:00:00Z',
+};
+const ADMIN_COLLECTORS = [
+  {
+    ...COL_BASE,
+    id: '00000000-0000-4000-8000-0000000c0001',
+    display_name: 'Leila Ahmadi',
+    email: 'leila@example.invalid',
+    tier: 'vip',
+    last_activity_at: new Date(Date.now() - 2 * DAY).toISOString(),
+    purchase_count: 1,
+    created_at: '2026-02-01T00:00:00Z',
+  },
+  {
+    ...COL_BASE,
+    id: '00000000-0000-4000-8000-0000000c0002',
+    display_name: 'Dariush Kamali',
+    email: 'dariush@example.invalid',
+    tier: '',
+    last_activity_at: new Date(Date.now() - 12 * DAY).toISOString(),
+    purchase_count: 3,
+    created_at: '2026-06-15T00:00:00Z',
+  },
+  {
+    ...COL_BASE,
+    id: '00000000-0000-4000-8000-0000000c0003',
+    display_name: 'Sara Nouri',
+    email: 'sara@example.invalid',
+    tier: '',
+    last_activity_at: null,
+    purchase_count: 0,
+    created_at: '2026-09-10T00:00:00Z',
+  },
+];
+const adminCollectorList = (sp) => {
+  const q = (sp.get('search') || '').toLowerCase();
+  const rows = ADMIN_COLLECTORS.filter(
+    (c) =>
+      `${c.display_name} ${c.email}`.toLowerCase().includes(q) &&
+      (!sp.get('tier') || c.tier === sp.get('tier')) &&
+      (!sp.get('access_status') || c.access_status === sp.get('access_status')),
+  );
+  const desc = (k) => (a, b) =>
+    (b[k] ?? -Infinity) > (a[k] ?? -Infinity)
+      ? 1
+      : (b[k] ?? -Infinity) < (a[k] ?? -Infinity)
+        ? -1
+        : 0;
+  const by = {
+    name: (a, b) => a.display_name.localeCompare(b.display_name),
+    '-name': (a, b) => b.display_name.localeCompare(a.display_name),
+    created: (a, b) => a.created_at.localeCompare(b.created_at),
+    '-activity': desc('last_activity_at'),
+    '-purchases': desc('purchase_count'),
+  }[sp.get('ordering') || ''];
+  return by
+    ? [...rows].sort(by)
+    : [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at));
+};
+
+/** The Club's selections — each nested artwork carries `thumb` (G-CLUB-1). */
+const CLUB_SELECTIONS = [
+  {
+    id: '00000000-0000-4000-8000-0000000c1b01',
+    name: 'Autumn private view',
+    note: 'Before the public catalogue.',
+    artworks: [
+      { id: ADMIN_ARTWORKS[1].id, title: 'Mirror Study', thumb: thumbUrl(2) },
+      { id: ADMIN_ARTWORKS[0].id, title: 'Heech in a Cage', thumb: thumbUrl(1) },
+    ],
+    collectors: [{ id: ADMIN_COLLECTORS[0].id, display_name: 'Leila Ahmadi' }],
+    created_by: null,
+    version: 1,
+    created_at: '2026-09-12T00:00:00Z',
+    updated_at: '2026-09-12T00:00:00Z',
+  },
+];
+
 const routes = {
   // `?langs=` turns the multilingual engine on for one walk. The app ships it
   // OFF (no `theme.langs`), and the default here reproduces that — so the stub
@@ -740,6 +991,14 @@ const routes = {
   // undefined — the desk now normalises (see `artworkFacets.ts`), and this
   // route makes the stub tell the truth about the endpoint's real shape.
   'GET /api/catalog/admin/artworks/facets/': () => envelope({ years: [], sources: [] }),
+  'GET /api/catalog/admin/artworks/': (req) =>
+    page(adminArtworkList(new URL(req.url, 'http://x').searchParams)),
+  'GET /api/catalog/admin/artists/': (req) =>
+    page(adminArtistList(new URL(req.url, 'http://x').searchParams)),
+  'GET /api/auth/admin/collectors/summary/': () => envelope(COLLECTORS_SUMMARY),
+  'GET /api/auth/admin/collectors/': (req) =>
+    page(adminCollectorList(new URL(req.url, 'http://x').searchParams)),
+  'GET /api/crm/admin/selections/': () => page(CLUB_SELECTIONS),
   // The collector questionnaire. Both halves are registered because the
   // catch-all cannot express either: a never-submitted collector reads **200
   // with `answered: false`** (G-P25-1 — the backend used to 404 here), and the
@@ -774,12 +1033,19 @@ const routes = {
     return page(AUCTION_RECORDS.filter((r) => !house || r.house === house));
   },
   'GET /api/auctions/': () => page(COLLECTOR_AUCTIONS),
+  // One incomplete work and one shared image, with the G-HEALTH-3 deleted count.
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
-      healthy: true,
-      duplicate_images: { count: 0, items: [] },
-      incomplete_records: { count: 0, items: [] },
+      healthy: false,
+      duplicate_images: { count: 1, items: [{ object_key: 'artworks/mirror.jpg', n: 2 }] },
+      incomplete_records: {
+        count: 1,
+        items: [
+          { id: ADM_INCOMPLETE_ID, title: 'Untitled Study', missing: ['size', 'image'] },
+        ],
+      },
       published_but_hidden: { count: 0, items: [] },
+      deleted_records: { count: 7 },
     }),
 };
 
@@ -846,6 +1112,46 @@ const patterns = [
     (path) => envelope(REQUEST_WORKS[path.split('/')[4]]),
   ],
   [/^\/api\/catalog\/admin\/artworks\/[^/]+\/images\/$/, 'GET', () => envelope([])],
+  // The publish gate (G-CAT-8): the incomplete work is refused with the
+  // structured `details.missing`; any other known work publishes.
+  [
+    /^\/api\/catalog\/admin\/artworks\/[^/]+\/publish\/$/,
+    'POST',
+    (path) => {
+      const id = path.split('/')[5];
+      if (id === ADM_INCOMPLETE_ID)
+        return {
+          status: 400,
+          body: {
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message:
+                'Validation failed: Cannot publish an incomplete listing.; missing: size; missing: image',
+              details: {
+                non_field_errors: ['Cannot publish an incomplete listing.'],
+                missing: ['size', 'image'],
+              },
+            },
+            timestamp: new Date().toISOString(),
+          },
+        };
+      const w = adminArtwork(id);
+      return w
+        ? envelope({ ...w, is_published: true })
+        : notFound('No Artwork matches the given query.');
+    },
+  ],
+  [
+    /^\/api\/catalog\/admin\/artworks\/[^/]+\/unpublish\/$/,
+    'POST',
+    (path) => {
+      const w = adminArtwork(path.split('/')[5]);
+      return w
+        ? envelope({ ...w, is_published: false })
+        : notFound('No Artwork matches the given query.');
+    },
+  ],
   [/^\/api\/catalog\/admin\/artworks\/[^/]+\/selection-grants\/$/, 'GET', () => envelope([])],
   // One sale (the desk's detail); an unknown id is a 404, as on the backend.
   [
@@ -1011,6 +1317,8 @@ const patterns = [
     'GET',
     (path) => {
       const id = path.split('/')[5];
+      const admin = adminArtwork(id);
+      if (admin) return envelope(admin);
       const t = LOT_ARTWORK_TITLES[id];
       return t
         ? envelope({ id, artist_name_raw: t[0], title: t[1] })
@@ -1082,6 +1390,14 @@ function respond(req, res, body) {
   }
   // The uploaded poster the stub's auctions point at — a small SVG, so a
   // render check shows a real image rather than a broken one.
+  // The Phase 4 artwork thumbnails — small generated SVGs, one hue each.
+  const thumb = url.pathname.match(/^\/files\/thumb-(\d+)\.svg$/);
+  if (thumb) {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.writeHead(200);
+    res.end(THUMB_SVG(Number(thumb[1]) * 97));
+    return;
+  }
   if (url.pathname === '/files/auction-cover.svg') {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.writeHead(200);

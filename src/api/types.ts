@@ -258,6 +258,9 @@ export interface DataHealthReport {
   duplicate_images: { count: number; items: Array<Record<string, unknown>> };
   incomplete_records: { count: number; items: Array<Record<string, unknown>> };
   published_but_hidden: { count: number; items: Array<Record<string, unknown>> };
+  /** G-HEALTH-3 — a count only: soft-deleted artworks (the old "Deleted
+   * (permanent)" tile). Optional: read defensively, like the rest. */
+  deleted_records?: { count: number };
   healthy: boolean;
 }
 
@@ -309,6 +312,11 @@ export type AppThemeVersion = Schemas['AppThemeVersion'];
  * send it back on PATCH or the write 409s. */
 export type CollectorAdmin = Schemas['CollectorAdmin'];
 
+/** `GET /api/auth/admin/collectors/summary/` (G-COL-1) — the old Collectors
+ * overview strip, `darz-studio.html:32632`: Collectors · VIP · Active 30d ·
+ * Engaged, counted server-side over the whole roster. */
+export type CollectorDeskSummary = Schemas['CollectorDeskSummary'];
+
 /** `GET/POST /api/auth/admin/collectors/` query — `apps/accounts/filters.py::
  * CollectorFilterSet`: free-text `search` over display_name/full_name/email/
  * phone, exact `tier`/`access_status`, `ordering` of name|-name|created|-created. */
@@ -316,7 +324,18 @@ export interface CollectorAdminQuery {
   search?: string;
   tier?: string;
   access_status?: string;
-  ordering?: 'name' | '-name' | 'created' | '-created';
+  /** `activity`/`purchases` (G-COL-2) sort on the list-only rollups
+   * `last_activity_at`/`purchase_count`; the descending forms put
+   * never-active / never-buying collectors last (`nulls_last`). */
+  ordering?:
+    | 'name'
+    | '-name'
+    | 'created'
+    | '-created'
+    | 'activity'
+    | '-activity'
+    | 'purchases'
+    | '-purchases';
   per_page?: number;
   page?: number;
 }
@@ -479,10 +498,10 @@ export interface AccessRequest {
   created_at: string;
 }
 
-/** Admin artwork row/detail — `ArtworkAdminSerializer`, all fields. The list
- * rows carry NO images and the artist as a bare uuid + `artist_name_raw`
- * (G-CAT-1: no thumbnail or resolved artist name on the admin list row — the
- * desk resolves names against the artists roster instead). Updates require
+/** Admin artwork row/detail — `ArtworkAdminSerializer`, all fields. Since
+ * G-CAT-1 every row carries `thumb` (the primary image's URL, or null) and
+ * `artist_name` (the linked artist's name, else the raw legacy name), so the
+ * Database desk no longer resolves names against the roster. Updates require
  * `expected_version`; `availability_status`/`is_published` are read-only and
  * change only through `/transition/` and `/publish/`·`/unpublish/`. */
 export type ArtworkAdmin = Schemas['ArtworkAdmin'];
@@ -491,10 +510,20 @@ export type ArtworkAdmin = Schemas['ArtworkAdmin'];
  * object key is always server-generated. */
 export type ArtworkImageAdmin = Schemas['ArtworkImage'];
 
-/** Admin artist row — `ArtistAdminSerializer`. The admin roster list takes no
- * filters at all (no search/ordering/works count — G-CAT-3); the desk fetches
- * pages and searches client-side. */
+/** Admin artist row — `ArtistAdminSerializer`. `works_count` (G-CAT-3) is a
+ * list-only annotation — **null on detail, create and PATCH** (C-16), so a
+ * list row is never overwritten with a write's response. */
 export type ArtistAdmin = Schemas['ArtistAdmin'];
+
+/** The admin artists roster's query — `ArtistAdminFilterSet` (G-CAT-3):
+ * `search` over the display name, `ordering` name|-name|created|-created|works
+ * (`works` = most works first). */
+export interface ArtistAdminQuery {
+  search?: string;
+  ordering?: 'name' | '-name' | 'created' | '-created' | 'works';
+  page?: number;
+  per_page?: number;
+}
 
 /** The admin catalogue list's query — `ArtworkFilterSet`, shared with the
  * collector catalogue: `search` over artist name/title/medium/dimensions,
@@ -525,6 +554,20 @@ export interface ArtworkAdminQuery {
   published?: boolean;
   /** The old "Images: with / without". */
   has_images?: boolean;
+  /* ── Phase 5b + G-HEALTH-2/4 (backend `catalog/filters.py:180-203`) ── */
+  /** `visibility = gallery_portal` (true) or any other visibility (false). */
+  gallery_portal?: boolean;
+  /** Every required field + an image (true) / incomplete (false) — the same
+   * definition as the Data Health report. */
+  complete?: boolean;
+  /** Shares a stored image (`object_key`) with another work. */
+  duplicate_images?: boolean;
+  /** Largest side in cm: small ≤ 50 · medium 50–120 · large > 120. */
+  size?: 'small' | 'medium' | 'large';
+  /** `gallery | artist | collector | dealer | other` (not in `/options/`, C-14). */
+  source_type?: string;
+  /** ISO datetime — works created at/after it ("Recently added"). */
+  created_after?: string;
   page?: number;
   per_page?: number;
 }
