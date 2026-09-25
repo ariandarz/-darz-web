@@ -570,6 +570,75 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ---- the deal's follow-up and notes (G-SALE-5) ---------------------------
+   Ported from the old Sales desk's own sheet (`salesCss()`,
+   `darz-studio.html:12382`, lines 12412-12447):
+   - `.ad-salefu` is `.dzs-fu` (:12412) — the row's "Follow-up <date> · due"
+     line under the collector, a dot then the words, the attention colour once
+     overdue (`.over`, here `.is-over`);
+   - `.ad-salefubar` is `.dzs-fubar .lbl` (:12444-12445) — the deal card's
+     "Follow-up with collector: <b>date</b>" line, the date in the attention
+     colour;
+   - `.ad-salenote` is `.dzs-note` + `.m` (:12446-12447) — one note, its
+     monospaced stamp line above the text. */
+.ad-salefu {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink3);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ad-salefu::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+.ad-salefu.is-over {
+  color: var(--magenta);
+}
+.ad-salefubar {
+  font-size: 11px;
+  color: var(--ink2);
+  margin: 0 0 4px;
+}
+.ad-salefubar b {
+  color: var(--magenta);
+}
+.ad-salenote {
+  font-size: 12px;
+  color: var(--ink2);
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  padding: 9px 11px;
+  line-height: 1.5;
+  margin-bottom: 7px;
+  white-space: pre-wrap;
+}
+.ad-salenote-m {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink3);
+  display: block;
+  margin-bottom: 3px;
+}
+.ad-salenotes .ad-cellsub {
+  margin-bottom: 7px; /* "No notes yet." — :12654 */
+}
+.ad-salenotes .ad-field {
+  width: 100%;
+}
+.ad-salenotes textarea {
+  min-height: 52px;
+  resize: vertical;
+  width: 100%;
+}
 .ad-pubgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));

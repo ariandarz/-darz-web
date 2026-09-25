@@ -338,15 +338,18 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/sales',
         'ready',
         '12·2',
-        'sales admin, 5 routes.',
+        'sales admin: list + summary tiles, search/filters/sort, follow-up, notes (V1 Phase 2).',
       ),
+      // One route, two tabs — the Galleries `?type=gallery` shape: the
+      // Sales desk scoped to `source=auction` (G-SALE-4), which the
+      // auction→Sale automation fills with a draft per won lot.
       tab(
         'auctionSales',
         'Auction Sales',
-        null,
-        'partial',
-        '12+',
-        'Sale has no source axis (G-SALE-4) — auction settlement is its own loop.',
+        '/admin/sales?source=auction',
+        'ready',
+        'V1·2',
+        'the Sales desk scoped to source=auction; each row links to its lot.',
       ),
     ],
   },
