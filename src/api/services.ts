@@ -101,6 +101,13 @@ import type {
   PortalExhibition,
   PortalExhibitionInput,
   PortalCatalogueEntry,
+  PortalPricelistBuild,
+  PortalUpdate,
+  GalleryPricelistCap,
+  GalleryPricelistStatus,
+  ExhibitionCatalogItem,
+  ExhibitionCatalogInput,
+  ExhibitionCatalogPatch,
   ExhibitionAdmin,
   ExhibitionAdminPatch,
   ExhibitionLineInput,
@@ -959,7 +966,11 @@ export class GalleryAdminService extends ResourceService {
     super(client, '/gallery/admin');
   }
 
-  links(query: { source_type?: string; page?: number; per_page?: number } = {}) {
+  /** `search` is server-side (G-PORT-15): a case-insensitive substring over
+   * name / contact_name / contact_email (`views.py::admin_link_list_create`). */
+  links(
+    query: { source_type?: string; search?: string; page?: number; per_page?: number } = {},
+  ) {
     return this.list<GalleryLinkAdmin>('/links/', query as RequestOptions['query']);
   }
   link(id: string) {
@@ -985,6 +996,15 @@ export class GalleryAdminService extends ResourceService {
   }
   disableLink(id: string) {
     return this.create<GalleryLinkAdmin>(`/links/${id}/disable/`);
+  }
+  /** G-PORT-13 — a fresh token+PIN for the SAME link (works, shows and
+   * thread stay); the old pair stops working. Shown once, like an issue.
+   * Credentials only — the link's status is untouched, so a disabled or
+   * expired link stays that way (`views.py::admin_link_reissue`). */
+  reissueLink(id: string) {
+    return this.create<{ link: GalleryLinkAdmin; token: string; pin: string }>(
+      `/links/${id}/reissue/`,
+    );
   }
   setLinkFeatures(
     id: string,
@@ -1042,16 +1062,25 @@ export class GalleryAdminService extends ResourceService {
     return this.create<GalleryUpdateAdmin>(`/updates/${id}/reject/`, { note });
   }
 
-  /** The pricelists this partner sent through the portal. The serializer
-   * carries `title`/`notes`/`created_at` only — the stored file itself is
-   * NOT served to the desk (`GalleryPricelist.object_key` is not in
-   * `GalleryPricelistSerializer`), so the desk can say one arrived and when,
-   * and cannot open it. Recorded as G-PORT-14. */
+  /** The pricelists this partner sent through the portal — each with its
+   * `status`, a presigned `file_url` for an upload (G-PORT-14) and the
+   * structured `lines` of one built in-portal (P3b). */
   linkPricelists(linkId: string, query: { page?: number; per_page?: number } = {}) {
     return this.list<GalleryPricelistAdmin>(
       `/links/${linkId}/pricelists/`,
       query as RequestOptions['query'],
     );
+  }
+
+  /** P3a — accepting one SUPERSEDES the link's previously accepted list
+   * server-side with no transition guard (C-21): re-read the link's
+   * pricelists after every call rather than patching one row locally. */
+  setPricelistStatus(id: string, status: GalleryPricelistStatus) {
+    return this.create<GalleryPricelistAdmin>(`/pricelists/${id}/status/`, { status });
+  }
+  /** The advisory soft cap (never a block, `GalleryPricelistService.cap_status`). */
+  pricelistCap(linkId: string) {
+    return this.retrieve<GalleryPricelistCap>(`/links/${linkId}/pricelists/cap/`);
   }
 
   /** The link's Q&A thread — the admin side of the portal's Messages tab.
@@ -1064,6 +1093,31 @@ export class GalleryAdminService extends ResourceService {
   }
   sendLinkMessage(linkId: string, body: string) {
     return this.create<PortalMessage>(`/links/${linkId}/messages/`, { body });
+  }
+
+  // --- The editable Exhibition Services menu (G-PORT-12b) -----------------
+  // The table the portal's `exhibitions/catalogue/` reads (active rows only)
+  // and the desk composes from. `key` is fixed once created.
+
+  exhibitionCatalogue(query: PageQuery = {}) {
+    return this.list<ExhibitionCatalogItem>(
+      '/exhibition-catalogue/',
+      query as RequestOptions['query'],
+    );
+  }
+  createExhibitionCatalogueItem(body: ExhibitionCatalogInput) {
+    return this.create<ExhibitionCatalogItem>('/exhibition-catalogue/', body);
+  }
+  /** Locked — a stale `expected_version` is a 409 (`enforce_version`). */
+  updateExhibitionCatalogueItem(id: string, body: ExhibitionCatalogPatch) {
+    return this.client.send<ExhibitionCatalogItem>(
+      'PATCH',
+      `${this.basePath}/exhibition-catalogue/${id}/`,
+      { body },
+    );
+  }
+  deleteExhibitionCatalogueItem(id: string) {
+    return this.remove(`/exhibition-catalogue/${id}/`);
   }
 
   // --- Exhibition Services (Phase 12-A, the desk half) ----------------------
@@ -1803,7 +1857,9 @@ export class GalleryPortalService {
     return `/gallery/portal/${encodeURIComponent(token)}`;
   }
 
-  /** The one big read — link + assigned works (+funnel) + pricelists + messages. */
+  /** The one big read — link + assigned works (+image, +funnel) + pricelists
+   * + messages + the source's own updates + cover (C-8). Raw: the session
+   * normalises the embedded arrays (`normalisePortalState`). */
   state(token: string, pin: string) {
     return this.client.send<PortalState>('GET', `${this.base(token)}/`, { query: { pin } });
   }
@@ -1815,6 +1871,29 @@ export class GalleryPortalService {
    * for the reviewer (`GalleryUpdateService.approve`). */
   submitUpdate(token: string, pin: string, body: PortalUpdateSubmit) {
     return this.client.send<PortalUpdateRow>('POST', `${this.base(token)}/updates/`, {
+      body: { pin, ...body },
+    });
+  }
+
+  /** G-PORT-1 — a replacement image for an ASSIGNED work, multipart with the
+   * PIN as a form part (C-9: the schema documents `?pin=` here, which 401s —
+   * `_portal_pin` reads the body on every non-GET). Lands as a pending
+   * `image` update; nothing touches the live work until Darz follows through. */
+  replaceImage(token: string, pin: string, artworkId: string, file: File) {
+    const form = new FormData();
+    form.append('pin', pin);
+    form.append('file', file);
+    return this.client.send<PortalUpdate>(
+      'POST',
+      `${this.base(token)}/artworks/${encodeURIComponent(artworkId)}/image/`,
+      { body: form },
+    );
+  }
+
+  /** P3b — a structured pricelist built in-portal (≥1 line, each an artwork
+   * or a title). JSON body with `pin` inside it (C-9), never `?pin=`. */
+  buildPricelist(token: string, pin: string, body: PortalPricelistBuild) {
+    return this.client.send<PortalPricelist>('POST', `${this.base(token)}/pricelists/build/`, {
       body: { pin, ...body },
     });
   }

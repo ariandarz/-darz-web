@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 Phase 5: gallery portal (P1/P3/P4), Sources desk, exhibition catalogue
+
+- Portal: typed/normalised state (C-8), work images + cover, Replace image (multipart, PIN in form, C-9), Ask + Remove-from-portal (withdraw), server Sent pills / Pending review / History, pricelist status + builder. Desk: server partner search, Regenerate (reissue), pricelist file/lines/status/cap, ask/withdraw/image review copy, new Service checklist desk (catalogue CRUD, lock), compose quantity, service descriptions via API.
+- Matrix: 9 ops → Integrated (251/2/9/60/1). **765 unit · 133 E2E** (portal 6, desks 86). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3f.
+
 ## 2026-09-25 — V1 Phase 4: Database, Artists, Published, Collectors, Club, Data Health, Dashboard
 
 - Database rows lead with `thumb` + `artist_name`; Gallery Portal / Duplicates / Details / Size filters (list + facets), `source_type`/`created_after` link chips; publish `details.missing` → the old refusal popup (row + editor). Artists: server search/sort/pager + Works. Published: admin `?published=true`. Collectors: `summary/` strip + Recently active / Most purchases. Club cover from `thumb`. Data Health: all nine boxes in three bands, linked. Dashboard catalogue tiles link.

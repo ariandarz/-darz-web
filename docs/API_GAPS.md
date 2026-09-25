@@ -145,19 +145,19 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-PROJ-1 | `?quick=` + `?partner=` on projects | Not sendable: client-side walks | 7 |
 | G-PROJ-2/3 | `status` and `stages` writable on PATCH | Shown read-only; tiles stay 0 | 7 |
 | G-PROJ-6/7 | `?archived=` bool fix; tombstoned partner round-trip | Nothing to adopt (bug fixes) | — |
-| G-PROJ-8 | `description` on service-catalog items | Unused: hardcoded `DESCRIPTIONS` map | 5 / 7 |
+| G-PROJ-8 | `description` on service-catalog items | ✅ Adopted (Phase 5): Exhibition Services reads and edits each row's `description`; the `DESCRIPTIONS` map is deleted; the standard-set seed writes `about` into it. Existing rows seeded before stay blank until typed | 5 |
 | G-PROJ-9 | Manual FX fields + `GET …/projects/{id}/totals/` | Not bound | 7 |
-| G-PORT-1 | Snapshot `image_url` on assigned works; `POST portal/{token}/artworks/{id}/image/` (multipart) | Unused: cards say "No image"; no upload | 5 |
-| G-PORT-2 | `updates[]` in portal state | Unused: pills are per-tab memory | 5 |
-| G-PORT-3 (P3a/P3b) | Pricelist `status` + `POST admin/pricelists/{id}/status/`, `GET …/pricelists/cap/`, structured `lines[]` + `POST portal/{token}/pricelists/build/` | Unused: rows always "Received" | 5 |
-| G-PORT-4/6 | Update kinds `ask` + `withdraw` (an approved withdraw **unassigns** the work) | Never sent; admin confirm copy is wrong for withdraw | 5 |
-| G-PORT-9 | `cover` in portal state | Unused | 5 |
+| G-PORT-1 | Snapshot `image_url` on assigned works; `POST portal/{token}/artworks/{id}/image/` (multipart) | ✅ Adopted (Phase 5): cards show `image_url`; the old v1146 "Replace image" dropzone uploads on Send update (`pin` as a form part, C-9; 6 MB/image guard). Desk shows "Image submitted" only (C-12) | 5 |
+| G-PORT-2 | `updates[]` in portal state | ✅ Adopted (Phase 5): Sent pills + the old "Pending review" tile from pending rows (optimistic mark until the reload); a History tab (old §83 panel) | 5 |
+| G-PORT-3 (P3a/P3b) | Pricelist `status` + `POST admin/pricelists/{id}/status/`, `GET …/pricelists/cap/`, structured `lines[]` + `POST portal/{token}/pricelists/build/` | ✅ Adopted (Phase 5): portal rows show `status` (raw label, C-14) and an in-portal builder (old `buildOpen`); the desk renders lines, "Mark …" status buttons with a re-read (C-21) and the advisory cap line | 5 |
+| G-PORT-4/6 | Update kinds `ask` + `withdraw` (an approved withdraw **unassigns** the work) | ✅ Adopted (Phase 5): per-work "Ask Darz about this work" (no old source, flagged) and the old "Remove from portal" as a withdraw request; the desk shows the question and says approval unassigns | 5 |
+| G-PORT-9 | `cover` in portal state | ✅ Adopted (Phase 5): the header's `.top-cover`, captioned from its work | 5 |
 | G-PORT-11 | Portal throttle only on writes | Nothing to adopt | — |
-| G-PORT-12b | Editable exhibition catalogue: `/gallery/admin/exhibition-catalogue/` CRUD (lock) | No desk | 5 |
-| G-PORT-13 | `POST /gallery/admin/links/{id}/reissue/` + expiry sweep | Not bound; copy says "no re-issue" | 5 |
-| G-PORT-14 | `object_key` + `file_url` on pricelists | Unused | 5 |
-| G-PORT-15 | `?search=` on admin links | Unused: client-side over one page | 5 |
-| G-PORT-16 | `quantity` on exhibition service lines | Never sent | 5 |
+| G-PORT-12b | Editable exhibition catalogue: `/gallery/admin/exhibition-catalogue/` CRUD (lock) | ✅ Adopted (Phase 5): the "Service checklist" desk (`/admin/exhibition-catalogue`, old `.gxe-row`), locked PATCH + ConflictBanner; compose reads it (`priceList.ts` deleted) | 5 |
+| G-PORT-13 | `POST /gallery/admin/links/{id}/reissue/` + expiry sweep | ✅ Adopted (Phase 5): Source detail "Regenerate" (old confirm), new pair in the shared shown-once panel; status untouched and said so | 5 |
+| G-PORT-14 | `object_key` + `file_url` on pricelists | ✅ Adopted (Phase 5): "Open file" on the desk and the portal row | 5 |
+| G-PORT-15 | `?search=` on admin links | ✅ Adopted (Phase 5): the partner search is a server query | 5 |
+| G-PORT-16 | `quantity` on exhibition service lines | ✅ Adopted (Phase 5): compose sends/shows it; Issue document splits the line amount back into qty × unit; portal prints "n ×" | 5 |
 | G-PORT-5/7/8, P3c | Referral tab, drawn signature, offer engine, formatted pricelist download | ⛔ **No backend**: not V1 | — |
 | G-PORT-10 | Pre-PIN name probe | ➖ Dropped by owner | — |
 

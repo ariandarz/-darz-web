@@ -230,11 +230,11 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/gallery/admin/exhibition-catalogue/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Exhibition-services catalogue CRUD — no binding (FE ExhibitionServicesPage uses projects service-catalog/packages instead). |
-| POST | /api/gallery/admin/exhibition-catalogue/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Exhibition-services catalogue CRUD — no binding (FE ExhibitionServicesPage uses projects service-catalog/packages instead). |
+| GET | /api/gallery/admin/exhibition-catalogue/ | `GalleryAdminService.exhibitionCatalogue` | `admin/ExhibitionCatalogPage.tsx`, `admin/ExhibitionComposePage.tsx` | Integrated | V1 Phase 5 (2026-09-25): the Service checklist desk (paged) and the compose menu (walked, active rows) — G-PORT-12b. |
+| POST | /api/gallery/admin/exhibition-catalogue/ | `GalleryAdminService.createExhibitionCatalogueItem` | `admin/ExhibitionCatalogPage.tsx` | Integrated | V1 Phase 5 (2026-09-25): + Add service (key/title/description/default_price/position/is_active). |
 | GET | /api/gallery/admin/exhibition-catalogue/{id}/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Exhibition-services catalogue CRUD — no binding (FE ExhibitionServicesPage uses projects service-catalog/packages instead). |
-| PATCH | /api/gallery/admin/exhibition-catalogue/{id}/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Exhibition-services catalogue CRUD — no binding (FE ExhibitionServicesPage uses projects service-catalog/packages instead). |
-| DELETE | /api/gallery/admin/exhibition-catalogue/{id}/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Exhibition-services catalogue CRUD — no binding (FE ExhibitionServicesPage uses projects service-catalog/packages instead). |
+| PATCH | /api/gallery/admin/exhibition-catalogue/{id}/ | `GalleryAdminService.updateExhibitionCatalogueItem` | `admin/ExhibitionCatalogPage.tsx` | Integrated | V1 Phase 5 (2026-09-25): locked (`expected_version`, `optimisticLock.test.ts`), key never sent; 409 → ConflictBanner; Turn off/on = `is_active`. |
+| DELETE | /api/gallery/admin/exhibition-catalogue/{id}/ | `GalleryAdminService.deleteExhibitionCatalogueItem` | `admin/ExhibitionCatalogPage.tsx` | Integrated | V1 Phase 5 (2026-09-25): ✕ with a confirm (the old row's remove). |
 | GET | /api/gallery/admin/exhibitions/ | `GalleryAdminService.exhibitions` | `admin/ExhibitionsQueue.tsx`, `admin/SourceExhibitions.tsx`, `admin/exhibitions/IssueDocumentPage.tsx` | Integrated | All schema filters (`link, published, request_status`) in ExhibitionQuery. |
 | GET | /api/gallery/admin/exhibitions/{id}/ | `GalleryAdminService.exhibition` | `admin/ExhibitionComposePage.tsx` | Integrated |  |
 | PATCH | /api/gallery/admin/exhibitions/{id}/ | `GalleryAdminService.updateExhibition` | bound-unused | Bound, no UI | `GalleryAdminService.updateExhibition` exists but nothing calls it. |
@@ -246,14 +246,14 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | POST | /api/gallery/admin/exhibitions/{id}/documents/{document_id}/sign/ | `GalleryAdminService.signExhibitionDocument` | `admin/ExhibitionComposePage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/exhibitions/{id}/documents/{document_id}/upload/ | `GalleryAdminService.uploadExhibitionDocumentPdf` | `admin/exhibitions/IssueDocumentPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/exhibitions/{id}/publish/ | `GalleryAdminService.publishExhibition` | `admin/ExhibitionComposePage.tsx` | Integrated |  |
-| GET | /api/gallery/admin/links/ | `GalleryAdminService.links` | `admin/SourcesPage.tsx`, `admin/exhibitions/IssueDocumentPage.tsx` | Integrated | `?search` unsent (query type has source_type/page/per_page only). |
+| GET | /api/gallery/admin/links/ | `GalleryAdminService.links` | `admin/SourcesPage.tsx`, `admin/exhibitions/IssueDocumentPage.tsx` | Integrated | V1 Phase 5: `?search` sent — the partner search is server-side (G-PORT-15). |
 | POST | /api/gallery/admin/links/ | `GalleryAdminService.issueLink` | `admin/SourcesPage.tsx` | Integrated |  |
 | GET | /api/gallery/admin/links/{id}/ | `GalleryAdminService.link` | `admin/ExhibitionComposePage.tsx`, `admin/SourceDetailPage.tsx` | Integrated |  |
 | DELETE | /api/gallery/admin/links/{id}/ | none | — | Not bound | Delete link — no binding. |
 | POST | /api/gallery/admin/links/{id}/disable/ | `GalleryAdminService.disableLink` | `admin/SourceDetailPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/links/{id}/enable/ | `GalleryAdminService.enableLink` | `admin/SourceDetailPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/links/{id}/features/ | `GalleryAdminService.setLinkFeatures` | `admin/SourceDetailPage.tsx` | Integrated |  |
-| POST | /api/gallery/admin/links/{id}/reissue/ | none | — | Not bound | Reissue token/PIN — no binding. |
+| POST | /api/gallery/admin/links/{id}/reissue/ | `GalleryAdminService.reissueLink` | `admin/SourceDetailPage.tsx` | Integrated | V1 Phase 5 (2026-09-25): "Regenerate" (old confirm); pair shown once in `SourceCredentials.tsx`; status untouched — G-PORT-13. |
 | GET | /api/gallery/admin/links/{link_pk}/artworks/ | `GalleryAdminService.linkArtworks` | `admin/SourceDetailPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/links/{link_pk}/artworks/ | `GalleryAdminService.assignArtwork` | `admin/SourceDetailPage.tsx` | Integrated |  |
 | DELETE | /api/gallery/admin/links/{link_pk}/artworks/{id}/ | `GalleryAdminService.removeArtwork` | `admin/SourceDetailPage.tsx` | Integrated |  |
@@ -262,13 +262,13 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/gallery/admin/links/{link_pk}/messages/ | `GalleryAdminService.linkMessages` | `admin/SourceExhibitions.tsx` | Integrated |  |
 | POST | /api/gallery/admin/links/{link_pk}/messages/ | `GalleryAdminService.sendLinkMessage` | `admin/SourceExhibitions.tsx` | Integrated |  |
 | GET | /api/gallery/admin/links/{link_pk}/pricelists/ | `GalleryAdminService.linkPricelists` | `admin/SourceDocuments.tsx` | Integrated |  |
-| GET | /api/gallery/admin/links/{link_pk}/pricelists/cap/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Pricelist soft-cap snapshot (G-PORT-3) — no binding. |
-| POST | /api/gallery/admin/pricelists/{id}/status/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Set pricelist status — no binding. |
+| GET | /api/gallery/admin/links/{link_pk}/pricelists/cap/ | `GalleryAdminService.pricelistCap` | `admin/SourceDocuments.tsx` | Integrated | V1 Phase 5 (2026-09-25): advisory line + "n of a soft cap of m". |
+| POST | /api/gallery/admin/pricelists/{id}/status/ | `GalleryAdminService.setPricelistStatus` | `admin/SourceDocuments.tsx` | Integrated | V1 Phase 5 (2026-09-25): "Mark …" buttons; the list is re-read after each (C-21). |
 | GET | /api/gallery/admin/updates/ | `GalleryAdminService.updates` | `admin/SourcesPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/updates/{id}/approve/ | `GalleryAdminService.approveUpdate` | `admin/SourcesPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/updates/{id}/reject/ | `GalleryAdminService.rejectUpdate` | `admin/SourcesPage.tsx` | Integrated |  |
-| GET | /api/gallery/portal/{token}/ | `GalleryPortalService.state` | `portal/PortalSession.ts` | Integrated | `?pin` sent. Called by PortalSession.enter/reload (PortalPage, PortalWorks, PortalMessages, PortalPricelists). |
-| POST | /api/gallery/portal/{token}/artworks/{artwork_pk}/image/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Portal artwork image upload — no binding. |
+| GET | /api/gallery/portal/{token}/ | `GalleryPortalService.state` | `portal/PortalSession.ts` | Integrated | `?pin` sent. V1 Phase 5: hand-typed `PortalState` (C-8) read through `normalisePortalState`; `image_url`, `cover`, `updates[]` (Sent pills, Pending review, History), pricelist `status`/`file_url`/`lines` all rendered. |
+| POST | /api/gallery/portal/{token}/artworks/{artwork_pk}/image/ | `GalleryPortalService.replaceImage` | `portal/PortalWorks.tsx`, `portal/PortalSession.ts` | Integrated | V1 Phase 5 (2026-09-25): multipart, `pin` as a form part (schema says query — C-9, pinned in `galleryPortalService.test.ts`) — G-PORT-1. |
 | GET | /api/gallery/portal/{token}/exhibitions/ | `GalleryPortalService.exhibitions` | `portal/PortalSession.ts` | Integrated | Called by PortalSession.loadExhibitions. |
 | POST | /api/gallery/portal/{token}/exhibitions/ | `GalleryPortalService.createExhibition` | `portal/PortalExhibitions.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | GET | /api/gallery/portal/{token}/exhibitions/catalogue/ | `GalleryPortalService.exhibitionCatalogue` | `portal/PortalSession.ts` | Integrated | Called by PortalSession.loadExhibitions. |
@@ -279,7 +279,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/gallery/portal/{token}/messages/ | none | — | Not bound | No binding; thread arrives inside the `GET portal/{token}/` state payload. |
 | POST | /api/gallery/portal/{token}/messages/ | `GalleryPortalService.sendMessage` | `portal/PortalMessages.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | POST | /api/gallery/portal/{token}/pricelists/ | `GalleryPortalService.uploadPricelist` | `portal/PortalPricelists.tsx`, `portal/PortalSession.ts` | Integrated |  |
-| POST | /api/gallery/portal/{token}/pricelists/build/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Build pricelist from lines — no binding (FE only uploads a file). |
+| POST | /api/gallery/portal/{token}/pricelists/build/ | `GalleryPortalService.buildPricelist` | `portal/PortalPricelists.tsx`, `portal/PortalSession.ts` | Integrated | V1 Phase 5 (2026-09-25): the in-portal builder; `pin` in the JSON body (C-9); per-line errors from `details.lines`. |
 | GET | /api/gallery/portal/{token}/status/ | none | — | Not bound | No binding; funnel status arrives inside the state payload. |
 | POST | /api/gallery/portal/{token}/updates/ | `GalleryPortalService.submitUpdate` | `portal/PortalSession.ts`, `portal/PortalWorks.tsx` | Integrated |  |
 
@@ -411,14 +411,19 @@ Counts updated by V1 Phase 1 (2026-09-25): four operations moved from Not bound 
 moved six Not bound (auction PATCH, archive, cover POST/DELETE, lot PATCH, registration reset) and one
 Partial (auction create, now with terms) to Integrated. V1 Phase 4 (2026-09-25) moved one Not bound
 (`GET /api/auth/admin/collectors/summary/`) to Integrated and sent the catalogue/collector params listed
-below. Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
+below. V1 Phase 5 (2026-09-25) moved nine Not bound to Integrated — the exhibition-catalogue list,
+create, PATCH and DELETE, link reissue, pricelist cap and status, the portal image upload and the portal
+pricelist build — and sent `?search` on the links list. The portal's `GET messages/`, `GET status/` and
+`GET exhibitions/{id}/` stay Not bound on purpose: the same data arrives in the state read (and the
+exhibitions list), so a second read would only duplicate it. `GET exhibition-catalogue/{id}/` likewise
+(list rows suffice). Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
 
 | Status | Count |
 |---|---|
-| Integrated | 242 |
+| Integrated | 251 |
 | Partial | 2 |
 | Bound, no UI | 9 |
-| Not bound | 69 |
+| Not bound | 60 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
@@ -459,19 +464,10 @@ below. Status cells elsewhere are the 2026-09-25 baseline unless a row says othe
 - `GET /api/documents/admin/documents/{id}/activity/`
 - `POST /api/documents/admin/documents/{id}/share/`
 - `DELETE /api/documents/admin/documents/{id}/share/`
-- `GET /api/gallery/admin/exhibition-catalogue/`
-- `POST /api/gallery/admin/exhibition-catalogue/`
 - `GET /api/gallery/admin/exhibition-catalogue/{id}/`
-- `PATCH /api/gallery/admin/exhibition-catalogue/{id}/`
-- `DELETE /api/gallery/admin/exhibition-catalogue/{id}/`
 - `DELETE /api/gallery/admin/links/{id}/`
-- `POST /api/gallery/admin/links/{id}/reissue/`
-- `GET /api/gallery/admin/links/{link_pk}/pricelists/cap/`
-- `POST /api/gallery/admin/pricelists/{id}/status/`
-- `POST /api/gallery/portal/{token}/artworks/{artwork_pk}/image/`
 - `GET /api/gallery/portal/{token}/exhibitions/{event_id}/`
 - `GET /api/gallery/portal/{token}/messages/`
-- `POST /api/gallery/portal/{token}/pricelists/build/`
 - `GET /api/gallery/portal/{token}/status/`
 - `GET /api/marketing/admin/campaigns/`
 - `POST /api/marketing/admin/campaigns/`

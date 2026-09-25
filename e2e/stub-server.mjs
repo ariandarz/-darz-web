@@ -74,7 +74,54 @@ const OPTIONS = {
     { value: 'selected', label: 'Selected collectors' },
     { value: 'gallery_portal', label: 'Gallery portal' },
   ],
-  currency: [{ value: 'USD', label: 'US Dollar' }],
+  currency: [
+    { value: 'USD', label: 'US Dollar' },
+    { value: 'TMN', label: 'Toman' },
+  ],
+  // The gallery vocabularies (`apps/gallery/apps.py:20-28`). No
+  // `gallery.pricelist_status`: the backend does not register one (C-14).
+  'gallery.source_type': [
+    { value: 'gallery', label: 'Gallery' },
+    { value: 'artist', label: 'Artist' },
+    { value: 'collector', label: 'Collector' },
+    { value: 'dealer', label: 'Dealer' },
+  ],
+  'gallery.link_status': [
+    { value: 'active', label: 'Active' },
+    { value: 'disabled', label: 'Disabled' },
+    { value: 'expired', label: 'Expired' },
+  ],
+  'gallery.update_kind': [
+    { value: 'availability', label: 'Availability' },
+    { value: 'status', label: 'Status' },
+    { value: 'price', label: 'Price' },
+    { value: 'correction', label: 'Correction' },
+    { value: 'image', label: 'Image' },
+    { value: 'note', label: 'Note' },
+    { value: 'new', label: 'New artwork' },
+    { value: 'exhibition', label: 'Exhibition' },
+    { value: 'invoice_request', label: 'Invoice request' },
+    { value: 'invoice_signed', label: 'Invoice signed' },
+    { value: 'ask', label: 'Ask about a work' },
+    { value: 'withdraw', label: 'Withdraw a work' },
+  ],
+  'gallery.update_status': [
+    { value: 'pending', label: 'Pending' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
+  ],
+  'gallery.exhibition_request_status': [
+    { value: 'draft', label: 'Draft' },
+    { value: 'requested', label: 'Requested' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
+  ],
+  'gallery.exhibition_line_status': [
+    { value: 'proposed', label: 'Proposed' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'declined', label: 'Declined' },
+    { value: 'delivered', label: 'Delivered' },
+  ],
   'crm.request_kind': [{ value: 'purchase', label: 'Purchase' }],
   'crm.request_status_by_kind': { purchase: [{ value: 'new', label: 'New' }] },
   'crm.activity_kind': [{ value: 'view', label: 'View' }],
@@ -1068,6 +1115,900 @@ const notFound = (message) => ({
   },
 });
 
+/* ── V1 Phase 5 — the gallery portal and its desk ──────────────────────────
+ * Stateful on purpose: a portal submission must show in History after a
+ * reload, a re-issue must retire the old token, an accepted pricelist must
+ * supersede the previous one, and a catalogue edit must reach the portal's
+ * menu — each is the behaviour under test, so the stub keeps it.
+ *
+ * Two links so parallel spec files never step on each other: the PORTAL link
+ * (Aria) is only driven by `portal.spec.ts`; the DESK link (Golestan) is the
+ * one the desk walk re-issues and reviews. PINs ride `?pin=` on a GET and the
+ * BODY (JSON field or multipart part) on every write — `_portal_pin` (C-9);
+ * a PIN in the query of a write is IGNORED here exactly as there, so a client
+ * that sent it that way would 401. */
+const GL_PORTAL = '00000000-0000-4000-8000-000000005a01';
+const GL_DESK = '00000000-0000-4000-8000-000000005a02';
+const GL_DEALER = '00000000-0000-4000-8000-000000005a03';
+const GEX_ID = '00000000-0000-4000-8000-000000005e01';
+
+const galleryLink = (id, name, source_type, extra = {}) => ({
+  id,
+  source_type,
+  name,
+  status: 'active',
+  theme: {},
+  feature_flags: {},
+  feat_funnel: false,
+  feat_funnel_activity: false,
+  contact_name: '',
+  contact_email: '',
+  contact_phone: '',
+  expires_at: null,
+  issued_by: ME.id,
+  version: 1,
+  created_at: '2026-08-01T10:00:00Z',
+  updated_at: '2026-08-01T10:00:00Z',
+  ...extra,
+});
+
+const GALLERY_LINKS = [
+  galleryLink(GL_PORTAL, 'Aria Gallery', 'gallery', {
+    contact_name: 'Sara Ahmadi',
+    contact_email: 'sara@aria.invalid',
+  }),
+  galleryLink(GL_DESK, 'Golestan Gallery', 'gallery', {
+    contact_name: 'Leila Karimi',
+    contact_email: 'leila@golestan.invalid',
+    status: 'disabled',
+  }),
+  galleryLink(GL_DEALER, 'Tehran Fine Art', 'dealer', { contact_name: 'Reza Nouri' }),
+];
+/** token → {link, pin}; a re-issue replaces the link's entry. */
+const PORTAL_CREDS = new Map([
+  ['e2e-portal', { link: GL_PORTAL, pin: '246810' }],
+  ['e2e-desk', { link: GL_DESK, pin: '135790' }],
+]);
+
+const snap = (artist, title, extra = {}) => ({
+  title,
+  artist,
+  year: '1974',
+  medium: 'Oil on canvas',
+  dimensions: '100 x 120 cm',
+  price_amount: '12000.00',
+  currency: 'USD',
+  price_type: 'fixed',
+  availability_status: 'available',
+  image_key: 'catalog/x.jpg',
+  ...extra,
+});
+const linkWork = (n, link, artist, title, extra = {}, withImage = true) => ({
+  id: `00000000-0000-4000-8000-00000000${link === GL_PORTAL ? '6a' : '6b'}0${n}`,
+  link,
+  artwork: `00000000-0000-4000-8000-00000000${link === GL_PORTAL ? '7a' : '7b'}0${n}`,
+  snapshot: snap(artist, title, withImage ? extra : { ...extra, image_key: null }),
+  image_url: withImage ? thumbUrl(n + 3) : null,
+  funnel_status: '',
+  created_at: `2026-09-0${n}T10:00:00Z`,
+});
+const GALLERY_WORKS = [
+  linkWork(1, GL_PORTAL, 'Parviz Tanavoli', 'Heech Lovers'),
+  linkWork(2, GL_PORTAL, 'Monir Farmanfarmaian', 'Mirror Mosaic', {
+    availability_status: 'reserved',
+    price_amount: '48000.00',
+  }),
+  linkWork(3, GL_PORTAL, 'Behjat Sadr', 'Untitled', {}, false),
+  linkWork(1, GL_DESK, 'Sohrab Sepehri', 'Tree Trunks'),
+];
+
+let gSeq = 0;
+const gid = (prefix) =>
+  `00000000-0000-4000-8000-${prefix}${String(++gSeq).padStart(12 - prefix.length, '0')}`;
+
+/** Every portal submission, admin shape (the portal tier trims `link` etc.). */
+const GALLERY_UPDATES = [
+  {
+    id: '00000000-0000-4000-8000-000000008a01',
+    link: GL_PORTAL,
+    artwork: GALLERY_WORKS[0].artwork,
+    kind: 'availability',
+    payload: { artist: 'Parviz Tanavoli', title: 'Heech Lovers', staff: 'Sara' },
+    status: 'approved',
+    reviewed_by: ME.id,
+    reviewed_at: '2026-09-11T09:00:00Z',
+    review_note: 'Thanks — noted.',
+    created_at: '2026-09-10T09:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000008a02',
+    link: GL_PORTAL,
+    artwork: GALLERY_WORKS[1].artwork,
+    kind: 'price',
+    payload: {
+      artist: 'Monir Farmanfarmaian',
+      title: 'Mirror Mosaic',
+      price_amount: '45000',
+      currency: 'USD',
+      fromPrice: '48000.00',
+      fromCurrency: 'USD',
+    },
+    status: 'pending',
+    reviewed_by: null,
+    reviewed_at: null,
+    review_note: '',
+    created_at: '2026-09-20T12:30:00Z',
+  },
+  // the desk link's queue: one of each Phase 5 kind
+  {
+    id: '00000000-0000-4000-8000-000000008b01',
+    link: GL_DESK,
+    artwork: GALLERY_WORKS[3].artwork,
+    kind: 'ask',
+    payload: {
+      artist: 'Sohrab Sepehri',
+      title: 'Tree Trunks',
+      question: 'Is the frame included?',
+    },
+    status: 'pending',
+    reviewed_by: null,
+    reviewed_at: null,
+    review_note: '',
+    created_at: '2026-09-22T08:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000008b02',
+    link: GL_DESK,
+    artwork: GALLERY_WORKS[3].artwork,
+    kind: 'withdraw',
+    payload: { artist: 'Sohrab Sepehri', title: 'Tree Trunks', fromStatus: 'available' },
+    status: 'pending',
+    reviewed_by: null,
+    reviewed_at: null,
+    review_note: '',
+    created_at: '2026-09-22T08:05:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000008b03',
+    link: GL_DESK,
+    artwork: GALLERY_WORKS[3].artwork,
+    kind: 'image',
+    payload: { image_key: 'gallery/5a02/image_updates/tree.jpg' },
+    status: 'pending',
+    reviewed_by: null,
+    reviewed_at: null,
+    review_note: '',
+    created_at: '2026-09-22T08:10:00Z',
+  },
+];
+const portalUpdate = (u) => ({
+  id: u.id,
+  kind: u.kind,
+  artwork: u.artwork,
+  payload: u.payload,
+  status: u.status,
+  review_note: u.review_note,
+  created_at: u.created_at,
+});
+
+const plLine = (n, work_title, price, availability, artwork = null) => ({
+  id: `00000000-0000-4000-8000-00000000910${n}`,
+  artwork,
+  work_title,
+  price,
+  currency: 'USD',
+  availability,
+  note: n === 1 ? 'Framed' : '',
+  position: n - 1,
+});
+const GALLERY_PRICELISTS = [
+  {
+    id: '00000000-0000-4000-8000-000000009a01',
+    link: GL_PORTAL,
+    title: 'aria-autumn.pdf',
+    notes: '',
+    object_key: 'gallery/5a01/pricelists/aria-autumn.pdf',
+    file_url: `${STUB_ORIGIN}/files/pricelist.pdf`,
+    status: 'accepted',
+    lines: [],
+    created_at: '2026-09-05T10:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000009b01',
+    link: GL_DESK,
+    title: 'golestan-2026.pdf',
+    notes: 'Prices valid to December',
+    object_key: 'gallery/5a02/pricelists/golestan-2026.pdf',
+    file_url: `${STUB_ORIGIN}/files/pricelist.pdf`,
+    status: 'accepted',
+    lines: [],
+    created_at: '2026-09-02T10:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000009b02',
+    link: GL_DESK,
+    title: '',
+    notes: '',
+    object_key: '',
+    file_url: null,
+    status: 'submitted',
+    lines: [
+      plLine(
+        1,
+        'Sohrab Sepehri — Tree Trunks',
+        '52000.00',
+        'available',
+        GALLERY_WORKS[3].artwork,
+      ),
+      plLine(2, 'Untitled, 1974', null, 'reserved'),
+    ],
+    created_at: '2026-09-21T10:00:00Z',
+  },
+];
+const plOut = ({ link: _l, ...p }) => p;
+
+const GALLERY_MESSAGES = [
+  {
+    id: '00000000-0000-4000-8000-000000009c01',
+    link: GL_PORTAL,
+    sender: 'admin',
+    body: 'Could you confirm the Tanavoli is still available?',
+    read_at: null,
+    created_at: '2026-09-18T09:00:00Z',
+  },
+];
+
+/** The editable Exhibition Services menu (G-PORT-12b), seeded as
+ * `exhibition_catalogue.py` seeds it (Toman, DecimalField → string). */
+const EXH_CATALOGUE = [
+  [
+    'exhibition_photo',
+    'Exhibition Photo Coverage',
+    'Professional photographic documentation of the exhibition.',
+    '700000.00',
+  ],
+  [
+    'video_documentation',
+    'Video Documentation',
+    'A short, professionally edited video of the exhibition.',
+    '10000000.00',
+  ],
+  [
+    'artist_interview',
+    'Artist Interview',
+    'An editorial interview with the artist, in Farsi and English.',
+    '8000000.00',
+  ],
+  [
+    'darz_listing',
+    'Darz Listing',
+    'Selected artworks listed on the private Darz Market App.',
+    null,
+  ],
+].map(([key, title, description, default_price], i) => ({
+  id: `00000000-0000-4000-8000-00000000ec0${i + 1}`,
+  key,
+  title,
+  description,
+  default_price,
+  position: i,
+  is_active: true,
+  version: 1,
+  created_at: '2026-09-01T10:00:00Z',
+  updated_at: '2026-09-01T10:00:00Z',
+}));
+
+const GALLERY_EXHIBITION = {
+  id: GEX_ID,
+  link: GL_DESK,
+  title: 'Autumn Group Show',
+  event_date: 'Oct 2026',
+  venue: 'Golestan, main hall',
+  artists: 'Sohrab Sepehri',
+  note: '',
+  project: '',
+  gallery_selected: ['exhibition_photo', 'darz_listing'],
+  gallery_note: 'We would like photos of the opening.',
+  request_status: 'requested',
+  currency: 'TMN',
+  discount: '',
+  admin_note: '',
+  published: false,
+  gallery_updated_at: '2026-09-20T10:00:00Z',
+  admin_updated_at: null,
+  created_by: null,
+  service_lines: [],
+  version: 1,
+  created_at: '2026-09-19T10:00:00Z',
+  updated_at: '2026-09-19T10:00:00Z',
+};
+
+/** What the last portal image upload carried — Chromium hides a multipart
+ * body with a file from `request.postData()`, so the walk asks the stub. */
+let LAST_IMAGE_UPLOAD = null;
+
+const unauthorized = (message) => ({
+  status: 401,
+  body: {
+    success: false,
+    error: { code: 'UNAUTHORIZED', message },
+    timestamp: new Date().toISOString(),
+  },
+});
+const validation = (message, details) => ({
+  status: 400,
+  body: {
+    success: false,
+    error: { code: 'VALIDATION_ERROR', message, details },
+    timestamp: new Date().toISOString(),
+  },
+});
+/** A multipart form part, read off the raw body (enough for a text field). */
+const formField = (raw, name) => {
+  const m = String(raw || '').match(new RegExp(`name="${name}"\\r\\n\\r\\n([^\\r]*)`));
+  return m ? m[1] : undefined;
+};
+/** `PortalAuthService.resolve` on the stub: token → link, PIN checked. */
+const portalAuth = (path, method, body, url, raw) => {
+  const token = decodeURIComponent(path.split('/')[4]);
+  const cred = PORTAL_CREDS.get(token);
+  if (!cred) return { fail: notFound('No GalleryLink matches the given query.') };
+  const pin =
+    method === 'GET'
+      ? url.searchParams.get('pin')
+      : body && typeof body === 'object'
+        ? body.pin
+        : formField(raw, 'pin');
+  if (String(pin ?? '') !== cred.pin) return { fail: unauthorized('Incorrect PIN.') };
+  const link = GALLERY_LINKS.find((l) => l.id === cred.link);
+  if (link.status !== 'active')
+    return { fail: unauthorized('This portal link is no longer active.') };
+  return { link };
+};
+const portalState = (link) => {
+  const works = GALLERY_WORKS.filter((w) => w.link === link.id);
+  return {
+    ...link,
+    assigned_artworks: works,
+    pricelists: GALLERY_PRICELISTS.filter((p) => p.link === link.id).map(plOut),
+    messages: GALLERY_MESSAGES.filter((m) => m.link === link.id).map(
+      ({ link: _l, ...m }) => m,
+    ),
+    updates: GALLERY_UPDATES.filter((u) => u.link === link.id).map(portalUpdate),
+    cover: works.find((w) => w.image_url)?.image_url ?? null,
+  };
+};
+const withPortal = (fn) => (path, body, url, raw, method) => {
+  const auth = portalAuth(path, method, body, url, raw);
+  return auth.fail ?? fn(auth.link, path, body, url, raw);
+};
+const linkById = (path, i = 5) => GALLERY_LINKS.find((l) => l.id === path.split('/')[i]);
+const pageOf = (rows, url) => {
+  const per = Number(url.searchParams.get('per_page') || 25);
+  const pg = Number(url.searchParams.get('page') || 1);
+  const total_pages = Math.max(1, Math.ceil(rows.length / per));
+  return envelope({
+    pagination: {
+      page: pg,
+      per_page: per,
+      total_pages,
+      total_count: rows.length,
+      has_next: pg < total_pages,
+      has_previous: pg > 1,
+    },
+    results: rows.slice((pg - 1) * per, pg * per),
+  });
+};
+
+const galleryPatterns = [
+  // ---- the portal (token + PIN) ----
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/$/,
+    'GET',
+    withPortal((link) => envelope(portalState(link))),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/updates\/$/,
+    'POST',
+    withPortal((link, _p, body) => {
+      const kind = body?.kind;
+      const artwork = body?.artwork ?? null;
+      if (artwork && !GALLERY_WORKS.some((w) => w.link === link.id && w.artwork === artwork))
+        return validation('This artwork is not assigned to your portal.', {
+          __all__: ['This artwork is not assigned to your portal.'],
+        });
+      if ((kind === 'ask' || kind === 'withdraw') && !artwork)
+        return validation(`A '${kind}' update must reference an assigned artwork.`, {
+          __all__: [`A '${kind}' update must reference an assigned artwork.`],
+        });
+      const row = {
+        id: gid('8c'),
+        link: link.id,
+        artwork,
+        kind,
+        payload: body?.payload ?? {},
+        status: 'pending',
+        reviewed_by: null,
+        reviewed_at: null,
+        review_note: '',
+        created_at: new Date().toISOString(),
+      };
+      GALLERY_UPDATES.push(row);
+      return { status: 201, body: envelope(row) };
+    }),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/artworks\/[^/]+\/image\/$/,
+    'POST',
+    withPortal((link, path, _b, url, raw) => {
+      LAST_IMAGE_UPLOAD = {
+        pin: formField(raw, 'pin') ?? null,
+        queryPin: url.searchParams.get('pin'),
+        file: /name="file"; filename="[^"]+"/.test(String(raw)),
+      };
+      const artwork = path.split('/')[6];
+      if (!GALLERY_WORKS.some((w) => w.link === link.id && w.artwork === artwork))
+        return notFound('No GalleryLinkArtwork matches the given query.');
+      if (!/name="file"/.test(String(raw)))
+        return validation('Validation failed.', { file: ['No file was submitted.'] });
+      const row = {
+        id: gid('8d'),
+        link: link.id,
+        artwork,
+        kind: 'image',
+        payload: { image_key: `gallery/${link.id}/image_updates/new.jpg` },
+        status: 'pending',
+        reviewed_by: null,
+        reviewed_at: null,
+        review_note: '',
+        created_at: new Date().toISOString(),
+      };
+      GALLERY_UPDATES.push(row);
+      return { status: 201, body: envelope(portalUpdate(row)) };
+    }),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/pricelists\/build\/$/,
+    'POST',
+    withPortal((link, _p, body) => {
+      const lines = Array.isArray(body?.lines) ? body.lines : [];
+      if (!lines.length)
+        return validation('Validation failed.', { lines: ['This list may not be empty.'] });
+      const errs = lines.map((l) =>
+        l.artwork || l.work_title
+          ? {}
+          : { non_field_errors: ['Each line needs an artwork or a work_title.'] },
+      );
+      if (errs.some((e) => Object.keys(e).length))
+        return validation('Validation failed.', { lines: errs });
+      const row = {
+        id: gid('9d'),
+        link: link.id,
+        title: body.title || '',
+        notes: body.notes || '',
+        object_key: '',
+        file_url: null,
+        status: 'submitted',
+        lines: lines.map((l, i) => ({
+          id: gid('9e'),
+          artwork: l.artwork ?? null,
+          work_title: l.work_title || '',
+          price: l.price ?? null,
+          currency: l.currency || '',
+          availability: l.availability || '',
+          note: l.note || '',
+          position: i,
+        })),
+        created_at: new Date().toISOString(),
+      };
+      GALLERY_PRICELISTS.push(row);
+      return { status: 201, body: envelope(plOut(row)) };
+    }),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/pricelists\/$/,
+    'POST',
+    withPortal((link, _p, _b, _u, raw) => {
+      const row = {
+        id: gid('9f'),
+        link: link.id,
+        title: formField(raw, 'title') || '',
+        notes: '',
+        object_key: `gallery/${link.id}/pricelists/upload.pdf`,
+        file_url: `${STUB_ORIGIN}/files/pricelist.pdf`,
+        status: 'submitted',
+        lines: [],
+        created_at: new Date().toISOString(),
+      };
+      GALLERY_PRICELISTS.push(row);
+      return { status: 201, body: envelope(plOut(row)) };
+    }),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/messages\/$/,
+    'POST',
+    withPortal((link, _p, body) => {
+      const row = {
+        id: gid('9c'),
+        link: link.id,
+        sender: 'portal',
+        body: String(body?.body || ''),
+        read_at: null,
+        created_at: new Date().toISOString(),
+      };
+      GALLERY_MESSAGES.push(row);
+      return { status: 201, body: envelope(row) };
+    }),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/exhibitions\/catalogue\/$/,
+    'GET',
+    withPortal(() =>
+      envelope({
+        services: EXH_CATALOGUE.filter((c) => c.is_active)
+          .sort((a, b) => a.position - b.position)
+          .map(({ key, title, description, default_price }) => ({
+            key,
+            title,
+            description,
+            default_price,
+          })),
+      }),
+    ),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/exhibitions\/$/,
+    'GET',
+    withPortal(() => envelope({ exhibitions: [] })),
+  ],
+
+  // ---- the desk ----
+  [
+    /^\/api\/gallery\/admin\/links\/$/,
+    'GET',
+    (_p, _b, url) => {
+      const type = url.searchParams.get('source_type');
+      const q = (url.searchParams.get('search') || '').toLowerCase();
+      return pageOf(
+        GALLERY_LINKS.filter(
+          (l) =>
+            (!type || l.source_type === type) &&
+            (!q ||
+              [l.name, l.contact_name, l.contact_email].some((v) =>
+                String(v).toLowerCase().includes(q),
+              )),
+        ),
+        url,
+      );
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/links\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const l = linkById(path);
+      return l ? envelope(l) : notFound('No GalleryLink matches the given query.');
+    },
+  ],
+  // G-PORT-13 — new credentials for the same row; the old token stops
+  // answering; the status is left alone.
+  [
+    /^\/api\/gallery\/admin\/links\/[^/]+\/reissue\/$/,
+    'POST',
+    (path) => {
+      const l = linkById(path);
+      if (!l) return notFound('No GalleryLink matches the given query.');
+      for (const [t, c] of PORTAL_CREDS) if (c.link === l.id) PORTAL_CREDS.delete(t);
+      const token = `e2e-reissued-${++gSeq}`;
+      const pin = String(100000 + ((gSeq * 7919) % 900000));
+      PORTAL_CREDS.set(token, { link: l.id, pin });
+      l.version += 1;
+      return envelope({ link: l, token, pin });
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/links\/[^/]+\/(enable|disable)\/$/,
+    'POST',
+    (path) => {
+      const l = linkById(path);
+      if (!l) return notFound('No GalleryLink matches the given query.');
+      l.status =
+        path.endsWith('enable/') && !path.endsWith('disable/') ? 'active' : 'disabled';
+      l.version += 1;
+      return envelope(l);
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/links\/[^/]+\/artworks\/$/,
+    'GET',
+    (path, _b, url) =>
+      pageOf(
+        GALLERY_WORKS.filter((w) => w.link === path.split('/')[5]),
+        url,
+      ),
+  ],
+  [
+    /^\/api\/gallery\/admin\/links\/[^/]+\/pricelists\/cap\/$/,
+    'GET',
+    (path) => {
+      const count = GALLERY_PRICELISTS.filter((p) => p.link === path.split('/')[5]).length;
+      const cap = 1; // a low cap, so the desk's advisory line is exercised
+      return envelope({ count, cap, over_cap: count > cap });
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/links\/[^/]+\/pricelists\/$/,
+    'GET',
+    (path, _b, url) =>
+      pageOf(GALLERY_PRICELISTS.filter((p) => p.link === path.split('/')[5]).map(plOut), url),
+  ],
+  [
+    /^\/api\/gallery\/admin\/links\/[^/]+\/messages\/$/,
+    'GET',
+    (path, _b, url) =>
+      pageOf(
+        GALLERY_MESSAGES.filter((m) => m.link === path.split('/')[5]).map(
+          ({ link: _l, ...m }) => m,
+        ),
+        url,
+      ),
+  ],
+  // P3a — accepting one supersedes the link's previous accepted list (C-21)
+  [
+    /^\/api\/gallery\/admin\/pricelists\/[^/]+\/status\/$/,
+    'POST',
+    (path, body) => {
+      const pl = GALLERY_PRICELISTS.find((p) => p.id === path.split('/')[5]);
+      if (!pl) return notFound('No GalleryPricelist matches the given query.');
+      if (!['submitted', 'accepted', 'superseded'].includes(body?.status))
+        return validation('Validation failed.', { status: ['Not a valid choice.'] });
+      if (body.status === 'accepted')
+        for (const p of GALLERY_PRICELISTS)
+          if (p.link === pl.link && p.id !== pl.id && p.status === 'accepted')
+            p.status = 'superseded';
+      pl.status = body.status;
+      return envelope(plOut(pl));
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/updates\/$/,
+    'GET',
+    (_p, _b, url) => {
+      const st = url.searchParams.get('status');
+      const link = url.searchParams.get('link');
+      return pageOf(
+        GALLERY_UPDATES.filter((u) => (!st || u.status === st) && (!link || u.link === link))
+          .slice()
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
+        url,
+      );
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/updates\/[^/]+\/(approve|reject)\/$/,
+    'POST',
+    (path, body) => {
+      const u = GALLERY_UPDATES.find((x) => x.id === path.split('/')[5]);
+      if (!u) return notFound('No GalleryUpdate matches the given query.');
+      u.status = path.includes('/approve/') ? 'approved' : 'rejected';
+      u.review_note = String(body?.note || '');
+      u.reviewed_at = new Date().toISOString();
+      // G-PORT-6: an approved withdraw unassigns the work
+      if (u.status === 'approved' && u.kind === 'withdraw') {
+        const i = GALLERY_WORKS.findIndex((w) => w.link === u.link && w.artwork === u.artwork);
+        if (i >= 0) GALLERY_WORKS.splice(i, 1);
+      }
+      return envelope(u);
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/exhibitions\/$/,
+    'GET',
+    (_p, _b, url) => {
+      const link = url.searchParams.get('link');
+      return pageOf(
+        [GALLERY_EXHIBITION].filter((e) => !link || e.link === link),
+        url,
+      );
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/exhibitions\/[^/]+\/$/,
+    'GET',
+    (path) =>
+      path.split('/')[5] === GEX_ID
+        ? envelope(GALLERY_EXHIBITION)
+        : notFound('No ExhibitionEvent matches the given query.'),
+  ],
+  // compose REPLACES the lines; quantity rides each one (G-PORT-16)
+  [
+    /^\/api\/gallery\/admin\/exhibitions\/[^/]+\/compose\/$/,
+    'POST',
+    (path, body) => {
+      if (path.split('/')[5] !== GEX_ID) return notFound('No ExhibitionEvent matches.');
+      const lines = Array.isArray(body?.lines) ? body.lines : [];
+      if (
+        lines.some(
+          (l) => l.quantity !== undefined && (!Number.isInteger(l.quantity) || l.quantity < 1),
+        )
+      )
+        return validation('Validation failed.', {
+          lines: lines.map((l) =>
+            Number.isInteger(l.quantity) && l.quantity >= 1
+              ? {}
+              : { quantity: ['Ensure this value is greater than or equal to 1.'] },
+          ),
+        });
+      GALLERY_EXHIBITION.service_lines = lines.map((l, i) => ({
+        id: gid('5f'),
+        service_key: l.service_key,
+        title: l.title || l.service_key,
+        description: l.description || '',
+        quantity: l.quantity ?? 1,
+        price: l.price ?? null,
+        currency: l.currency || body.currency || 'TMN',
+        status: l.status || 'proposed',
+        admin_note: l.admin_note || '',
+        position: l.position ?? i,
+        created_at: new Date().toISOString(),
+      }));
+      if (body.currency) GALLERY_EXHIBITION.currency = body.currency;
+      if (body.discount !== undefined) GALLERY_EXHIBITION.discount = body.discount;
+      if (body.approve) GALLERY_EXHIBITION.request_status = 'approved';
+      GALLERY_EXHIBITION.version += 1;
+      return envelope(GALLERY_EXHIBITION);
+    },
+  ],
+  // G-PORT-12b — the menu's CRUD; PATCH is locked (409 on a stale version)
+  [
+    /^\/api\/gallery\/admin\/exhibition-catalogue\/$/,
+    'GET',
+    (_p, _b, url) =>
+      pageOf(
+        EXH_CATALOGUE.slice().sort((a, b) => a.position - b.position),
+        url,
+      ),
+  ],
+  [
+    /^\/api\/gallery\/admin\/exhibition-catalogue\/$/,
+    'POST',
+    (_p, body) => {
+      if (!body?.key || !body?.title)
+        return validation('Validation failed.', {
+          ...(body?.key ? {} : { key: ['This field is required.'] }),
+          ...(body?.title ? {} : { title: ['This field is required.'] }),
+        });
+      if (EXH_CATALOGUE.some((c) => c.key === body.key))
+        return validation('Validation failed.', {
+          key: ['exhibition service catalog item with this key already exists.'],
+        });
+      const row = {
+        id: gid('ec'),
+        key: body.key,
+        title: body.title,
+        description: body.description || '',
+        default_price: body.default_price ?? null,
+        position: body.position ?? 0,
+        is_active: body.is_active ?? true,
+        version: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      EXH_CATALOGUE.push(row);
+      return { status: 201, body: envelope(row) };
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/exhibition-catalogue\/[^/]+\/$/,
+    'PATCH',
+    (path, body) => {
+      const row = EXH_CATALOGUE.find((c) => c.id === path.split('/')[5]);
+      if (!row) return notFound('No ExhibitionServiceCatalogItem matches the given query.');
+      if (typeof body?.expected_version !== 'number')
+        return refused('expected_version is required');
+      if (body.expected_version !== row.version) return conflict();
+      const { expected_version: _v, key: _k, ...fields } = body;
+      Object.assign(row, fields, {
+        version: row.version + 1,
+        updated_at: new Date().toISOString(),
+      });
+      return envelope(row);
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/exhibition-catalogue\/[^/]+\/$/,
+    'DELETE',
+    (path) => {
+      const i = EXH_CATALOGUE.findIndex((c) => c.id === path.split('/')[5]);
+      if (i < 0) return notFound('No ExhibitionServiceCatalogItem matches the given query.');
+      EXH_CATALOGUE.splice(i, 1);
+      return { status: 204, body: undefined };
+    },
+  ],
+  [/^\/__stub\/portal\/last-image\/$/, 'GET', () => envelope(LAST_IMAGE_UPLOAD)],
+  // test-only: bump a catalogue row's version, as another
+  // admin's save would, so the desk's next PATCH goes stale (409)
+  [
+    /^\/__stub\/exhibition-catalogue\/[^/]+\/touch\/$/,
+    'POST',
+    (path) => {
+      const row = EXH_CATALOGUE.find((c) => c.id === path.split('/')[3]);
+      if (!row) return notFound('no row');
+      row.version += 1;
+      return envelope(row);
+    },
+  ],
+];
+
+/** G-PROJ-8 — the Projects service catalogue with its `description` column. */
+const SERVICE_CATALOG = [
+  [
+    'Exhibition Photo Coverage',
+    'Installation views, individual works, details and atmosphere.',
+    '700000.00',
+  ],
+  [
+    'Artist Interview',
+    'An editorial interview with the artist, in Farsi and English.',
+    '8000000.00',
+  ],
+  ['Darz Listing', '', '0.00'],
+].map(([name, description, price], i) => ({
+  id: `00000000-0000-4000-8000-00000000dc0${i + 1}`,
+  name,
+  description,
+  category: 'media',
+  unit: 'piece',
+  internal_cost: '0.00',
+  price,
+  currency: 'TMN',
+  version: 1,
+  created_at: '2026-09-01T10:00:00Z',
+  updated_at: '2026-09-01T10:00:00Z',
+}));
+galleryPatterns.push(
+  [
+    /^\/api\/projects\/admin\/service-catalog\/$/,
+    'GET',
+    (_p, _b, url) => pageOf(SERVICE_CATALOG, url),
+  ],
+  [
+    /^\/api\/projects\/admin\/service-catalog\/$/,
+    'POST',
+    (_p, body) => {
+      const row = {
+        id: gid('dd'),
+        description: '',
+        category: 'media',
+        unit: 'piece',
+        internal_cost: '0.00',
+        price: '0.00',
+        currency: 'TMN',
+        ...body,
+        version: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      SERVICE_CATALOG.push(row);
+      return { status: 201, body: envelope(row) };
+    },
+  ],
+  [
+    /^\/api\/projects\/admin\/service-catalog\/[^/]+\/$/,
+    'PATCH',
+    (path, body) => {
+      const row = SERVICE_CATALOG.find((c) => c.id === path.split('/')[5]);
+      if (!row) return notFound('No ProjectServiceCatalogItem matches the given query.');
+      if (typeof body?.expected_version !== 'number')
+        return refused('expected_version is required');
+      if (body.expected_version !== row.version) return conflict();
+      const { expected_version: _v, ...fields } = body;
+      Object.assign(row, fields, { version: row.version + 1 });
+      return envelope(row);
+    },
+  ],
+);
+
 const patterns = [
   // Public documents (`AllowAny`): only `legal_terms` is published here, as a
   // confirmed public `Document`; any other kind is the backend's 404.
@@ -1368,13 +2309,13 @@ const server = http.createServer((req, res) => {
     try {
       body = raw ? JSON.parse(raw) : undefined;
     } catch {
-      body = undefined;
+      body = undefined; // multipart — handlers that need a form part read `raw`
     }
-    respond(req, res, body);
+    respond(req, res, body, raw);
   });
 });
 
-function respond(req, res, body) {
+function respond(req, res, body, raw = '') {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const key = `${req.method} ${url.pathname}`;
   const hit = routes[key];
@@ -1398,6 +2339,13 @@ function respond(req, res, body) {
     res.end(THUMB_SVG(Number(thumb[1]) * 97));
     return;
   }
+  // an uploaded pricelist's presigned read (G-PORT-14) — a one-line PDF
+  if (url.pathname === '/files/pricelist.pdf') {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.writeHead(200);
+    res.end('%PDF-1.1\n% stub pricelist\n');
+    return;
+  }
   if (url.pathname === '/files/auction-cover.svg') {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.writeHead(200);
@@ -1413,11 +2361,12 @@ function respond(req, res, body) {
     res.end(JSON.stringify(status === 200 ? answered : answered.body));
     return;
   }
-  for (const [re, method, answer] of patterns) {
+  for (const [re, method, answer] of [...galleryPatterns, ...patterns]) {
     if (req.method === method && re.test(url.pathname)) {
       // A write's pattern reads the body it was sent (the follow-up date, a
-      // note), as the keyed routes above already do.
-      const answered = answer(url.pathname, body);
+      // note), as the keyed routes above already do; the gallery routes also
+      // read the query (`?pin=`, `?search=`) and a multipart body's raw text.
+      const answered = answer(url.pathname, body, url, raw, req.method);
       const status = typeof answered.status === 'number' ? answered.status : 200;
       res.writeHead(status);
       res.end(JSON.stringify(status === 200 ? answered : answered.body));

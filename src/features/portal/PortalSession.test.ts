@@ -58,3 +58,24 @@ describe('PortalSession.enter', () => {
     }
   });
 });
+
+describe('PortalSession — the server’s updates replace the optimistic marks', () => {
+  it('normalises the state on entry and clears Sent marks on the next reload', async () => {
+    let calls = 0;
+    const s = session(() => {
+      calls += 1;
+      return Promise.resolve(
+        calls === 1
+          ? { name: 'G', assigned_artworks: null }
+          : { name: 'G', updates: [{ id: 'u1', artwork: 'a1', status: 'pending' }] },
+      );
+    });
+    await s.enter('123456');
+    expect(s.getSnapshot().data?.assigned_artworks).toEqual([]);
+    s.markSent('a1');
+    expect(s.getSnapshot().sentAt.a1).toBeTruthy();
+    await s.reload();
+    expect(s.getSnapshot().sentAt).toEqual({});
+    expect(s.getSnapshot().data?.updates).toHaveLength(1);
+  });
+});

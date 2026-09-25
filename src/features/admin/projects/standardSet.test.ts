@@ -242,6 +242,7 @@ describe('the API bodies', () => {
     const photo = svc('Exhibition Photo Coverage');
     expect(serviceInput(photo, 'TMN')).toEqual({
       name: 'Exhibition Photo Coverage',
+      description: photo.about,
       category: photo.category,
       unit: photo.unit,
       internal_cost: '0',

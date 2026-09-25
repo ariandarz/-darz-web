@@ -4,32 +4,54 @@
  * :1228-1467). One submission per work per send, `kind` = the dominant
  * change (`portalForm.ts`).
  *
- * Where this section knowingly differs from the old page, the reason is a
- * backend fact, recorded in docs/ADMIN_ARCHITECTURE.md §2:
- *  - every card shows the no-image state — the snapshot carries no image
- *    (G-PORT-1); the "image needs updating" check still submits kind=image.
- *  - "Sent to Darz" marks live for this tab only — no portal-readable
- *    pending list (G-PORT-2).
+ * Bound to backend P1/P4 (V1 Phase 5):
+ *  - each card shows the snapshot's `image_url` (old `card()`, :1326), the
+ *    no-image state only when there is none (G-PORT-1);
+ *  - "Replace image" is the old v1146 dropzone (:1283-1300, :1346-1348): the
+ *    photo attaches to the card and goes on Send update, to its own multipart
+ *    endpoint, as a pending `image` update. The "image needs updating" check
+ *    stays beside it, as in the old panel;
+ *  - "Sent" pills read the server's pending `updates[]` (old `setPending`,
+ *    :929), with an optimistic mark between a send and the reload (G-PORT-2);
+ *  - "Remove from portal" (old §79 single-work remove, :1364-1370) sends a
+ *    `withdraw` REQUEST — Darz approves it, and approval unassigns the work
+ *    (G-PORT-6). The old multi-select "Select" mode is not ported (flagged);
+ *  - "Ask Darz about this work" sends an `ask` (G-PORT-4). The old page had
+ *    no gallery-side per-work question (its §90 asks run Darz → gallery), so
+ *    this control has no old source: it borrows the Messages box's words.
+ *
+ * Still different from the old page, for a backend reason:
  *  - the whole list renders (no 30-per-page client pager): `portal_state`
  *    serves every assigned work in one read, and a portal is a curated set.
  *  - "What collectors can do" + the offer floor ride the work's one
  *    Send update as payload for Darz to apply on review — there is no
  *    direct write or auto-decline engine behind them here (G-PORT-8).
  */
-import { useState, useSyncExternalStore, useCallback } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import type { OptionsMap } from '../../api/services';
 import type { PortalWork } from '../../api/types';
 import type { PortalSession } from './PortalSession';
 import {
   blankNewWork,
+  buildAskPayload,
   buildNewWorkPayload,
   buildUpdatePayload,
+  buildWithdrawPayload,
   choiceLabel,
   choices,
   fmtDateTime,
   fmtThousands,
   funnelMeta,
   hasChange,
+  imageFileProblem,
+  pendingStamps,
   prettyMedium,
   updateKind,
   type NewWorkDraft,
@@ -65,9 +87,22 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
   const draftOf = (id: string): PortalDraft => drafts[id] ?? {};
   const patchDraft = (id: string, patch: Partial<PortalDraft>) =>
     setDrafts((d) => ({ ...d, [id]: { ...d[id], ...patch } }));
+  const clearDraft = (id: string) =>
+    setDrafts((d) => {
+      const next = { ...d };
+      delete next[id];
+      return next;
+    });
   const origOf = (w: PortalWork) => w.snapshot.availability_status || 'available';
-  const isDirty = (w: PortalWork) =>
-    hasChange(draftOf(w.artwork), origOf(w)) && !state.sentAt[w.artwork];
+  const isDirty = (w: PortalWork) => {
+    const d = draftOf(w.artwork);
+    return hasChange(d, origOf(w)) || !!d.imageFile;
+  };
+  // Server pending first, the optimistic mark over it until the next reload.
+  const sent: Record<string, string> = {
+    ...pendingStamps(state.data?.updates ?? []),
+    ...state.sentAt,
+  };
 
   const q = query.trim().toLowerCase();
   const matches = (w: PortalWork) =>
@@ -96,12 +131,17 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
     const draft = draftOf(w.artwork);
     setBusy((b) => ({ ...b, [w.artwork]: true }));
     try {
-      await session.submitUpdate({
-        kind: updateKind(draft, origOf(w)),
-        artwork: w.artwork,
-        payload: buildUpdatePayload(w, draft, staff),
-      });
+      // the photo rides its own endpoint (multipart); the rest of the card is
+      // the one update it always was — skipped only when the photo IS the edit
+      if (draft.imageFile) await session.replaceImage(w.artwork, draft.imageFile);
+      if (!draft.imageFile || hasChange(draft, origOf(w)))
+        await session.submitUpdate({
+          kind: updateKind(draft, origOf(w)),
+          artwork: w.artwork,
+          payload: buildUpdatePayload(w, draft, staff),
+        });
       session.markSent(w.artwork);
+      clearDraft(w.artwork);
       return true;
     } catch (err) {
       if (!session.noteAuthFailure(err)) notify('Could not send. Please try again.');
@@ -156,11 +196,58 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
     await session.reload();
   };
 
+  /** `ask` — a question about this one work (G-PORT-4). */
+  const askAbout = async (w: PortalWork, question: string): Promise<boolean> => {
+    if (!question.trim()) {
+      notify('Write a message first.');
+      return false;
+    }
+    try {
+      await session.submitUpdate({
+        kind: 'ask',
+        artwork: w.artwork,
+        payload: buildAskPayload(w, question, staff),
+      });
+      await session.reload();
+      notify('Sent to Darz.');
+      return true;
+    } catch (err) {
+      if (!session.noteAuthFailure(err)) notify('Could not send. Please try again.');
+      return false;
+    }
+  };
+
+  /** `withdraw` — the old "Remove from portal" (:1209-1224), now a request
+   * Darz approves; the confirm says so (the old one promised an immediate
+   * hide). */
+  const withdraw = async (w: PortalWork) => {
+    if (
+      !window.confirm(
+        'Remove 1 work from your portal?\n\nDarz reviews the request first; once it is approved the work leaves your portal. Nothing is deleted — Darz keeps the record and can restore it.',
+      )
+    )
+      return;
+    setBusy((b) => ({ ...b, [w.artwork]: true }));
+    try {
+      await session.submitUpdate({
+        kind: 'withdraw',
+        artwork: w.artwork,
+        payload: buildWithdrawPayload(w, staff),
+      });
+      session.markSent(w.artwork);
+      notify('Removal request sent to Darz.');
+      await session.reload();
+    } catch (err) {
+      if (!session.noteAuthFailure(err)) notify('Could not remove. Please try again.');
+    } finally {
+      setBusy((b) => ({ ...b, [w.artwork]: false }));
+    }
+  };
+
   const confirmAll = async () => {
     const targets = works.filter(
       (w) =>
-        (w.snapshot.availability_status ?? 'available') === 'available' &&
-        !state.sentAt[w.artwork],
+        (w.snapshot.availability_status ?? 'available') === 'available' && !sent[w.artwork],
     );
     if (!targets.length) {
       notify('No available works to confirm.');
@@ -279,13 +366,16 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
             options={options}
             draft={draftOf(w.artwork)}
             dirty={isDirty(w)}
-            sentAt={state.sentAt[w.artwork]}
+            sentAt={sent[w.artwork]}
             advOpen={!!openAdv[w.artwork]}
             busy={!!busy[w.artwork]}
             showActivity={!!state.data?.feat_funnel_activity}
             onToggleAdv={() => setOpenAdv((o) => ({ ...o, [w.artwork]: !o[w.artwork] }))}
             onPatch={(patch) => patchDraft(w.artwork, patch)}
             onSend={() => void sendOne(w)}
+            onAsk={(q) => askAbout(w, q)}
+            onWithdraw={() => void withdraw(w)}
+            onImageRefused={notify}
           />
         ))}
         {!sorted.length && !shownNew.length && (
@@ -332,6 +422,9 @@ function WorkCard({
   onToggleAdv,
   onPatch,
   onSend,
+  onAsk,
+  onWithdraw,
+  onImageRefused,
 }: {
   w: PortalWork;
   options: OptionsMap | null;
@@ -344,6 +437,9 @@ function WorkCard({
   onToggleAdv: () => void;
   onPatch: (patch: Partial<PortalDraft>) => void;
   onSend: () => void;
+  onAsk: (question: string) => Promise<boolean>;
+  onWithdraw: () => void;
+  onImageRefused: (message: string) => void;
 }) {
   const s = w.snapshot;
   const original = s.availability_status || 'available';
@@ -369,9 +465,13 @@ function WorkCard({
   return (
     <div className={`awc${dirty ? ' dirty' : ''}`}>
       <div className="awc-top">
-        {/* G-PORT-1 — no image in the snapshot yet; the old no-image state */}
-        <div className="awc-img">
-          <span className="noimg">No image</span>
+        {/* old card() :1326 — the image as a contained background, the
+            no-image state only when the snapshot has none (G-PORT-1) */}
+        <div
+          className="awc-img"
+          style={w.image_url ? { backgroundImage: `url("${w.image_url}")` } : undefined}
+        >
+          {!w.image_url && <span className="noimg">No image</span>}
         </div>
         <div className="awc-body">
           <div className="awc-artist">{s.artist || '—'}</div>
@@ -550,6 +650,25 @@ function WorkCard({
             />
           </div>
 
+          <ReplaceImage
+            id={w.id}
+            current={w.image_url}
+            file={draft.imageFile}
+            onPick={(file) => {
+              const problem = imageFileProblem(file);
+              if (problem) {
+                onImageRefused(problem);
+                return;
+              }
+              onPatch({ imageFile: file });
+              // old GP.replaceImg (:2197)
+              onImageRefused('Photo attached — send the update to submit it.');
+            }}
+            onClear={() => onPatch({ imageFile: undefined })}
+          />
+
+          <AskBox id={w.id} onAsk={onAsk} />
+
           {/* v1135 — rides this card's Send update; Darz applies it on
               review (G-PORT-8: no direct write, no auto-decline engine) */}
           <div className="offblk">
@@ -622,16 +741,206 @@ function WorkCard({
               confirmation (kind availability, no status key) — label it as
               what it does, the plainest "artwork availability" action */}
           <button className="btn btn--primary" type="button" disabled={busy} onClick={onSend}>
+            {/* an edit in hand wins over the pill: with the server's own
+                pending list, a card can be "Sent" and freshly edited at once */}
             {busy
               ? 'Sending…'
-              : sentAt
-                ? 'Send again'
-                : dirty
-                  ? 'Send update'
+              : dirty
+                ? 'Send update'
+                : sentAt
+                  ? 'Send again'
                   : 'Confirm available'}
           </button>
           {sentAt && <span className="sent-tag">Sent to Darz</span>}
+          {/* old §79 (:1364-1370) — far end of the footer, confirmed first */}
+          <button
+            className="btn btn--danger awc-rm"
+            type="button"
+            disabled={busy}
+            onClick={onWithdraw}
+          >
+            Remove from portal
+          </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** The old upload glyph (`rimgUpIco`, gallery-update.html:1286). */
+function UpIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M12 16V4" />
+      <path d="M8 8l4-4 4 4" />
+    </svg>
+  );
+}
+
+/**
+ * "Replace image" — the old v1146 dropzone (`rimgInner`, :1287-1300), its
+ * three states: empty · the current photo · a new photo attached (with the
+ * "New photo" badge and the ✕ to take it off again).
+ */
+function ReplaceImage({
+  id,
+  current,
+  file,
+  onPick,
+  onClear,
+}: {
+  id: string;
+  current: string | null;
+  file?: File;
+  onPick: (file: File) => void;
+  onClear: () => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  // an object URL for the attached photo, made once per file and released
+  // when the file changes or the card unmounts
+  const neu = useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
+  useEffect(
+    () => () => {
+      if (neu) URL.revokeObjectURL(neu);
+    },
+    [neu],
+  );
+  const state = neu ? 'has' : current ? 'cur' : 'empty';
+  return (
+    <div className="fld">
+      <label htmlFor={`rimg_${id}`}>Replace image</label>
+      <div
+        className={`rimg ${state}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => input.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') input.current?.click();
+        }}
+      >
+        {neu ? (
+          <>
+            <img className="rimg-prev" src={neu} alt="" />
+            <span className="rimg-badge">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              New photo
+            </span>
+            <button
+              type="button"
+              className="rimg-x"
+              aria-label="Remove new photo"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+                if (input.current) input.current.value = '';
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+            <span className="rimg-pill">
+              <UpIcon size={14} />
+              Change photo
+            </span>
+          </>
+        ) : current ? (
+          <>
+            <img className="rimg-prev" src={current} alt="" />
+            <span className="rimg-pill">
+              <UpIcon size={14} />
+              Replace this photo
+            </span>
+          </>
+        ) : (
+          <div className="rimg-empty">
+            <div className="rimg-ico">
+              <UpIcon />
+            </div>
+            <div className="rimg-t">Add a photo</div>
+            <div className="rimg-h">JPG or PNG · tap to choose</div>
+          </div>
+        )}
+        <input
+          ref={input}
+          id={`rimg_${id}`}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onPick(f);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Ask Darz about this work" — an `ask` update (G-PORT-4). No old source: the
+ * old page's per-work asks ran the other way (Darz → gallery, §90). The box
+ * is the Messages tab's own (`.msg-box`, :1077) with its placeholder and its
+ * "Write a message first." / "Sent to Darz." lines — flagged, owner to confirm.
+ */
+function AskBox({ id, onAsk }: { id: string; onAsk: (q: string) => Promise<boolean> }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="fld">
+      <label htmlFor={`ask_${id}`}>Ask Darz about this work</label>
+      <div className="msg-box">
+        <textarea
+          id={`ask_${id}`}
+          placeholder="Write a message to Darz…"
+          value={text}
+          disabled={busy}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button
+          className="btn"
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            void onAsk(text).then((ok) => {
+              setBusy(false);
+              if (ok) setText('');
+            });
+          }}
+        >
+          Send
+        </button>
       </div>
     </div>
   );

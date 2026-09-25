@@ -857,6 +857,20 @@ a.ad-ghostbtn {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* G-PORT-16 — the line's quantity, beside its amount (the issue form's own
+   Qty column, `.dzx-qty`) */
+.ad-exhline-qty {
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 8px 9px;
+  width: 58px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .ad-exhadd {
   display: flex;
   gap: 7px;
@@ -1078,4 +1092,112 @@ a.ad-ghostbtn {
   border: 1px solid var(--hair);
   flex: 0 0 auto;
   display: block;
+}
+
+/* a partner's pricelist — the old `_galPLCard` (`darz-studio.html:27266`):
+   the row, its structured lines when built in the portal, then the actions */
+.ad-plrow {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.ad-plrow:last-child {
+  border-bottom: 0;
+}
+.ad-plrow .ad-rowacts {
+  margin-top: 6px;
+  padding: 0 16px;
+}
+.ad-pllines {
+  width: calc(100% - 32px);
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin: 4px 16px 2px;
+}
+.ad-pllines td {
+  padding: 5px 8px 5px 0;
+  border-top: 1px solid var(--hair);
+  vertical-align: top;
+  color: var(--ink);
+}
+.ad-pllines td.ad-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* the Exhibition Services menu — the old `.gxe-row` (`darz-studio.html:27849`):
+   service · short description · price · ✕, plus the table's own order */
+.ad-gxe-card {
+  padding: 12px 16px;
+}
+.ad-gxe-head,
+.ad-gxe-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 130px 56px auto;
+  gap: 8px;
+  align-items: center;
+}
+.ad-gxe-head {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0 0 8px;
+}
+.ad-gxe-row {
+  padding: 8px 0;
+  border-top: 1px solid var(--hair);
+}
+.ad-gxe-row.is-off {
+  opacity: 0.6;
+}
+.ad-gxe-row input {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--soft);
+  color: var(--ink);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+.ad-gxe-t {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ad-gxe-key {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--ink3);
+  overflow-wrap: anywhere;
+}
+.ad-gxe-price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ad-gxe-price span {
+  font-size: 12px;
+  color: var(--ink3);
+  flex: 0 0 auto;
+}
+.ad-gxe-pos {
+  text-align: right;
+}
+@media (max-width: 640px) {
+  .ad-gxe-head {
+    display: none;
+  }
+  .ad-gxe-row {
+    grid-template-columns: minmax(0, 1fr) 110px 56px;
+  }
+  .ad-gxe-d,
+  .ad-gxe-row .ad-rowacts {
+    grid-column: 1 / -1;
+  }
 }

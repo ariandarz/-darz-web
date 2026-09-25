@@ -594,6 +594,60 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 - Pre-existing, not changed: the Published card's "Remove from Market App" button overruns its card at
   1280 (seen in the render check).
 
+## 3f · What Phase 5 did differently from the plan (recorded 2026-09-25)
+
+- **Sources of the old code.** Portal: `gallery-update.html` (card :1303-1370, v1146 replace-image
+  :1283-1300, §79 remove :1185-1224, pricelists + builder :1034-1128, dashboard :1136-1143, cover
+  :852-856) and the History panel in `packages/domain/collaboration-agreement.js:203-523`. Desk:
+  `darz-studio.html` (Regenerate :28165/:38605-38614, pricelist card `_galPLCard` :27266-27281,
+  update card `_galUpdCard` :28246-28297, the per-gallery "Service checklist" `galExhSection`
+  :27843-27920).
+- **"Replace image" sits beside the "image needs updating" check, not instead of it** — the old card
+  has both (:1344-1348). The photo attaches to the card and goes on Send update to its own multipart
+  endpoint; an image-only edit sends no text update. No canvas downscale (old `downscale`, :1474):
+  a 6 MB / image-type guard instead; the type line has no old copy (flagged).
+- **Ask has no old source (flagged).** The old per-work asks ran Darz → gallery (§90 "Darz asked");
+  the backend's `ask` runs gallery → Darz. The control is "Ask Darz about this work" with the Messages
+  box's words ("Write a message to Darz…", "Write a message first.", "Sent to Darz."). On the desk it
+  is answered through the review note ("Mark handled", the old label for note-like kinds), which the
+  partner reads in History.
+- **Withdraw is the old single-work "Remove from portal"**; the confirm now says it is a request Darz
+  approves (the old one promised an immediate hide); toast "Removal request sent to Darz." The old
+  multi-select "Select" mode is **not** ported (flagged).
+- **History** shows kind/status words from `/api/options/` (`gallery.update_kind` /
+  `update_status`), not the old `HISTORY_KIND`/`HISTORY_STATE` maps — "Pending" where the old pill
+  read "With Darz" (flagged). Darz's `review_note` shows in the drawer; there is no review date (the
+  portal tier trims it). The tab appears once the portal has sent something (old non-V1 rule).
+- **Sent pills** read the server's pending rows plus an optimistic mark cleared by the next reload; a
+  card's draft is cleared after a successful send, and "Send update" beats "Send again" when a card is
+  edited while an older update is still pending.
+- **Pricelists.** No weekly-quota line (the cap is the desk's advisory soft cap) and no formatted
+  download (P3c). Built rows read "LIST" / "Pricelist (built in portal)" as the old card; uploads get
+  "Open file ↗". Builder rows are the new line shape — Work (assigned or "Another work") · Title ·
+  Price · Currency · Availability (Q-7) · Note; the old Artist / Year / Size inputs have no field
+  (flagged). The desk's status buttons are "Mark submitted / accepted / superseded" over the
+  backend's three states (the old ones were formatting / formatted / Reject); labels are raw (C-14).
+- **Reissue** keeps the old confirm and "Replace link" label; the backend leaves status alone, so a
+  non-active link's confirm adds "The portal stays <status> — enable it too before sending the new
+  link." The shown-once panel + invitation moved to `SourceCredentials.tsx`, shared with issue.
+- **The exhibition-catalogue editor is a new nav tab, "Service checklist"** (`/admin/exhibition-catalogue`,
+  59 tabs now) — the old editor was a per-gallery passport section; the backend menu is global, so the
+  standard/custom banner, "Reset to Darz default", the per-gallery currency and the portal-text fields
+  do not port. Rows save individually (locked PATCH); "Turn off/on" is `is_active`; prices are shown
+  in T (the item has no currency). Link DELETE stays unbound — the old passport had no delete.
+- **Compose** reads the admin catalogue (active rows, by position) — `priceList.ts` and its test are
+  deleted. Quantity is a small "Qty" input (the issue page's own column); Issue document splits a
+  composed line's amount back into qty × unit, and the portal prints "3 × …".
+- **G-PROJ-8.** Descriptions read/write through the API and the row's own text always wins. A row
+  seeded before the column (empty description) falls back to Darz's menu text for that service name,
+  so existing proposals do not go blank (lead review). The standard-set seed now writes `about` into it.
+- **Found on the way:** the backend now serves the portal menu's `default_price` as a decimal
+  STRING; the portal totals added it with `+` (string concatenation) — now `num()`. The desk's
+  assigned-works list read `snapshot.artist_name`, which the snapshot never had (it is `artist`).
+- **E2E:** Chromium hides a multipart body carrying a file from `request.postData()`, so the stub
+  reports the last upload's form (`/__stub/portal/last-image/`). The stub keeps two links so the
+  portal walk and the desk walk (parallel files) never share state.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -616,7 +670,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[x]` 2026-09-25 | see CHANGELOG |
 | 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[x]` 2026-09-25 | see CHANGELOG |
 | 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[x]` 2026-09-25 | see CHANGELOG |
-| 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[ ]` | |
+| 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[x]` 2026-09-25 | see CHANGELOG |
 | 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[ ]` | |
 | 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[ ]` | |
 | 8 | Owner Access desk | `v1/phase-8-access-desk` | `[ ]` (Q-1) | |

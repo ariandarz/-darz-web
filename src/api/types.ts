@@ -661,11 +661,28 @@ export type GalleryLinkAdmin = Schemas['GalleryLink'];
  * saw). `funnel_status` is the Darz-set override; blank derives live. */
 export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
 
-/** A pricelist a partner sent from the portal — `GalleryPricelistSerializer`
- * (`title`, `notes`, `created_at`). The file behind it is stored
- * (`GalleryPricelist.object_key`) but not serialized, so the desk can name
- * the submission and not open it (G-PORT-14). */
+/** A pricelist a partner sent from the portal — `GalleryPricelistSerializer`:
+ * `file_url` (a presigned read of the uploaded file, G-PORT-14; `null` for a
+ * pricelist built in-portal), `status` (submitted/accepted/superseded, P3a —
+ * NOT in `/api/options/`, C-14) and the structured builder `lines` (P3b). */
 export type GalleryPricelistAdmin = Schemas['GalleryPricelist'];
+export type GalleryPricelistLine = Schemas['GalleryPricelistLine'];
+/** `GalleryPricelist.STATUS_CHOICES` — the wire values, from the schema enum. */
+export type GalleryPricelistStatus = Schemas['GalleryPricelist']['status'];
+/** `GET admin/links/{id}/pricelists/cap/` — advisory only, never a block. */
+export type GalleryPricelistCap = Schemas['GalleryPricelistCap'];
+
+/** An item of the editable Exhibition Services menu (G-PORT-12b,
+ * `ExhibitionServiceCatalogItemSerializer`) — what the portal's catalogue
+ * endpoint serves (active items only) and what the desk composes from. `key`
+ * is the stable id and is read-only after create. */
+export type ExhibitionCatalogItem = Schemas['ExhibitionServiceCatalogItem'];
+export type ExhibitionCatalogInput = Pick<
+  ExhibitionCatalogItem,
+  'key' | 'title' | 'description' | 'default_price' | 'position' | 'is_active'
+>;
+/** The locked PATCH — `key` is not editable (`…UpdateSerializer.read_only_fields`). */
+export type ExhibitionCatalogPatch = Locked<Partial<Omit<ExhibitionCatalogInput, 'key'>>>;
 
 /** A portal submission in the review queue — approving an availability /
  * price / correction update applies it to the artwork through the real
@@ -813,7 +830,9 @@ export type ArtworkSelectionGrant = Schemas['ArtworkSelectionGrant'];
 
 /** `GalleryLinkArtwork.snapshot` — the denormalized per-link copy the portal
  * reads (`apps/gallery/services.py::GalleryLinkArtworkService.assign`). The
- * portal never sees the live Artwork; note there is NO image key (G-PORT-1). */
+ * portal never sees the live Artwork. The snapshot stores the primary image's
+ * storage key only; the portal reads it as the presigned `image_url` beside
+ * it (G-PORT-1, `GalleryLinkArtworkSerializer.get_image_url`). */
 export interface PortalSnapshot {
   title?: string | null;
   artist?: string | null;
@@ -825,6 +844,7 @@ export interface PortalSnapshot {
   currency?: string | null;
   price_type?: string | null;
   availability_status?: string | null;
+  image_key?: string | null;
 }
 
 /** One funnel entry from `FunnelDerivationService.for_link` — stage is the
@@ -842,21 +862,78 @@ export interface PortalFunnel {
   };
 }
 
+/** `GalleryLinkArtworkSerializer` (`serializers.py:66-83`). */
 export interface PortalWork {
   id: string;
   link: string;
   artwork: string;
   snapshot: PortalSnapshot;
+  /** presigned read of the snapshot's image; `null` when the work has none */
+  image_url: string | null;
   funnel_status: string;
   created_at: string;
   /** injected by `portal_state` when the link has `feat_funnel` */
   funnel?: PortalFunnel | null;
 }
 
+/** One structured builder line — `GalleryPricelistLineSerializer`
+ * (`serializers.py:141-147`). */
+export interface PortalPricelistLine {
+  id: string;
+  artwork: string | null;
+  work_title: string;
+  price: string | null;
+  currency: string;
+  /** free text on the backend; the builder offers `catalog.availability_status` (Q-7) */
+  availability: string;
+  note: string;
+  position: number;
+}
+
+/** `GalleryPricelistSerializer` (`serializers.py:150-165`). A file upload has
+ * `object_key` + `file_url`; a built one has `lines` and no file. */
 export interface PortalPricelist {
   id: string;
   title: string;
   notes: string;
+  object_key: string;
+  file_url: string | null;
+  /** submitted · accepted · superseded — not in `/api/options/` (C-14) */
+  status: string;
+  lines: PortalPricelistLine[];
+  created_at: string;
+}
+
+/** One builder line on the wire — `_GalleryPricelistLineInputSerializer`
+ * (`serializers.py:180-192`): an `artwork` OR a `work_title` is required. */
+export interface PortalPricelistLineInput {
+  artwork?: string | null;
+  work_title?: string;
+  /** a plain decimal string, or null for "price on request" */
+  price?: string | null;
+  currency?: string;
+  availability?: string;
+  note?: string;
+}
+
+/** `POST portal/{token}/pricelists/build/` body, minus the riding `pin`
+ * (`GalleryPricelistBuilderSerializer`, `serializers.py:195-201`). */
+export interface PortalPricelistBuild {
+  title?: string;
+  notes?: string;
+  lines: PortalPricelistLineInput[];
+}
+
+/** The source's own submitted update (G-PORT-2) — `PortalUpdateSerializer`
+ * (`serializers.py:95-105`): the admin tier minus the reviewer identity. */
+export interface PortalUpdate {
+  id: string;
+  kind: string;
+  artwork: string | null;
+  payload: Record<string, unknown>;
+  /** pending · approved · rejected (`gallery.update_status`) */
+  status: string;
+  review_note: string;
   created_at: string;
 }
 
@@ -868,8 +945,14 @@ export interface PortalMessage {
   created_at: string;
 }
 
-/** `GET /gallery/portal/{token}/` — the link (minus token/pin_hash) plus the
- * three embedded lists. */
+/** `GET /gallery/portal/{token}/` — declared in the schema as a bare
+ * `GalleryLink` (C-8), so hand-typed from the view: `views.py:95-114`
+ * (`portal_state`) — the link (`GalleryLinkSerializer`, minus token/pin_hash)
+ * plus `assigned_artworks` (each with `image_url`, and `funnel` when the link
+ * has `feat_funnel`), `pricelists`, `messages`, the source's own `updates`
+ * (G-PORT-2) and `cover` — the first assigned work's image, or null
+ * (G-PORT-9). The embedded arrays are read through `normalisePortalState`
+ * (`asArray`), never trusted blind. */
 export interface PortalState {
   id: string;
   source_type: 'gallery' | 'artist' | 'collector' | 'dealer';
@@ -890,9 +973,12 @@ export interface PortalState {
   assigned_artworks: PortalWork[];
   pricelists: PortalPricelist[];
   messages: PortalMessage[];
+  updates: PortalUpdate[];
+  cover: string | null;
 }
 
-/** `POST /gallery/portal/{token}/updates/` body (minus the riding `pin`). */
+/** `POST /gallery/portal/{token}/updates/` body (minus the riding `pin`).
+ * `ask` and `withdraw` must carry an assigned `artwork` (`views.py:186-188`). */
 export interface PortalUpdateSubmit {
   kind: string;
   artwork?: string | null;
@@ -919,6 +1005,8 @@ export interface PortalServiceLine {
   service_key: string;
   title: string;
   description: string;
+  /** G-PORT-16 — how many of this service; `price` stays the LINE amount */
+  quantity: number;
   price: string | null;
   currency: string;
   status: 'proposed' | 'confirmed' | 'declined' | 'delivered';
@@ -954,7 +1042,10 @@ export interface PortalCatalogueEntry {
   key: string;
   title: string;
   description: string;
-  default_price: number | null;
+  /** Since G-PORT-12b the menu is the editable table, whose `DecimalField`
+   * reaches the wire as a string ("700000.00"); the old seeded constant was a
+   * number. Read it through `num()`, never with `+`. */
+  default_price: number | string | null;
 }
 
 /** Gallery-owned fields of a show — what `create`/`PATCH` from the portal may
@@ -1002,6 +1093,8 @@ export interface ExhibitionLineInput {
   service_key: string;
   title?: string;
   description?: string;
+  /** G-PORT-16 — min 1, default 1 (`ExhibitionServiceLineInputSerializer`) */
+  quantity?: number;
   price?: string | null;
   currency?: string;
   status?: 'proposed' | 'confirmed' | 'declined' | 'delivered';

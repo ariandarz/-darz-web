@@ -91,6 +91,11 @@ const ExhibitionComposePage = lazy(() =>
     default: m.ExhibitionComposePage,
   })),
 );
+const ExhibitionCatalogPage = lazy(() =>
+  import('./features/admin/ExhibitionCatalogPage').then((m) => ({
+    default: m.ExhibitionCatalogPage,
+  })),
+);
 const ExhibitionServicesPage = lazy(() =>
   import('./features/admin/exhibitions/ExhibitionServicesPage').then((m) => ({
     default: m.ExhibitionServicesPage,
@@ -499,6 +504,8 @@ export function AppRoutes() {
             an invoice. `/admin/issue/:eventId` arrives with the show chosen,
             which is how every "issue a document" link into it is built. */}
         <Route path="/admin/exhibition-services" element={<ExhibitionServicesPage />} />
+        {/* the portal's Exhibition Services menu (G-PORT-12b) */}
+        <Route path="/admin/exhibition-catalogue" element={<ExhibitionCatalogPage />} />
         <Route path="/admin/issue" element={<IssueDocumentPage />} />
         <Route path="/admin/issue/:eventId" element={<IssueDocumentPage />} />
         <Route path="/admin/sales" element={<SalesPage />} />

@@ -29,6 +29,7 @@ import {
   AdminAccountsService,
   AuctionsAdminService,
   CatalogAdminService,
+  GalleryAdminService,
   SalesAdminService,
 } from './services';
 
@@ -104,6 +105,15 @@ describe('the lock reaches the wire as `expected_version`', () => {
       (c) =>
         new AuctionsAdminService(c).updateLot(ID, {
           opening_amount: '10',
+          expected_version: 7,
+        }),
+    ],
+    // V1 Phase 5 (G-PORT-12b): the portal's Exhibition Services menu.
+    [
+      'updateExhibitionCatalogueItem',
+      (c) =>
+        new GalleryAdminService(c).updateExhibitionCatalogueItem(ID, {
+          title: 'Photo',
           expected_version: 7,
         }),
     ],
