@@ -638,8 +638,9 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 - **Compose** reads the admin catalogue (active rows, by position) — `priceList.ts` and its test are
   deleted. Quantity is a small "Qty" input (the issue page's own column); Issue document splits a
   composed line's amount back into qty × unit, and the portal prints "3 × …".
-- **G-PROJ-8.** Descriptions read/write through the API; the `DESCRIPTIONS` map is gone, so rows
-  seeded before the column stay blank until typed. The standard-set seed now writes `about` into it.
+- **G-PROJ-8.** Descriptions read/write through the API and the row's own text always wins. A row
+  seeded before the column (empty description) falls back to Darz's menu text for that service name,
+  so existing proposals do not go blank (lead review). The standard-set seed now writes `about` into it.
 - **Found on the way:** the backend now serves the portal menu's `default_price` as a decimal
   STRING; the portal totals added it with `+` (string concatenation) — now `num()`. The desk's
   assigned-works list read `snapshot.artist_name`, which the snapshot never had (it is `artist`).

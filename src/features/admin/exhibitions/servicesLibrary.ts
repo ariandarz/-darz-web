@@ -14,8 +14,11 @@
  *
  * WHERE THE WORDS LIVE. On the row: `ProjectServiceCatalogItem.description`
  * (G-PROJ-8), read and written through the API like the name and the price.
- * A row with none is blank until an owner types one — the standard-set seed
- * writes Darz's own menu text into it (`standardSet.ts::serviceInput`).
+ * Rows created before the column existed carry an empty one, so an empty row
+ * description falls back to Darz's own menu text for the same service name
+ * (`standardSet.ts`) — what every document printed before G-PROJ-8 — rather
+ * than going blank on existing proposals. The row always wins once it has
+ * words; the standard-set seed writes the menu text into new rows.
  */
 import type { PackageTemplateAdmin, ServiceCatalogItemAdmin } from '../../../api/types';
 import { STANDARD_SERVICES, nameKey } from '../projects/standardSet';
@@ -24,7 +27,8 @@ import { STANDARD_SERVICES, nameKey } from '../projects/standardSet';
 export interface LibraryService {
   id: string;
   name: string;
-  /** The row's own `description` (G-PROJ-8), '' when none is stored. */
+  /** The row's own `description` (G-PROJ-8); when empty, Darz's menu text for
+   * that service name; '' for a hand-added service with neither. */
   description: string;
   /** null = not priced yet. Never 0, which would read as free. */
   price: number | null;
@@ -43,6 +47,8 @@ export interface LibraryPackage {
   /** Ids the catalogue no longer has — named rather than silently dropped. */
   missing: number;
 }
+
+const MENU_TEXT = new Map(STANDARD_SERVICES.map((s) => [nameKey(s.name), s.about]));
 
 /** Which programme a service belongs to, as Darz's own menu groups them —
  * the heading the library folds it under. */
@@ -100,7 +106,7 @@ export function toLibrary(rows: readonly ServiceCatalogItemAdmin[]): LibraryServ
     .map((r) => ({
       id: r.id,
       name: r.name ?? '',
-      description: r.description ?? '',
+      description: r.description?.trim() || MENU_TEXT.get(nameKey(r.name ?? '')) || '',
       price: amount(r.price),
       currency: r.currency ?? '',
       unit: r.unit ?? 'piece',

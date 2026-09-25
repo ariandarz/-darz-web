@@ -48,9 +48,15 @@ describe('toLibrary', () => {
     expect(s.price).toBe(700000);
   });
 
-  it('never fills a description in from a local menu — a row without one stays blank', () => {
-    // the hardcoded name → text map is gone: the API is the one source
-    expect(toLibrary([row('Exhibition Photo Coverage', '700000')])[0].description).toBe('');
+  it('falls back to Darz’s menu text only when the row has no description', () => {
+    // rows created before G-PROJ-8 carry an empty description; they keep the
+    // text every document printed before, and the row wins once it has words
+    const fallback = toLibrary([row('Exhibition Photo Coverage', '700000')])[0].description;
+    expect(fallback).not.toBe('');
+    expect(
+      toLibrary([row('Exhibition Photo Coverage', '700000', 'TMN', 'Own words.')])[0]
+        .description,
+    ).toBe('Own words.');
     expect(toLibrary([row('Something Darz added', '5')])[0].description).toBe('');
   });
 
