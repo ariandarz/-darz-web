@@ -58,7 +58,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-P5-11 | Enquiry has no artist link | ✅ Closed | Nullable `artist` FK both tiers. Owner-decision UI. |
 | G-P5-12 | Activity write-only | ✅ Closed | `GET /crm/activity/`. |
 | G-F1-2..7 | Offer floor, allowed_actions, status vocab, idempotency, nested admin artwork | ✅ Closed | Flow-1 loop; see `FLOW_1_API_GAPS.md` history. |
-| G-CHAT-2 | Nothing archives a message | ✅ Closed | `POST /crm/admin/messages/{id}/archive/` (B4) — admin-desk-only hide, distinct from soft-delete; `?include_archived=` on the admin thread. Collector view untouched. |
+| G-CHAT-2 | Nothing archives a message | ✅ Closed | `POST /crm/admin/messages/{id}/archive/` (B4) — admin-desk-only hide, distinct from soft-delete; `?include_archived=` on the admin thread. Collector view untouched. FE ✅ adopted (Phase 6): Archive/Restore on every admin bubble + an "Include archived" switch (`AdminThreadController.archive` / `setIncludeArchived`); archived bubbles marked " · archived". |
 | G-Q-1 | Questionnaire contact step can't write collector contact | ✅ Closed | `PATCH /api/auth/me/` (B1) writes phone/city/full_name/preferred_language. FE ✅ adopted (Phase 1): after a successful submit the contact step's phone and language (English→`en`, Farsi→`fa`) go through `AuthService.updateMe`, best-effort; email is not writable and stays an answer only. |
 
 ## Catalog — selections, curation, filters
@@ -111,8 +111,8 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-DOC-1 | Issued documents not exposed to collectors | ✅ Closed | `GET /api/documents/` (B3) — the collector's own shared docs (id/kind/title/ref/pdf_url/shared_at). Admin issues via `POST /documents/admin/documents/{id}/share/`; collector-visible kinds: invoice/certificate/provenance/contract/receipt/proforma/artwork_sheet/condition_report. FE ✅ adopted (Phase 1): Profile › Account › "Your documents" (`DocumentsService`), opening `pdf_url`; "New" is per device (`darz_docs_seen`, as the old app). |
-| document_refs (D19) | No way to attach a document to a collector's chat thread — only share-by-link | ✅ Closed | 2026-09-25 (PR #49). `RequestMessage` now carries `document_refs` (like `artwork_refs`): the admin reply endpoint accepts `document_refs: [id]` (team-only) and **attaching = sharing** (runs the G-DOC-1 share path + collector-visible-kind allowlist), so the doc lands on the collector's documents list and is openable. Reads expose them enriched `[{id, kind, title}]`. Replaces the D19 share-by-link workaround. |
+| G-DOC-1 | Issued documents not exposed to collectors | ✅ Closed | `GET /api/documents/` (B3) — the collector's own shared docs (id/kind/title/ref/pdf_url/shared_at). Admin issues via `POST /documents/admin/documents/{id}/share/`; collector-visible kinds: invoice/certificate/provenance/contract/receipt/proforma/artwork_sheet/condition_report. FE ✅ adopted (Phase 1): Profile › Account › "Your documents" (`DocumentsService`), opening `pdf_url`; "New" is per device (`darz_docs_seen`, as the old app). **Admin share FE ✅ adopted (Phase 6):** the document page's "Share with collector" section (old "Sharing" / "Not shared" pill, collector picker, Stop sharing = `DELETE …/share/`), offered only for collector-visible kinds. |
+| document_refs (D19) | No way to attach a document to a collector's chat thread — only share-by-link | ✅ Closed | 2026-09-25 (PR #49). `RequestMessage` now carries `document_refs` (like `artwork_refs`): the admin reply endpoint accepts `document_refs: [id]` (team-only) and **attaching = sharing** (runs the G-DOC-1 share path + collector-visible-kind allowlist), so the doc lands on the collector's documents list and is openable. Reads expose them enriched `[{id, kind, title}]`. Replaces the D19 share-by-link workaround. FE ✅ adopted (Phase 6): "Attach document" in the admin composer (`DocumentAttach`; never offers a document issued to another collector — attach re-assigns it), chips on both threads; the collector chip opens the PDF from "Your documents". |
 
 ## Sales / Data Health
 
@@ -141,7 +141,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-CAT-3 | Admin artists `?search&ordering` + `works_count` | ✅ Adopted (Phase 4): server search, "Sort: Most works" (default) / "Name A–Z" / "Recently added" (`-created`, replacing the old "Recently updated" — no updated ordering), kit pager, Works column, "Showing n of m" from `total_count` | 4 |
 | G-CAT-8 | Publish gate: 400 `details.missing` | ✅ Adopted (Phase 4): the old refusal popup ("This artwork isn’t ready for the Market App yet. Please complete: …", Complete it now / Not now) on the Database row and the editor, tokens in the old `_appMissing` words and order | 4 |
 | G-CLUB-1 | `thumb` on club selection artworks | ✅ Adopted (Phase 4): the card cover is the first work's thumb (old `works[0]`), gradient fallback | 4 |
-| G-DOC-2 | `GET /documents/admin/documents/{id}/activity/` (flat `actor` + `actor_name`, C-15) | Not bound; nav History tab `path: null` | 6 |
+| G-DOC-2 | `GET /documents/admin/documents/{id}/activity/` (flat `actor` + `actor_name`, C-15) | ✅ Adopted (Phase 6): a History section on each document (`DocumentHistory`: When · What · From → to · Who, old `_spAgo`, empty "No document activity recorded yet."). The nav History tab stays hidden — the old group had none ("Library & history", now the Library tab's label again) and the feed is per document | 6 |
 | G-PROJ-1 | `?quick=` + `?partner=` on projects | Not sendable: client-side walks | 7 |
 | G-PROJ-2/3 | `status` and `stages` writable on PATCH | Shown read-only; tiles stay 0 | 7 |
 | G-PROJ-6/7 | `?archived=` bool fix; tombstoned partner round-trip | Nothing to adopt (bug fixes) | — |

@@ -648,6 +648,58 @@ below is the recommended order, by risk and size: live bugs first, then the busi
   reports the last upload's form (`/__stub/portal/last-image/`). The stub keeps two links so the
   portal walk and the desk walk (parallel files) never share state.
 
+## 3g · What Phase 6 did differently from the plan (recorded 2026-09-25)
+
+- **Sources of the old code.** Documents: `workspaces-runtime.js` (`_docTab` :522 maps 'history' to the
+  Library; "Library & history" body :698-731 — History heading, "Activity" rows, "No document activity
+  recorded yet."), `darz-studio.html` (group tabs :11731-11736, `_spAgo` :27024, the deal's share
+  toggle "Sharing" / "Not shared" and "only shared documents appear in their Market App" :12906-12912,
+  the share dialog heading "Share with collector" :6608, the legal-docs owner gate :30965). Chat:
+  `_chatDetail` :40452-40476, `_chatBubble` :40330-40342 (the quiet Edit/Delete row, " · edited"),
+  the renewal cutoff `_chatCutoff` / `chatArchiveNow` :40246-40258. Collector: `dzThreadBubbleHTML`
+  app.html:7277-7285 (cards after `.tm`), `.dz-chatart` :923-931, `dzDocsSectionHTML` :7909-7925.
+- **History is a section on each document, and the nav tab stays hidden.** The old group had no History
+  tab (its fourth tab is "Library & history"), and the backend serves the trail per document (owner
+  call), so a History tab would only repeat the Library. `docHistory` keeps `path: null` with that
+  reason, and the Library tab's label is the old "Library & history" again. Rows read like the
+  Settings audit log (When · What · From → to · Who); "When" is the old `_spAgo`. The action is the
+  server verb capitalised ("Transition", "Share") — the old log was free text, so there was no
+  wording to port (flagged).
+- **Share needs a collector picker.** The old share toggle lived on a deal whose collector was known; a
+  document here may have none, so the kit `Picker` (the Sales desk's collector search) is under the
+  pill, prefilled with the document's own collector. "Stop sharing" and the not-shareable-kind line
+  ("A “proposal” document never reaches a collector. Only these kinds can be shared: …") are new copy
+  (flagged). Share is **not** owner-lock-guarded (the backend's `share_with_collector` has no guard),
+  so it stays live for a standard admin on a locked document.
+- **owner_lock** disables Save draft · Upload PDF · Confirm · Sign · Archive and the draft inputs for a
+  standard admin, with "Owner-locked — only the owner can edit, upload, confirm, sign or archive this
+  document." — the old legal-docs note's shape (:30965) naming the backend's guarded moves; the old
+  panel had no per-document lock (flagged). Delete stays owner-only (G-DEL-1).
+- **Attach document has no old counterpart (flagged).** The old composer was a textarea and Send; the
+  control is a single ghost button → a search box over a short list → one removable chip ("shared with
+  the collector when you send"). The admin list has no collector filter or search, so it is walked
+  whole once and narrowed client-side. **It never offers a document issued to another collector:**
+  attaching re-runs the share path, which **rewrites the document's `collector`** — a backend behaviour
+  worth an owner/BE look (attaching someone else's invoice would move it). With no collector known
+  (a cold deep link, G-CHAT-1) only unissued documents are offered. A message still needs text (the
+  backend requires `body`).
+- **Message archive** is per message with an "Include archived" switch (both new copy, flagged; the
+  old equivalent was the panel-wide renewal cutoff). Archive/Restore sits in the old bubble's quiet
+  action row; a shown archived bubble is dimmed and reads " · archived" beside its time, as " · edited"
+  did. The collector thread is untouched (the backend's collector list ignores the flag). The
+  renewal cadence (Keep/daily/weekly, "Archive all & start fresh") stays unported — no sweep endpoint.
+- **Document chips.** Admin: kind · title, linking to the document's page. Collector: the "Your
+  documents" row boxed as an attached card (old label via `docLabel`, title, "View →"), opening the
+  signed `pdf_url` from `GET /api/documents/` (read once, only when a thread has an attachment) and
+  marking it seen; if the document is not in that list, the old "Document not available" toast.
+- **Found on the way:** the admin thread only showed a load error when the thread was empty; it now
+  shows any error (an archive refusal included) above the bubbles. `MessageThreadController.send`
+  takes the attachments, so the shared machine stays one class.
+- **E2E:** the stub gained a standard-admin login (an email starting "standard"), a documents set,
+  per-document activity, share/unshare, the admin thread (one archived message, stateful archive),
+  and a collector message carrying `document_refs`. The Chat desk list now serves that one
+  conversation, so the thread walk opens it from the list (router state names the collector).
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -671,7 +723,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[x]` 2026-09-25 | see CHANGELOG |
 | 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[x]` 2026-09-25 | see CHANGELOG |
 | 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[x]` 2026-09-25 | see CHANGELOG |
-| 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[ ]` | |
+| 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[x]` 2026-09-25 | see CHANGELOG |
 | 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[ ]` | |
 | 8 | Owner Access desk | `v1/phase-8-access-desk` | `[ ]` (Q-1) | |
 | 9 | Owner-decision items | `v1/phase-9x-*` | waiting on owner | |

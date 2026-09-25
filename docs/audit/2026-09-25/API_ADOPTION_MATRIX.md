@@ -94,10 +94,10 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/crm/activity/ | none | — | Not bound | Collector's own activity list — no binding (POST is bound). |
 | POST | /api/crm/activity/ | `CrmService.logActivity` | `activity/ActivityLogger.ts` | Integrated |  |
 | GET | /api/crm/admin/activity/ | `CrmService.adminActivity` | `admin/ActivityFeedController.ts` | Integrated | All schema filters sent-capable. |
-| POST | /api/crm/admin/messages/{id}/archive/ | none | — | Not bound | Archive a thread message — no binding. |
+| POST | /api/crm/admin/messages/{id}/archive/ | `CrmService.adminArchiveMessage` | `admin/AdminThreadController.ts`, `admin/AdminThreadPage.tsx` | Integrated | Phase 6: Archive/Restore per bubble; sends `{archived}` both ways (G-CHAT-2). |
 | GET | /api/crm/admin/requests/ | `CrmService.adminRequests` | `admin/AdminRequestsController.ts` | Integrated | All schema filters in AdminRequestQuery. |
-| GET | /api/crm/admin/requests/{id}/messages/ | `CrmService.adminMessages` | `admin/AdminThreadController.ts` | Integrated | `?include_archived` unsent. |
-| POST | /api/crm/admin/requests/{id}/messages/ | `CrmService.adminPostMessage` | `admin/AdminThreadController.ts` | Partial | FE sends `body` + `artwork_refs` only; `document_refs` never sent. |
+| GET | /api/crm/admin/requests/{id}/messages/ | `CrmService.adminMessages` | `admin/AdminThreadController.ts` | Integrated | Phase 6: `?include_archived=true` sent by the "Include archived" switch. |
+| POST | /api/crm/admin/requests/{id}/messages/ | `CrmService.adminPostMessage` | `admin/AdminThreadController.ts`, `admin/DocumentAttach.tsx` | Integrated | Phase 6: `document_refs` sent when a document is attached (D19, `messagePayload`). |
 | POST | /api/crm/admin/requests/{id}/messages/mark-seen/ | `CrmService.adminMarkSeen` | `admin/AdminThreadController.ts` | Integrated |  |
 | POST | /api/crm/admin/requests/{id}/transition/ | `CrmService.transitionRequest` | `admin/AdminRequestsController.ts`, `admin/AdminRequestsPage.tsx` | Integrated |  |
 | GET | /api/crm/admin/selections/ | `CrmService.adminSelections` | `admin/ClubPage.tsx` | Integrated |  |
@@ -110,7 +110,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/crm/requests/{id}/ | `CrmService.request` | `conversations/ConversationsController.ts` | Integrated |  |
 | POST | /api/crm/requests/{id}/archive/ | none | — | Not bound | Collector archive request — no binding. |
 | GET | /api/crm/requests/{id}/messages/ | `CrmService.messages` | `conversations/ThreadController.ts` | Integrated |  |
-| POST | /api/crm/requests/{id}/messages/ | `CrmService.postMessage` | `conversations/ThreadController.ts` | Partial | FE sends `body` + `artwork_refs` only; `document_refs` (supported) never sent. |
+| POST | /api/crm/requests/{id}/messages/ | `CrmService.postMessage` | `conversations/ThreadController.ts` | Integrated | Phase 6: `document_refs` is team-only (the backend 400s a collector's), so the collector end correctly never sends it; the enriched refs are READ and drawn as chips (`chat/DocChips.tsx`). |
 | POST | /api/crm/requests/{id}/messages/mark-seen/ | `CrmService.markSeen` | `conversations/ThreadController.ts` | Integrated |  |
 | POST | /api/crm/requests/{id}/transition/ | none | — | Not bound | Collector-side transition — no binding. |
 | GET | /api/crm/saved/ | `CrmService.saved` | `saved/SavedListController.ts` | Integrated | All schema filters in SavedArtworkQuery. |
@@ -216,11 +216,11 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/documents/admin/documents/{id}/ | `DocumentsAdminService.document` | `admin/DocumentDetailPage.tsx` | Integrated |  |
 | PATCH | /api/documents/admin/documents/{id}/ | `DocumentsAdminService.updateDocument` | `admin/DocumentDetailPage.tsx` | Integrated |  |
 | DELETE | /api/documents/admin/documents/{id}/ | `DocumentsAdminService.deleteDocument` | `admin/DocumentDetailPage.tsx` | Integrated |  |
-| GET | /api/documents/admin/documents/{id}/activity/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Document activity feed (G-DOC-2) — no binding. |
+| GET | /api/documents/admin/documents/{id}/activity/ | `DocumentsAdminService.activity` | `admin/DocumentHistory.tsx` | Integrated | Phase 6: the document's History section (G-DOC-2, flat actor C-15). |
 | POST | /api/documents/admin/documents/{id}/archive/ | `DocumentsAdminService.archiveDocument` | `admin/DocumentDetailPage.tsx` | Integrated |  |
 | POST | /api/documents/admin/documents/{id}/confirm/ | `DocumentsAdminService.confirmDocument` | `admin/DocumentDetailPage.tsx`, `admin/projects/ProjectProposal.tsx` | Integrated |  |
-| POST | /api/documents/admin/documents/{id}/share/ | none | — | Not bound | Share document — no binding. |
-| DELETE | /api/documents/admin/documents/{id}/share/ | none | — | Not bound | Unshare document — no binding. |
+| POST | /api/documents/admin/documents/{id}/share/ | `DocumentsAdminService.shareDocument` | `admin/DocumentDetailPage.tsx` | Integrated | Phase 6: "Share with collector" (G-DOC-1). |
+| DELETE | /api/documents/admin/documents/{id}/share/ | `DocumentsAdminService.unshareDocument` | `admin/DocumentDetailPage.tsx` | Integrated | Phase 6: "Stop sharing". |
 | POST | /api/documents/admin/documents/{id}/sign/ | `DocumentsAdminService.signDocument` | `admin/DocumentDetailPage.tsx` | Integrated |  |
 | POST | /api/documents/admin/documents/{id}/upload/ | `DocumentsAdminService.uploadPdf` | `admin/DocumentDetailPage.tsx`, `admin/projects/ProjectProposal.tsx` | Integrated |  |
 | GET | /api/documents/admin/documents/{id}/versions/ | `DocumentsAdminService.versions` | `admin/DocumentDetailPage.tsx` | Integrated |  |
@@ -416,21 +416,22 @@ create, PATCH and DELETE, link reissue, pricelist cap and status, the portal ima
 pricelist build — and sent `?search` on the links list. The portal's `GET messages/`, `GET status/` and
 `GET exhibitions/{id}/` stay Not bound on purpose: the same data arrives in the state read (and the
 exhibitions list), so a second read would only duplicate it. `GET exhibition-catalogue/{id}/` likewise
-(list rows suffice). Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
+(list rows suffice). V1 Phase 6 (2026-09-25) moved four Not bound (document `activity/`, `share/` POST and
+DELETE, crm message `archive/`) and both Partial thread POSTs to Integrated, and sent `?include_archived`
+on the admin thread. Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
 
 | Status | Count |
 |---|---|
-| Integrated | 251 |
-| Partial | 2 |
+| Integrated | 257 |
+| Partial | 0 |
 | Bound, no UI | 9 |
-| Not bound | 60 |
+| Not bound | 56 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
 ### Partial
 
-- `POST /api/crm/admin/requests/{id}/messages/` — FE sends `body` + `artwork_refs` only; `document_refs` never sent.
-- `POST /api/crm/requests/{id}/messages/` — FE sends `body` + `artwork_refs` only; `document_refs` (supported) never sent.
+- None since V1 Phase 6 (both thread POSTs moved to Integrated).
 
 ### Bound, no UI
 
@@ -457,13 +458,9 @@ exhibitions list), so a second read would only duplicate it. `GET exhibition-cat
 - `GET /api/catalog/selections/`
 - `POST /api/catalog/selections/{id}/seen/`
 - `GET /api/crm/activity/`
-- `POST /api/crm/admin/messages/{id}/archive/`
 - `GET /api/crm/admin/selections/{id}/`
 - `POST /api/crm/requests/{id}/archive/`
 - `POST /api/crm/requests/{id}/transition/`
-- `GET /api/documents/admin/documents/{id}/activity/`
-- `POST /api/documents/admin/documents/{id}/share/`
-- `DELETE /api/documents/admin/documents/{id}/share/`
 - `GET /api/gallery/admin/exhibition-catalogue/{id}/`
 - `DELETE /api/gallery/admin/links/{id}/`
 - `GET /api/gallery/portal/{token}/exhibitions/{event_id}/`
@@ -519,4 +516,4 @@ exhibitions list), so a second read would only duplicate it. `GET exhibition-cat
 - `GET /api/auctions/records/` — `?house` typed but unsent by decision (Phase 3: the collector Records page is the Artist view).
 - `GET /api/gallery/admin/links/` — `?search` unsent (query type has source_type/page/per_page only).
 - `GET /api/crm/requests/` — `?archived` unsent (CollectorRequestQuery lacks it).
-- `GET /api/crm/admin/requests/{id}/messages/` — `?include_archived` unsent.
+- `GET /api/crm/admin/requests/{id}/messages/` — ~~`?include_archived` unsent~~ sent since V1 Phase 6.
