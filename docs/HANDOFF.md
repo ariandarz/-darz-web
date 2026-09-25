@@ -43,7 +43,8 @@ the non-V1 backend gaps, and backend-blocked/deferred features — all in `TASKL
 ## 3 · What is actually next
 
 **The frontend has not yet adopted the closed backend work** — that is the main queue now.
-`docs/API_GAPS_FRONTEND_ADOPTION.md` is the step-by-step; **Step 0 is regenerate `src/api/schema.d.ts`**
+**`docs/API_ADOPTION_PLAN.md` is the batch order (one PR per batch — resume at the first unticked one)**;
+`docs/API_GAPS_FRONTEND_ADOPTION.md` is the per-gap detail. **Step 0 is regenerate `src/api/schema.d.ts`**
 from a running backend, then work the typecheck flags. Highlights: handle the access-request 200/429,
 wire `ConflictBanner` on the two G-LOCK-1 desks, delete the hand-typed `detail` union, use the nested
 `artwork`, pull viewing-mode from `/api/options/`, chip `selection_name`, questionnaire `answered`.
