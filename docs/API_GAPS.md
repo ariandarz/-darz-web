@@ -1,8 +1,17 @@
 # API gaps — single source of truth
 
-**Last verified 2026-09-24** against `-darz-web` `development` and `darz-backend-api` `development`
-@ `a140548` — **all V1 and Group-B backend gaps are now merged; every 🔵 row below is closed.** The
-only work left is frontend adoption (`API_GAPS_FRONTEND_ADOPTION.md`) and deferred/unbuilt phases.
+**Re-verified 2026-09-25** against `-darz-web` `development` @ `d987910` (PR #100) and `darz-backend-api`
+`development` @ `df0421f` (PR #70), the **final V1 backend: 224 paths / 323 operations**. Every
+operation's adoption state is now measured, not inferred: see `docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`
+(225 integrated · 3 partial · 9 bound-no-UI · 85 not bound · 1 backend-only). The phased plan that closes
+the frontend side is **`V1_IMPLEMENTATION_PLAN.md`**. Backend↔frontend contract problems (including the
+backend defects found in this pass) are in **`V1_CONTRACT_ISSUES.md`** (`C-…` IDs).
+
+**What changed since the 2026-09-24 version of this file:** backend PRs #54–#70 closed another ~35 gaps
+(section "2026-09-25 backend additions" below). None of them is adopted yet. Three earlier rows were
+wrong or went stale: Phase 21 pricelists (per-link pricelists now exist), G-P25-1 (now a **live FE bug**,
+C-3) and G-SALE-3 (the nested rows **break** the current Sales desk, C-1).
+
 This file is **the** live index of every recorded API gap and its current state. It
 supersedes the live-status role of `API_INTEGRATION_GAPS.md`, `API_GAP_ANALYSIS.md`,
 `FLOW_1_API_GAPS.md`, `PHASE_5_API_GAPS.md`, `PHASE_6_API_GAPS.md`, `PHASE_8_API_GAPS.md` and
@@ -60,13 +69,15 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-P24-2 | No change signal for "ready" notice | ✅ Closed | `GET /catalog/selections/` + `POST …/{id}/seen/`. Owner-decision UI. |
 | Phase 5b | Database desk 4 hard filters | ✅ Closed | `gallery_portal`/`complete`/`duplicate_images`/`size` on admin filter set. |
 | G-P6-1..4 | Saved/favorites loop | ✅ Closed | See `PHASE_6_API_GAPS.md` history. |
-| G-CAT-1..7 | Catalogue/artwork editor edges | ✅ Closed (verify) | Cited in `src/api/services.ts`/`types.ts`; carried closed — re-verify on next catalogue touch. |
+| G-CAT-1/3/8 | Admin row thumb + artist name, artists search/ordering/works_count, publish gate | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". |
+| G-CAT-4..7 | Old editor fields with no backend | ➖ Stated on the editor | Not V1 API gaps. |
+| G-CAT-9 | Source-freshness loop | ⛔ Deferred | Backend Phase 10 sources loop. |
 
 ## Recommendations — questionnaire
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-P25-1 | `GET questionnaire` 404 on first run | ✅ Closed | Returns 200 `{answers,submitted_at,answered}`. |
+| G-P25-1 | `GET questionnaire` 404 on first run | ✅ Closed | Returns 200 `{answers,submitted_at,answered}`. **FE: live bug (C-3):** the controller and the Profile card treat any 200 as submitted → Phase 0. |
 | G-P25-2 | Question set not served (hardcoded) | ✅ Closed | `GET /recommendations/question-set/` + admin CRUD. FE: drive the screen from it. |
 
 ## Notifications — web push
@@ -84,7 +95,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-REC-1 | No auction-house facet on records list | ✅ Closed | Exact `?house=` on both records lists (B2). |
 | Auction poster | No `cover_image_url` on `Auction` | ✅ Closed | `cover_image_url` on `AuctionSerializer` + `POST`/`DELETE …/{id}/cover-image/` (B2). FE: drop the per-card first-lot image read. |
 | Records `?section=` | No server split Past/Upcoming/Live/Highlights | ✅ Closed | `?section=` already served on both records lists (was implemented; the earlier "pending" was a doc error). |
-| G-AUC-1/2 | (cited in `services.ts`/`types.ts`) | ✅ Closed (verify) | Carried closed; re-verify on next auctions touch. |
+| G-AUC-1/2/3 | Auction edit + terms, lot edit, registration reset | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". |
 
 ## Membership / accounts / profile
 
@@ -109,9 +120,63 @@ trusting any shape (`CLAUDE.md` → "API access").
 | --- | --- | --- | --- |
 | G-SALE-4 | `Sale` has no source axis for auction settlement | ✅ Closed | `Sale.source` (market/auction) + `?source=` on the admin sales list (B5) — the Auction Sales tab is now buildable. **Auction→Sale automation now shipped too** (2026-09-25, PR #51): a won lot auto-creates a draft `Sale(source=auction)`, so the tab fills itself. |
 | Auction→Sale automation | Won lots didn't auto-create a Sale (admin entered each by hand) | ✅ Closed | 2026-09-25 (PR #51), follow-up to G-SALE-4. On lot close (won), `LotService.close` auto-creates a **draft** `Sale(source=auction)` with `agreed_price` = hammer + buyer's premium and `commission_amount` = the premium. New `Sale.lot` FK links each sale back to its lot (also the idempotency key). Passed lots create nothing. |
-| G-SALE-1/3 | (cited in `types.ts`) | ✅ Closed (verify) | Carried closed. |
+| G-SALE-1/2/3 | Sales desk tiles, filters, bare-uuid rows | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". **G-SALE-3 breaks the current desk (C-1).** |
 | G-HEALTH-1 | Data Health real counts panel | ✅ Closed | Built #83. |
 | G-HEALTH-2/3/4 | Three Data Health checks/counts with no backend | ✅ Closed | B5: **G-HEALTH-2** `Artwork.source_type` + `?source_type=` (Gallery/Dealer/Artist-sourced counts); **G-HEALTH-3** `deleted_records` count on the report; **G-HEALTH-4** `?created_after=` (recently-added). |
+
+## 2026-09-25 backend additions (PRs #54–#70) — backend ✅, frontend adoption per `V1_IMPLEMENTATION_PLAN.md`
+
+| ID | Backend now serves | FE state | Phase |
+| --- | --- | --- | --- |
+| G-SALE-1 | `GET /sales/admin/sales/summary/` (total + per status/payment/delivery/source) | Not bound: tiles use 4 `per_page=1` counts | 2 |
+| G-SALE-2 | `?search&payment_status&delivery_status&source&ordering` on the admin sales list | Not sendable (`SaleQuery` has `status` only) | 2 |
+| G-SALE-3 | Nested `artwork{id,title}`, `collector{id,display_name}`, `responsible{id,name}` on rows (input stays ids) | **Broken:** desk treats them as uuids (C-1) | **0** |
+| G-SALE-5 | `follow_up_at` + `follow_up_overdue`, `POST …/follow-up/`, append-only `GET/POST …/notes/` | Not bound | 2 |
+| G-AUC-1 | `PATCH /auctions/admin/auctions/{id}/` (lock; draft/scheduled only) + `terms`/`terms_required` on create | Not bound; on-screen copy says "no edit endpoint" | 3 |
+| G-AUC-2 | `PATCH /auctions/admin/lots/{id}/` (lock; scheduled only) | Not bound; copy says "create-only" | 3 |
+| G-AUC-3 | `POST /auctions/admin/registrations/{id}/reset/` (rejected → pending) | Not bound | 3 |
+| G-COL-1 | `GET /auth/admin/collectors/summary/` (collectors, vip, active_30d, engaged) | Not bound: tiles substitute "Active" | 4 |
+| G-COL-2 | `last_activity_at`, `purchase_count`, `?ordering=activity\|purchases` (list only, C-16) | Not sendable | 4 |
+| G-CAT-1 | `thumb`, `artist_name` on admin artwork rows | Unused: names resolved from a capped roster | 4 |
+| G-CAT-3 | Admin artists `?search&ordering` + `works_count` | Unused: desk fetches 500 → **truncates at 100** (C-5) | 0 / 4 |
+| G-CAT-8 | Publish gate: 400 `details.missing` | Shown only as flattened text | 4 |
+| G-CLUB-1 | `thumb` on club selection artworks | Unused (cover is always the fallback) | 4 |
+| G-DOC-2 | `GET /documents/admin/documents/{id}/activity/` (flat `actor` + `actor_name`, C-15) | Not bound; nav History tab `path: null` | 6 |
+| G-PROJ-1 | `?quick=` + `?partner=` on projects | Not sendable: client-side walks | 7 |
+| G-PROJ-2/3 | `status` and `stages` writable on PATCH | Shown read-only; tiles stay 0 | 7 |
+| G-PROJ-6/7 | `?archived=` bool fix; tombstoned partner round-trip | Nothing to adopt (bug fixes) | — |
+| G-PROJ-8 | `description` on service-catalog items | Unused: hardcoded `DESCRIPTIONS` map | 5 / 7 |
+| G-PROJ-9 | Manual FX fields + `GET …/projects/{id}/totals/` | Not bound | 7 |
+| G-PORT-1 | Snapshot `image_url` on assigned works; `POST portal/{token}/artworks/{id}/image/` (multipart) | Unused: cards say "No image"; no upload | 5 |
+| G-PORT-2 | `updates[]` in portal state | Unused: pills are per-tab memory | 5 |
+| G-PORT-3 (P3a/P3b) | Pricelist `status` + `POST admin/pricelists/{id}/status/`, `GET …/pricelists/cap/`, structured `lines[]` + `POST portal/{token}/pricelists/build/` | Unused: rows always "Received" | 5 |
+| G-PORT-4/6 | Update kinds `ask` + `withdraw` (an approved withdraw **unassigns** the work) | Never sent; admin confirm copy is wrong for withdraw | 5 |
+| G-PORT-9 | `cover` in portal state | Unused | 5 |
+| G-PORT-11 | Portal throttle only on writes | Nothing to adopt | — |
+| G-PORT-12b | Editable exhibition catalogue: `/gallery/admin/exhibition-catalogue/` CRUD (lock) | No desk | 5 |
+| G-PORT-13 | `POST /gallery/admin/links/{id}/reissue/` + expiry sweep | Not bound; copy says "no re-issue" | 5 |
+| G-PORT-14 | `object_key` + `file_url` on pricelists | Unused | 5 |
+| G-PORT-15 | `?search=` on admin links | Unused: client-side over one page | 5 |
+| G-PORT-16 | `quantity` on exhibition service lines | Never sent | 5 |
+| G-PORT-5/7/8, P3c | Referral tab, drawn signature, offer engine, formatted pricelist download | ⛔ **No backend**: not V1 | — |
+| G-PORT-10 | Pre-PIN name probe | ➖ Dropped by owner | — |
+
+## Backend defects found in the 2026-09-25 re-baseline (raise on `darz-backend-api`)
+
+Full detail and FE work-arounds are in `V1_CONTRACT_ISSUES.md` § B. In short:
+- **C-6** a PATCH without `expected_version` gives **500** on 18 endpoints (was recorded for 2).
+- **C-7** no hold member in the detail union.
+- **C-8** the portal state schema is undeclared.
+- **C-9** the portal `pin` is documented as a query param on writes (actually body).
+- **C-10** error `details` is untyped.
+- **C-11** 4xx with `INTERNAL_ERROR`.
+- **C-12** an admin can't view a portal replacement image.
+- **C-13** security: portal PIN brute force, unthrottled logins, unvalidated anonymous uploads, builder
+  artwork scope.
+- **C-14** options are missing sale `source` and pricelist `status`.
+- **C-18** no window validation on auction/lot edits.
+- **C-19** the prod Dockerfile is WSGI, so there are no auction WebSockets.
+- **C-2** unstable enum names.
 
 ## Owner-editable copy / theme (not API gaps — resolved via `/api/app-theme/`)
 
@@ -125,7 +190,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | --- | --- | --- |
 | G-6: Intelligence · Marketing Hub · Document Builder | ⛔ Deferred | API ready, no UI. Owner decision. |
 | Phase 20 Logistics | ⛔ Deferred | No `/api/logistics/` namespace. |
-| Phase 21 Library / pricelist builders | ⛔ Deferred | No pricelist endpoints. |
+| Phase 21 Library (saved-items library) | ⛔ Deferred | No library endpoints. **Per-link gallery pricelists are no longer a gap:** status lifecycle, soft cap and a structured builder shipped 2026-09-25 (P3a/P3b, see below). Only the formatted download (P3c) is still unbuilt. |
 | Auction Sales | ⚪ Frontend-only | **Unblocked** by G-SALE-4 (B5) — filter the sales list on `?source=auction`. As of 2026-09-25 (PR #51) won lots also **auto-create** the draft sale, so the tab fills itself; each row's `lot` FK links back to the auction lot. Building the tab is this repo's work. |
 | G7 "Refine" filter UI, FE-R1…R4 (Records desk/curation/import/sub-tabs) | ⚪ Frontend-only | Backend ready; UI is this repo's Phase 12+. |
 | Legacy-id lookup / catalogue change-stamp | ⚪ Frontend-only | Endpoints exist; nothing consumes them yet. |
@@ -136,11 +201,10 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 ## What's actually left, in one line each
 
-- **No backend gaps remain.** The V1 and Group-B plans plus the three follow-up candidates
-  (document_refs D19, G-KEY-1 access-key roster, auction→Sale automation) are all merged (backend
-  `development` @ `57d408c`, PRs #49/#50/#51); there are no 🔵 rows left.
-- **Frontend adoption of the closed backend work** → `API_GAPS_FRONTEND_ADOPTION.md` (start there) —
-  this is the main remaining work.
+- **No V1 backend *feature* gaps remain** (backend `development` @ `df0421f`, through PR #70). There are
+  no 🔵 rows. There **are** backend *defects*: see `V1_CONTRACT_ISSUES.md` § B.
+- **Frontend adoption of the closed backend work** → `V1_IMPLEMENTATION_PLAN.md` (phases 0–10); per-gap
+  detail in `API_GAPS_FRONTEND_ADOPTION.md`. This is the main remaining work.
 - **Frontend-only UI** (⚪ rows, incl. the now-unblocked Auction Sales tab) → this repo's `TASKLIST.md`.
 - **Deferred/unbuilt phases** (⛔ rows: Logistics/Library/Insights, Marketing Hub & Document Builder
   UIs) → owner-scoped; `TASKLIST.md`.

@@ -35,6 +35,12 @@ now-closed backend gaps, the non-V1 backend gaps, and deferred/backend-blocked f
 
 ## Open work
 
+> **2026-09-25: V1 plan.** The open work below is re-ordered and completed in **`V1_IMPLEMENTATION_PLAN.md`**
+> (Phases 0–10, one branch and PR per phase), with its progress table in § 5 of that file. Section B's Batches
+> 4–8 and sections D/E map onto Phases 1–9. New since the list below: backend PRs #54–#70 (sales,
+> auctions edit, collectors summary, catalogue, projects, gallery portal P1/P3/P4), all to be adopted, plus
+> four live bugs (Phase 0).
+
 ### A · Owner decisions (nothing below starts without one) — see `NOTES-FOR-ARIAN.md`
 - [ ] **Real `VITE_API_BASE_URL`** — `.env.production` is the deliberate `api.invalid` placeholder, so
       the live site has no sign-in/data. One line + redeploy once the backend has a public URL. **The
