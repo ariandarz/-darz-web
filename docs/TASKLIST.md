@@ -54,7 +54,7 @@ first, then:
 - [x] **Access-request** (G-P34-1/2): 200 replay = success, one key reused across retries, 429 copy. *(Batch 1)*
 - [x] **G-LOCK-1**: `expected_version` + `ConflictBanner` on the ledger entry form (`AccountingPage`) and
       `RecordEditorPage` — the backend makes the lock **required**, so every edit on both was failing (a 500 today). *(Batch 2)*
-- [~] **CRM precision cluster** (G-P5-1/2/3/6/9/10) — **G-P5-1/2 + G-F1-1 done (Batch 1)**; delete the hand-typed `detail` union, use nested
+- [x] **CRM precision cluster** (G-P5-1/2/3/6/10 + G-F1-1, Batches 1+3) — **G-P5-9 counter display waits on the owner** (no old-app UI/copy); delete the hand-typed `detail` union, use nested
       `artwork`, deep-link `GET /crm/requests/{id}/`, drop the client hold-expiry, show `counter_amount`,
       pull viewing-mode labels from `/api/options/`.
 - [ ] **G-P24-1**: curated chip reads `selection_name`. **G-P25-1**: questionnaire branches on `answered`

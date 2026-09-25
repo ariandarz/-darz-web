@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — API adoption Batch 3: thread deep link, viewing-mode labels, hold-expiry backstop
+
+- A deep link to a thread reads its one request (`GET /crm/requests/{id}/`, G-P5-3); ViewingSheet labels come from `crm.viewing_mode` (G-P5-10); the client hold check is now a documented backstop (G-P5-6).
+- **G-P5-9 not built** — the old app and the package have no counter-offer UI or copy; an owner question. **636 unit · 87 E2E**.
+
 ## 2026-09-25 — API adoption Batch 2: the lock on the ledger entry and auction-record editors (G-LOCK-1)
 
 - **Both PATCHes now send `expected_version`** — the backend made it *required*, so every ledger/record edit was failing (a 500) until this. A stale save shows `ConflictBanner`; Reload re-reads the row.

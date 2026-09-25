@@ -190,6 +190,11 @@ export class CrmService extends ResourceService {
   requests(query: CollectorRequestQuery = {}) {
     return this.list<CollectorRequest>('/requests/', query as RequestOptions['query']);
   }
+  /** One of the collector's own requests (`GET /api/crm/requests/{id}/`,
+   * G-P5-3) — what a cold deep link to a thread reads, instead of the list. */
+  request(id: string) {
+    return this.retrieve<CollectorRequest>(`/requests/${id}/`);
+  }
   /** File a request. `client_req_id` is the idempotency key the backend
    * dedupes on per collector: the same key answers 200 with the row it
    * already holds instead of creating a second one (`replayed: true`). */

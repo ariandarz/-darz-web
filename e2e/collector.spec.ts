@@ -277,3 +277,16 @@ test('chat names each inquiry from the row itself, with no catalogue read', asyn
   expect(catalogueReads, 'catalogue reads from the chat list').toEqual([]);
   expect(thrown).toEqual([]);
 });
+
+/** G-P5-3 — a cold deep link to a thread reads that one request
+ * (`GET /api/crm/requests/{id}/`) instead of waiting on the whole list. */
+test('a deep link to a thread reads its own request and renders it', async () => {
+  thrown = [];
+  const OFFER = '00000000-0000-4000-8000-00000000c102';
+  const direct = page.waitForRequest((r) => r.url().endsWith(`/api/crm/requests/${OFFER}/`));
+  await page.goto(`/chat/${OFFER}`);
+  await direct;
+  await expect(page.getByRole('heading', { name: 'Offer made' })).toBeVisible();
+  await expect(page.locator('.actsh-artt')).toHaveText('Parviz Tanavoli — Poet and Bird');
+  expect(thrown).toEqual([]);
+});

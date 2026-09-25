@@ -193,10 +193,11 @@ function noteFor(phase: Phase, verb: Verb, status: string): string {
 /** A hold's server-set expiry (`detail.expires_at`, now + 48 h on create —
  * `apps/crm/models.py:155`), and whether it has passed.
  *
- * The backend applies the expiry on an admin transition and on a 300 s sweep,
- * **not** on the collector's list read, so a hold can still read `active`
- * after its time is up (`docs/PHASE_5_API_GAPS.md` G-P5-6). The UI trusts the
- * timestamp over the status. */
+ * Since G-P5-6 the backend expires an overdue hold before every collector read
+ * (list and detail — `RequestService.expire_overdue_for_collector`), so the
+ * status is right on arrival. The check below is kept as a backstop only: a
+ * hold that lapses while the page stays open still reads as closed without a
+ * reload. It changes nothing on a fresh read. */
 export function holdExpiry(
   request: Pick<CollectorRequest, 'kind' | 'detail'>,
   now: Date = new Date(),
@@ -223,7 +224,7 @@ export function statusMeta(request: CollectorRequest, opts: StatusOptions = {}):
   const table = PHASE_BY_KIND[kind] ?? SIMPLE_PHASE;
   let phase: Phase = table[status] ?? 'unknown';
 
-  // G-P5-6 — an elapsed hold reads as closed whatever the row still says.
+  // G-P5-6 backstop — a hold that lapsed since the last read reads as closed.
   const expiry = holdExpiry(request, opts.now);
   if (expiry?.expired && (phase === 'accepted' || phase === 'pending')) phase = 'closed';
 

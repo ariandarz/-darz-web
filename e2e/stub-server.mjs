@@ -62,6 +62,11 @@ const OPTIONS = {
   'crm.request_kind': [{ value: 'purchase', label: 'Purchase' }],
   'crm.request_status_by_kind': { purchase: [{ value: 'new', label: 'New' }] },
   'crm.activity_kind': [{ value: 'view', label: 'View' }],
+  // G-P5-10 — the viewing sheet's two labels come from here, not from the app.
+  'crm.viewing_mode': [
+    { value: 'in_person', label: 'In person' },
+    { value: 'virtual', label: 'Virtual' },
+  ],
   'crm.collector_action': [
     { value: 'purchase', label: 'Buy' },
     { value: 'hold', label: 'Hold' },
@@ -126,7 +131,7 @@ const FULL_WORK = (work, year, medium) => ({
   public_description: '',
   tags: [],
   images: [],
-  allowed_actions: [],
+  allowed_actions: ['purchase', 'hold', 'offer', 'viewing'],
   is_saved: false,
   saved_at: null,
   refine_tags: {},
@@ -312,7 +317,27 @@ const routes = {
  * now guard (`asArray`), and these entries stop the stub from being the one
  * telling the lie.
  */
+const notFound = (message) => ({
+  status: 404,
+  body: {
+    success: false,
+    error: { code: 'NOT_FOUND', message },
+    timestamp: new Date().toISOString(),
+  },
+});
+
 const patterns = [
+  // One of the collector's own requests (G-P5-3) — a deep link reads this
+  // instead of waiting for the list. An id the collector does not own is a 404,
+  // as on the real endpoint; the catch-all would hand back a list envelope.
+  [
+    /^\/api\/crm\/requests\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const row = COLLECTOR_REQUESTS.find((r) => r.id === path.split('/')[4]);
+      return row ? envelope(row) : notFound('No request found.');
+    },
+  ],
   [
     /^\/api\/catalog\/artworks\/00000000-0000-4000-8000-00000000a10[1-3]\/$/,
     'GET',
@@ -352,8 +377,10 @@ const server = http.createServer((req, res) => {
   }
   for (const [re, method, answer] of patterns) {
     if (req.method === method && re.test(url.pathname)) {
-      res.writeHead(200);
-      res.end(JSON.stringify(answer(url.pathname)));
+      const answered = answer(url.pathname);
+      const status = typeof answered.status === 'number' ? answered.status : 200;
+      res.writeHead(status);
+      res.end(JSON.stringify(status === 200 ? answered : answered.body));
       return;
     }
   }

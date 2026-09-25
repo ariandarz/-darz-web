@@ -106,7 +106,7 @@ field's `required`) and then `validated.pop("expected_version")` — a missing l
 500 instead of a 400. Confirmed by running the two serializers on a lock-less body. The entry form's Reload re-reads the entry and re-keys the form on `id:version`. The new
 lot-update endpoint (G-AUC-2, backend #55) also requires `expected_version` — nothing calls it yet.
 
-## Batch 3 — CRM precision, the rest  `[ ]`
+## Batch 3 — CRM precision, the rest  `[x]` (G-P5-9 → owner)
 
 | Gap | Change | Where |
 | --- | --- | --- |
@@ -117,6 +117,15 @@ lot-update endpoint (G-AUC-2, backend #55) also requires `expected_version` — 
 
 **Done when:** a deep link to `/thread/:id` loads with one request call; a countered offer shows its
 figure; ViewingSheet shows labels from options.
+
+**Done 2026-09-25, except G-P5-9.** `ConversationsController.open(id)` reads one request when the list
+does not hold it (kept apart from the lists; `isMissing` tells "gone" from "loading"). The viewing
+labels go through `viewingModeChoices` (values from `ModeEnum`, labels from options, raw value as the
+fallback). **G-P5-9 is an owner question:** `app.html`, `DarzStudioAllInOne.html` and the design
+package (`SCREENS.md`/`VOICE.md`) have **no** counter-offer UI or copy — a countered offer shows today
+as "In review" with Darz's message in the thread. Proposal if wanted: one more meta row in the
+request card beside "Amount" (e.g. "Darz's counter · 11,000 USD"), formatted from the string; the
+label wording is the owner's to give.
 
 ## Batch 4 — Small collector reads: chip, questionnaire, profile edit, membership  `[ ]`
 
@@ -221,7 +230,7 @@ their own rows in `API_GAPS.md` / `API_GAPS_FRONTEND_ADOPTION.md` before they ar
 | --- | --- | --- | --- |
 | 1 | Schema regen · G-P5-1/2 · G-F1-1 · G-P34-1 | `[x]` 2026-09-25 | #99 |
 | 2 | G-LOCK-1 | `[x]` 2026-09-25 | #99 |
-| 3 | G-P5-3/6/9/10 | `[ ]` | |
+| 3 | G-P5-3/6/9/10 | `[x]` 2026-09-25 (G-P5-9 → owner) | #99 |
 | 4 | G-P24-1 · G-P25-1 · profile edit · G-Q-1 · G-MEMB-3/6/7 | `[ ]` | |
 | 5 | G-DOC-1 | `[ ]` | |
 | 6 | G-CHAT-2 · G-AUC-4 · poster · G-REC-1 | `[ ]` | |
