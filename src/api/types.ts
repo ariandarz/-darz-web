@@ -77,6 +77,9 @@ export interface AuctionRecordQuery {
   /** admin-only (BE-R4): sold | unsold | passed | withdrawn | pending. */
   status?: string;
   is_highlight?: string;
+  /** Exact auction-house name (G-REC-1) — the "All auction houses" select;
+   * distinct from `search`, which also matches house as free text. */
+  house?: string;
   per_page?: number;
   page?: number;
 }
@@ -94,11 +97,27 @@ export interface LotStateFrame {
   ends_at: string;
 }
 
-/** Auctions list params (`GET /api/auctions/`). */
+/** Auctions list params (`GET /api/auctions/`, and the admin list). */
 export interface AuctionQuery {
   per_page?: number;
   page?: number;
+  /** Admin list only (G-AUC-4): omitted = archived hidden (the working list);
+   * `true` = the archived list alone. */
+  archived?: boolean;
 }
+
+/** `PATCH /auctions/admin/auctions/{id}/` (G-AUC-1) — draft/scheduled only;
+ * the lock is mandatory (C-6). */
+export type AuctionPatch = Locked<Schemas['PatchedAuctionUpdate']>;
+/** `POST /auctions/admin/auctions/` — `terms`/`terms_required` optional
+ * (blank terms = the app's default text; `terms_required` defaults true). */
+export type AuctionCreateBody = Omit<
+  Schemas['AuctionCreate'],
+  'description' | 'terms' | 'terms_required'
+> &
+  Partial<Pick<Schemas['AuctionCreate'], 'description' | 'terms' | 'terms_required'>>;
+/** `PATCH /auctions/admin/lots/{id}/` (G-AUC-2) — scheduled lots only; locked. */
+export type LotPatch = Locked<Schemas['PatchedLotUpdate']>;
 /** `RequestCollector` now carries `unread_count` (G-F1-6, unseen team
  * replies); `RequestAdmin` nests `collector`/`artwork` (G-F1-7, no more bare
  * uuids), reports `allowed_transitions` (G-F1-4) and `unread_count` (unseen
@@ -612,8 +631,8 @@ export type GalleryUpdateAdmin = Schemas['GalleryUpdate'];
 
 /** Admin lot — `LotAdminSerializer`: the collector shape PLUS the
  * confidential `reserve_amount` and `leading_bidder`, with the artwork as a
- * bare uuid. Lots are create-only (no PATCH — G-AUC-2); they move through
- * `go-live` and `close` (+`?force=` sells under reserve). */
+ * bare uuid. A scheduled lot is editable (`LotPatch`, G-AUC-2); it moves
+ * through `go-live` and `close` (+`?force=` closes early). */
 export type LotAdmin = Schemas['LotAdmin'];
 
 /** A paddle request — `BidderRegistrationAdminSerializer`. Approving assigns

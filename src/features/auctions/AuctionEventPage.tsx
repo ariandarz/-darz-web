@@ -6,7 +6,16 @@
  * card · "THE LOTS · 4 lots" · lot cards (thumb, "Lot 01" + LIVE pill, artist,
  * title, medium · size, "Est. … · 2d 23h left", CURRENT BID, **Place a bid**).
  *
- * The poster is the first lot's artwork (no cover field on `Auction`).
+ * The poster is the auction's `cover_image_url` (the admin's uploaded
+ * poster — the old hero's first choice, `a.coverImg`, `app.html:8261`), else
+ * the first lot's artwork out of the lots this page already reads (the old
+ * fallback was the cover artwork, else the first lot, `:8262`; there is no
+ * cover-artwork field here). No extra request either way.
+ *
+ * The lots list has a loading line and an empty state (V1 Phase 3). The old
+ * event page had neither — its lots were local data — so the empty line is
+ * the old app's own lots-list empty copy (`.aucempty` "No lots in this
+ * view.", `app.html:7530`, style `:1077`), flagged as borrowed.
  */
 import { useCallback, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -23,7 +32,7 @@ import {
 } from './format';
 import { RegistrationBand } from './RegistrationBand';
 import { lotPills } from './status';
-import { useAuction, useAuctionPoster, useLots, useMyRegistration } from './useAuctions';
+import { useAuction, useLots, useMyRegistration } from './useAuctions';
 import { useNow } from './useNow';
 
 const BACK_ICON = (
@@ -63,7 +72,6 @@ export function AuctionEventPage() {
   const navigate = useNavigate();
   const auctionReq = useAuction(id!);
   const lotsReq = useLots(id!);
-  const poster = useAuctionPoster(id!);
   const reg = useMyRegistration(id!);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -95,7 +103,7 @@ export function AuctionEventPage() {
 
   const st = auctionState(auction);
   const lots = lotsReq.status === 'ok' ? lotsReq.data.results : [];
-  const img = poster.status === 'ok' && poster.data ? primaryImage(poster.data) : null;
+  const img = auction.cover_image_url ?? (lots[0] ? primaryImage(lots[0].artwork) : null);
   const cdShort =
     st === 'live'
       ? durationShort(new Date(auction.ends_at).getTime() - now)
@@ -164,7 +172,11 @@ export function AuctionEventPage() {
           </span>
         </div>
 
+        {lotsReq.status === 'loading' && <p className="dz-state">Loading…</p>}
         {lotsReq.status === 'error' && <p className="dz-state err">{lotsReq.error}</p>}
+        {lotsReq.status === 'ok' && lots.length === 0 && (
+          <div className="aucempty">No lots in this view.</div>
+        )}
 
         <div className="auc-lots">
           {lots.map((lot) => {

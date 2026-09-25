@@ -518,3 +518,242 @@ test('Auction Sales lists source=auction sales and links each to its lot', async
   }
   expect(thrown).toEqual([]);
 });
+
+/**
+ * V1 Phase 3 — the auctions desks against the stub's three auctions (a
+ * scheduled one with two lots and a poster, a live one, an archived one), two
+ * registrations and three records.
+ */
+const AUC_SCHEDULED = '00000000-0000-4000-8000-00000000ac01';
+const AUC_LIVE = '00000000-0000-4000-8000-00000000ac02';
+const auctionPath = (id: string) => `/api/auctions/admin/auctions/${id}/`;
+
+test('an auction edit sends only the change and its version (G-AUC-1)', async () => {
+  thrown = [];
+  const sent: unknown[] = [];
+  const matches = (u: URL) => u.pathname === auctionPath(AUC_SCHEDULED);
+  await page.route(matches, (route) => {
+    if (route.request().method() === 'PATCH') sent.push(route.request().postDataJSON());
+    return route.fallback();
+  });
+  try {
+    await page.goto(`/admin/auctions/${AUC_SCHEDULED}`);
+    await expect(page.getByRole('heading', { name: 'Auction details' })).toBeVisible();
+    // the terms open on the Darz default (the auction's own terms are blank)
+    await expect(page.getByLabel('Auction terms & conditions')).toHaveValue(
+      /^Conditions of Sale/,
+    );
+
+    // C-18: a reversed window never reaches the server
+    await page.getByLabel('End', { exact: true }).fill('2026-01-01T10:00');
+    await page.getByRole('button', { name: 'Save auction' }).click();
+    await expect(page.getByText('The end must be after the start.')).toBeVisible();
+    expect(sent).toHaveLength(0);
+
+    await page.reload();
+    await page.getByLabel('Title', { exact: true }).fill('Spring Evening Sale');
+    await page.getByRole('button', { name: 'Save auction' }).click();
+    await expect(page.getByRole('button', { name: '✓ Saved' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Spring Evening Sale', exact: true }),
+    ).toBeVisible();
+    expect(sent).toEqual([{ expected_version: 4, title: 'Spring Evening Sale' }]);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('a stale auction save gets the stub’s 409 and the conflict banner', async () => {
+  thrown = [];
+  const matches = (u: URL) => u.pathname === auctionPath(AUC_SCHEDULED);
+  // The page reads version 3; the stub's row is at 4 — another editor's save.
+  const row = (
+    (await (
+      await page.request.get(`http://127.0.0.1:8787${auctionPath(AUC_SCHEDULED)}`)
+    ).json()) as { data: { version: number } }
+  ).data;
+  await page.route(matches, (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill(ok({ ...row, version: 3 }))
+      : route.fallback(),
+  );
+  try {
+    await page.goto(`/admin/auctions/${AUC_SCHEDULED}`);
+    // by role: a <label> wrapping a <textarea> takes the textarea's text into
+    // its own, so getByLabel's exact match cannot see this one
+    await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Changed.');
+    await page.getByRole('button', { name: 'Save auction' }).click();
+    await expect(
+      page.getByText('Someone else saved this auction in the meantime'),
+    ).toBeVisible();
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('a live auction’s form is read-only with the server’s reason', async () => {
+  thrown = [];
+  await page.goto(`/admin/auctions/${AUC_LIVE}`);
+  await expect(
+    page.getByText('Only a draft or scheduled auction can be edited.'),
+  ).toBeVisible();
+  await expect(page.getByLabel('Title', { exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Save auction' })).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('a scheduled lot edits with its lock; low above high is refused (G-AUC-2)', async () => {
+  thrown = [];
+  const sent: unknown[] = [];
+  const matches = (u: URL) => u.pathname.startsWith('/api/auctions/admin/lots/');
+  await page.route(matches, (route) => {
+    if (route.request().method() === 'PATCH') sent.push(route.request().postDataJSON());
+    return route.fallback();
+  });
+  try {
+    await page.goto(`/admin/auctions/${AUC_SCHEDULED}`);
+    await expect(page.getByText('Parviz Tanavoli — Heech')).toBeVisible();
+    await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
+    await expect(page.getByText('Edit lot 1 · USD')).toBeVisible();
+
+    await page.getByLabel('Low estimate').fill('13000');
+    await page.getByRole('button', { name: 'Save lot' }).click();
+    await expect(
+      page.getByText('The low estimate cannot be above the high estimate.'),
+    ).toBeVisible();
+    expect(sent).toHaveLength(0);
+
+    await page.getByLabel('Low estimate').fill('10,000');
+    await page.getByRole('button', { name: 'Save lot' }).click();
+    await expect(page.getByText('Edit lot 1 · USD')).toHaveCount(0);
+    expect(sent).toEqual([{ expected_version: 2, low_estimate: '10000' }]);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('the poster uploads as multipart and removes (cover-image)', async () => {
+  thrown = [];
+  const calls: string[] = [];
+  const matches = (u: URL) => u.pathname.endsWith('/cover-image/');
+  await page.route(matches, (route) => {
+    const req = route.request();
+    calls.push(`${req.method()} ${req.headers()['content-type']?.split(';')[0] ?? ''}`);
+    return route.fallback();
+  });
+  try {
+    await page.goto(`/admin/auctions/${AUC_SCHEDULED}`);
+    await expect(page.getByText('Uploaded poster — used as the cover')).toBeVisible();
+    await page.getByRole('button', { name: 'Remove uploaded poster' }).click();
+    await expect(page.getByText('Uploaded poster — used as the cover')).toHaveCount(0);
+    await page.getByLabel('Poster file').setInputFiles({
+      name: 'poster.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+    });
+    await expect(page.getByText('Uploaded poster — used as the cover')).toBeVisible();
+    expect(calls).toEqual(['DELETE ', 'POST multipart/form-data']);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Live Auctions hides archived; the toggle lists them; Archive posts the flag', async () => {
+  thrown = [];
+  const lists: Array<string | null> = [];
+  const archives: unknown[] = [];
+  const matches = (u: URL) => u.pathname.startsWith('/api/auctions/admin/auctions/');
+  await page.route(matches, (route) => {
+    const req = route.request();
+    const u = new URL(req.url());
+    if (u.pathname === '/api/auctions/admin/auctions/')
+      lists.push(u.searchParams.get('archived'));
+    if (u.pathname.endsWith('/archive/')) archives.push(req.postDataJSON());
+    return route.fallback();
+  });
+  try {
+    await page.goto('/admin/auctions');
+    await expect(page.getByText('Spring Evening Auction')).toBeVisible();
+    await expect(page.getByText('Summer Online Auction')).toBeVisible();
+    await expect(page.getByText('Winter Archive Sale')).toHaveCount(0);
+    // the poster as a row thumbnail
+    await expect(page.locator('img.ad-auccover')).toHaveCount(1);
+
+    await page.getByLabel('Show archived').check();
+    await expect(page.getByText('Winter Archive Sale')).toBeVisible();
+    await expect(page.getByText('Spring Evening Auction')).toHaveCount(0);
+    expect(lists).toEqual([null, 'true']);
+
+    await page.getByRole('button', { name: '↩ Restore' }).click();
+    await expect(page.getByText('Restored to Live & upcoming')).toBeVisible();
+
+    await page.getByLabel('Show archived').uncheck();
+    await expect(page.getByText('Spring Evening Auction')).toBeVisible();
+    await page.getByRole('button', { name: 'Archive', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Archive', exact: true }).last().click();
+    await expect(page.getByText('Archived — moved to the archived list')).toBeVisible();
+    expect(archives).toEqual([{ archived: false }, { archived: true }]);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Register to Bid: ↺ Reset on a rejected row posts the reset (G-AUC-3)', async () => {
+  thrown = [];
+  const posts: string[] = [];
+  const matches = (u: URL) => u.pathname.startsWith('/api/auctions/admin/registrations/');
+  await page.route(matches, (route) => {
+    if (route.request().method() === 'POST')
+      posts.push(new URL(route.request().url()).pathname);
+    return route.fallback();
+  });
+  try {
+    await page.goto('/admin/auction-registrations');
+    await expect(page.getByText('Sara Ahmadi')).toBeVisible();
+    await expect(page.getByRole('button', { name: '↺ Reset' })).toHaveCount(0);
+    await deskFilter('Status').locator('select').selectOption('rejected');
+    await expect(page.getByText('Reza Karimi')).toBeVisible();
+    // the auction title resolves from the walked list
+    await expect(page.getByRole('cell', { name: 'Spring Evening Auction' })).toBeVisible();
+    await page.getByRole('button', { name: '↺ Reset' }).click();
+    await page.getByRole('button', { name: 'Reset', exact: true }).click();
+    await expect(page.getByText('Registration reset')).toBeVisible();
+    expect(posts).toEqual([
+      '/api/auctions/admin/registrations/00000000-0000-4000-8000-0000000019a2/reset/',
+    ]);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Auction Records: the house select sends ?house= (G-REC-1)', async () => {
+  thrown = [];
+  const houses: Array<string | null> = [];
+  const matches = (u: URL) => u.pathname === '/api/auctions/admin/records/';
+  await page.route(matches, (route) => {
+    const sp = new URL(route.request().url()).searchParams;
+    if (sp.get('per_page') !== '100') houses.push(sp.get('house'));
+    return route.fallback();
+  });
+  try {
+    await page.goto('/admin/auction-records');
+    await expect(page.getByText('Heech and Chair')).toBeVisible();
+    const select = deskFilter('House').locator('select');
+    // a stored house the standard list lacks arrives from the walk
+    await expect(select.locator('option', { hasText: 'Artcurial' })).toHaveCount(1);
+    await expect(select.locator('option').first()).toHaveText('All auction houses');
+    await select.selectOption('Artcurial');
+    await expect.poll(() => houses.at(-1)).toBe('Artcurial');
+    await expect(page.getByText('Kiss')).toBeVisible();
+    await expect(page.getByText('Heech and Chair')).toHaveCount(0);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
