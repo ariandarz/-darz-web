@@ -523,6 +523,8 @@ export interface ArtworkFacets {
 /** A sale — `SaleAdminSerializer` (backend Phase 7 sales admin). Since G-SALE-3
  * the row nests `artwork {id,title}`, `collector {id,display_name}` and
  * `responsible {id,name} | null`; `source_request` and `lot` stay bare uuids.
+ * `follow_up_at` (a date) and the server-computed `follow_up_overdue` are the
+ * old deal card's follow-up (G-SALE-5); `source` is `market` | `auction`.
  * **Input still takes plain ids** (`SaleCreateInput` / `SalePatch`), so the read
  * and write shapes differ on purpose. The commercial snapshot (price/commission/
  * discount/fees) is draft-only editable — locked once confirmed (R7); `status`
@@ -533,13 +535,28 @@ export type SaleCreateInput = Schemas['SaleCreate'];
 /** `PATCH …/sales/{id}/` — the lock is required (C-6). */
 export type SalePatch = Locked<Schemas['PatchedSaleUpdate']>;
 
-/** The sales list takes exactly one filter: `status`. No search, no payment/
- * delivery filter, no aggregates (G-SALE-1/2). */
+/** The sales list's filters — the server's `SaleAdminFilterSet`
+ * (`apps/sales/filters.py`, G-SALE-2): `search` over artwork title /
+ * collector name / seller source, the exact `status` / `payment_status` /
+ * `delivery_status` / `source` axes, and `ordering` created|-created|price|
+ * -price (default `-created`). */
 export interface SaleQuery {
+  search?: string;
   status?: string;
+  payment_status?: string;
+  delivery_status?: string;
+  source?: string;
+  ordering?: string;
   page?: number;
   per_page?: number;
 }
+
+/** `GET …/sales/summary/` — the desk's header counts (G-SALE-1): `total` plus
+ * per-status / payment / delivery / source maps over every non-deleted sale,
+ * each choice seeded to 0. Ledger-wide: the endpoint takes no filter. */
+export type SaleDeskSummary = Schemas['SaleDeskSummary'];
+/** One internal deal note (G-SALE-5) — append-only, newest first. */
+export type SaleNote = Schemas['SaleNote'];
 
 /** A document — `DocumentSerializer` (backend Phase 11 documents admin).
  * `fields` is the document's own freeform content (shape depends on `kind`,

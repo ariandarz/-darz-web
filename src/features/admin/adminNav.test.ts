@@ -302,6 +302,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'activity',
       'club',
       'marketSales',
+      'auctionSales',
       'projDash',
       'projList',
       'projPipeline',

@@ -51,6 +51,9 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/exhibition-services', 'Exhibition Services'],
   ['/admin/issue', 'Issue a document'],
   ['/admin/sales', 'Market Sales'],
+  // The Sales group's second tab — the same desk scoped to `source=auction`,
+  // with its own heading (V1 Phase 2; the Galleries shape above).
+  ['/admin/sales?source=auction', 'Auction Sales'],
   ['/admin/collectors', 'Collectors'],
   ['/admin/design', 'App Design'],
   ['/admin/data-health', 'Data Health'],
@@ -364,6 +367,152 @@ test('the Sales desk reads the nested row refs (G-SALE-3, C-1)', async () => {
     await page.goto(`/admin/sales/${LOCK_ID}`);
     await expect(page.getByText('Nested Owner')).toBeVisible();
     expect(badRefs).toEqual([]);
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * V1 Phase 2 — the Sales desk against the stub's two-sale ledger (one market
+ * deal with an overdue follow-up and a note, one auction sale with a lot).
+ */
+const SALE_MARKET = '00000000-0000-4000-8000-0000000005a1';
+const SALE_AUCTION_EVENT = '00000000-0000-4000-8000-00000000ac71';
+
+/** A desk filter's control, found by its visible label. */
+const deskFilter = (name: string) =>
+  page
+    .locator('label.ad-filter')
+    .filter({ has: page.locator('.ad-filter-l', { hasText: new RegExp(`^${name}$`) }) });
+
+test('Market Sales: tiles read the summary, and each filter reaches the list query', async () => {
+  thrown = [];
+  // The list reads only — the strip's own walk (per_page=100) is left out.
+  const seen: URLSearchParams[] = [];
+  const matches = (u: URL) => u.pathname === '/api/sales/admin/sales/';
+  await page.route(matches, (route) => {
+    const sp = new URL(route.request().url()).searchParams;
+    if (sp.get('per_page') !== '100') seen.push(sp);
+    return route.fallback();
+  });
+  const last = () => seen[seen.length - 1];
+  try {
+    await page.goto('/admin/sales');
+    await expect(page.getByText('Heech')).toBeVisible();
+    await expect(page.getByText('Poet and Bird')).toBeVisible();
+    // summary: 1 confirmed + 1 draft open; the market deal's follow-up is overdue
+    const tile = (l: string) =>
+      page.locator('.ad-tile').filter({ hasText: l }).locator('.ad-tile-v');
+    await expect(tile('Open deals')).toHaveText('2');
+    await expect(tile('Need attention')).toHaveText('1');
+    await expect(tile('Payment pending')).toHaveText('1');
+    await expect(page.getByText('Follow-up 2026-09-20 · due')).toBeVisible();
+
+    await deskFilter('Stage').locator('select').selectOption('confirmed');
+    await expect.poll(() => last()?.get('status')).toBe('confirmed');
+    await deskFilter('Payment').locator('select').selectOption('partial');
+    await expect.poll(() => last()?.get('payment_status')).toBe('partial');
+    await deskFilter('Delivery').locator('select').selectOption('in_transit');
+    await expect.poll(() => last()?.get('delivery_status')).toBe('in_transit');
+    // Source values come from the summary's `by_source`; labels fall back to raw (C-14)
+    await deskFilter('Source').locator('select').selectOption('auction');
+    await expect.poll(() => last()?.get('source')).toBe('auction');
+    await deskFilter('Sort').locator('select').selectOption('-price');
+    await expect.poll(() => last()?.get('ordering')).toBe('-price');
+    await deskFilter('Search').locator('input').fill('Heech');
+    await expect.poll(() => last()?.get('search')).toBe('Heech');
+    // every earlier filter is still on the request
+    expect(last()?.get('status')).toBe('confirmed');
+    await expect(page.getByText('No market deals match these filters.')).toBeVisible();
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('a deal’s follow-up and notes round-trip without a reload (G-SALE-5)', async () => {
+  thrown = [];
+  const posts: Array<{ path: string; body: unknown }> = [];
+  const matches = (u: URL) => u.pathname.startsWith(`/api/sales/admin/sales/${SALE_MARKET}/`);
+  await page.route(matches, (route) => {
+    const req = route.request();
+    if (req.method() === 'POST') {
+      posts.push({ path: new URL(req.url()).pathname, body: req.postDataJSON() });
+    }
+    return route.fallback();
+  });
+  try {
+    await page.goto(`/admin/sales/${SALE_MARKET}`);
+    await expect(
+      page.getByRole('heading', { name: 'Follow-up with the collector' }),
+    ).toBeVisible();
+    // the stub's date is in the past on an open deal: the server's overdue flag
+    await expect(page.getByText('— due')).toBeVisible();
+    await expect(page.getByText('Asked for the invoice by Friday.')).toBeVisible();
+    // the Source row, its label the raw value while options has none (C-14)
+    await expect(
+      page
+        .locator('.ad-recrow')
+        .filter({ has: page.locator('.ad-reck', { hasText: /^Source$/ }) }),
+    ).toContainText('market');
+
+    const inAWeek = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    await page.getByRole('button', { name: '1 week' }).click();
+    await expect(page.getByText(`Follow-up set for ${inAWeek}`)).toBeVisible();
+    await expect(page.getByText('— due')).toHaveCount(0);
+    expect(posts.at(-1)).toEqual({
+      path: `/api/sales/admin/sales/${SALE_MARKET}/follow-up/`,
+      body: { follow_up_at: inAWeek },
+    });
+
+    await page.getByLabel('Add a note').fill('Called — wants a viewing.');
+    await page.getByRole('button', { name: 'Add note' }).click();
+    await expect(page.getByText('Called — wants a viewing.')).toBeVisible();
+    await expect(page.getByText('Note added')).toBeVisible();
+    expect(posts.at(-1)).toEqual({
+      path: `/api/sales/admin/sales/${SALE_MARKET}/notes/`,
+      body: { body: 'Called — wants a viewing.' },
+    });
+    // newest first, above the stub's older note
+    await expect(page.locator('.ad-salenote').first()).toContainText(
+      'Called — wants a viewing.',
+    );
+
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await expect(page.getByText('No follow-up set.')).toBeVisible();
+    expect(posts.at(-1)?.body).toEqual({ follow_up_at: null });
+  } finally {
+    await page.unroute(matches);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Auction Sales lists source=auction sales and links each to its lot', async () => {
+  thrown = [];
+  const sources: Array<string | null> = [];
+  const matches = (u: URL) => u.pathname === '/api/sales/admin/sales/';
+  await page.route(matches, (route) => {
+    sources.push(new URL(route.request().url()).searchParams.get('source'));
+    return route.fallback();
+  });
+  try {
+    // reached from the Market tab's sub-row, as a person would
+    await page.goto('/admin/sales');
+    await expect(page.getByText('Heech')).toBeVisible();
+    sources.length = 0;
+    await page.locator('.ad-subtab', { hasText: 'Auction Sales' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Auction Sales', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('Poet and Bird')).toBeVisible();
+    await expect(page.getByText('Heech')).toHaveCount(0);
+    expect(sources.length).toBeGreaterThan(0);
+    expect(sources.every((s) => s === 'auction')).toBe(true);
+    await expect(page.getByText('1 total.', { exact: false })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Lot 4' }).click();
+    await page.waitForURL(`**/admin/auctions/${SALE_AUCTION_EVENT}`);
   } finally {
     await page.unroute(matches);
   }

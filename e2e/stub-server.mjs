@@ -98,9 +98,29 @@ const OPTIONS = {
   ],
   'accounts.collector_access_status': [{ value: 'active', label: 'Active' }],
   'accounts.team_role': [{ value: 'owner', label: 'Owner' }],
-  'sales.status': [{ value: 'draft', label: 'Draft' }],
-  'sales.payment_status': [{ value: 'unpaid', label: 'Unpaid' }],
-  'sales.delivery_status': [{ value: 'pending', label: 'Pending' }],
+  // The real three sales vocabularies (`apps/sales/models.py`). No
+  // `sales.source`: the backend does not register one (C-14), so the desk's
+  // source labels fall back to the raw value — the stub must not hide that.
+  'sales.status': [
+    { value: 'draft', label: 'Draft' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'invoiced', label: 'Invoiced' },
+    { value: 'paid', label: 'Paid' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'archived', label: 'Archived' },
+    { value: 'lost', label: 'Lost' },
+  ],
+  'sales.payment_status': [
+    { value: 'unpaid', label: 'Unpaid' },
+    { value: 'partial', label: 'Partial' },
+    { value: 'paid', label: 'Paid' },
+  ],
+  'sales.delivery_status': [
+    { value: 'pending', label: 'Pending' },
+    { value: 'in_transit', label: 'In transit' },
+    { value: 'delivered', label: 'Delivered' },
+  ],
 };
 
 /**
@@ -250,6 +270,118 @@ const COLLECTOR_DOCUMENTS = [
   },
 ];
 
+/**
+ * The Sales ledger (V1 Phase 2) — `SaleAdminSerializer` rows, nested refs
+ * (G-SALE-3). One market deal with an OVERDUE follow-up and a note, and one
+ * auction sale as the auction→Sale automation makes it: `source: auction`, a
+ * `lot`, draft, commission = the buyer's premium.
+ */
+const SALE_MARKET_ID = '00000000-0000-4000-8000-0000000005a1';
+const SALE_AUCTION_ID = '00000000-0000-4000-8000-0000000005a2';
+const SALE_LOT_ID = '00000000-0000-4000-8000-0000000010f1';
+const SALE_AUCTION_EVENT_ID = '00000000-0000-4000-8000-00000000ac71';
+const SALE_BASE = {
+  source_request: null,
+  seller_source: '',
+  discount_amount: null,
+  fees_tax: null,
+  currency: 'USD',
+  confirmed_at: null,
+  version: 1,
+  updated_at: '2026-09-22T10:00:00Z',
+};
+const SALES = [
+  {
+    ...SALE_BASE,
+    id: SALE_MARKET_ID,
+    artwork: { id: '00000000-0000-4000-8000-00000000a101', title: 'Heech' },
+    collector: { id: '00000000-0000-4000-8000-0000000000c1', display_name: 'Roya Ahmadi' },
+    responsible: { id: ME.id, name: ME.name },
+    source: 'market',
+    lot: null,
+    agreed_price: '42000.00',
+    commission_amount: '4200.00',
+    payment_status: 'unpaid',
+    delivery_status: 'pending',
+    status: 'confirmed',
+    confirmed_at: '2026-09-18T10:00:00Z',
+    follow_up_at: '2026-09-20',
+    follow_up_overdue: true,
+    created_at: '2026-09-15T10:00:00Z',
+  },
+  {
+    ...SALE_BASE,
+    id: SALE_AUCTION_ID,
+    artwork: { id: '00000000-0000-4000-8000-00000000a102', title: 'Poet and Bird' },
+    collector: { id: '00000000-0000-4000-8000-0000000000c2', display_name: 'Kaveh Shirazi' },
+    responsible: null,
+    source: 'auction',
+    lot: SALE_LOT_ID,
+    agreed_price: '12000.00',
+    commission_amount: '2000.00',
+    payment_status: 'unpaid',
+    delivery_status: 'pending',
+    status: 'draft',
+    follow_up_at: null,
+    follow_up_overdue: false,
+    created_at: '2026-09-21T10:00:00Z',
+  },
+];
+const SALE_NOTES = {
+  [SALE_MARKET_ID]: [
+    {
+      id: '00000000-0000-4000-8000-0000000005b1',
+      body: 'Asked for the invoice by Friday.',
+      author: ME.id,
+      author_name: ME.name,
+      created_at: '2026-09-19T09:30:00Z',
+    },
+  ],
+};
+/** `GET …/sales/summary/` — the backend seeds every choice to 0. */
+const saleSummary = () => {
+  const seed = (key) => Object.fromEntries(OPTIONS[key].map((c) => [c.value, 0]));
+  const out = {
+    total: SALES.length,
+    by_status: seed('sales.status'),
+    by_payment_status: seed('sales.payment_status'),
+    by_delivery_status: seed('sales.delivery_status'),
+    by_source: { market: 0, auction: 0 },
+  };
+  for (const s of SALES) {
+    out.by_status[s.status] += 1;
+    out.by_payment_status[s.payment_status] += 1;
+    out.by_delivery_status[s.delivery_status] += 1;
+    out.by_source[s.source] += 1;
+  }
+  return out;
+};
+/** The list honours the filter set (`SaleAdminFilterSet`), so a filtered
+ * walk sees the rows a real backend would. */
+const saleList = (sp) => {
+  let rows = SALES;
+  for (const key of ['status', 'payment_status', 'delivery_status', 'source']) {
+    const v = sp.get(key);
+    if (v) rows = rows.filter((s) => s[key] === v);
+  }
+  const q = (sp.get('search') || '').toLowerCase();
+  if (q) {
+    rows = rows.filter((s) =>
+      [s.artwork.title, s.collector.display_name, s.seller_source]
+        .join(' ')
+        .toLowerCase()
+        .includes(q),
+    );
+  }
+  const ordering = sp.get('ordering');
+  if (ordering === 'price' || ordering === '-price') {
+    const dir = ordering === 'price' ? 1 : -1;
+    rows = [...rows].sort((a, b) => dir * (Number(a.agreed_price) - Number(b.agreed_price)));
+  }
+  return rows;
+};
+const CLOSED_SALE = ['completed', 'archived', 'lost'];
+
 const page = (results) =>
   envelope({
     pagination: {
@@ -398,6 +530,9 @@ const routes = {
   // back (the thank-you screen renders from its own state, not the response).
   'POST /api/recommendations/questionnaire/': () =>
     envelope({ answers: [], submitted_at: new Date().toISOString(), answered: true }),
+  'GET /api/sales/admin/sales/summary/': () => envelope(saleSummary()),
+  'GET /api/sales/admin/sales/': (req) =>
+    page(saleList(new URL(req.url, 'http://x').searchParams)),
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
       healthy: true,
@@ -471,6 +606,79 @@ const patterns = [
   ],
   [/^\/api\/catalog\/admin\/artworks\/[^/]+\/images\/$/, 'GET', () => envelope([])],
   [/^\/api\/catalog\/admin\/artworks\/[^/]+\/selection-grants\/$/, 'GET', () => envelope([])],
+  // One sale (the desk's detail); an unknown id is a 404, as on the backend.
+  [
+    /^\/api\/sales\/admin\/sales\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const sale = SALES.find((s) => s.id === path.split('/')[5]);
+      return sale ? envelope(sale) : notFound('No Sale matches the given query.');
+    },
+  ],
+  // Set/clear the follow-up (G-SALE-5). Stateless: answers the sale with the
+  // sent date, `follow_up_overdue` computed the model's way.
+  [
+    /^\/api\/sales\/admin\/sales\/[^/]+\/follow-up\/$/,
+    'POST',
+    (path, body) => {
+      const sale = SALES.find((s) => s.id === path.split('/')[5]);
+      if (!sale) return notFound('No Sale matches the given query.');
+      const at = body?.follow_up_at ?? null;
+      const today = new Date().toISOString().slice(0, 10);
+      return envelope({
+        ...sale,
+        follow_up_at: at,
+        follow_up_overdue: !!at && at < today && !CLOSED_SALE.includes(sale.status),
+      });
+    },
+  ],
+  [
+    /^\/api\/sales\/admin\/sales\/[^/]+\/notes\/$/,
+    'GET',
+    (path) => {
+      const id = path.split('/')[5];
+      if (!SALES.some((s) => s.id === id)) return notFound('No Sale matches the given query.');
+      return page(SALE_NOTES[id] || []);
+    },
+  ],
+  // Append a note: 201 with the note, authored by the signed-in team user.
+  [
+    /^\/api\/sales\/admin\/sales\/[^/]+\/notes\/$/,
+    'POST',
+    (path, body) => {
+      if (!SALES.some((s) => s.id === path.split('/')[5]))
+        return notFound('No Sale matches the given query.');
+      return {
+        status: 201,
+        body: envelope({
+          id: `00000000-0000-4000-8000-${String(Date.now()).slice(-12)}`,
+          body: String(body?.body || ''),
+          author: ME.id,
+          author_name: ME.name,
+          created_at: new Date().toISOString(),
+        }),
+      };
+    },
+  ],
+  // The auction sale's lot — the admin tier's `LotAdmin`, for its auction id
+  // and number (the Auction Sales tab links to the lot's auction page).
+  [
+    /^\/api\/auctions\/admin\/lots\/[^/]+\/$/,
+    'GET',
+    (path) =>
+      path.split('/')[5] === SALE_LOT_ID
+        ? envelope({
+            id: SALE_LOT_ID,
+            auction: SALE_AUCTION_EVENT_ID,
+            artwork: '00000000-0000-4000-8000-00000000a102',
+            lot_number: 4,
+            opening_amount: '8000.00',
+            premium_pct: '20.00',
+            currency: 'USD',
+            status: 'sold',
+          })
+        : notFound('No Lot matches the given query.'),
+  ],
   [
     /^\/api\/projects\/admin\/projects\/reports\/$/,
     'GET',
@@ -523,7 +731,9 @@ function respond(req, res, body) {
   }
   for (const [re, method, answer] of patterns) {
     if (req.method === method && re.test(url.pathname)) {
-      const answered = answer(url.pathname);
+      // A write's pattern reads the body it was sent (the follow-up date, a
+      // note), as the keyed routes above already do.
+      const answered = answer(url.pathname, body);
       const status = typeof answered.status === 'number' ? answered.status : 200;
       res.writeHead(status);
       res.end(JSON.stringify(status === 200 ? answered : answered.body));

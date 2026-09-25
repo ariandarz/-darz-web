@@ -68,6 +68,8 @@ import type {
   ArtworkImageAdmin,
   ArtistAdmin,
   SaleAdmin,
+  SaleDeskSummary,
+  SaleNote,
   SaleCreateInput,
   SalePatch,
   SaleQuery,
@@ -806,6 +808,29 @@ export class SalesAdminService extends ResourceService {
     return this.create<SaleAdmin>(`/sales/${id}/delivery-status/`, {
       delivery_status: deliveryStatus,
     });
+  }
+  /** The header counts (G-SALE-1) — ledger-wide, no filter. */
+  summary() {
+    return this.retrieve<SaleDeskSummary>('/sales/summary/');
+  }
+  /** Set (a `YYYY-MM-DD` date) or clear (`null`) the follow-up (G-SALE-5).
+   * The key is required, so a clear sends `null` explicitly. No lock, and it
+   * works after confirm — operational, not a commercial term. */
+  followUp(id: string, date: string | null) {
+    return this.create<SaleAdmin>(`/sales/${id}/follow-up/`, { follow_up_at: date });
+  }
+  /** The deal's internal notes, paginated, newest first (G-SALE-5). */
+  notes(id: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<SaleNote>(`/sales/${id}/notes/`, query);
+  }
+  /** Append a note — there is no edit or delete (append-only). */
+  addNote(id: string, body: string) {
+    return this.create<SaleNote>(`/sales/${id}/notes/`, { body });
+  }
+  /** Soft delete — the backend keeps the row (`is_deleted`), audit-logged.
+   * Bound because the old deal card has "Delete deal" (`darz-studio.html:12664`). */
+  deleteSale(id: string) {
+    return this.remove(`/sales/${id}/`);
   }
 }
 

@@ -475,6 +475,40 @@ below is the recommended order, by risk and size: live bugs first, then the busi
   always answered the *team* pair, so collector walks silently became team sessions after their first
   navigation. Fixed in the stub.
 
+## 3c · What Phase 2 did differently from the plan (recorded 2026-09-25)
+
+- **The old admin is `darz-studio.html`, not `app.html`.** Every Sales citation is to `DZSales`
+  (`darz-studio.html:12511-12770`); the captures are `design/admin-panel/…/15-market-sales` and
+  `16-auction-sales` (`darzstudio.art`). The old desk has no deal-card capture; the detail page was
+  compared against the `_detail` markup (`:12599-12667`).
+- **Auction Sales is `/admin/sales?source=auction`** (the Galleries `?type=gallery` shape): one route,
+  two nav tabs; the page is keyed on the tab so switching tabs remounts the controller. The tab's
+  `source=auction` is a fixed scope the filters cannot clear.
+- **Market Sales is the whole ledger**, with a Source filter, where the old Market tab held market deals
+  only. Reason: `summary/` is ledger-wide and takes no `source`, so its tiles only match an unscoped
+  list. Auction Sales counts its own rows for its strip.
+- **Need attention is narrower than the old tile.** The old count was `salesFlag` attn/block: follow-up
+  due, stalled ≥10 days, or payment overdue ≥7 days. Only the first has a field (`follow_up_overdue`),
+  and it has no aggregate or filter, so it is counted over a walk of the tab's rows. Backend
+  candidate: an overdue count on `summary/` (or `?follow_up_overdue=`).
+- **Five tiles, not four:** Open deals · Need attention · Payment pending · Completed · Lost (the old
+  "Sent to Accounting" has no stage here, as before).
+- **Two filter controls have no old control, flagged:** Delivery (the old desk filtered on `fDeliv`,
+  `:12523`, but rendered no select) and Source (the old source axis was the tab pair). The sort menu is
+  cut to the four server orderings (Recent first · Oldest · Highest value · Lowest value); the search
+  placeholder is cut to what the server searches ("Search collector, artwork…").
+- **Copy adapted, flagged:** the Auction Sales sub-line and empty state. The old "Every registration,
+  bid and winning bid" is false here — only a won lot makes a sale — so it reads "Every winning bid — one
+  deal, followed to the ledger. A lot that closes won opens its draft sale here — or add one by hand
+  with ＋ New deal. N total."
+- **The Lot link is an addition.** The old auction row was the market row and printed no lot (the deal
+  carried `lotId`, `:12327`). Auction Sales has a Lot column and the detail a Lot row, each opening the
+  lot's auction page (there is no lot route); `lot` is resolved via `GET …/admin/lots/{id}/`, cached.
+- **Delete deal is bound** — the old card has it (`:12664`) with the old confirm (`:12770`). The old
+  "Deal removed" toast is not shown: the page navigates back to the list.
+- **Follow-up toasts** follow the old split: the presets toast "Follow-up set for <date>"; the date field
+  and Clear write silently. Notes toast "Note added".
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -493,7 +527,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | --- | --- | --- | --- | --- |
 | 0 | Schema regen · C-1…C-5 live bugs · `Locked<>` · `walkPages` | `v1/phase-0-foundation` | `[x]` 2026-09-25 | see CHANGELOG |
 | 1 | Profile edit · my-membership · documents · chip · G-Q-1 · public docs | `v1/phase-1-collector-account` | `[x]` 2026-09-25 | see CHANGELOG |
-| 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[ ]` | |
+| 2 | Sales summary/filters/follow-up/notes · Auction Sales | `v1/phase-2-sales` | `[x]` 2026-09-25 | see CHANGELOG |
 | 3 | Auction/lot edit · archive · cover · reset · house | `v1/phase-3-auctions-admin` | `[ ]` | |
 | 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[ ]` | |
 | 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[ ]` | |
