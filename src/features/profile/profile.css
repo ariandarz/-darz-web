@@ -287,6 +287,164 @@
   letter-spacing: 0.35em;
   text-align: center;
 }
+/* The editable Account card (`profAccountHTML`, app.html:9765-9788). Each old
+   field is a block label with `margin-bottom:11px` (:9767); the shared
+   `Input`/`Dropdown` carry the field recipe itself. */
+.pf-form .dz-field-wrap + .dz-field-wrap,
+.pf-form .pf-lang {
+  margin-top: 11px;
+}
+.pf-form .pf-lang .pf-note {
+  margin-top: 6px;
+}
+
+/* ---- Documents — `dzDocsSectionHTML` (app.html:7909-7945), the old inline
+   styles as classes; the `<details class="lacc">` summary/caret rules are the
+   old `LOGI_CSS` (:9909), and Black mode's `--soft` fill is :49. ---------- */
+.pf-docs {
+  background: var(--card);
+  border: 1px solid rgb(10 10 10 / 5%);
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgb(10 10 10 / 5%);
+  margin: 0 16px;
+  overflow: hidden;
+}
+html.dz-bw .pf-docs {
+  background: var(--soft);
+}
+.pf-docs > summary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 15px 16px;
+  cursor: pointer;
+  list-style: none;
+  outline: none;
+}
+.pf-docs > summary::-webkit-details-marker {
+  display: none;
+}
+.pf-docs > summary::marker {
+  content: '';
+}
+.pf-docs .lacc-c {
+  display: flex;
+  margin-left: 8px;
+  flex: 0 0 auto;
+  transition: transform 0.18s;
+}
+.pf-docs[open] .lacc-c {
+  transform: rotate(180deg);
+}
+.pf-docs-ic {
+  color: var(--ink3);
+  display: flex;
+}
+.pf-docs-h {
+  flex: 1;
+  min-width: 0;
+}
+.pf-docs-h .t {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.pf-docs-h .s {
+  display: block;
+  font-size: 11.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+}
+.pf-docs-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--magenta);
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.pf-docs-n {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--soft);
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  padding: 3px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.pf-docs-list {
+  padding: 0 15px 10px;
+}
+.pf-doc {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--hair2);
+  padding: 11px 2px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* the no-image well (`matbg`, :7919) — the collector list carries no image */
+.pf-doc-th {
+  width: 30px;
+  height: 38px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid var(--hair);
+  display: block;
+  background: #efe9df;
+}
+.pf-doc-b {
+  flex: 1;
+  min-width: 0;
+}
+.pf-doc-b .l {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.pf-doc-b .s {
+  display: block;
+  font-size: 10.5px;
+  color: var(--ink3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pf-doc-new {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  border: 1px solid rgb(0 212 204 / 34%);
+  border-radius: 20px;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+.pf-doc-view {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.pf-doc-view .ar {
+  color: var(--cyan);
+}
+
 .pf-row {
   display: flex;
   align-items: center;
@@ -343,6 +501,7 @@ html.dz-desktop .ov-grp {
   padding-left: var(--dz-gut);
 }
 html.dz-desktop .pf-card,
+html.dz-desktop .pf-docs,
 html.dz-desktop .pf-row {
   max-width: calc(var(--dz-read) - var(--dz-gut));
   margin-left: var(--dz-gut);

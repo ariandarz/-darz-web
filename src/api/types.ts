@@ -23,6 +23,10 @@ export type Locked<T> = Omit<T, 'expected_version'> & { expected_version: number
 export type Artwork = Omit<Schemas['ArtworkCollector'], 'artist'> & {
   artist: Schemas['ArtistCollector'] | null;
 };
+/** A row of the collector's curated works (`GET /api/catalog/artworks/selections/`)
+ * — the same artwork, plus `selection_name` (G-P24-1): the name of the named
+ * selection that granted it, `null` for a bare per-work grant. */
+export type ArtworkSelection = Artwork & Pick<Schemas['ArtworkSelection'], 'selection_name'>;
 export type Artist = Schemas['ArtistCollector'];
 export type ArtworkImage = Schemas['ArtworkImage'];
 export type SavedArtwork = Schemas['SavedArtwork'];
@@ -250,6 +254,22 @@ export type ArtworkImportRow = Schemas['ArtworkImportRow'];
  * redeemed code sets a real `Collector.tier`. No payment processing anywhere,
  * by design. */
 export type MembershipCodeAdmin = Schemas['MembershipCodeAdmin'];
+
+/** The collector's own membership summary (`GET /api/auth/my-membership/`,
+ * G-MEMB-3/6/7): `tier` (`CollectorTierEnum`, or null), `status` (the
+ * collector's `access_status`) and `active_until` — a **date** (`YYYY-MM-DD`),
+ * the expiry of the most recently redeemed code, `null` when none was ever
+ * redeemed (an admin-set tier has no end date). */
+export type MyMembership = Schemas['MyMembership'];
+
+/** The collector's own profile edit (`PATCH /api/auth/me/`, G-B1): exactly
+ * `full_name` · `phone` · `city` · `preferred_language`. `email`, `display_name`,
+ * `tier` and `access_status` are admin-controlled and not accepted. No lock —
+ * the serializer takes no `expected_version`. */
+export type MeUpdate = Schemas['PatchedCollectorProfileUpdate'];
+/** `preferred_language` values (`Collector.LANGUAGE_CHOICES`). The labels are
+ * NOT in `/api/options/` (C-14), so this enum is the only vocabulary source. */
+export type PreferredLanguage = Schemas['PreferredLanguageEnum'];
 
 /** The owner "Team logins" desk's row (backend Phase 31). The password exists
  * only on the create response, exactly once. */
@@ -531,6 +551,17 @@ export interface SaleQuery {
  * `owner_lock` restricts confirm/sign/edit to the owner role. */
 export type DocumentAdmin = Schemas['Document'];
 export type DocumentVersionAdmin = Schemas['DocumentVersion'];
+
+/** One of the signed-in collector's own documents (`GET /api/documents/`,
+ * G-DOC-1) — `CollectorDocumentSerializer`: collector-safe fields only, never
+ * the freeform `fields` blob. Only shared documents of a collector-visible
+ * kind reach this list (`Document.COLLECTOR_VISIBLE_KINDS`), newest-shared
+ * first. `pdf_url` is a signed, expiring URL, or `null` before a PDF exists. */
+export type CollectorDocument = Schemas['CollectorDocument'];
+/** `GET /api/documents/public/{kind}/` — the latest confirmed, public-visibility
+ * document of a kind, served whole (`DocumentSerializer`), `AllowAny`. A kind
+ * with nothing published is a 404. */
+export type PublicDocument = Schemas['Document'];
 
 /** The documents list takes exactly one filter: exact `kind`. */
 export interface DocumentQuery {

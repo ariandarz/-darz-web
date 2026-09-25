@@ -22,14 +22,18 @@
  *  - **Every answer, including the contact step, is submitted as a `{q, a}`
  *    pair.** The old app's admin read the same flat text list, so a past
  *    submission stays readable after the bank is edited.
- *  - **The contact step does not update the collector's account record.** The
+ *  - **The contact step also updates the collector's account (G-Q-1).** The
  *    old app wrote `email` / `phone` / `commLang` back onto the collector
- *    (:11442) — this backend has no collector self-update endpoint at all
- *    (the whole Profile screen is read-only for the same reason). Darz
- *    receives the answers and can act on them; the account row does not change
- *    by itself. Kept rather than dropped, per CLAUDE.md rule 6 — a field the
- *    old screen has and this backend cannot write is a flag, not a deletion.
- *    Backend gap **G-Q-1**.
+ *    (:11442). After a successful submit the controller sends the phone and
+ *    the language through `PATCH /api/auth/me/` (`AuthService.updateMe`) —
+ *    the language as the backend's code (`languageFromLabel`: English → `en`,
+ *    Farsi → `fa`; French has no backend value and is not sent). **Email is
+ *    not written** — the backend does not accept it (admin-controlled), so it
+ *    reaches Darz only as an answer. The write is best-effort: the answers
+ *    are already with Darz, and a failed account write must not turn a sent
+ *    profile into an error.
+ *  - The contact fields **pre-fill from the account** when there is no draft,
+ *    as `startQ` pre-filled from the collector (`s.phone||u.phone`, :10015).
  *
  * ## Where the draft lives
  *
@@ -43,6 +47,8 @@
  */
 import { asArray } from '../../api/shapes';
 import type { RecommendationService } from '../../api/services';
+import type { MeUpdate } from '../../api/types';
+import { languageFromLabel } from '../profile/account';
 import { Observable } from '../shared/Observable';
 import { QVER, liveBank, type Question } from './questions';
 
@@ -87,6 +93,23 @@ export interface QuestionnaireSnapshot {
 
 const DRAFT_KEY = 'darz_questionnaire';
 
+/** The one account call the controller makes — `AuthService.updateMe`. */
+export interface AccountWriter {
+  updateMe(body: MeUpdate): Promise<unknown>;
+}
+
+/** The contact step's account write (G-Q-1): the phone and the language code,
+ * whichever are filled in and mean something to `PATCH /auth/me/`. Empty when
+ * there is nothing to send. Email is never in it (not writable). */
+export function contactPatch(contact: Contact): MeUpdate {
+  const body: MeUpdate = {};
+  const phone = contact.phone.trim();
+  if (phone) body.phone = phone;
+  const lang = languageFromLabel(contact.lang);
+  if (lang) body.preferred_language = lang;
+  return body;
+}
+
 interface Draft {
   qver?: number;
   email?: string;
@@ -119,8 +142,9 @@ const CONTACT_LABELS: ReadonlyArray<readonly [keyof Contact, string]> = [
 
 export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
   private readonly api: RecommendationService;
+  private readonly account: AccountWriter | null;
 
-  constructor(api: RecommendationService) {
+  constructor(api: RecommendationService, account: AccountWriter | null = null) {
     super({
       stage: 'intro',
       step: 0,
@@ -137,10 +161,12 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
       error: null,
     });
     this.api = api;
+    this.account = account;
   }
 
   /**
-   * `startQ` (:10015): restore the draft, then ask the server whether a
+   * `startQ` (:10015): restore the draft (falling back to `prefill`, the
+   * account's own values), then ask the server whether a
    * profile was already sent. A returning collector lands on the review; a new
    * one sees the intro.
    *
@@ -152,14 +178,14 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
    * can fill in, and refusing to open the screen over it would be worse than
    * starting fresh.
    */
-  async load(): Promise<void> {
+  async load(prefill: Partial<Contact> = {}): Promise<void> {
     const draft = readDraft();
     const fresh = draft.qver !== QVER;
     this.patch({
       contact: {
-        email: draft.email ?? '',
-        phone: draft.phone ?? '',
-        lang: draft.lang ?? '',
+        email: draft.email || prefill.email || '',
+        phone: draft.phone || prefill.phone || '',
+        lang: draft.lang || prefill.lang || '',
       },
       answers: fresh ? {} : sanitiseAnswers(draft.ans),
       extras: fresh ? {} : sanitiseExtras(draft.ansExtra),
@@ -341,6 +367,7 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
         // A private window that refuses to remove is harmless: the server has
         // the answers, and the next load() re-adopts them over the draft.
       }
+      await this.writeContact();
       this.patch({
         status: 'idle',
         stage: 'done',
@@ -380,6 +407,19 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
       if (a) rows.push({ q: b.q, a });
     });
     return rows;
+  }
+
+  /** G-Q-1 — the contact step onto the account. Best-effort by design: see
+   * the header. */
+  private async writeContact(): Promise<void> {
+    if (!this.account) return;
+    const body = contactPatch(this.getSnapshot().contact);
+    if (Object.keys(body).length === 0) return;
+    try {
+      await this.account.updateMe(body);
+    } catch {
+      // the answers reached Darz; the account keeps its previous values
+    }
   }
 
   private persist(): void {

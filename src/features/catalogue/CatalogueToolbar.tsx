@@ -112,7 +112,7 @@ export function CatalogueToolbar({
   const activity = useActivity();
   // null while it loads, 0 when the collector holds no grants — either way the
   // chip renders nothing, so the toolbar is unchanged for most collectors.
-  const curatedCount = useCuratedCount();
+  const curated = useCuratedCount();
 
   // Debounce the search box so every keystroke doesn't fire a request — the
   // old app searches on input but this is a network call, not a local filter.
@@ -177,7 +177,8 @@ export function CatalogueToolbar({
         />
         {/* :278 — "compact, refined, sits with the filters" */}
         <CuratedChip
-          count={curatedCount ?? 0}
+          count={curated?.count ?? 0}
+          name={curated?.name}
           on={query.curated === true}
           onToggle={(on) => onChange({ curated: on || undefined })}
         />
