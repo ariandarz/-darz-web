@@ -28,17 +28,17 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Area | Gap | State | Note |
 | --- | --- | --- | --- | --- |
-| G-P34-2 | access-request | No rate limit on public `POST /auth/access-requests/` | ✅ Closed | Throttle `5/hour`/IP (env). FE: handle 429. |
-| G-P34-1 | access-request | No `client_req_id` dedupe | ✅ Closed | 200 replay / 201 new. FE: treat 200 as success. |
+| G-P34-2 | access-request | No rate limit on public `POST /auth/access-requests/` | ✅ Closed | Throttle `5/hour`/IP (env). FE adopted 2026-09-25: a 429 reads "Too many attempts — try again shortly." |
+| G-P34-1 | access-request | No `client_req_id` dedupe | ✅ Closed | 200 replay / 201 new. FE adopted 2026-09-25: both are success; the key is reused across retries of the same values (`AccessRequestKey`). |
 | G-LOCK-1 | accounting, auctions | Ledger + auction-record editors last-write-wins | ✅ Closed | `expected_version` → 409. FE: wire `ConflictBanner` on those 2 desks. |
 
 ## CRM — collector requests (Phase 5 / Flow 1)
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-P5-1 | Untyped `detail` on collector **output** | ✅ Closed | Polymorphic union in schema. FE: delete hand-typed union in `src/api/types.ts`. |
-| G-F1-1 | Untyped `detail` on **create** input | ✅ Closed | `RequestCreate.detail` now types as the `RequestDetail` union (B4). FE: use the typed create body; drop any `unknown` cast. |
-| G-P5-2 | Bare artwork uuid on collector rows | ✅ Closed | Nested `{id,title,artist,image}`. FE: drop the `ArtworkCache` second read. |
+| G-P5-1 | Untyped `detail` on collector **output** | ✅ Closed | Polymorphic union in schema; FE uses it (2026-09-25). One hand type stays: `HoldDetail.expires_at` — `HoldDetailSerializer` has no input fields, so the generated union has no hold member. |
+| G-F1-1 | Untyped `detail` on **create** input | ✅ Closed | `RequestCreate.detail` types as the `RequestDetail` union (B4). FE adopted 2026-09-25: `RequestDetailInput` (generated members minus the read-only `counter_*`); offer `amount` now sent as a decimal string. |
+| G-P5-2 | Bare artwork uuid on collector rows | ✅ Closed | Nested `{id,title,artist,image}`. FE adopted 2026-09-25: Chat, Profile and Acquisitions read it directly (no catalogue read); the thread's request card still resolves the full work by `id` for year · medium. |
 | G-P5-3 | No single-request read | ✅ Closed | `GET /crm/requests/{id}/`. |
 | G-P5-6 | Hold expiry not applied on read | ✅ Closed | Lazy expiry now server-side. |
 | G-P5-8 | Pagination params undeclared | ✅ Closed | Schema-only; no FE change. |

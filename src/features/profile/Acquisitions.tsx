@@ -16,8 +16,7 @@
  */
 import { Link } from 'react-router-dom';
 import { statusLabel, useOptions } from '../../api/hooks';
-import type { Artwork, CollectorRequest } from '../../api/types';
-import { primaryImage } from '../catalogue/format';
+import type { CollectorRequest } from '../../api/types';
 import { workLine } from '../requests/RequestController';
 import { MKT_RAIL, statusMeta } from '../requests/status';
 import { ACQUISITION_LABEL, isAcquisition } from './acquisitionRows';
@@ -41,11 +40,9 @@ function Rail({ stage }: { stage: number }) {
 
 export function Acquisitions({
   requests,
-  lookup,
   to,
 }: {
   requests: CollectorRequest[];
-  lookup: (id: string | null | undefined) => Artwork | null | undefined;
   to: (request: CollectorRequest) => string;
 }) {
   const options = useOptions();
@@ -62,9 +59,9 @@ export function Acquisitions({
         const meta = statusMeta(r, {
           fallbackLabel: statusLabel(options, r.kind, r.status),
         });
-        const artwork = lookup(r.artwork);
-        const image = artwork ? primaryImage(artwork) : null;
-        const head = artwork ? workLine(artwork) : artwork === null ? 'A work' : '…';
+        // the work rides on the row (G-P5-2) — no catalogue read per card
+        const image = r.artwork?.image ?? null;
+        const head = (r.artwork && workLine(r.artwork)) || 'A work';
         const ended = meta.stage < 0;
 
         return (

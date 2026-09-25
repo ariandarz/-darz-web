@@ -71,7 +71,7 @@ together with the fixes** — committing it alone leaves the gate red.
 
 ---
 
-## Batch 1 — Schema regen + the compiler's flags + P0  `[ ]`
+## Batch 1 — Schema regen + the compiler's flags + P0  `[x]`
 *The foundation; everything else assumes the regenerated types.*
 
 | Gap | Change | Where |
@@ -184,11 +184,33 @@ Endpoints exist; each was a deliberate non-port or an open scope question. Ask t
 - **Housekeeping at the end:** once Batch 7 lands, the "FE:" notes in `API_GAPS.md` should all be gone
   and `API_GAPS_FRONTEND_ADOPTION.md` can move to `docs/archive/`.
 
+## Found while doing Batch 1 (2026-09-25)
+
+Regenerated against backend `development` @ `021ce07` — past the `57d408c` above; the extra merges
+(#54 gallery-portal quick wins, #55 lot update + paddle reset G-AUC-2/3, #56 collectors overview
+summary + roster rollups G-COL-1/2) typecheck clean and are **not yet in any batch** — they need
+their own rows in `API_GAPS.md` / `API_GAPS_FRONTEND_ADOPTION.md` before they are scheduled.
+
+- **The generated `RequestDetail` has no hold member.** `HoldDetailSerializer` takes no input, so
+  drf-spectacular publishes nothing for it, yet a stored hold carries `expires_at`. `HoldDetail` stays
+  hand-typed (one field) in `src/api/types.ts`. A backend `read_only` `expires_at` on that serializer
+  would let it go.
+- **`OfferDetail` marks `counter_amount`/`counter_currency` required**, because openapi-typescript does
+  not split read and write shapes. The create body uses `RequestDetailInput`, which omits them.
+- **Owner question — an offer on a work with no currency.** Make an Offer shows on such a work and
+  sends `currency: ''`; the backend 400s ("not a valid choice") and that message is what the collector
+  sees. Unchanged by Batch 1 (the type admits `''` on purpose). Hide the button, default a currency, or
+  keep it?
+- **New copy flagged:** the 429 line "Too many attempts — try again shortly." has no `app.html` source
+  (the old app had no rate limit); it is the adoption guide's wording.
+- The E2E stub now serves collector requests in the nested shape, their full artworks, and a 200
+  access-request replay — the Chat/Profile rows are exercised, not just an empty list.
+
 ## Progress
 
 | Batch | Scope | State | PR |
 | --- | --- | --- | --- |
-| 1 | Schema regen · G-P5-1/2 · G-F1-1 · G-P34-1 | `[ ]` | |
+| 1 | Schema regen · G-P5-1/2 · G-F1-1 · G-P34-1 | `[x]` 2026-09-25 | see below |
 | 2 | G-LOCK-1 | `[ ]` | |
 | 3 | G-P5-3/6/9/10 | `[ ]` | |
 | 4 | G-P24-1 · G-P25-1 · profile edit · G-Q-1 · G-MEMB-3/6/7 | `[ ]` | |

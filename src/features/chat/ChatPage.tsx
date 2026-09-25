@@ -11,7 +11,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useConversations } from '../conversations/useConversations';
 import { ConversationRow } from '../conversations/ConversationRow';
-import { useArtworks } from '../catalogue/useArtworkCache';
 import '../catalogue/catalogue.css';
 import './chat.css';
 
@@ -20,7 +19,6 @@ export function ChatPage() {
   const { status, error, controller } = useConversations();
   const general = controller.general();
   const inquiries = controller.inquiries();
-  const lookup = useArtworks(inquiries.map((r) => r.artwork));
   const generalUnread = general?.unread_count ?? 0;
 
   const openGeneral = async () => {
@@ -82,12 +80,7 @@ export function ChatPage() {
           </div>
           <div className="actlist">
             {inquiries.map((r) => (
-              <ConversationRow
-                key={r.id}
-                request={r}
-                artwork={lookup(r.artwork)}
-                to={`/chat/${r.id}`}
-              />
+              <ConversationRow key={r.id} request={r} to={`/chat/${r.id}`} />
             ))}
           </div>
         </>

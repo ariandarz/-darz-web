@@ -141,7 +141,8 @@ export class ConversationsController extends Observable<ConversationsSnapshot> {
    * duplicate guard the detail page shows instead of a second Send. */
   openInquiryFor(artworkId: string): CollectorRequest | null {
     return (
-      this.inquiries().find((r) => r.artwork === artworkId && !CLOSED.has(r.status)) ?? null
+      this.inquiries().find((r) => r.artwork?.id === artworkId && !CLOSED.has(r.status)) ??
+      null
     );
   }
 

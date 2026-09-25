@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — API adoption Batch 1: schema regen, typed request detail, nested artwork, access-request replay/429
+
+- **`schema.d.ts` regenerated** from backend `development` @ `021ce07`; the 11 flags fixed. Hand-typed `detail` union → generated (G-P5-1/G-F1-1); Chat/Profile/Acquisitions read the nested artwork (G-P5-2).
+- **Request access** treats a 200 replay as success, reuses one `client_req_id` per submission, and shows a sentence on 429 (G-P34-1/2). Stub serves nested rows; **628 unit · 84 E2E**.
+
 ## 2026-09-23 — The docs are brought level with what is merged
 
 - **`HANDOFF.md`, `TASKLIST.md`, `NOTES-FOR-ARIAN.md` and `CLAUDE.md` updated together.** They

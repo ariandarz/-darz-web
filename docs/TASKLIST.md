@@ -51,10 +51,10 @@ now-closed backend gaps, the non-V1 backend gaps, and deferred/backend-blocked f
 **Batch order and progress: `API_ADOPTION_PLAN.md`** (Batches 1–7 buildable now; 8+ need the owner).
 Backend shipped these; the frontend still has the work-arounds. Do **Step 0 (regenerate `schema.d.ts`)**
 first, then:
-- [ ] **Access-request** (G-P34-1): treat 200 replay as success, handle 429. *(launch-gate half)*
+- [x] **Access-request** (G-P34-1/2): 200 replay = success, one key reused across retries, 429 copy. *(Batch 1)*
 - [ ] **G-LOCK-1**: wire `ConflictBanner` + `expected_version` on `LedgerEntryPage` and `RecordEditorPage`
       (both were last-write-wins).
-- [ ] **CRM precision cluster** (G-P5-1/2/3/6/9/10): delete the hand-typed `detail` union, use nested
+- [~] **CRM precision cluster** (G-P5-1/2/3/6/9/10) — **G-P5-1/2 + G-F1-1 done (Batch 1)**; delete the hand-typed `detail` union, use nested
       `artwork`, deep-link `GET /crm/requests/{id}/`, drop the client hold-expiry, show `counter_amount`,
       pull viewing-mode labels from `/api/options/`.
 - [ ] **G-P24-1**: curated chip reads `selection_name`. **G-P25-1**: questionnaire branches on `answered`

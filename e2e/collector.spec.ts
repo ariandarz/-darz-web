@@ -165,9 +165,7 @@ test('the questionnaire runs intro → contact → questions → review → sent
   // The answers made it, under their own question text. `.qttl` is a div in
   // the old markup too, not a heading — hence the class rather than a role.
   await expect(page.locator('.qttl')).toHaveText('Review & send');
-  await expect(page.locator('.qsum-card').first()).toContainText(
-    'collector@example.invalid',
-  );
+  await expect(page.locator('.qsum-card').first()).toContainText('collector@example.invalid');
   await expect(page.locator('.qsum-card').last()).toContainText('Abstraction');
 
   await page.getByRole('button', { name: 'Confirm & send' }).click();
@@ -256,5 +254,26 @@ test('the app is English-only until the owner enables a language', async () => {
   expect(await page.getAttribute('html', 'dir')).toBe('ltr');
   await page.evaluate(() => localStorage.removeItem('darz_lang'));
 
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * G-P5-2 — a request row carries its work nested (`{id, title, artist, image}`),
+ * so the Chat list names each inquiry without a second catalogue read. Before
+ * the adoption, every row resolved a bare uuid through `ArtworkCache`.
+ */
+test('chat names each inquiry from the row itself, with no catalogue read', async () => {
+  thrown = [];
+  const catalogueReads: string[] = [];
+  const onRequest = (req: { url: () => string }) => {
+    if (req.url().includes('/api/catalog/')) catalogueReads.push(req.url());
+  };
+  page.on('request', onRequest);
+  await page.goto('/chat');
+  await page.waitForLoadState('networkidle');
+  page.off('request', onRequest);
+
+  await expect(page.locator('.actli-t').first()).toHaveText('Parviz Tanavoli — Heech');
+  expect(catalogueReads, 'catalogue reads from the chat list').toEqual([]);
   expect(thrown).toEqual([]);
 });

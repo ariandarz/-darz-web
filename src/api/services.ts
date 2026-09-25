@@ -52,7 +52,7 @@ import type {
   PublishedRecommendation,
   CollectorQuestionnaire,
   QuestionnaireAnswer,
-  RequestDetail,
+  RequestDetailInput,
   RequestKind,
   RequestMessage,
   RequestMessageQuery,
@@ -196,7 +196,7 @@ export class CrmService extends ResourceService {
   async createRequest(body: {
     kind: RequestKind;
     artwork?: string | null;
-    detail?: RequestDetail;
+    detail?: RequestDetailInput;
     client_req_id?: string;
   }): Promise<CreatedRequest> {
     const res = await this.client.sendEnveloped<CollectorRequest>(
@@ -1477,11 +1477,9 @@ export class AuthService extends ResourceService {
    * Lands in the admin review queue, where a human issues a key or declines;
    * it mints no credential by itself.
    *
-   * `client_req_id` is sent because the old app sends one (app.html:2559) and
-   * the day the backend honours it the client already complies. Today it is
-   * **ignored** — `AccessRequestService.create` is a plain `objects.create`
-   * with no uniqueness, so a double-tap still makes two pending rows
-   * (docs/PHASE_24_35_API_GAPS.md G-P34-1, owner decision D3).
+   * `client_req_id` dedupes (G-P34-1): a repeat of a key answers 200 with the
+   * row already filed, a new one 201 — both resolve here. The endpoint is
+   * rate-limited per IP (G-P34-2), so a burst ends in a 429 `HttpError`.
    */
   requestAccess(body: AccessRequestInput) {
     return this.create<AccessRequest>('/access-requests/', body);

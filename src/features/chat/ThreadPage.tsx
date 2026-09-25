@@ -44,8 +44,10 @@ export function ThreadPage() {
   const { controller: conversations, status: listStatus } = useConversations();
   const request = conversations.byId(id!);
   const thread = useThread(id!);
-  const lookup = useArtworks([request?.artwork]);
-  const artwork = lookup(request?.artwork);
+  // The row nests the work's id/title/artist/image (G-P5-2); the request card
+  // also shows year and medium, so the full artwork still comes from the cache.
+  const lookup = useArtworks([request?.artwork?.id]);
+  const artwork = lookup(request?.artwork?.id);
   const [draft, setDraft] = useState('');
   const [removing, setRemoving] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -91,8 +93,10 @@ export function ThreadPage() {
         sender: 'collector',
         body: detail.message,
         artwork_refs: [],
+        document_refs: [],
         seen_by_collector: true,
         seen_by_team: true,
+        archived: false,
         created_at: request.created_at,
       }
     : null;
