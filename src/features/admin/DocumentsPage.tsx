@@ -23,8 +23,9 @@
  *     old panel's own label (`adminNav.ts`).
  *  2. **Proposals** · 3. **Invoices** — this desk, pre-filtered by `?kind=`
  *     (the old sticky sub-tab; one page in both panels).
- *  4. **Library & history** — this desk unfiltered. The label loses "&
- *     history" because History is its own tab below.
+ *  4. **Library & history** — this desk unfiltered, under the old label
+ *     whole (Phase 6). Its history half is each document's own History
+ *     section (G-DOC-2, per-document), one Open away.
  *  5. **Pricelists & saved items** — **not built, backend-blocked.** Phase 21
  *     (the two builders and `savedItems`) does not exist; `adminNav.ts`
  *     carries the tab with `path: null` and that reason, so the navbar hides
@@ -34,9 +35,12 @@
  *     rendered client-side… uploaded here", so this desk already uploads a
  *     hand-rendered PDF and the Studio plugs into the same endpoint.
  *
- * And the tab the old row does not have: **History** — its "issued
- * documents" half IS this list (one model now); its activity half waits on
- * an audit feed (G-DOC-2).
+ * The old row has no History tab (`_docTab` sends 'history' to the Library,
+ * `workspaces-runtime.js:522`). The earlier port carried one with no route;
+ * Phase 6 keeps it hidden — the backend's trail is per document, and it is
+ * the History section on `DocumentDetailPage` (see `adminNav.ts`). The
+ * Visibility column now also says when a document is shared with a collector
+ * (G-DOC-1), the old "Sharing" word (`darz-studio.html:12906`).
  */
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -117,6 +121,7 @@ export function DocumentsPage() {
         <span className="ad-cellsub">
           {d.visibility === 'public' ? 'Public' : 'Private'}
           {d.owner_lock ? ' · owner-locked' : ''}
+          {d.shared_at ? ' · sharing' : ''}
         </span>
       ),
     },

@@ -59,6 +59,15 @@ const ME = {
   role: 'owner',
 };
 
+/** A standard admin (Phase 6 owner-lock walk) — `role` is what the desk reads. */
+const ME_STD = {
+  ...ME,
+  id: '00000000-0000-4000-8000-0000000000e3',
+  email: 'standard@example.invalid',
+  name: 'E2E Standard',
+  role: 'standard_admin',
+};
+
 const OPTIONS = {
   'catalog.availability_status': [
     { value: 'available', label: 'Available' },
@@ -493,6 +502,9 @@ const SUMMARY = {
  */
 const TOKENS = {
   team: { access: 'e2e-team', refresh: 'e2e-team-r' },
+  // V1 Phase 6 — a STANDARD admin, for the owner-lock walk: sign in with an
+  // email that starts with "standard" and every later call carries this pair.
+  teamStd: { access: 'e2e-team-std', refresh: 'e2e-team-std-r' },
   collector: { access: 'e2e-collector', refresh: 'e2e-collector-r' },
 };
 
@@ -502,6 +514,9 @@ const TOKENS = {
 function bearerIsCollector(req) {
   const auth = req.headers.authorization || '';
   return auth.includes('e2e-collector');
+}
+function bearerIsStandard(req) {
+  return (req.headers.authorization || '').includes('e2e-team-std');
 }
 
 /**
@@ -623,6 +638,8 @@ const REGISTRATIONS = [
   },
 ];
 const REG_COLLECTORS = {
+  // Phase 6 — the share walk's collector (Leila, `ADMIN_COLLECTORS[0]`)
+  '00000000-0000-4000-8000-0000000c0001': 'Leila Ahmadi',
   '00000000-0000-4000-8000-0000000019c1': 'Sara Ahmadi',
   '00000000-0000-4000-8000-0000000019c2': 'Reza Karimi',
 };
@@ -946,6 +963,323 @@ const CLUB_SELECTIONS = [
   },
 ];
 
+/**
+ * V1 Phase 6 — documents (G-DOC-1 share, G-DOC-2 activity, `owner_lock`) and
+ * the admin thread (D19 `document_refs`, G-CHAT-2 message archive).
+ *
+ *  - `DOC_LOCKED` — an owner-locked draft invoice: a standard admin sees its
+ *    guarded controls disabled; the owner does not.
+ *  - `DOC_SHARE` — a confirmed certificate issued to Leila, not shared yet: the
+ *    share/unshare walk (writes answer the row as it would be after them).
+ *  - `DOC_ATTACH` — an unissued invoice: what the chat composer attaches.
+ *  - `DOC_OTHER` — an invoice issued to ANOTHER collector: never offered.
+ *  - `DOC_PROPOSAL` — a proposal: not a collector-visible kind, never offered.
+ *
+ * The thread keeps one small piece of state — which messages are archived —
+ * so archive → toggle → restore reads back what it wrote.
+ */
+const DOC_LOCKED = '00000000-0000-4000-8000-0000000d0601';
+const DOC_SHARE = '00000000-0000-4000-8000-0000000d0602';
+const DOC_ATTACH = '00000000-0000-4000-8000-0000000d0603';
+const DOC_OTHER = '00000000-0000-4000-8000-0000000d0604';
+const DOC_PROPOSAL = '00000000-0000-4000-8000-0000000d0605';
+const DOC_BASE = {
+  ref: '',
+  fields: {},
+  object_key: 'documents/x.pdf',
+  pdf_url: `${STUB_ORIGIN}/files/doc.pdf`,
+  visibility: 'private',
+  status: 'draft',
+  owner_lock: false,
+  collector: null,
+  shared_at: null,
+  created_by: null,
+  confirmed_at: null,
+  confirmed_by: null,
+  signed_at: null,
+  signed_by: null,
+  version: 3,
+  created_at: '2026-09-20T10:00:00Z',
+  updated_at: '2026-09-22T10:00:00Z',
+};
+const ADMIN_DOCS = [
+  {
+    ...DOC_BASE,
+    id: DOC_LOCKED,
+    kind: 'invoice',
+    title: 'Invoice — Heech in a Cage',
+    ref: 'INV-2026-0007',
+    owner_lock: true,
+  },
+  {
+    ...DOC_BASE,
+    id: DOC_SHARE,
+    kind: 'certificate',
+    title: 'Certificate — Mirror Study',
+    ref: 'COA-2026-0003',
+    status: 'confirmed',
+    confirmed_at: '2026-09-21T10:00:00Z',
+    collector: '00000000-0000-4000-8000-0000000c0001',
+  },
+  {
+    ...DOC_BASE,
+    id: DOC_ATTACH,
+    kind: 'invoice',
+    title: 'Invoice — Mirror Study',
+    ref: 'INV-2026-0009',
+    status: 'confirmed',
+    updated_at: '2026-09-24T10:00:00Z',
+  },
+  {
+    ...DOC_BASE,
+    id: DOC_OTHER,
+    kind: 'invoice',
+    title: 'Invoice — someone else’s',
+    collector: '00000000-0000-4000-8000-0000000c0002',
+    shared_at: '2026-09-20T12:00:00Z',
+  },
+  {
+    ...DOC_BASE,
+    id: DOC_PROPOSAL,
+    kind: 'proposal',
+    title: 'Proposal — Autumn show',
+  },
+];
+const docById = (id) => ADMIN_DOCS.find((d) => d.id === id);
+/** `DocumentActivitySerializer` rows — FLAT actor (C-15), newest first. */
+const docActivity = (doc) => [
+  {
+    id: `${doc.id.slice(0, -4)}a003`,
+    action: 'transition',
+    changes: { status: ['draft', 'confirmed'] },
+    at: '2026-09-22T10:00:00Z',
+    actor: ME.id,
+    actor_name: 'Arian Darz',
+  },
+  {
+    id: `${doc.id.slice(0, -4)}a002`,
+    action: 'update',
+    changes: { title: ['Invoice', doc.title] },
+    at: '2026-09-21T10:00:00Z',
+    actor: ME.id,
+    actor_name: 'Arian Darz',
+  },
+  {
+    id: `${doc.id.slice(0, -4)}a001`,
+    action: 'create',
+    changes: {},
+    at: '2026-09-20T10:00:00Z',
+    actor: null,
+    actor_name: null,
+  },
+];
+
+const ADMIN_THREAD_ID = '00000000-0000-4000-8000-0000000c6a01';
+const ADMIN_THREAD = {
+  id: ADMIN_THREAD_ID,
+  collector: { id: '00000000-0000-4000-8000-0000000c0001', display_name: 'Leila Ahmadi' },
+  artwork: null,
+  artist: null,
+  kind: 'message',
+  status: 'new',
+  allowed_transitions: [],
+  assignee: null,
+  detail: { message: '' },
+  contact_snapshot: {},
+  admin_archived: false,
+  collector_archived: false,
+  unread_count: 0,
+  version: 1,
+  created_at: '2026-09-22T09:00:00Z',
+  updated_at: '2026-09-22T09:00:00Z',
+};
+const MSG = (n, sender, body, over = {}) => ({
+  id: `00000000-0000-4000-8000-0000000c6b0${n}`,
+  request: ADMIN_THREAD_ID,
+  sender,
+  body,
+  artwork_refs: [],
+  document_refs: [],
+  seen_by_collector: true,
+  seen_by_team: true,
+  archived: false,
+  created_at: `2026-09-22T09:0${n}:00Z`,
+  ...over,
+});
+const docRef = (id) => {
+  const d = docById(id);
+  return { id: d.id, kind: d.kind, title: d.title };
+};
+const ADMIN_THREAD_MESSAGES = [
+  MSG(1, 'collector', 'Could you send the invoice for Mirror Study?'),
+  MSG(2, 'team', 'An old note — the price was confirmed by phone.', { archived: true }),
+  MSG(3, 'team', 'Of course — here is the certificate.', {
+    document_refs: [docRef(DOC_SHARE)],
+  }),
+  MSG(4, 'collector', 'Thank you.'),
+];
+/** which admin-thread messages are archived now (starts from the fixture) */
+const archivedNow = new Set(ADMIN_THREAD_MESSAGES.filter((m) => m.archived).map((m) => m.id));
+
+/** The collector's general chat (c104) — one Darz reply with an attached
+ * invoice, which is in the collector's "Your documents" list (d0c1). */
+const COLLECTOR_THREAD_MESSAGES = {
+  '00000000-0000-4000-8000-00000000c104': [
+    {
+      ...MSG(5, 'team', 'Your invoice is attached — it is also under Profile › Documents.'),
+      request: '00000000-0000-4000-8000-00000000c104',
+      document_refs: [
+        {
+          id: '00000000-0000-4000-8000-00000000d0c1',
+          kind: 'invoice',
+          title: 'Parviz Tanavoli — Heech',
+        },
+      ],
+    },
+  ],
+};
+
+const phase6Patterns = [
+  [
+    /^\/api\/documents\/admin\/documents\/$/,
+    'GET',
+    (_p, _b, url) => {
+      const kind = url.searchParams.get('kind');
+      return pageOf(kind ? ADMIN_DOCS.filter((d) => d.kind === kind) : ADMIN_DOCS, url);
+    },
+  ],
+  [
+    /^\/api\/documents\/admin\/documents\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const d = docById(path.split('/')[5]);
+      return d ? envelope(d) : notFound('No Document matches the given query.');
+    },
+  ],
+  [
+    /^\/api\/documents\/admin\/documents\/[^/]+\/activity\/$/,
+    'GET',
+    (path, _b, url) => {
+      const d = docById(path.split('/')[5]);
+      return d
+        ? pageOf(docActivity(d), url)
+        : notFound('No Document matches the given query.');
+    },
+  ],
+  [
+    /^\/api\/documents\/admin\/documents\/[^/]+\/versions\/$/,
+    'GET',
+    (_p, _b, url) => pageOf([], url),
+  ],
+  // share: only collector-visible kinds (models.py:39-42), else the 400
+  [
+    /^\/api\/documents\/admin\/documents\/[^/]+\/share\/$/,
+    'POST',
+    (path, body) => {
+      const d = docById(path.split('/')[5]);
+      if (!d) return notFound('No Document matches the given query.');
+      if (d.kind === 'proposal') {
+        return {
+          status: 400,
+          body: {
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `'${d.kind}' is not a collector-visible document kind.`,
+            },
+            timestamp: new Date().toISOString(),
+          },
+        };
+      }
+      return envelope({
+        ...d,
+        collector: body?.collector ?? d.collector,
+        shared_at: new Date().toISOString(),
+        version: d.version + 1,
+      });
+    },
+  ],
+  [
+    /^\/api\/documents\/admin\/documents\/[^/]+\/share\/$/,
+    'DELETE',
+    (path) => {
+      const d = docById(path.split('/')[5]);
+      return d
+        ? envelope({ ...d, shared_at: null, version: d.version + 2 })
+        : notFound('No Document matches the given query.');
+    },
+  ],
+  // the admin thread — `?include_archived=true` brings archived messages back
+  [
+    /^\/api\/crm\/admin\/requests\/[^/]+\/messages\/$/,
+    'GET',
+    (path, _b, url) => {
+      if (path.split('/')[5] !== ADMIN_THREAD_ID) return pageOf([], url);
+      const all = url.searchParams.get('include_archived') === 'true';
+      const rows = ADMIN_THREAD_MESSAGES.map((m) => ({
+        ...m,
+        archived: archivedNow.has(m.id),
+      }));
+      return pageOf(all ? rows : rows.filter((m) => !m.archived), url);
+    },
+  ],
+  // the team's reply: echoes `document_refs` ENRICHED, as the serializer reads
+  [
+    /^\/api\/crm\/admin\/requests\/[^/]+\/messages\/$/,
+    'POST',
+    (path, body) => {
+      const refs = Array.isArray(body?.document_refs) ? body.document_refs : [];
+      const unknown = refs.find((id) => !docById(id));
+      if (unknown) {
+        return {
+          status: 400,
+          body: {
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `Document '${unknown}' does not exist.`,
+            },
+            timestamp: new Date().toISOString(),
+          },
+        };
+      }
+      return envelope({
+        ...MSG(9, 'team', String(body?.body ?? '')),
+        id: `00000000-0000-4000-8000-${String(Date.now()).slice(-12).padStart(12, '0')}`,
+        request: path.split('/')[5],
+        seen_by_collector: false,
+        document_refs: refs.map(docRef),
+        created_at: new Date().toISOString(),
+      });
+    },
+  ],
+  [
+    /^\/api\/crm\/admin\/requests\/[^/]+\/messages\/mark-seen\/$/,
+    'POST',
+    () => envelope({ unread_count: 0 }),
+  ],
+  // G-CHAT-2 — archive/restore one message; a bare POST archives
+  [
+    /^\/api\/crm\/admin\/messages\/[^/]+\/archive\/$/,
+    'POST',
+    (path, body) => {
+      const id = path.split('/')[5];
+      const m = ADMIN_THREAD_MESSAGES.find((x) => x.id === id);
+      if (!m) return notFound('No RequestMessage matches the given query.');
+      const archived = body?.archived !== false;
+      if (archived) archivedNow.add(id);
+      else archivedNow.delete(id);
+      return envelope({ ...m, archived });
+    },
+  ],
+  // the collector's thread: every message, archived or not (G-CHAT-2 is desk-only)
+  [
+    /^\/api\/crm\/requests\/[^/]+\/messages\/$/,
+    'GET',
+    (path, _b, url) => pageOf(COLLECTOR_THREAD_MESSAGES[path.split('/')[4]] ?? [], url),
+  ],
+];
+
 const routes = {
   // `?langs=` turns the multilingual engine on for one walk. The app ships it
   // OFF (no `theme.langs`), and the default here reproduces that — so the stub
@@ -957,7 +1291,8 @@ const routes = {
       theme: on ? { langs: { enabled: ['en', 'fa'], def: on } } : {},
     });
   },
-  'POST /api/auth/team/login/': () => envelope(TOKENS.team),
+  'POST /api/auth/team/login/': (req, body) =>
+    envelope(String(body?.email || '').startsWith('standard') ? TOKENS.teamStd : TOKENS.team),
   // The collector gate's own sign-in — first name + access key, the credential
   // model D4 kept (`docs/PHASE_24_35_PLAN.md`).
   'POST /api/auth/collector/login/': () => envelope(TOKENS.collector),
@@ -971,9 +1306,15 @@ const routes = {
     envelope(
       String(body?.refresh || '').includes('e2e-collector') || bearerIsCollector(req)
         ? TOKENS.collector
-        : TOKENS.team,
+        : String(body?.refresh || '').includes('e2e-team-std') || bearerIsStandard(req)
+          ? TOKENS.teamStd
+          : TOKENS.team,
     ),
-  'GET /api/auth/me/': (req) => envelope(bearerIsCollector(req) ? ME_COLLECTOR : ME),
+  'GET /api/auth/me/': (req) =>
+    envelope(bearerIsCollector(req) ? ME_COLLECTOR : bearerIsStandard(req) ? ME_STD : ME),
+  // Phase 6 — the Chat desk lists the one conversation the thread walk opens
+  // (the list hands the thread its collector through router state, G-CHAT-1).
+  'GET /api/crm/admin/requests/': () => page([ADMIN_THREAD]),
   // The collector's own profile edit (G-B1). Echoes the stored collector with
   // the accepted fields applied — stateless, like every route here, so a
   // reload reads the fixture again. A team token is a 403, as on the backend.
@@ -2361,7 +2702,7 @@ function respond(req, res, body, raw = '') {
     res.end(JSON.stringify(status === 200 ? answered : answered.body));
     return;
   }
-  for (const [re, method, answer] of [...galleryPatterns, ...patterns]) {
+  for (const [re, method, answer] of [...galleryPatterns, ...phase6Patterns, ...patterns]) {
     if (req.method === method && re.test(url.pathname)) {
       // A write's pattern reads the body it was sent (the follow-up date, a
       // note), as the keyed routes above already do; the gallery routes also

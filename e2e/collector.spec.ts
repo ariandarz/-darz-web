@@ -554,3 +554,19 @@ test('an event with no lots says so, and its hero is the uploaded poster', async
   );
   expect(thrown).toEqual([]);
 });
+
+/**
+ * V1 Phase 6 (D19) — a document Darz attached to a message shows on the
+ * collector's thread as the "Your documents" row, and opens the same signed
+ * PDF that list holds (the ref itself carries no URL).
+ */
+test('a document attached in chat renders as a chip that opens its PDF', async () => {
+  thrown = [];
+  await page.goto('/chat/00000000-0000-4000-8000-00000000c104');
+  const chip = page.locator('.dz-bub.darz .dz-chatdoc');
+  await expect(chip).toHaveCount(1);
+  await expect(chip.locator('.l')).toHaveText('Invoice');
+  await expect(chip.locator('.s')).toHaveText('Parviz Tanavoli — Heech');
+  await expect(chip).toHaveAttribute('href', /\/files\/inv-0001\.pdf$/);
+  expect(thrown).toEqual([]);
+});

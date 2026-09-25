@@ -1211,3 +1211,170 @@ test('Exhibition Services: descriptions come from the API and save back (G-PROJ-
   });
   expect(thrown).toEqual([]);
 });
+
+/**
+ * V1 Phase 6 — documents (G-DOC-1 share, G-DOC-2 History, owner_lock) and the
+ * admin thread (D19 attach, G-CHAT-2 archive). Fixtures: `phase6Patterns` in
+ * the stub.
+ */
+const DOC_LOCKED = '00000000-0000-4000-8000-0000000d0601';
+const DOC_SHARE = '00000000-0000-4000-8000-0000000d0602';
+const DOC_ATTACH = '00000000-0000-4000-8000-0000000d0603';
+const LEILA = '00000000-0000-4000-8000-0000000c0001';
+
+test('Document detail: the History section lists the trail with a flat actor (G-DOC-2)', async () => {
+  thrown = [];
+  await page.goto(`/admin/documents/${DOC_SHARE}`);
+  const history = page.getByRole('region', { name: 'History' });
+  await expect(history.getByRole('heading', { name: 'History' })).toBeVisible();
+  const rows = history.locator('tbody tr');
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText('Transition');
+  await expect(rows.nth(0)).toContainText('draft → confirmed');
+  await expect(rows.nth(0)).toContainText('Arian Darz');
+  // no actor → the Settings log's own fallback
+  await expect(rows.nth(2)).toContainText('system');
+  expect(thrown).toEqual([]);
+});
+
+test('Document detail: share with the collector, then stop sharing (G-DOC-1)', async () => {
+  thrown = [];
+  await page.goto(`/admin/documents/${DOC_SHARE}`);
+  const share = page.getByRole('region', { name: 'Share with collector' });
+  await expect(share.locator('.ad-stpill')).toHaveText('Not shared');
+  // the document's own collector is picked already
+  await expect(share.locator('.ad-pickchip')).toContainText('Leila Ahmadi');
+  const [post] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/share\/$/.test(r.url())),
+    share.getByRole('button', { name: 'Share with collector' }).click(),
+  ]);
+  expect(post.postDataJSON()).toEqual({ collector: LEILA });
+  await expect(share.locator('.ad-stpill')).toHaveText('Sharing');
+  await expect(share).toContainText('with Leila Ahmadi');
+  const [del] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'DELETE' && /\/share\/$/.test(r.url())),
+    share.getByRole('button', { name: 'Stop sharing' }).click(),
+  ]);
+  expect(del.url()).toContain(`/documents/admin/documents/${DOC_SHARE}/share/`);
+  await expect(share.locator('.ad-stpill')).toHaveText('Not shared');
+  expect(thrown).toEqual([]);
+});
+
+test('Document detail: the owner is not held by owner_lock', async () => {
+  thrown = [];
+  await page.goto(`/admin/documents/${DOC_LOCKED}`);
+  await expect(page.getByRole('button', { name: 'Save draft' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Archive' })).toBeEnabled();
+  await expect(page.locator('.ad-lockline')).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('a standard admin sees an owner-locked document’s actions disabled, with the reason', async ({
+  browser,
+}) => {
+  const std = await browser.newPage();
+  const errors: string[] = [];
+  std.on('pageerror', (e) => errors.push(e.message.split('\n')[0]));
+  try {
+    await std.goto('/admin/login');
+    await std.fill('input[name="email"]', 'standard@example.invalid');
+    await std.fill('input[name="password"]', 'anything');
+    await std.locator('form button[type="submit"]').click();
+    await std.waitForURL('**/admin');
+    await std.goto(`/admin/documents/${DOC_LOCKED}`);
+    await expect(std.locator('.ad-lockline')).toHaveText(
+      'Owner-locked — only the owner can edit, upload, confirm, sign or archive this document.',
+    );
+    for (const name of ['Save draft', 'Archive', 'Confirm — lock this document']) {
+      await expect(std.getByRole('button', { name })).toBeDisabled();
+    }
+    await expect(std.locator('input[type="file"]')).toBeDisabled();
+    await expect(std.getByLabel('Title')).toBeDisabled();
+    // delete stays the owner's alone (G-DEL-1)
+    await expect(std.getByRole('button', { name: 'Delete' })).toHaveCount(0);
+    // share is not owner-guarded server-side, so it stays live
+    await expect(
+      std
+        .getByRole('region', { name: 'Share with collector' })
+        .getByRole('button', { name: 'Share with collector' }),
+    ).toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    await std.close();
+  }
+});
+
+test('Chat: attach a document — the POST carries document_refs and the chip renders (D19)', async () => {
+  thrown = [];
+  await page.goto('/admin/chat');
+  await page.getByRole('link', { name: /Leila Ahmadi/ }).click();
+  await expect(page.locator('.ad-thread-name')).toHaveText('Leila Ahmadi');
+  // an earlier attach already reads as a chip, opening the document
+  await expect(
+    page.locator('.ad-docchip', { hasText: 'Certificate — Mirror Study' }),
+  ).toHaveAttribute('href', `/admin/documents/${DOC_SHARE}`);
+
+  await page.getByRole('button', { name: 'Attach document' }).click();
+  const list = page.locator('.ad-attach-list');
+  // Leila's certificate, then the two unissued invoices (newest first)
+  await expect(list.getByRole('button')).toHaveCount(3);
+  await expect(list.getByRole('button').first()).toContainText('Certificate — Mirror Study');
+  // never another collector's document, never a non-shareable kind
+  await expect(list).not.toContainText('someone else');
+  await expect(list).not.toContainText('Proposal');
+  await list.getByRole('button', { name: /Invoice — Mirror Study/ }).click();
+  await expect(page.getByLabel('Attached document')).toContainText('Invoice — Mirror Study');
+
+  await page.getByPlaceholder('Write a message to Leila Ahmadi…').fill('Your invoice.');
+  const [post] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/messages\/$/.test(r.url())),
+    page.getByRole('button', { name: 'Send' }).click(),
+  ]);
+  expect(post.postDataJSON()).toEqual({
+    body: 'Your invoice.',
+    artwork_refs: [],
+    document_refs: [DOC_ATTACH],
+  });
+  const sent = page.locator('.ad-bub', { hasText: 'Your invoice.' });
+  await expect(sent.locator('.ad-docchip')).toContainText('Invoice — Mirror Study');
+  await expect(page.getByLabel('Attached document')).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Chat: archive hides a message; Include archived shows it marked; restore brings it back (G-CHAT-2)', async () => {
+  thrown = [];
+  await page.goto('/admin/chat');
+  await page.getByRole('link', { name: /Leila Ahmadi/ }).click();
+  const oldNote = page.locator('.ad-bub', { hasText: 'An old note' });
+  const thanks = page.locator('.ad-bub', { hasText: 'Thank you.' });
+  await expect(thanks).toBeVisible();
+  // archived by default → hidden
+  await expect(oldNote).toHaveCount(0);
+
+  const [arch] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/archive\/$/.test(r.url())),
+    thanks.getByRole('button', { name: 'Archive' }).click(),
+  ]);
+  expect(arch.postDataJSON()).toEqual({ archived: true });
+  await expect(thanks).toHaveCount(0);
+
+  const [read] = await Promise.all([
+    page.waitForRequest((r) => /include_archived=true/.test(r.url())),
+    page.getByLabel('Include archived').check(),
+  ]);
+  expect(read.url()).toContain('include_archived=true');
+  await expect(oldNote).toContainText('· archived');
+  await expect(thanks).toContainText('· archived');
+
+  const [restore] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/archive\/$/.test(r.url())),
+    thanks.getByRole('button', { name: 'Restore' }).click(),
+  ]);
+  expect(restore.postDataJSON()).toEqual({ archived: false });
+  await expect(thanks).not.toContainText('· archived');
+
+  await page.getByLabel('Include archived').uncheck();
+  await expect(thanks).toBeVisible();
+  await expect(oldNote).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});

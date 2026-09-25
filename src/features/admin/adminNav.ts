@@ -261,14 +261,25 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       ),
       tab('docProposals', 'Proposals', '/admin/documents?kind=proposal', 'ready', '12·3'),
       tab('docInvoices', 'Invoices', '/admin/documents?kind=invoice', 'ready', '12·3'),
-      tab('docFiles', 'Library', '/admin/documents', 'ready', '12·3'),
+      // `:11735` — the old label, whole again (Phase 6): History is not a tab
+      // of its own any more, it is reached from this list, one document at a
+      // time (see `docHistory` below).
+      tab('docFiles', 'Library & history', '/admin/documents', 'ready', '12·3'),
+      // **Kept hidden on purpose (Phase 6).** The old group had no History tab
+      // — its "Library & history" drew the history under the library, and
+      // `_docTab` sends a stray 'history' there (`workspaces-runtime.js:522`,
+      // `:703-731`). The backend serves the trail PER DOCUMENT (G-DOC-2,
+      // `…/documents/{id}/activity/`; no global feed, by the owner's call), so
+      // the history is the History section on each document's page, reached
+      // through the Library. A tab pointing at the Library would be a second
+      // copy of the tab beside it.
       tab(
         'docHistory',
         'History',
         null,
-        'partial',
+        'ready',
         '12+',
-        'its issued half IS the Library list; the activity half waits on an audit feed (G-DOC-2).',
+        'not a desk: each document’s History section (G-DOC-2, per-document feed), reached from Library & history.',
       ),
       tab(
         'library',

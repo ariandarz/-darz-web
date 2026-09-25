@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 Phase 6: document history/share/owner-lock, chat document_refs, message archive
+
+- Document page: per-document History (G-DOC-2, flat actor C-15), Share with collector / Stop sharing (G-DOC-1), `owner_lock` disables the guarded moves for a standard admin with the reason; nav "Library & history" restored, History tab stays hidden (per-document feed). Admin chat: Attach document (D19 `document_refs`, never another collector's doc), chips on both threads, per-message Archive/Restore + "Include archived" (G-CHAT-2).
+- Matrix: 4 Not bound + 2 Partial → Integrated (257/0/9/56/1). **783 unit · 140 E2E** (collector 38, desks 92). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3g.
+
 ## 2026-09-25 — V1 Phase 5: gallery portal (P1/P3/P4), Sources desk, exhibition catalogue
 
 - Portal: typed/normalised state (C-8), work images + cover, Replace image (multipart, PIN in form, C-9), Ask + Remove-from-portal (withdraw), server Sent pills / Pending review / History, pricelist status + builder. Desk: server partner search, Regenerate (reissue), pricelist file/lines/status/cap, ask/withdraw/image review copy, new Service checklist desk (catalogue CRUD, lock), compose quantity, service descriptions via API.

@@ -46,11 +46,13 @@
  *    its own route (`/admin/chat/:id`), which is the routing change §6.2
  *    covers, and it is what makes a conversation linkable.
  *  - **"Conversation renewal"** (Keep · daily · weekly, and "Archive all &
- *    start fresh"). Not ported and not buildable: it writes `chatRenew` /
- *    `chatArchiveBefore` into the old THEME (`:40259-40260`) and the app
- *    hides older messages client-side. Nothing here archives a message —
- *    `RequestMessage` has no archived flag and no endpoint sweeps one.
- *    Backend gap **G-CHAT-2**.
+ *    start fresh"). Not ported: it wrote `chatRenew` / `chatArchiveBefore`
+ *    into the old THEME (`:40259-40260`) and hid older messages on BOTH sides
+ *    by a time cutoff. What the backend built instead (G-CHAT-2, adopted in
+ *    Phase 6) is a per-message, desk-only archive — each thread
+ *    (`AdminThreadPage`) has Archive/Restore on every bubble and an "Include
+ *    archived" switch; the collector's thread is never trimmed. There is no
+ *    sweep endpoint, so the cadence settings stay unported.
  */
 import { Link } from 'react-router-dom';
 import { useApi } from '../../api/hooks';

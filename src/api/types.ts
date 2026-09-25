@@ -133,11 +133,28 @@ export type RequestMessage = Omit<Schemas['RequestMessage'], 'artwork_refs'> & {
   artwork_refs: string[];
 };
 export type RequestMessageSender = Schemas['RequestMessageSenderEnum'];
+/** A document attached to a thread message (D19, backend `document_refs`):
+ * the enriched READ shape `{id, kind, title}` on both threads
+ * (`RequestMessageDocumentRefSerializer`). The WRITE shape is a bare uuid
+ * list — see `MessageAttachments`. */
+export type MessageDocumentRef = Schemas['RequestMessageDocumentRef'];
 
-/** `GET /api/crm/requests/{id}/messages/` params. */
+/** What a reply carries besides its text. Only the team attaches documents
+ * (`RequestMessageService.post` 400s a collector's `document_refs`), and
+ * attaching SHARES the document with the thread's collector — the backend
+ * reuses the G-DOC-1 share path, allow-list included. */
+export interface MessageAttachments {
+  artworkRefs?: string[];
+  documentRefs?: string[];
+}
+
+/** `GET /api/crm/requests/{id}/messages/` params. `include_archived` is the
+ * ADMIN thread's only (G-CHAT-2): archived messages are hidden from the desk
+ * by default and never from the collector. */
 export interface RequestMessageQuery {
   per_page?: number;
   page?: number;
+  include_archived?: boolean;
 }
 
 /** What `POST /api/crm/requests/` answers. `replayed` is true when the
@@ -630,6 +647,13 @@ export type SaleNote = Schemas['SaleNote'];
  * `owner_lock` restricts confirm/sign/edit to the owner role. */
 export type DocumentAdmin = Schemas['Document'];
 export type DocumentVersionAdmin = Schemas['DocumentVersion'];
+/** One row of a document's History (G-DOC-2,
+ * `GET /documents/admin/documents/{id}/activity/`, newest first). **C-15:**
+ * the actor is FLAT — `actor` (uuid | null) + `actor_name` (string | null),
+ * not the `{id, name}` object the backend CHANGELOG describes; the code
+ * (`DocumentActivitySerializer`) wins. `changes` is the audit log's
+ * `{field: [from, to]}` map, freeform on the wire. */
+export type DocumentActivity = Schemas['DocumentActivity'];
 
 /** One of the signed-in collector's own documents (`GET /api/documents/`,
  * G-DOC-1) — `CollectorDocumentSerializer`: collector-safe fields only, never
