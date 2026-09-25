@@ -42,11 +42,13 @@ import { AccountingDuplicates } from './AccountingDuplicates';
 import { AccountingSettlement } from './AccountingSettlement';
 import {
   ConfirmDialog,
+  ConflictBanner,
   DeskAction,
   DeskBanner,
   DeskList,
   DeskPage,
   SelectFilter,
+  isConflict,
   type Column,
 } from './kit';
 import './admin.css';
@@ -316,6 +318,9 @@ export function AccountingPage() {
 
       {editing && (
         <EntryForm
+          // Keyed on the row's lock counter: a conflict's Reload hands the form
+          // a fresh copy, and the key is what re-seeds its fields from it.
+          key={editing === 'new' ? 'new' : `${editing.id}:${editing.version}`}
           book={book}
           existing={editing === 'new' ? null : editing}
           types={types}
@@ -324,6 +329,11 @@ export function AccountingPage() {
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
+            void reload();
+            loadSummary();
+          }}
+          onReload={(fresh) => {
+            setEditing(fresh);
             void reload();
             loadSummary();
           }}
@@ -437,6 +447,7 @@ function EntryForm({
   currencies,
   onClose,
   onSaved,
+  onReload,
 }: {
   book: string;
   existing: LedgerEntryAdmin | null;
@@ -445,6 +456,8 @@ function EntryForm({
   currencies: Choice[];
   onClose: () => void;
   onSaved: () => void;
+  /** after a 409 — the entry as it stands now, to edit again */
+  onReload: (fresh: LedgerEntryAdmin) => void;
 }) {
   const { accountingAdmin } = useApi();
   const [d, setD] = useState<Record<string, string>>(() => ({
@@ -466,6 +479,16 @@ function EntryForm({
   const set = (k: string, v: string) => setD((prev) => ({ ...prev, [k]: v }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
+
+  const reloadEntry = async () => {
+    if (!existing) return;
+    try {
+      onReload(await accountingAdmin.entry(existing.id));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not reload the entry.');
+    }
+  };
 
   const save = async () => {
     if (busy) return;
@@ -475,6 +498,7 @@ function EntryForm({
     }
     setBusy(true);
     setError(null);
+    setConflict(false);
     const body: Record<string, unknown> = {
       entry_type: d.entry_type,
       category: d.category.trim(),
@@ -494,11 +518,18 @@ function EntryForm({
       if (d.fx_converted.trim()) body.fx_converted = d.fx_converted.trim();
     }
     try {
-      if (existing) await accountingAdmin.updateEntry(existing.id, body);
-      else await accountingAdmin.createEntry({ ...body, book });
+      // The ledger PATCH requires the lock (G-LOCK-1): two owners editing one
+      // entry is a 409 for the second, never a silent overwrite of a figure.
+      if (existing) {
+        await accountingAdmin.updateEntry(existing.id, {
+          ...body,
+          expected_version: existing.version,
+        });
+      } else await accountingAdmin.createEntry({ ...body, book });
       onSaved();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not save the entry.');
+      if (isConflict(err)) setConflict(true);
+      else setError(err instanceof Error ? err.message : 'Could not save the entry.');
     } finally {
       setBusy(false);
     }
@@ -557,6 +588,7 @@ function EntryForm({
         {f('artwork_label', 'Artwork')}
         {f('artist_label', 'Artist')}
       </div>
+      {conflict && <ConflictBanner noun="entry" onReload={() => void reloadEntry()} />}
       {error && (
         <p className="dz-state err" role="alert">
           {error}

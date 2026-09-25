@@ -13,22 +13,17 @@
  *
  * New copy in this file, not in app.html (flagged, D1): the "Preferred time"
  * field label, the hint line, and the empty-field message. The two mode
- * labels are the backend's own choices — `GET /api/options/` does not publish
- * them (docs/PHASE_5_API_GAPS.md G-P5-10).
+ * labels come from `GET /api/options/` (`crm.viewing_mode`, G-P5-10).
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useOptions } from '../../api/hooks';
 import type { Artwork, ViewingMode } from '../../api/types';
 import { Segment, Sheet } from '../../components';
 import { RequestController, workLine } from './RequestController';
 import './requests.css';
 import { useRequests } from './useRequests';
+import { viewingModeChoices } from './viewingMode';
 import { toLocalInputValue } from './viewingTime';
-
-/** apps/crm/serializers.py:31 — `ChoiceField([("in_person","In person"),("virtual","Virtual")])`. */
-const MODES: ReadonlyArray<{ value: ViewingMode; label: string }> = [
-  { value: 'in_person', label: 'In person' },
-  { value: 'virtual', label: 'Virtual' },
-];
 
 export function ViewingSheet({
   artwork,
@@ -40,6 +35,7 @@ export function ViewingSheet({
   onClose: () => void;
 }) {
   const { pending, error, controller } = useRequests();
+  const modes = viewingModeChoices(useOptions());
   const [when, setWhen] = useState('');
   const [mode, setMode] = useState<ViewingMode>('in_person');
   const [min, setMin] = useState('');
@@ -105,7 +101,7 @@ export function ViewingSheet({
         <Segment
           className="dz-viewmode"
           label="In person or virtual"
-          options={MODES.map((m) => ({ value: m.value, content: m.label }))}
+          options={modes.map((m) => ({ value: m.value, content: m.label }))}
           value={mode}
           onChange={setMode}
         />

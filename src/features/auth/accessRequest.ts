@@ -1,10 +1,12 @@
 /**
- * The three pure pieces of the gate's "Request access" submission, lifted out
- * of `LoginPage` so they can be tested without a DOM renderer (this repo has
- * no component-test stack — every test is a logic test).
+ * The pure pieces of the gate's "Request access" submission, lifted out of
+ * `LoginPage` so they run in the node-only `logic` test project.
  *
- * All three are ports of `app.html`'s `submitRequest` (:2554-2566).
+ * Ports of `app.html`'s `submitRequest` (:2554-2566), plus the retry key and the
+ * 429 message the backend's dedupe and rate limit (G-P34-1/2) call for.
  */
+
+import { HttpError } from '../../api/errors';
 
 /**
  * The old gate asks for **one** "Email or phone" and decides which it is by
@@ -57,14 +59,57 @@ export function readRefCode(
  * The old app's idempotency key, same shape: `ar_` + base-36 time + 6 random
  * base-36 chars (app.html:2559).
  *
- * The backend **ignores it today** — `AccessRequestService.create` is a plain
- * `objects.create` with no uniqueness (docs/PHASE_24_35_API_GAPS.md G-P34-1).
- * Sent anyway per owner decision D3: it costs nothing, and the day the backend
- * honours it the way it already does for `POST /api/crm/requests/`, this
- * client already complies.
+ * The backend honours it (G-P34-1): a repeat with the same key answers **200**
+ * with the row it already holds instead of filing a second one (a first insert
+ * is 201). Both are success to the gate.
  */
 export function newClientReqId(): string {
   return 'ar_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+/**
+ * Holds one `client_req_id` across retries of the same submission, so a retry
+ * after a lost response replays the row the backend already filed rather than
+ * queueing a duplicate for review. A different submission — any field edited —
+ * gets a fresh key: the backend would otherwise answer the edit with the
+ * original row, silently dropping the correction.
+ */
+export class AccessRequestKey {
+  private current: { key: string; fingerprint: string } | null = null;
+  private readonly mint: () => string;
+
+  constructor(mint: () => string = newClientReqId) {
+    this.mint = mint;
+  }
+
+  /** The key for a submission of exactly these values. */
+  for(values: Readonly<Record<string, string>>): string {
+    const fingerprint = JSON.stringify(Object.entries(values).sort());
+    if (this.current?.fingerprint !== fingerprint) {
+      this.current = { key: this.mint(), fingerprint };
+    }
+    return this.current.key;
+  }
+
+  /** Forget the key — once a submission landed, or the form closed. */
+  reset(): void {
+    this.current = null;
+  }
+}
+
+/**
+ * What the gate shows when a submission fails. The backend's own messages
+ * stand, except a 429: `POST /api/auth/access-requests/` is rate-limited
+ * (G-P34-2, 5/hour per IP by default) and DRF's "Request was throttled.
+ * Expected available in N seconds." is not a sentence for this gate. The old
+ * app had no limit, so it has no copy for it; the wording is the adoption
+ * guide's (`API_GAPS_FRONTEND_ADOPTION.md`, G-P34-1).
+ */
+export function accessRequestError(err: unknown): string {
+  if (err instanceof HttpError && err.status === 429) {
+    return 'Too many attempts — try again shortly.';
+  }
+  return err instanceof Error && err.message ? err.message : 'Something went wrong.';
 }
 
 function safeLocalStorage(): Storage | null {

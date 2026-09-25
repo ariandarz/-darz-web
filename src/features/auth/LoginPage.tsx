@@ -34,7 +34,12 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
 import { useActivity } from '../activity/useActivity';
 import { Chroma, Input } from '../../components';
-import { newClientReqId, readRefCode, splitContact } from './accessRequest';
+import {
+  AccessRequestKey,
+  accessRequestError,
+  readRefCode,
+  splitContact,
+} from './accessRequest';
 import './auth.css';
 
 // app.html EYE_SHOW / EYE_HIDE (:2470 area)
@@ -87,6 +92,7 @@ export function LoginPage() {
   // received panel that replaces the card on success (:2562-2565).
   const [rq, setRq] = useState({ name: '', contact: '', city: '', why: '', how: '' });
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [requestKey] = useState(() => new AccessRequestKey());
 
   if (isAuthenticated) {
     const to = (location.state as { from?: string } | null)?.from ?? '/';
@@ -99,6 +105,7 @@ export function LoginPage() {
     setError(null);
     setSentTo(null);
     setRq({ name: '', contact: '', city: '', why: '', how: '' });
+    requestKey.reset();
   };
 
   /* app.html:2555-2557 — both messages verbatim, checked in the same order,
@@ -113,20 +120,25 @@ export function LoginPage() {
     setPending(true);
     setError(null);
     const { email, phone } = splitContact(contact);
+    const fields = {
+      name,
+      email,
+      phone,
+      city: rq.city.trim(),
+      why: rq.why.trim(),
+      referral_source: rq.how.trim(),
+      ref_code: readRefCode(),
+    };
     auth
-      .requestAccess({
-        name,
-        email,
-        phone,
-        city: rq.city.trim(),
-        why: rq.why.trim(),
-        referral_source: rq.how.trim(),
-        ref_code: readRefCode(),
-        client_req_id: newClientReqId(),
+      // A 201 (filed) and a 200 (the backend replaying the row this key already
+      // filed) are both success here — G-P34-1.
+      .requestAccess({ ...fields, client_req_id: requestKey.for(fields) })
+      .then(() => {
+        requestKey.reset();
+        // :2563 — the panel greets the first word of what they typed.
+        setSentTo(name.split(/\s+/)[0]);
       })
-      // :2563 — the panel greets the first word of what they typed.
-      .then(() => setSentTo(name.split(/\s+/)[0]))
-      .catch((err: Error) => setError(err.message))
+      .catch((err: unknown) => setError(accessRequestError(err)))
       .finally(() => setPending(false));
   };
 

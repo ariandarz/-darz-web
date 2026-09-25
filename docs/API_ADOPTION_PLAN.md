@@ -71,7 +71,7 @@ together with the fixes** — committing it alone leaves the gate red.
 
 ---
 
-## Batch 1 — Schema regen + the compiler's flags + P0  `[ ]`
+## Batch 1 — Schema regen + the compiler's flags + P0  `[x]`
 *The foundation; everything else assumes the regenerated types.*
 
 | Gap | Change | Where |
@@ -87,7 +87,7 @@ together with the fixes** — committing it alone leaves the gate red.
 **Done when:** gate green on the new schema; Chat, Thread, Profile, Acquisitions render the work
 with no extra catalogue call (network panel); a double-submit of Request Access shows one success.
 
-## Batch 2 — G-LOCK-1: conflict path on the two last-write-wins desks  `[ ]`
+## Batch 2 — G-LOCK-1: conflict path on the two last-write-wins desks  `[x]`
 
 | Gap | Change | Where |
 | --- | --- | --- |
@@ -97,7 +97,16 @@ with no extra catalogue call (network panel); a double-submit of Request Access 
 (six today → eight). **Stub:** a 409 branch for a stale version.
 **Done when:** two tabs, second save shows the banner; a normal save advances the version.
 
-## Batch 3 — CRM precision, the rest  `[ ]`
+**Done 2026-09-25.** Two corrections to the plan above, found doing it: the ledger PATCH lives in
+the inline entry form in **`AccountingPage.tsx`**, not `LedgerEntryPage` (which only calls `/status/`
+and the Arian review — neither is locked); and the lock is **mandatory**, not optional, so before this
+batch every ledger and record edit against the current backend **failed with a 500**, not a silent
+overwrite. **Backend bug to raise:** both views validate with `partial=True` (which skips a
+field's `required`) and then `validated.pop("expected_version")` — a missing lock is a `KeyError` →
+500 instead of a 400. Confirmed by running the two serializers on a lock-less body. The entry form's Reload re-reads the entry and re-keys the form on `id:version`. The new
+lot-update endpoint (G-AUC-2, backend #55) also requires `expected_version` — nothing calls it yet.
+
+## Batch 3 — CRM precision, the rest  `[x]` (G-P5-9 → owner)
 
 | Gap | Change | Where |
 | --- | --- | --- |
@@ -108,6 +117,15 @@ with no extra catalogue call (network panel); a double-submit of Request Access 
 
 **Done when:** a deep link to `/thread/:id` loads with one request call; a countered offer shows its
 figure; ViewingSheet shows labels from options.
+
+**Done 2026-09-25, except G-P5-9.** `ConversationsController.open(id)` reads one request when the list
+does not hold it (kept apart from the lists; `isMissing` tells "gone" from "loading"). The viewing
+labels go through `viewingModeChoices` (values from `ModeEnum`, labels from options, raw value as the
+fallback). **G-P5-9 is an owner question:** `app.html`, `DarzStudioAllInOne.html` and the design
+package (`SCREENS.md`/`VOICE.md`) have **no** counter-offer UI or copy — a countered offer shows today
+as "In review" with Darz's message in the thread. Proposal if wanted: one more meta row in the
+request card beside "Amount" (e.g. "Darz's counter · 11,000 USD"), formatted from the string; the
+label wording is the owner's to give.
 
 ## Batch 4 — Small collector reads: chip, questionnaire, profile edit, membership  `[ ]`
 
@@ -184,13 +202,35 @@ Endpoints exist; each was a deliberate non-port or an open scope question. Ask t
 - **Housekeeping at the end:** once Batch 7 lands, the "FE:" notes in `API_GAPS.md` should all be gone
   and `API_GAPS_FRONTEND_ADOPTION.md` can move to `docs/archive/`.
 
+## Found while doing Batch 1 (2026-09-25)
+
+Regenerated against backend `development` @ `021ce07` — past the `57d408c` above; the extra merges
+(#54 gallery-portal quick wins, #55 lot update + paddle reset G-AUC-2/3, #56 collectors overview
+summary + roster rollups G-COL-1/2) typecheck clean and are **not yet in any batch** — they need
+their own rows in `API_GAPS.md` / `API_GAPS_FRONTEND_ADOPTION.md` before they are scheduled.
+
+- **The generated `RequestDetail` has no hold member.** `HoldDetailSerializer` takes no input, so
+  drf-spectacular publishes nothing for it, yet a stored hold carries `expires_at`. `HoldDetail` stays
+  hand-typed (one field) in `src/api/types.ts`. A backend `read_only` `expires_at` on that serializer
+  would let it go.
+- **`OfferDetail` marks `counter_amount`/`counter_currency` required**, because openapi-typescript does
+  not split read and write shapes. The create body uses `RequestDetailInput`, which omits them.
+- **Owner question — an offer on a work with no currency.** Make an Offer shows on such a work and
+  sends `currency: ''`; the backend 400s ("not a valid choice") and that message is what the collector
+  sees. Unchanged by Batch 1 (the type admits `''` on purpose). Hide the button, default a currency, or
+  keep it?
+- **New copy flagged:** the 429 line "Too many attempts — try again shortly." has no `app.html` source
+  (the old app had no rate limit); it is the adoption guide's wording.
+- The E2E stub now serves collector requests in the nested shape, their full artworks, and a 200
+  access-request replay — the Chat/Profile rows are exercised, not just an empty list.
+
 ## Progress
 
 | Batch | Scope | State | PR |
 | --- | --- | --- | --- |
-| 1 | Schema regen · G-P5-1/2 · G-F1-1 · G-P34-1 | `[ ]` | |
-| 2 | G-LOCK-1 | `[ ]` | |
-| 3 | G-P5-3/6/9/10 | `[ ]` | |
+| 1 | Schema regen · G-P5-1/2 · G-F1-1 · G-P34-1 | `[x]` 2026-09-25 | #99 |
+| 2 | G-LOCK-1 | `[x]` 2026-09-25 | #99 |
+| 3 | G-P5-3/6/9/10 | `[x]` 2026-09-25 (G-P5-9 → owner) | #99 |
 | 4 | G-P24-1 · G-P25-1 · profile edit · G-Q-1 · G-MEMB-3/6/7 | `[ ]` | |
 | 5 | G-DOC-1 | `[ ]` | |
 | 6 | G-CHAT-2 · G-AUC-4 · poster · G-REC-1 | `[ ]` | |

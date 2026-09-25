@@ -45,6 +45,9 @@ export interface ConversationsSnapshot {
   requests: CollectorRequest[];
   /** ids the collector cleared from their activity list — see `clearActivity` */
   hidden: ReadonlySet<string>;
+  /** requests read one at a time by `open` (a deep link that landed before the
+   * list, G-P5-3) — `null` once a read found nothing. Never part of the lists. */
+  opened: ReadonlyMap<string, CollectorRequest | null>;
   error: string | null;
 }
 
@@ -52,6 +55,7 @@ const EMPTY: ConversationsSnapshot = {
   status: 'idle',
   requests: [],
   hidden: new Set(),
+  opened: new Map(),
   error: null,
 };
 
@@ -141,12 +145,38 @@ export class ConversationsController extends Observable<ConversationsSnapshot> {
    * duplicate guard the detail page shows instead of a second Send. */
   openInquiryFor(artworkId: string): CollectorRequest | null {
     return (
-      this.inquiries().find((r) => r.artwork === artworkId && !CLOSED.has(r.status)) ?? null
+      this.inquiries().find((r) => r.artwork?.id === artworkId && !CLOSED.has(r.status)) ??
+      null
     );
   }
 
   byId(id: string): CollectorRequest | null {
-    return this.getSnapshot().requests.find((r) => r.id === id) ?? null;
+    const snap = this.getSnapshot();
+    return snap.requests.find((r) => r.id === id) ?? snap.opened.get(id) ?? null;
+  }
+
+  /** Whether a request `byId` cannot find is gone rather than still loading:
+   * its own read came back empty, or the list failed. */
+  isMissing(id: string): boolean {
+    const snap = this.getSnapshot();
+    return snap.opened.get(id) === null || snap.status === 'error';
+  }
+
+  /** Read one request directly (`GET /api/crm/requests/{id}/`, G-P5-3) unless
+   * the list already has it — so a deep link to a thread renders on one small
+   * read instead of waiting for every page of every kind. */
+  async open(id: string): Promise<void> {
+    const snap = this.getSnapshot();
+    if (snap.requests.some((r) => r.id === id) || snap.opened.has(id)) return;
+    let row: CollectorRequest | null;
+    try {
+      row = await this.crm.request(id);
+    } catch {
+      row = null;
+    }
+    const opened = new Map(this.getSnapshot().opened);
+    opened.set(id, row);
+    this.patch({ opened });
   }
 
   /** Unseen team messages across every conversation — the nav dot. */

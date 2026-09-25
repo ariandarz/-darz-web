@@ -135,7 +135,10 @@ export interface paths {
         delete: operations["accounting_admin_ledger_destroy"];
         options?: never;
         head?: never;
-        /** Update a ledger entry */
+        /**
+         * Update a ledger entry
+         * @description Requires expected_version — a stale value is rejected with 409.
+         */
         patch: operations["accounting_admin_ledger_partial_update"];
         trace?: never;
     };
@@ -533,6 +536,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auctions/admin/auctions/{id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive / restore an auction (admin)
+         * @description Durable working-list hide (G-AUC-4), distinct from soft-delete. POST with no body archives; send `{"archived": false}` to restore.
+         */
+        post: operations["auctions_admin_auctions_archive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auctions/admin/auctions/{id}/cover-image/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload/replace an auction cover image (admin)
+         * @description Server-proxied multipart upload (G-AUC-4 companion); object_key is server-generated. Replacing deletes the previous object.
+         */
+        post: operations["auctions_admin_auctions_cover_image_create"];
+        /** Remove an auction cover image (admin) */
+        delete: operations["auctions_admin_auctions_cover_image_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auctions/admin/auctions/{id}/invite-only/": {
         parameters: {
             query?: never;
@@ -571,7 +615,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update a scheduled lot
+         * @description Requires expected_version (optimistic lock). Allowed only while the lot is scheduled.
+         */
+        patch: operations["auctions_admin_lots_partial_update"];
         trace?: never;
     };
     "/api/auctions/admin/lots/{id}/close/": {
@@ -623,7 +671,7 @@ export interface paths {
         };
         /**
          * List external auction-house results
-         * @description `?search=`, `?ordering=` (incl. `highlight_order`), `?artist=`, `?section=`, `?status=`, `?is_highlight=` (BE-R4).
+         * @description `?search=`, `?ordering=` (incl. `highlight_order`), `?artist=`, `?section=`, `?house=` (exact, G-REC-1), `?status=`, `?is_highlight=` (BE-R4).
          */
         get: operations["auctions_admin_record_list"];
         put?: never;
@@ -650,7 +698,10 @@ export interface paths {
         delete: operations["auctions_admin_records_destroy"];
         options?: never;
         head?: never;
-        /** Update an external auction-house result */
+        /**
+         * Update an external auction-house result
+         * @description Requires expected_version — a stale value is rejected with 409.
+         */
         patch: operations["auctions_admin_records_partial_update"];
         trace?: never;
     };
@@ -702,6 +753,23 @@ export interface paths {
         put?: never;
         /** Reject a bidder registration */
         post: operations["auctions_admin_registrations_reject_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auctions/admin/registrations/{id}/reset/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset a rejected bidder registration back to pending (G-AUC-3) */
+        post: operations["auctions_admin_registrations_reset_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -795,7 +863,7 @@ export interface paths {
         };
         /**
          * List external auction-house results
-         * @description Market-intelligence comparables — read-only. `?search=` (artist / house / lot title), `?ordering=` (`sale_date` / `price_amount` +/- prefixes / `highlight_order`), `?artist=<uuid>`, `?section=` (past/upcoming/live), `?is_highlight=`.
+         * @description Market-intelligence comparables — read-only. `?search=` (artist / house / lot title), `?ordering=` (`sale_date` / `price_amount` +/- prefixes / `highlight_order`), `?artist=<uuid>`, `?section=` (past/upcoming/live), `?house=` (exact), `?is_highlight=`.
          */
         get: operations["auctions_records_list"];
         put?: never;
@@ -872,9 +940,29 @@ export interface paths {
         put?: never;
         /**
          * Request access (public)
-         * @description No auth, no access key needed — this is how a prospect with neither asks for one. Lands in the admin review queue; an admin issues a key or declines.
+         * @description No auth, no access key needed — this is how a prospect with neither asks for one. Lands in the admin review queue; an admin issues a key or declines. Rate-limited per IP (G-P34-2). Send a client_req_id to make retries idempotent: a repeat with the same value returns the original row with 200 instead of creating a duplicate.
          */
         post: operations["auth_access_requests_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/access-keys/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Roster-wide access-key list (admin)
+         * @description Every access key across the roster (G-KEY-1) — the old owner "Access" desk. Soonest-to-lapse first. Never re-exposes the plaintext key. Each row carries the collector's name, a computed `is_expired` (the stored status only flips on a login attempt), and the collector's engagement tallies.
+         */
+        get: operations["accounts_admin_access_keys_roster"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -915,6 +1003,26 @@ export interface paths {
          * @description Locks the key (old panel wording: 'Revoke'). A locked key is refused at login but stays on record — same as Django admin's manual status change.
          */
         post: operations["auth_admin_access_keys_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/admin/access-keys/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Access desk KPI summary (admin)
+         * @description Header tiles for the Access desk (G-KEY-1): key totals by state, logins-today, and collector totals. Expiry is computed with the same rule as the roster filter, so the tiles agree with the lists.
+         */
+        get: operations["accounts_admin_access_keys_summary"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1057,6 +1165,26 @@ export interface paths {
          * @description Requires expected_version (optimistic lock).
          */
         patch: operations["auth_admin_collectors_partial_update"];
+        trace?: never;
+    };
+    "/api/auth/admin/collectors/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Collectors overview KPI summary (admin)
+         * @description Header tiles for the Collectors overview (G-COL-1): total collectors, VIPs, collectors active in the last 30 days (a behavioural signal), and engaged collectors (took an active step — any request, or a saved artwork).
+         */
+        get: operations["accounts_admin_collectors_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/auth/admin/membership-codes/": {
@@ -1218,17 +1346,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Current principal
-         * @description The authenticated principal behind the bearer token — team or collector. `principal` discriminates the shape.
-         */
+        /** The authenticated principal */
         get: operations["auth_me_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit my profile (collector)
+         * @description Collector self-edit (G-B1) — full_name / phone / city / preferred_language only. Team principals can't self-edit here (403). Also backs the questionnaire contact step (G-Q-1).
+         */
+        patch: operations["auth_me_partial_update"];
         trace?: never;
     };
     "/api/auth/membership/redeem/": {
@@ -1245,6 +1374,26 @@ export interface paths {
          * @description Manually-issued access-tier unlock (Phase 13) — no payment processing anywhere. A code is single-use; redeeming sets the collector's `tier` to the code's `plan`.
          */
         post: operations["auth_membership_redeem_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/my-membership/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My membership
+         * @description The collector's own membership summary (G-MEMB-3/6/7): tier, access status, and `active_until` (the expiry of the most-recent membership code they redeemed; null when none — an admin-set tier with no coded term shows no end date).
+         */
+        get: operations["auth_my_membership_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1504,6 +1653,26 @@ export interface paths {
         put?: never;
         /** Unpublish an artwork */
         post: operations["catalog_admin_artworks_unpublish_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/artworks/facets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Distinct values for the admin Database desk's dropdowns
+         * @description The Year and Source option lists, computed over the SAME filtered queryset the list endpoint would return — so the dropdowns narrow as the other filters do, instead of always offering the whole catalogue. Takes every admin list filter. Admin-only: source_name is internal, which is why this is not on the public GET /api/options/.
+         */
+        get: operations["catalog_admin_artworks_facets_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1782,7 +1951,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/crm/activity/": {
+    "/api/catalog/selections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My curated selections — change signal
+         * @description The authenticated collector's named curated selections, each with a change signal (G-P24-2): `changed_at` (the most-recent grant added to that selection for this collector — an add-only signal) and `is_new` (true when it gained a grant since the collector last opened it). Newest-changed first. Drives the "your curated selection is ready" notice; clear a selection's `is_new` with POST .../seen/.
+         */
+        get: operations["catalog_selections_signal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/selections/{id}/seen/": {
         parameters: {
             query?: never;
             header?: never;
@@ -1790,6 +1979,30 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        /**
+         * Mark a curated selection as seen
+         * @description Clears this selection's `is_new` for the authenticated collector (G-P24-2). Own selection only — 404 for a selection the collector isn't in.
+         */
+        post: operations["catalog_selections_mark_seen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/activity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my activity
+         * @description The authenticated collector's own behavioural activity (G-P5-12), newest first. Filter by kind / artwork.
+         */
+        get: operations["crm_activity_list"];
         put?: never;
         /**
          * Log a behavioural activity
@@ -1822,6 +2035,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/crm/admin/messages/{id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive / restore a thread message (admin)
+         * @description Admin-desk-only hide (G-CHAT-2), distinct from soft-delete: it doesn't touch the collector's view. POST with no body archives; send `{"archived": false}` to restore.
+         */
+        post: operations["crm_admin_messages_archive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/crm/admin/requests/": {
         parameters: {
             query?: never;
@@ -1831,7 +2064,7 @@ export interface paths {
         };
         /**
          * Unified admin request feed
-         * @description Every request across every kind, filterable by kind/status/assignee/archived.
+         * @description Every request across every kind, searchable and filterable by kind/status/assignee/archived.
          */
         get: operations["crm_admin_requests_retrieve"];
         put?: never;
@@ -1851,7 +2084,7 @@ export interface paths {
         };
         /**
          * List a request's messages (admin)
-         * @description The full two-way thread, oldest first.
+         * @description The two-way thread, oldest first. Admin-archived messages (G-CHAT-2) are hidden by default; pass `?include_archived=true` to show them.
          */
         get: operations["crm_admin_request_messages_list"];
         put?: never;
@@ -1973,6 +2206,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/crm/requests/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one of my requests
+         * @description The authenticated collector's own request only — a deep link doesn't need the whole list. Lazy hold-expiry is applied before the read (G-P5-6).
+         */
+        get: operations["crm_requests_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/requests/{id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive / restore a request in my activity
+         * @description Collector "Remove from activity" (G-P5-4) — a durable, per-collector hide that doesn't touch the admin's view or soft-delete the row. POST with no body archives; send `{"archived": false}` to restore. Own request only.
+         */
+        post: operations["crm_requests_archive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/crm/requests/{id}/messages/": {
         parameters: {
             query?: never;
@@ -2008,6 +2281,26 @@ export interface paths {
          * @description Clears the collector-side unread badge for this request.
          */
         post: operations["crm_requests_messages_mark_seen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crm/requests/{id}/transition/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw an offer / cancel a viewing
+         * @description Collector-driven status change (G-P5-5), limited to `offer` → `withdrawn` and `viewing` → `cancelled`. Any other target is rejected (403, `collector_transition_not_allowed`); an illegal move from the current status is rejected (400, `invalid_transition`). Own request only.
+         */
+        post: operations["crm_requests_transition_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2070,6 +2363,26 @@ export interface paths {
          * @description Cross-app counts for the panel's Dashboard tab: requests needing attention per kind, today's activity, collector/catalogue/auction totals, pending exhibition reviews. See apps.dashboard.services.DashboardService for the exact definitions.
          */
         get: operations["dashboard_admin_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My documents
+         * @description The authenticated collector's own issued documents (G-DOC-1) — invoices, certificates, provenance and the like an admin has shared with them; newest-shared first. Read-only, collector-safe fields only.
+         */
+        get: operations["documents_collector_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2144,6 +2457,30 @@ export interface paths {
         /** Confirm a document (locks it) */
         post: operations["documents_admin_documents_confirm_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/admin/documents/{id}/share/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share a document with a collector (admin)
+         * @description Issue a document to a collector so it appears in their GET /api/documents/ (G-DOC-1). Only a collector-visible kind may be shared (invoice/certificate/provenance/contract/receipt/proforma/artwork_sheet/condition_report); anything else is rejected (400).
+         */
+        post: operations["documents_admin_documents_share_create"];
+        /**
+         * Revoke a document's collector share (admin)
+         * @description Clears the share so it drops off the collector's list; keeps the collector on record.
+         */
+        delete: operations["documents_admin_documents_share_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2559,6 +2896,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/gallery/admin/links/{id}/reissue/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-issue a gallery link's credentials (G-PORT-13)
+         * @description Regenerates the token+PIN for an existing link, keeping the row and all its works/shows/messages. Credentials only — status is left untouched, so a disabled or expired link stays that way until the admin re-enables/extends it. The old token/PIN stop working. Returns the new plaintext token+PIN exactly once — never retrievable again.
+         */
+        post: operations["gallery_admin_links_reissue_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gallery/admin/updates/": {
         parameters: {
             query?: never;
@@ -2941,6 +3298,26 @@ export interface paths {
          * @description Idempotent — unsubscribing an endpoint that isn't registered (or belongs to another collector) is not an error.
          */
         post: operations["notifications_push_unsubscribe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/vapid-public-key/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the VAPID public key
+         * @description The applicationServerKey a browser needs before it can call pushManager.subscribe(). Public by design (the public half of the VAPID keypair); no auth required. Returns an empty string in an env with no keys provisioned (push then no-ops). Unblocks the push opt-in (G-P13-1).
+         */
+        get: operations["notifications_vapid_public_key_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3451,6 +3828,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recommendations/admin/question-sets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List question sets (admin) */
+        get: operations["recommendations_admin_question_sets_list"];
+        put?: never;
+        /**
+         * Create a question set (admin)
+         * @description Optionally activate it on create (deactivates every other set). `questions` is the full ordered list; a `single_choice` question needs `options` (`[{value,label}]`), a `text` question carries none.
+         */
+        post: operations["recommendations_admin_question_sets_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recommendations/admin/question-sets/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one question set (admin) */
+        get: operations["recommendations_admin_question_sets_retrieve"];
+        put?: never;
+        post?: never;
+        /** Delete a question set (admin) */
+        delete: operations["recommendations_admin_question_sets_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a question set (admin)
+         * @description Requires `expected_version` (optimistic lock). Supplying `questions` full-replaces them; omit it to leave them untouched. Setting `is_active` true deactivates every other set.
+         */
+        patch: operations["recommendations_admin_question_sets_partial_update"];
+        trace?: never;
+    };
+    "/api/recommendations/admin/question-sets/{id}/activate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate a question set (admin)
+         * @description Makes this the one set served to collectors; deactivates every other.
+         */
+        post: operations["recommendations_admin_question_sets_activate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recommendations/admin/recommendations/{id}/": {
         parameters: {
             query?: never;
@@ -3537,6 +3977,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recommendations/question-set/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the active question set
+         * @description The owner-editable "Get to know you" questions the collector should be shown (G-P25-2), so the frontend no longer hardcodes them. Returns 200 with an empty shape (`id: null`, `questions: []`) when no set is active, never 404.
+         */
+        get: operations["recommendations_question_set_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recommendations/questionnaire/": {
         parameters: {
             query?: never;
@@ -3546,7 +4006,7 @@ export interface paths {
         };
         /**
          * My questionnaire answers
-         * @description 404 if this collector has never submitted one.
+         * @description Never-answered is the normal first state, so this returns 200 with `{answers: null, submitted_at: null, answered: false}` rather than 404 (G-P25-1).
          */
         get: operations["recommendations_questionnaire_retrieve"];
         put?: never;
@@ -3687,6 +4147,17 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /** @description KPI tiles for the Access desk header (G-KEY-1). */
+        AccessKeyDeskSummary: {
+            total_keys: number;
+            active_keys: number;
+            locked_keys: number;
+            expired_keys: number;
+            expiring_soon: number;
+            logins_today: number;
+            total_collectors: number;
+            active_collectors: number;
+        };
         AccessKeyExtend: {
             extend: components["schemas"]["ExtendEnum"];
         };
@@ -3714,6 +4185,30 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
             access_key: string;
+        };
+        /**
+         * @description Roster-wide read shape (G-KEY-1). Adds the collector's name, a computed
+         *     ``is_expired`` (the stored status lags — it only flips on a login attempt),
+         *     and the per-collector engagement tallies the old desk showed. ``key_hash`` is
+         *     never exposed, same discipline as ``AccessKeyAdminSerializer``. Activity
+         *     counts come from the view via ``context['activity_counts']`` (batched, no
+         *     per-row query).
+         */
+        AccessKeyRoster: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly collector: components["schemas"]["_AccessKeyCollectorBrief"];
+            readonly status: components["schemas"]["AccessKeyStatusEnum"];
+            readonly is_expired: boolean;
+            /** Format: date-time */
+            readonly issued_at: string;
+            /** Format: date-time */
+            readonly expires_at: string | null;
+            /** Format: date-time */
+            readonly last_used_at: string | null;
+            readonly activity: components["schemas"]["_AccessKeyActivity"];
+            /** Format: date-time */
+            readonly created_at: string;
         };
         /**
          * @description * `active` - Active
@@ -3809,8 +4304,18 @@ export interface components {
             referral_source: string;
             /** @default  */
             ref_code: string;
+            /** @default  */
+            client_req_id: string;
         };
         AccessRequestCreateResponse: {
+            data: components["schemas"]["AccessRequestAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AccessRequestReplayResponse: {
             data: components["schemas"]["AccessRequestAdmin"];
             /** @default true */
             success: boolean;
@@ -3851,6 +4356,26 @@ export interface components {
          * @enum {string}
          */
         ActivityKindEnum: "view" | "save" | "search" | "login";
+        ActivityListResponse: {
+            data: components["schemas"]["ActivityListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ActivityListResponseData: {
+            pagination: components["schemas"]["ActivityListResponsePagination"];
+            results: components["schemas"]["CollectorActivity"][];
+        };
+        ActivityListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
         ActivityLogResponse: {
             data: components["schemas"]["CollectorActivity"];
             /** @default true */
@@ -3897,6 +4422,34 @@ export interface components {
         };
         AdminAccessKeyRevokeResponse: {
             data: components["schemas"]["AccessKeyAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessKeyRosterResponse: {
+            data: components["schemas"]["AdminAccessKeyRosterResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAccessKeyRosterResponseData: {
+            pagination: components["schemas"]["AdminAccessKeyRosterResponsePagination"];
+            results: components["schemas"]["AccessKeyRoster"][];
+        };
+        AdminAccessKeyRosterResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminAccessKeySummaryResponse: {
+            data: components["schemas"]["AccessKeyDeskSummary"];
             /** @default true */
             success: boolean;
             message: string;
@@ -4107,6 +4660,16 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminArtworkFacetsResponse: {
+            data?: {
+                [key: string]: unknown;
+            };
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminArtworkListResponse: {
             data: components["schemas"]["AdminArtworkListResponseData"];
             /** @default true */
@@ -4153,6 +4716,30 @@ export interface components {
         };
         AdminArtworkUpdateResponse: {
             data: components["schemas"]["ArtworkAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAuctionArchiveResponse: {
+            data: components["schemas"]["Auction"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAuctionCoverImageDeleteResponse: {
+            data: components["schemas"]["Auction"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminAuctionCoverImageResponse: {
+            data: components["schemas"]["Auction"];
             /** @default true */
             success: boolean;
             message: string;
@@ -4491,6 +5078,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminCollectorSummaryResponse: {
+            data: components["schemas"]["CollectorDeskSummary"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminCollectorUpdateResponse: {
             data: components["schemas"]["CollectorAdmin"];
             /** @default true */
@@ -4653,7 +5248,23 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        AdminDocumentShareResponse: {
+            data: components["schemas"]["Document"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminDocumentSignResponse: {
+            data: components["schemas"]["Document"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminDocumentUnshareResponse: {
             data: components["schemas"]["Document"];
             /** @default true */
             success: boolean;
@@ -5111,6 +5722,14 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        AdminLinkReissueResponse: {
+            data: components["schemas"]["GalleryLinkIssueResponse"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminLotCreateResponse: {
             data: components["schemas"]["LotAdmin"];
             /** @default true */
@@ -5146,6 +5765,14 @@ export interface components {
             total_count: number;
             has_next: boolean;
             has_previous: boolean;
+        };
+        AdminLotUpdateResponse: {
+            data: components["schemas"]["LotAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         AdminMarkSeenResponse: {
             data?: {
@@ -5203,6 +5830,14 @@ export interface components {
         };
         AdminMembershipCodeUpdateResponse: {
             data: components["schemas"]["MembershipCodeAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminMessageArchiveResponse: {
+            data: components["schemas"]["RequestMessage"];
             /** @default true */
             success: boolean;
             message: string;
@@ -5389,6 +6024,58 @@ export interface components {
         };
         AdminProjectUpdateResponse: {
             data: components["schemas"]["Project"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminQuestionSetActivateResponse: {
+            data: components["schemas"]["QuestionSet"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminQuestionSetCreateResponse: {
+            data: components["schemas"]["QuestionSet"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminQuestionSetDetailResponse: {
+            data: components["schemas"]["QuestionSet"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminQuestionSetListResponse: {
+            data: components["schemas"]["AdminQuestionSetListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminQuestionSetListResponseData: {
+            pagination: components["schemas"]["AdminQuestionSetListResponsePagination"];
+            results: components["schemas"]["QuestionSet"][];
+        };
+        AdminQuestionSetListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminQuestionSetUpdateResponse: {
+            data: components["schemas"]["QuestionSet"];
             /** @default true */
             success: boolean;
             message: string;
@@ -5786,6 +6473,7 @@ export interface components {
             birth_year?: number | null;
             nationality?: string;
             external_ids?: unknown;
+            readonly works_count: number | null;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -5849,13 +6537,26 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             artist?: string | null;
+            readonly artist_name: string | null;
             /** Artist name (raw, legacy) */
             artist_name_raw?: string;
+            /** Format: uri */
+            readonly thumb: string | null;
             title: string;
             year?: number | null;
             medium?: string;
             material?: string;
             dimensions?: string;
+            /**
+             * Width (cm)
+             * Format: decimal
+             */
+            readonly width_cm: string | null;
+            /**
+             * Height (cm)
+             * Format: decimal
+             */
+            readonly height_cm: string | null;
             edition?: string;
             city?: string;
             /** Format: decimal */
@@ -5865,6 +6566,7 @@ export interface components {
             readonly availability_status: components["schemas"]["ArtworkAvailabilityStatusEnum"];
             visibility?: components["schemas"]["ArtworkVisibilityEnum"];
             source_name?: string;
+            source_type?: components["schemas"]["ArtworkSourceTypeEnum"] | components["schemas"]["BlankEnum"];
             public_description?: string;
             internal_notes?: string;
             provenance?: string;
@@ -6123,6 +6825,7 @@ export interface components {
                 [key: string]: string[];
             };
             readonly visibility: components["schemas"]["ArtworkVisibilityEnum"];
+            readonly selection_name: string | null;
         };
         /**
          * @description Admin sub-resource output — grant id + which collector, not the full
@@ -6184,6 +6887,15 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description * `gallery` - Gallery
+         *     * `artist` - Artist
+         *     * `collector` - Collector
+         *     * `dealer` - Dealer
+         *     * `other` - Other
+         * @enum {string}
+         */
+        ArtworkSourceTypeEnum: "gallery" | "artist" | "collector" | "dealer" | "other";
         ArtworkTag: {
             /** Format: uuid */
             readonly id: string;
@@ -6291,6 +7003,9 @@ export interface components {
              */
             readonly terms_required: boolean;
             readonly invite_only: boolean;
+            readonly archived: boolean;
+            /** Format: uri */
+            readonly cover_image_url: string | null;
             readonly lots_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
@@ -6298,6 +7013,19 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        /**
+         * @description Admin archive/restore toggle (G-AUC-4). Defaults true so a bare POST
+         *     archives; send false to restore.
+         */
+        AuctionArchive: {
+            /** @default true */
+            archived: boolean;
+        };
+        /** @description Multipart cover-image upload (G-AUC-4 companion). */
+        AuctionCoverImageUpload: {
+            /** Format: uri */
+            file: string;
         };
         AuctionCreate: {
             title: string;
@@ -6415,7 +7143,7 @@ export interface components {
             exhibition?: string;
             house_notes?: string;
             previous_record?: string;
-            section?: components["schemas"]["SectionEnum"];
+            section?: components["schemas"]["AuctionRecordSectionEnum"];
             /** Format: date-time */
             opens_at?: string | null;
             /** Format: date-time */
@@ -6480,6 +7208,13 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        /**
+         * @description * `past` - Past
+         *     * `upcoming` - Upcoming
+         *     * `live` - Live
+         * @enum {string}
+         */
+        AuctionRecordSectionEnum: "past" | "upcoming" | "live";
         /**
          * @description * `sold` - Sold
          *     * `unsold` - Unsold
@@ -6729,12 +7464,66 @@ export interface components {
             access_status?: components["schemas"]["AccessStatusEnum"];
             preferences?: unknown;
             notes?: string;
+            /** Format: date-time */
+            readonly last_activity_at: string | null;
+            readonly purchase_count: number | null;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        /**
+         * @description KPI tiles for the Collectors overview (G-COL-1) — the old desk's
+         *     Collectors · VIP · Active-30d · Engaged strip.
+         */
+        CollectorDeskSummary: {
+            collectors: number;
+            vip: number;
+            active_30d: number;
+            engaged: number;
+        };
+        /**
+         * @description Collector-facing read (G-DOC-1) — collector-safe fields only. Never the
+         *     freeform `fields` blob or any internal actor/lock fields.
+         */
+        CollectorDocument: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: string;
+            readonly title: string;
+            /**
+             * Reference
+             * @description Loose external reference (e.g. an Auction/Exhibition id) — not a FK, matching the old shape.
+             */
+            readonly ref: string;
+            /** Format: uri */
+            readonly pdf_url: string | null;
+            /** Format: date-time */
+            readonly shared_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        CollectorDocumentListResponse: {
+            data: components["schemas"]["CollectorDocumentListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        CollectorDocumentListResponseData: {
+            pagination: components["schemas"]["CollectorDocumentListResponsePagination"];
+            results: components["schemas"]["CollectorDocument"][];
+        };
+        CollectorDocumentListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
         };
         CollectorLogin: {
             access_key: string;
@@ -6836,6 +7625,18 @@ export interface components {
             answers?: unknown;
             /** Format: date-time */
             readonly submitted_at: string;
+            readonly answered: boolean;
+        };
+        /**
+         * @description Collector-driven transition (G-P5-5) — withdraw an offer / cancel a
+         *     viewing. ``to_status`` is validated against the collector whitelist +
+         *     guard_transition in the service, not here, for the same reason as the admin
+         *     serializer (legal values depend on the request's kind and current status).
+         */
+        CollectorRequestTransition: {
+            to_status: string;
+            /** @default  */
+            note: string;
         };
         CollectorSelection: {
             /** Format: uuid */
@@ -6860,6 +7661,34 @@ export interface components {
             note: string;
             artwork_ids?: string[];
             collector_ids?: string[];
+        };
+        CollectorSelectionSeenResponse: {
+            data: components["schemas"]["CollectorSelectionSignal"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /**
+         * @description One named selection with its change signal (G-P24-2) — built from the
+         *     plain dicts CollectorSelectionService.change_signal returns, not a model.
+         */
+        CollectorSelectionSignal: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: date-time */
+            changed_at: string | null;
+            is_new: boolean;
+        };
+        CollectorSelectionSignalListResponse: {
+            data: components["schemas"]["CollectorSelectionSignal"][];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         /**
          * @description * `vip` - VIP
@@ -6943,6 +7772,10 @@ export interface components {
             /** @description Only the owner role may confirm/sign/edit once set — simple boolean (owner decision), not the old system's richer per-type/per-admin allowlist. */
             owner_lock?: boolean;
             /** Format: uuid */
+            readonly collector: string | null;
+            /** Format: date-time */
+            readonly shared_at: string | null;
+            /** Format: uuid */
             readonly created_by: string | null;
             /** Format: date-time */
             readonly confirmed_at: string | null;
@@ -6969,6 +7802,11 @@ export interface components {
             visibility: components["schemas"]["DocumentVisibilityEnum"];
             /** @default false */
             owner_lock: boolean;
+        };
+        /** @description Admin: issue a document to a collector (G-DOC-1). */
+        DocumentShare: {
+            /** Format: uuid */
+            collector: string;
         };
         /**
          * @description * `draft` - Draft
@@ -7126,6 +7964,7 @@ export interface components {
             readonly service_key: string;
             readonly title: string;
             readonly description: string;
+            readonly quantity: number;
             /** Format: decimal */
             readonly price: string | null;
             readonly currency: string;
@@ -7141,6 +7980,8 @@ export interface components {
             title: string;
             /** @default  */
             description: string;
+            /** @default 1 */
+            quantity: number;
             /** Format: decimal */
             price?: string | null;
             /** @default  */
@@ -7373,6 +8214,10 @@ export interface components {
             readonly id: string;
             readonly title: string;
             readonly notes: string;
+            /** @description MinIO documents bucket key. */
+            readonly object_key: string;
+            /** Format: uri */
+            readonly file_url: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -7882,11 +8727,23 @@ export interface components {
             name?: string | null;
             role?: string | null;
             display_name?: string | null;
+            full_name?: string | null;
+            phone?: string | null;
+            city?: string | null;
+            preferred_language?: string | null;
             tier?: string | null;
             access_status?: string | null;
             preferences?: unknown;
         };
         MeResponse: {
+            data: components["schemas"]["Me"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        MeUpdateResponse: {
             data: components["schemas"]["Me"];
             /** @default true */
             success: boolean;
@@ -7981,6 +8838,27 @@ export interface components {
          * @enum {string}
          */
         MethodEnum: "card_to_card" | "bank_transfer" | "payment_gateway" | "cash" | "foreign_currency" | "other";
+        /**
+         * @description * `in_person` - In person
+         *     * `virtual` - Virtual
+         * @enum {string}
+         */
+        ModeEnum: "in_person" | "virtual";
+        /** @description Collector-facing membership summary (G-MEMB-3/6/7). */
+        MyMembership: {
+            tier: string | null;
+            status: string;
+            /** Format: date */
+            active_until: string | null;
+        };
+        MyMembershipResponse: {
+            data: components["schemas"]["MyMembership"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         MyNotificationListResponse: {
             data: components["schemas"]["MyNotificationListResponseData"];
             /** @default true */
@@ -8059,6 +8937,16 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        OfferDetail: {
+            /** Format: decimal */
+            amount: string;
+            currency: components["schemas"]["CurrencyEnum"];
+            /** Format: uuid */
+            counter_of?: string | null;
+            /** Format: decimal */
+            readonly counter_amount: string | null;
+            readonly counter_currency: components["schemas"]["CurrencyEnum"] | components["schemas"]["BlankEnum"];
+        };
         OptionsResponse: {
             data?: {
                 [key: string]: unknown;
@@ -8135,6 +9023,7 @@ export interface components {
             birth_year?: number | null;
             nationality?: string;
             external_ids?: unknown;
+            readonly works_count?: number | null;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version?: number;
             /** Format: date-time */
@@ -8157,13 +9046,26 @@ export interface components {
             readonly id?: string;
             /** Format: uuid */
             artist?: string | null;
+            readonly artist_name?: string | null;
             /** Artist name (raw, legacy) */
             artist_name_raw?: string;
+            /** Format: uri */
+            readonly thumb?: string | null;
             title?: string;
             year?: number | null;
             medium?: string;
             material?: string;
             dimensions?: string;
+            /**
+             * Width (cm)
+             * Format: decimal
+             */
+            readonly width_cm?: string | null;
+            /**
+             * Height (cm)
+             * Format: decimal
+             */
+            readonly height_cm?: string | null;
             edition?: string;
             city?: string;
             /** Format: decimal */
@@ -8173,6 +9075,7 @@ export interface components {
             readonly availability_status?: components["schemas"]["ArtworkAvailabilityStatusEnum"];
             visibility?: components["schemas"]["ArtworkVisibilityEnum"];
             source_name?: string;
+            source_type?: components["schemas"]["ArtworkSourceTypeEnum"] | components["schemas"]["BlankEnum"];
             public_description?: string;
             internal_notes?: string;
             provenance?: string;
@@ -8195,13 +9098,11 @@ export interface components {
             expected_version?: number;
         };
         /**
-         * @description ``artist_display_name`` is the label to show: the linked catalog
-         *     Artist's name when one is matched, else the free-text ``artist_name_raw``
-         *     (write endpoints ignore this read-only field). Same serializer for
-         *     collector read and admin CRUD — nothing on this model is confidential
-         *     (see the model docstring), so there's no tiering to split.
+         * @description Admin PATCH input — adds the optimistic-lock guard (G-LOCK-1) so two
+         *     admins editing the same record don't silently clobber each other; a stale
+         *     version gets a 409, same as every other versioned write in the project.
          */
-        PatchedAuctionRecord: {
+        PatchedAuctionRecordUpdate: {
             /** Format: uuid */
             readonly id?: string;
             /** Format: uuid */
@@ -8255,7 +9156,7 @@ export interface components {
             exhibition?: string;
             house_notes?: string;
             previous_record?: string;
-            section?: components["schemas"]["SectionEnum"];
+            section?: components["schemas"]["AuctionRecordSectionEnum"];
             /** Format: date-time */
             opens_at?: string | null;
             /** Format: date-time */
@@ -8271,6 +9172,7 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
+            expected_version?: number;
         };
         PatchedChecklistTemplateUpdate: {
             /** Format: uuid */
@@ -8285,6 +9187,17 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
             expected_version?: number;
+        };
+        /**
+         * @description Collector self-edit (G-B1) — only the collector-editable subset. Every
+         *     field optional (partial PATCH); `display_name`/`email`/`tier`/`access_status`
+         *     are admin-controlled and intentionally absent, so sending them is ignored.
+         */
+        PatchedCollectorProfileUpdate: {
+            full_name?: string;
+            phone?: string;
+            city?: string;
+            preferred_language?: components["schemas"]["PreferredLanguageEnum"] | components["schemas"]["BlankEnum"];
         };
         PatchedCollectorSelectionUpdate: {
             name?: string;
@@ -8307,6 +9220,9 @@ export interface components {
             access_status?: components["schemas"]["AccessStatusEnum"];
             preferences?: unknown;
             notes?: string;
+            /** Format: date-time */
+            readonly last_activity_at?: string | null;
+            readonly purchase_count?: number | null;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version?: number;
             /** Format: date-time */
@@ -8369,6 +9285,32 @@ export interface components {
             /** Format: decimal */
             commission_pct?: string | null;
             arian_review?: components["schemas"]["ArianReviewWrite"];
+            expected_version?: number;
+        };
+        /**
+         * @description G-AUC-2 — edit a scheduled lot's listing/mechanics. auction/artwork are
+         *     not editable here; status + cached live state change only via transitions.
+         *     All fields optional (partial edit); expected_version guards the write.
+         */
+        PatchedLotUpdate: {
+            lot_number?: number;
+            /** Format: decimal */
+            opening_amount?: string;
+            /** Format: decimal */
+            reserve_amount?: string | null;
+            /** Format: decimal */
+            low_estimate?: string | null;
+            /** Format: decimal */
+            high_estimate?: string | null;
+            /** Format: decimal */
+            premium_pct?: string;
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            ends_at?: string;
+            soft_close_sec?: number;
+            expected_version?: number;
         };
         PatchedMarketingCampaign: {
             /** Format: uuid */
@@ -8624,6 +9566,17 @@ export interface components {
             archived?: boolean;
             expected_version?: number;
         };
+        /**
+         * @description PATCH — every field optional. When `questions` is supplied it FULL-
+         *     REPLACES the set's questions; omit it to leave them untouched.
+         */
+        PatchedQuestionSetUpdate: {
+            title?: string;
+            intro?: string;
+            is_active?: boolean;
+            questions?: components["schemas"]["QuestionWrite"][];
+            expected_version?: number;
+        };
         PatchedRecommendation: {
             /** Format: uuid */
             readonly id?: string;
@@ -8659,6 +9612,9 @@ export interface components {
              */
             source_request?: string | null;
             seller_source?: string;
+            source?: components["schemas"]["SaleSourceEnum"];
+            /** Format: uuid */
+            readonly lot?: string | null;
             /** Format: decimal */
             agreed_price?: string;
             currency?: components["schemas"]["CurrencyEnum"];
@@ -8868,6 +9824,12 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /**
+         * @description * `fa` - Persian
+         *     * `en` - English
+         * @enum {string}
+         */
+        PreferredLanguageEnum: "fa" | "en";
         /**
          * @description * `fixed` - Fixed
          *     * `on_request` - On request
@@ -9347,6 +10309,10 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        PurchaseIntentDetail: {
+            /** @default  */
+            notes: string;
+        };
         PushSubscribe: {
             /** Format: uri */
             endpoint: string;
@@ -9380,6 +10346,76 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /** @description Read shape for a single question. */
+        Question: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly prompt: string;
+            /** Type */
+            readonly question_type: components["schemas"]["QuestionTypeEnum"];
+            readonly options: unknown;
+            readonly order: number;
+        };
+        /** @description One `single_choice` option — `{value, label}`. */
+        QuestionOption: {
+            value: string;
+            label: string;
+        };
+        /**
+         * @description Read shape served to the collector (and mirrored to the admin) — the
+         *     active set with its ordered questions.
+         */
+        QuestionSet: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly title: string;
+            /** @description Copy shown before the questions (old `qbIntro`). */
+            readonly intro: string;
+            /**
+             * Active
+             * @description The one set served to collectors. Activating a set deactivates every other.
+             */
+            readonly is_active: boolean;
+            readonly questions: components["schemas"]["Question"][];
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        QuestionSetCreate: {
+            /** @default  */
+            title: string;
+            /** @default  */
+            intro: string;
+            /** @default false */
+            is_active: boolean;
+            questions?: components["schemas"]["QuestionWrite"][];
+        };
+        QuestionSetGetResponse: {
+            data: components["schemas"]["QuestionSet"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /**
+         * @description * `single_choice` - Single choice
+         *     * `text` - Free text
+         * @enum {string}
+         */
+        QuestionTypeEnum: "single_choice" | "text";
+        /** @description One question as accepted on create/update (nested full-replace). */
+        QuestionWrite: {
+            prompt: string;
+            /** @default single_choice */
+            question_type: components["schemas"]["QuestionTypeEnum"];
+            options?: components["schemas"]["QuestionOption"][];
+            /** @default 0 */
+            order: number;
         };
         /**
          * @description One {q, a} pair — kept as a plain Serializer (not a model) since
@@ -9568,6 +10604,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        RegistrationResetResponse: {
+            data: components["schemas"]["BidderRegistrationAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         /**
          * @description Nests collector/artwork (G-F1-7) instead of bare ids, and reports the
          *     legal next statuses (G-F1-4) so the "Move to…" control never offers an
@@ -9579,6 +10623,7 @@ export interface components {
             readonly id: string;
             readonly collector: components["schemas"]["_RequestAdminCollector"];
             readonly artwork: components["schemas"]["_RequestAdminArtwork"] | null;
+            readonly artist: components["schemas"]["_RequestAdminArtist"] | null;
             readonly kind: components["schemas"]["RequestKindEnum"];
             readonly status: string;
             readonly allowed_transitions: string[];
@@ -9588,6 +10633,8 @@ export interface components {
             readonly contact_snapshot: unknown;
             /** Archived by admin */
             readonly admin_archived: boolean;
+            /** Archived by collector */
+            readonly collector_archived: boolean;
             readonly unread_count: number;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
@@ -9595,6 +10642,22 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        /**
+         * @description Collector "Remove from activity" / restore (G-P5-4). ``archived``
+         *     defaults to True so a bare POST archives; send ``false`` to restore.
+         */
+        RequestArchive: {
+            /** @default true */
+            archived: boolean;
+        };
+        RequestArchiveResponse: {
+            data: components["schemas"]["RequestCollector"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         /**
          * @description Output for the collector who owns it — no ``assignee``/``contact_
@@ -9605,10 +10668,12 @@ export interface components {
             readonly id: string;
             readonly kind: components["schemas"]["RequestKindEnum"];
             readonly status: string;
-            /** Format: uuid */
-            readonly artwork: string | null;
-            readonly detail: unknown;
+            readonly artwork: components["schemas"]["_RequestCollectorArtwork"] | null;
+            readonly artist: components["schemas"]["_RequestAdminArtist"] | null;
+            readonly detail: components["schemas"]["RequestDetail"];
             readonly unread_count: number;
+            /** Archived by collector */
+            readonly collector_archived: boolean;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -9624,7 +10689,9 @@ export interface components {
             kind: components["schemas"]["RequestKindEnum"];
             /** Format: uuid */
             artwork?: string | null;
-            detail?: unknown;
+            /** Format: uuid */
+            artist?: string | null;
+            detail?: components["schemas"]["RequestDetail"];
             /** @default  */
             client_req_id: string;
         };
@@ -9637,6 +10704,15 @@ export interface components {
             timestamp: string;
         };
         RequestCreateResponse: {
+            data: components["schemas"]["RequestCollector"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        RequestDetail: components["schemas"]["OfferDetail"] | components["schemas"]["ViewingDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["PurchaseIntentDetail"];
+        RequestDetailResponse: {
             data: components["schemas"]["RequestCollector"];
             /** @default true */
             success: boolean;
@@ -9684,14 +10760,26 @@ export interface components {
             readonly sender: components["schemas"]["RequestMessageSenderEnum"];
             readonly body: string;
             readonly artwork_refs: unknown;
+            readonly document_refs: components["schemas"]["RequestMessageDocumentRef"][];
             readonly seen_by_collector: boolean;
             readonly seen_by_team: boolean;
+            /** Archived by admin */
+            readonly archived: boolean;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /**
+         * @description Admin archive/restore of a thread message (G-CHAT-2). Defaults true so a
+         *     bare POST archives; send false to restore.
+         */
+        RequestMessageArchive: {
+            /** @default true */
+            archived: boolean;
         };
         RequestMessageCreate: {
             body: string;
             artwork_refs?: string[];
+            document_refs?: string[];
         };
         RequestMessageCreateResponse: {
             data: components["schemas"]["RequestMessage"];
@@ -9700,6 +10788,16 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /**
+         * @description A document attached to a thread message — the enriched read shape of
+         *     `document_refs`, resolved from the RequestMessageDocument through model.
+         */
+        RequestMessageDocumentRef: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            title: string;
         };
         RequestMessageListResponse: {
             data: components["schemas"]["RequestMessageListResponseData"];
@@ -9744,6 +10842,18 @@ export interface components {
             to_status: string;
             /** @default  */
             note: string;
+            /** Format: decimal */
+            counter_amount?: string | null;
+            /** @default  */
+            counter_currency: components["schemas"]["CurrencyEnum"] | components["schemas"]["BlankEnum"];
+        };
+        RequestTransitionResponse: {
+            data: components["schemas"]["RequestCollector"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         /**
          * @description * `owner` - Owner
@@ -9764,6 +10874,9 @@ export interface components {
              */
             source_request?: string | null;
             seller_source?: string;
+            source?: components["schemas"]["SaleSourceEnum"];
+            /** Format: uuid */
+            readonly lot: string | null;
             /** Format: decimal */
             agreed_price: string;
             currency: components["schemas"]["CurrencyEnum"];
@@ -9801,6 +10914,7 @@ export interface components {
              */
             source_request?: string | null;
             seller_source?: string;
+            source?: components["schemas"]["SaleSourceEnum"];
             /** Format: decimal */
             agreed_price: string;
             currency: components["schemas"]["CurrencyEnum"];
@@ -9822,6 +10936,12 @@ export interface components {
         SalePaymentStatus: {
             payment_status: components["schemas"]["PaymentStatusEnum"];
         };
+        /**
+         * @description * `market` - Market
+         *     * `auction` - Auction
+         * @enum {string}
+         */
+        SaleSourceEnum: "market" | "auction";
         /**
          * @description * `draft` - Draft
          *     * `confirmed` - Confirmed
@@ -9878,13 +10998,6 @@ export interface components {
             has_previous: boolean;
         };
         /**
-         * @description * `past` - Past
-         *     * `upcoming` - Upcoming
-         *     * `live` - Live
-         * @enum {string}
-         */
-        SectionEnum: "past" | "upcoming" | "live";
-        /**
          * @description * `unpaid` - Not yet paid
          *     * `partial` - Partially paid
          *     * `paid` - Paid
@@ -9939,6 +11052,10 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        SimpleDetail: {
+            /** @default  */
+            message: string;
         };
         /**
          * @description * `image` - Image
@@ -10059,6 +11176,45 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /**
+         * @description The applicationServerKey a browser passes to pushManager.subscribe().
+         *     Public by design — it's the public half of the VAPID keypair. Empty
+         *     string in an env with no keys provisioned (push then no-ops).
+         */
+        VapidPublicKey: {
+            public_key: string;
+        };
+        VapidPublicKeyResponse: {
+            data: components["schemas"]["VapidPublicKey"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ViewingDetail: {
+            /** Format: date-time */
+            preferred_time: string;
+            mode: components["schemas"]["ModeEnum"];
+        };
+        /** @description Per-collector engagement tallies shown on a roster row (G-KEY-1). */
+        _AccessKeyActivity: {
+            saved: number;
+            holds: number;
+            offers: number;
+            requests: number;
+            auction: number;
+            logins: number;
+        };
+        /**
+         * @description The collector a key belongs to, named for the roster desk (G-KEY-1) —
+         *     the old Access table's Name column. Read-only, id + display name only.
+         */
+        _AccessKeyCollectorBrief: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+        };
         _AccessRequestReviewer: {
             /** Format: uuid */
             id: string;
@@ -10073,6 +11229,8 @@ export interface components {
             /** Format: uuid */
             id: string;
             title: string;
+            /** Format: uri */
+            readonly thumb: string | null;
         };
         _CollectorSelectionCollector: {
             /** Format: uuid */
@@ -10117,6 +11275,20 @@ export interface components {
             /** Format: uuid */
             id: string;
             display_name: string;
+        };
+        /**
+         * @description Light nested artwork summary for the collector's own "my requests" rows
+         *     (G-P5-2) — so a row renders without a second catalogue read. Deliberately
+         *     thinner than ArtworkCollectorSerializer (no pricing/actions/saved state);
+         *     just enough to show the work the request is about.
+         */
+        _RequestCollectorArtwork: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            artist: components["schemas"]["_RequestAdminArtist"] | null;
+            /** Format: uri */
+            readonly image: string | null;
         };
         /**
          * @description Matches this project's established nested-actor shape (e.g.
@@ -10547,6 +11719,14 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11137,7 +12317,10 @@ export interface operations {
     };
     auctions_admin_auction_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter by the archive flag (G-AUC-4). When omitted, archived auctions are hidden (the default working list); pass true for the archived view. */
+                archived?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11300,6 +12483,120 @@ export interface operations {
             };
         };
     };
+    auctions_admin_auctions_archive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AuctionArchive"];
+                "application/x-www-form-urlencoded": components["schemas"]["AuctionArchive"];
+                "multipart/form-data": components["schemas"]["AuctionArchive"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuctionArchiveResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_admin_auctions_cover_image_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["AuctionCoverImageUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["AuctionCoverImageUpload"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuctionCoverImageResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_admin_auctions_cover_image_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuctionCoverImageDeleteResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     auctions_admin_auctions_invite_only_retrieve: {
         parameters: {
             query?: never;
@@ -11393,6 +12690,57 @@ export interface operations {
             };
         };
     };
+    auctions_admin_lots_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedLotUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedLotUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedLotUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLotUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     auctions_admin_lots_close_create: {
         parameters: {
             query?: {
@@ -11474,6 +12822,8 @@ export interface operations {
         parameters: {
             query?: {
                 artist?: string;
+                /** @description Exact auction-house name (G-REC-1). */
+                house?: string;
                 is_highlight?: boolean;
                 ordering?: string;
                 search?: string;
@@ -11597,9 +12947,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedAuctionRecord"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedAuctionRecord"];
-                "multipart/form-data": components["schemas"]["PatchedAuctionRecord"];
+                "application/json": components["schemas"]["PatchedAuctionRecordUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAuctionRecordUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedAuctionRecordUpdate"];
             };
         };
         responses: {
@@ -11620,6 +12970,14 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11707,6 +13065,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RegistrationRejectResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_admin_registrations_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationResetResponse"];
                 };
             };
             400: {
@@ -11872,6 +13267,8 @@ export interface operations {
         parameters: {
             query?: {
                 artist?: string;
+                /** @description Exact auction-house name (G-REC-1). */
+                house?: string;
                 is_highlight?: boolean;
                 ordering?: string;
                 search?: string;
@@ -12008,6 +13405,14 @@ export interface operations {
             };
         };
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessRequestReplayResponse"];
+                };
+            };
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -12022,6 +13427,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    accounts_admin_access_keys_roster: {
+        parameters: {
+            query?: {
+                /** @description Filter to one collector (id). */
+                collector?: string;
+                /** @description Active keys lapsing within 7 days. */
+                expiring_soon?: boolean;
+                /** @description Case-insensitive match on the collector's name. */
+                search?: string;
+                /** @description Computed: active | locked | expired. */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessKeyRosterResponse"];
                 };
             };
         };
@@ -12086,6 +13527,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    accounts_admin_access_keys_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessKeySummaryResponse"];
                 };
             };
         };
@@ -12197,7 +13657,7 @@ export interface operations {
             query?: {
                 /** @description Filter by exact access_status. */
                 access_status?: string;
-                /** @description name | -name | created | -created (default: -created). */
+                /** @description name | -name | created | -created | activity | -activity | purchases | -purchases (default: -created). */
                 ordering?: string;
                 /** @description Case-insensitive match on display_name/full_name/email/phone. */
                 search?: string;
@@ -12450,6 +13910,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    accounts_admin_collectors_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCollectorSummaryResponse"];
                 };
             };
         };
@@ -12898,7 +14377,40 @@ export interface operations {
                     "application/json": components["schemas"]["MeResponse"];
                 };
             };
-            401: {
+        };
+    };
+    auth_me_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCollectorProfileUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCollectorProfileUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedCollectorProfileUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12937,6 +14449,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auth_my_membership_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyMembershipResponse"];
                 };
             };
         };
@@ -13009,7 +14540,12 @@ export interface operations {
     };
     catalog_admin_artists_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Sort: name | -name | created | -created | works (most works first). */
+                ordering?: string;
+                /** @description Case-insensitive substring match on display_name. */
+                search?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -13174,8 +14710,18 @@ export interface operations {
                 artist?: string;
                 /** @description Filter by exact availability_status. */
                 availability_status?: string;
+                /** @description true = records with every required field + an image; false = incomplete ones (same definition as the Data Health desk). */
+                complete?: boolean;
+                /** @description Only works created at/after this ISO datetime (G-HEALTH-4 'recently added'). */
+                created_after?: string;
                 /** @description Filter by exact currency code. */
                 currency?: string;
+                /** @description true = works whose image shares an object_key with another; false = works free of that (same signal as the Data Health desk). */
+                duplicate_images?: boolean;
+                /** @description true = only gallery-portal-visibility works; false = every other visibility. */
+                gallery_portal?: boolean;
+                /** @description true = has at least one live image, false = has none. */
+                has_images?: boolean;
                 /** @description Case-insensitive substring match on medium. */
                 medium?: string;
                 /** @description Sort: year | -year | artist | -artist | price | -price. Absent = newest published first. Sort by price only within one `currency`. */
@@ -13186,12 +14732,22 @@ export interface operations {
                 price_min?: string;
                 /** @description Filter by exact price_type (fixed | estimate | on_request). */
                 price_type?: string;
+                /** @description Filter by is_published (true/false). */
+                published?: boolean;
                 /** @description "Refine" smart-filter dimensions (see GET /api/options/ 'catalog.refine_dimension' for the full list of params and 'catalog.refine_vocab' for each one's values): refine_subject, refine_style, refine_colour, refine_scale, refine_priceRange, refine_decade, refine_mood, refine_visualLanguage, refine_artistType, refine_collectingValue, refine_theme, refine_medium. Each may repeat — AND-combined, like `tag`. */
                 "refine_*"?: string[];
                 /** @description Case-insensitive substring across artist name, title, medium, dimensions. */
                 search?: string;
+                /** @description Size bucket by largest side in cm: small (≤50), medium (50–120), large (>120). Works whose dimensions didn't parse match no bucket. */
+                size?: string;
+                /** @description Exact source_name (internal; admin-only). */
+                source?: string;
+                /** @description Exact provenance source type: gallery | artist | collector | dealer | other (G-HEALTH-2; internal, admin-only). */
+                source_type?: string;
                 /** @description Artworks whose tags list contains this value. May repeat — AND-combined. */
                 tag?: string[];
+                /** @description Exact year. May repeat — widens to IN. */
+                year?: number[];
             };
             header?: never;
             path?: never;
@@ -13652,6 +15208,68 @@ export interface operations {
             };
         };
     };
+    catalog_admin_artworks_facets_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Filter by artist id. */
+                artist?: string;
+                /** @description Filter by exact availability_status. */
+                availability_status?: string;
+                /** @description true = records with every required field + an image; false = incomplete ones (same definition as the Data Health desk). */
+                complete?: boolean;
+                /** @description Only works created at/after this ISO datetime (G-HEALTH-4 'recently added'). */
+                created_after?: string;
+                /** @description Filter by exact currency code. */
+                currency?: string;
+                /** @description true = works whose image shares an object_key with another; false = works free of that (same signal as the Data Health desk). */
+                duplicate_images?: boolean;
+                /** @description true = only gallery-portal-visibility works; false = every other visibility. */
+                gallery_portal?: boolean;
+                /** @description true = has at least one live image, false = has none. */
+                has_images?: boolean;
+                /** @description Case-insensitive substring match on medium. */
+                medium?: string;
+                /** @description Sort: year | -year | artist | -artist | price | -price. Absent = newest published first. Sort by price only within one `currency`. */
+                ordering?: string;
+                /** @description Maximum price_amount (inclusive). */
+                price_max?: string;
+                /** @description Minimum price_amount (inclusive). */
+                price_min?: string;
+                /** @description Filter by exact price_type (fixed | estimate | on_request). */
+                price_type?: string;
+                /** @description Filter by is_published (true/false). */
+                published?: boolean;
+                /** @description "Refine" smart-filter dimensions (see GET /api/options/ 'catalog.refine_dimension' for the full list of params and 'catalog.refine_vocab' for each one's values): refine_subject, refine_style, refine_colour, refine_scale, refine_priceRange, refine_decade, refine_mood, refine_visualLanguage, refine_artistType, refine_collectingValue, refine_theme, refine_medium. Each may repeat — AND-combined, like `tag`. */
+                "refine_*"?: string[];
+                /** @description Case-insensitive substring across artist name, title, medium, dimensions. */
+                search?: string;
+                /** @description Size bucket by largest side in cm: small (≤50), medium (50–120), large (>120). Works whose dimensions didn't parse match no bucket. */
+                size?: string;
+                /** @description Exact source_name (internal; admin-only). */
+                source?: string;
+                /** @description Exact provenance source type: gallery | artist | collector | dealer | other (G-HEALTH-2; internal, admin-only). */
+                source_type?: string;
+                /** @description Artworks whose tags list contains this value. May repeat — AND-combined. */
+                tag?: string[];
+                /** @description Exact year. May repeat — widens to IN. */
+                year?: number[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminArtworkFacetsResponse"];
+                };
+            };
+        };
+    };
     catalog_admin_data_health_retrieve: {
         parameters: {
             query?: never;
@@ -14090,6 +15708,82 @@ export interface operations {
             };
         };
     };
+    catalog_selections_signal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectorSelectionSignalListResponse"];
+                };
+            };
+        };
+    };
+    catalog_selections_mark_seen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectorSelectionSeenResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_activity_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by artwork id. */
+                artwork?: string;
+                /** @description Filter by exact kind. */
+                kind?: string;
+                /** @description Page number (1-indexed). */
+                page?: number;
+                /** @description Page size (default 20, max 100). */
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityListResponse"];
+                };
+            };
+        };
+    };
     crm_activity_create: {
         parameters: {
             query?: never;
@@ -14149,6 +15843,49 @@ export interface operations {
             };
         };
     };
+    crm_admin_messages_archive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RequestMessageArchive"];
+                "application/x-www-form-urlencoded": components["schemas"]["RequestMessageArchive"];
+                "multipart/form-data": components["schemas"]["RequestMessageArchive"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMessageArchiveResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     crm_admin_requests_retrieve: {
         parameters: {
             query?: {
@@ -14158,6 +15895,8 @@ export interface operations {
                 assignee?: string;
                 /** @description Filter by exact kind. */
                 kind?: string;
+                /** @description Case-insensitive match on the collector's display name, the artwork title or its artist's display name. Message bodies are NOT searched. */
+                search?: string;
                 /** @description Filter by exact status (vocabulary depends on kind). */
                 status?: string;
             };
@@ -14179,7 +15918,10 @@ export interface operations {
     };
     crm_admin_request_messages_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Include admin-archived messages (default false). */
+                include_archived?: boolean;
+            };
             header?: never;
             path: {
                 id: string;
@@ -14484,8 +16226,14 @@ export interface operations {
     crm_requests_list: {
         parameters: {
             query?: {
+                /** @description Filter by the collector's own archive flag. When omitted, archived requests are hidden (the default activity view); pass true for the archived view, false to be explicit about the default (G-P5-4). */
+                archived?: boolean;
                 /** @description Filter by exact kind. */
                 kind?: string;
+                /** @description Page number (1-indexed). */
+                page?: number;
+                /** @description Page size (default 20, max 100). */
+                per_page?: number;
                 /** @description Filter by exact status. */
                 status?: string;
             };
@@ -14546,9 +16294,86 @@ export interface operations {
             };
         };
     };
-    crm_request_messages_list: {
+    crm_requests_retrieve: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_requests_archive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RequestArchive"];
+                "application/x-www-form-urlencoded": components["schemas"]["RequestArchive"];
+                "multipart/form-data": components["schemas"]["RequestArchive"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestArchiveResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_request_messages_list: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-indexed). */
+                page?: number;
+                /** @description Page size (default 20, max 100). */
+                per_page?: number;
+            };
             header?: never;
             path: {
                 id: string;
@@ -14635,6 +16460,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarkSeenResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    crm_requests_transition_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectorRequestTransition"];
+                "application/x-www-form-urlencoded": components["schemas"]["CollectorRequestTransition"];
+                "multipart/form-data": components["schemas"]["CollectorRequestTransition"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestTransitionResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             404: {
@@ -14751,6 +16627,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminDashboardSummaryResponse"];
+                };
+            };
+        };
+    };
+    documents_collector_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectorDocumentListResponse"];
                 };
             };
         };
@@ -14961,6 +16856,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    documents_admin_documents_share_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentShare"];
+                "application/x-www-form-urlencoded": components["schemas"]["DocumentShare"];
+                "multipart/form-data": components["schemas"]["DocumentShare"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDocumentShareResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    documents_admin_documents_share_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDocumentUnshareResponse"];
                 };
             };
             404: {
@@ -15500,6 +17467,8 @@ export interface operations {
     gallery_admin_link_list: {
         parameters: {
             query?: {
+                /** @description Case-insensitive substring match on name / contact_name / contact_email. */
+                search?: string;
                 /** @description Filter by exact source_type. */
                 source_type?: string;
             };
@@ -15963,6 +17932,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_links_reissue_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLinkReissueResponse"];
                 };
             };
             404: {
@@ -17059,6 +19057,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    notifications_vapid_public_key_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VapidPublicKeyResponse"];
                 };
             };
         };
@@ -18437,6 +20454,195 @@ export interface operations {
             };
         };
     };
+    recommendations_admin_question_sets_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestionSetListResponse"];
+                };
+            };
+        };
+    };
+    recommendations_admin_question_sets_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuestionSetCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["QuestionSetCreate"];
+                "multipart/form-data": components["schemas"]["QuestionSetCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestionSetCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_admin_question_sets_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestionSetDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_admin_question_sets_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_admin_question_sets_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedQuestionSetUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedQuestionSetUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedQuestionSetUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestionSetUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_admin_question_sets_activate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestionSetActivateResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     recommendations_admin_recommendations_destroy: {
         parameters: {
             query?: never;
@@ -18590,6 +20796,25 @@ export interface operations {
             };
         };
     };
+    recommendations_question_set_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionSetGetResponse"];
+                };
+            };
+        };
+    };
     recommendations_questionnaire_retrieve: {
         parameters: {
             query?: never;
@@ -18605,14 +20830,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuestionnaireGetResponse"];
-                };
-            };
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -18645,6 +20862,8 @@ export interface operations {
     sales_admin_sales_list: {
         parameters: {
             query?: {
+                /** @description Filter by sale origin: market | auction (G-SALE-4 — the Auction Sales tab). */
+                source?: string;
                 /** @description Filter by exact status. */
                 status?: string;
             };

@@ -3,7 +3,14 @@
  * `submitRequest` logic (app.html:2554-2566), ported in `./accessRequest`.
  */
 import { describe, expect, it } from 'vitest';
-import { newClientReqId, readRefCode, splitContact } from './accessRequest';
+import { HttpError, ValidationError } from '../../api/errors';
+import {
+  AccessRequestKey,
+  accessRequestError,
+  newClientReqId,
+  readRefCode,
+  splitContact,
+} from './accessRequest';
 
 class MemStorage implements Storage {
   private m = new Map<string, string>();
@@ -83,5 +90,64 @@ describe('newClientReqId', () => {
     const a = newClientReqId();
     expect(a).toMatch(/^ar_[a-z0-9]+$/);
     expect(a).not.toBe(newClientReqId());
+  });
+});
+
+describe('AccessRequestKey — one key per submission, reused on retry (G-P34-1)', () => {
+  const values = { name: 'Sara', email: 'sara@example.com', phone: '' };
+
+  it('keeps the key across retries of the same values', () => {
+    let n = 0;
+    const key = new AccessRequestKey(() => `k${++n}`);
+    expect(key.for(values)).toBe('k1');
+    expect(key.for({ ...values })).toBe('k1');
+  });
+
+  it('mints a new key when any field changes, so a correction is not replayed away', () => {
+    let n = 0;
+    const key = new AccessRequestKey(() => `k${++n}`);
+    key.for(values);
+    expect(key.for({ ...values, phone: '+98 912' })).toBe('k2');
+  });
+
+  it('ignores field order', () => {
+    let n = 0;
+    const key = new AccessRequestKey(() => `k${++n}`);
+    key.for({ a: '1', b: '2' });
+    expect(key.for({ b: '2', a: '1' })).toBe('k1');
+  });
+
+  it('starts over after reset', () => {
+    let n = 0;
+    const key = new AccessRequestKey(() => `k${++n}`);
+    key.for(values);
+    key.reset();
+    expect(key.for(values)).toBe('k2');
+  });
+});
+
+describe('accessRequestError — what the gate shows on a failure', () => {
+  it('replaces the throttle message on a 429 (G-P34-2)', () => {
+    const err = new HttpError(
+      429,
+      'TOO_MANY_REQUESTS',
+      'Request was throttled. Expected available in 3587 seconds.',
+      null,
+    );
+    expect(accessRequestError(err)).toBe('Too many attempts — try again shortly.');
+  });
+
+  it("keeps the backend's own message otherwise", () => {
+    const err = new ValidationError(
+      'VALIDATION_ERROR',
+      'Enter a valid email address.',
+      null,
+      {},
+    );
+    expect(accessRequestError(err)).toBe('Enter a valid email address.');
+  });
+
+  it('falls back when there is nothing to say', () => {
+    expect(accessRequestError('boom')).toBe('Something went wrong.');
   });
 });

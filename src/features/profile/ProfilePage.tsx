@@ -24,7 +24,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
 import type { CollectorRequest, SavedArtwork, SavedArtworkQuery } from '../../api/types';
 import { ArtworkCard } from '../catalogue/ArtworkCard';
-import { useArtworks } from '../catalogue/useArtworkCache';
 import '../catalogue/catalogue.css';
 import { ConversationRow } from '../conversations/ConversationRow';
 import { useConversations } from '../conversations/useConversations';
@@ -148,7 +147,6 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
   const recent = [...controller.conversations(), ...controller.activity()]
     .sort(byNewest)
     .slice(0, 3);
-  const lookup = useArtworks(recent.map((r) => r.artwork));
   const sv = saved.state.pagination?.total_count ?? saved.state.results.length;
 
   return (
@@ -213,12 +211,7 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
           </div>
           <div className="actlist">
             {recent.map((r) => (
-              <ConversationRow
-                key={r.id}
-                request={r}
-                artwork={lookup(r.artwork)}
-                to={rowTo(r)}
-              />
+              <ConversationRow key={r.id} request={r} to={rowTo(r)} />
             ))}
           </div>
         </>
@@ -285,7 +278,6 @@ function Market() {
   ) as Record<Filter, number>;
   const active: Filter = counts[filter] ? filter : 'all';
   const shown = all.filter((r) => filterMatch(r, active));
-  const lookup = useArtworks(shown.map((r) => r.artwork));
   const items = saved.state.results;
   const savedReady = saved.state.status === 'idle' && saved.state.pagination !== null;
 
@@ -328,7 +320,7 @@ function Market() {
 
   return (
     <>
-      <Acquisitions requests={all} lookup={lookup} to={rowTo} />
+      <Acquisitions requests={all} to={rowTo} />
       {items.length > 0 && (
         <>
           <div className="prof-sech">
@@ -379,12 +371,7 @@ function Market() {
           </div>
           <div className="actlist">
             {shown.map((r) => (
-              <ConversationRow
-                key={r.id}
-                request={r}
-                artwork={lookup(r.artwork)}
-                to={rowTo(r)}
-              />
+              <ConversationRow key={r.id} request={r} to={rowTo(r)} />
             ))}
           </div>
         </>

@@ -14,7 +14,8 @@ function row(over: Partial<CollectorRequest>): CollectorRequest {
     id: 'r',
     kind: 'offer',
     status: 'submitted',
-    artwork: 'aw1',
+    // nested, as the backend serves it (G-P5-2) — not a bare uuid
+    artwork: { id: 'aw1', title: 'Untitled', artist: null, image: null },
     detail: {},
     unread_count: 0,
     created_at: '2026-09-17T12:00:00Z',
@@ -60,6 +61,13 @@ describe('ConversationsController — derived reads', () => {
     expect(c.conversations().map((r) => r.id)).toEqual(['inq1', 'chat']);
     expect(c.activity().map((r) => r.id)).toEqual(['offer1', 'hold1']);
     expect(c.unreadTotal()).toBe(2);
+  });
+
+  it('finds the open inquiry by the nested artwork id', async () => {
+    const { c } = loaded();
+    await c.reload();
+    expect(c.openInquiryFor('aw1')?.id).toBe('inq1');
+    expect(c.openInquiryFor('aw2')).toBeNull();
   });
 });
 
@@ -121,5 +129,46 @@ describe('ConversationsController — the reply notice', () => {
 
     c.hide('offer1');
     expect(c.newestUnread()).toBeNull();
+  });
+});
+
+describe('ConversationsController — opening one request (G-P5-3)', () => {
+  it('reads a request the list does not hold, without touching the lists', async () => {
+    const one = row({ id: 'deep', kind: 'offer' });
+    const crm = { requests: vi.fn(), request: vi.fn(async () => one) };
+    const c = new ConversationsController(crm as never);
+
+    await c.open('deep');
+
+    expect(crm.request).toHaveBeenCalledWith('deep');
+    expect(c.byId('deep')?.id).toBe('deep');
+    expect(c.activity()).toEqual([]);
+  });
+
+  it('does not read what the list already has', async () => {
+    const { c, crm } = loaded();
+    await c.reload();
+    const request = vi.fn();
+    (crm as unknown as { request: typeof request }).request = request;
+
+    await c.open('offer1');
+
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('marks a request it could not read as missing, not loading', async () => {
+    const crm = {
+      requests: vi.fn(),
+      request: vi.fn(async () => {
+        throw new Error('No request found.');
+      }),
+    };
+    const c = new ConversationsController(crm as never);
+    expect(c.isMissing('gone')).toBe(false);
+
+    await c.open('gone');
+
+    expect(c.byId('gone')).toBeNull();
+    expect(c.isMissing('gone')).toBe(true);
   });
 });

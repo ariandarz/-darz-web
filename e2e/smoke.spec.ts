@@ -47,6 +47,21 @@ test('the collector gate boots and shows its shipped anatomy', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Enter the Room' }).first()).toBeVisible();
 });
 
+/**
+ * G-P34-1 — the backend dedupes Request access on `client_req_id` and answers a
+ * replay with **200** (a first insert is 201). The stub answers 200, so this
+ * proves the gate treats a replay as the success it is.
+ */
+test('a replayed access request still lands on the received panel', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Enter the Room' }).first().click();
+  await page.getByText('Request access').last().click();
+  await page.fill('input[name="rqName"]', 'Sara Ahmadi');
+  await page.fill('input[name="rqContact"]', 'sara@example.invalid');
+  await page.getByRole('button', { name: 'Send request' }).click();
+  await expect(page.getByText('Thank you, Sara. Darz will be in touch.')).toBeVisible();
+});
+
 test('a team session signs in and lands on the Dashboard', async ({ page }) => {
   await page.goto('/admin/login');
   await page.fill('input[name="email"]', 'e2e@example.invalid');

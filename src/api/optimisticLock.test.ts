@@ -24,7 +24,13 @@
  * is what was wrong and looked right.
  */
 import { describe, expect, it } from 'vitest';
-import { AdminAccountsService, CatalogAdminService, SalesAdminService } from './services';
+import {
+  AccountingAdminService,
+  AdminAccountsService,
+  AuctionsAdminService,
+  CatalogAdminService,
+  SalesAdminService,
+} from './services';
 
 /** Captures the body of the one request the call makes. */
 function spyClient() {
@@ -75,6 +81,17 @@ describe('the lock reaches the wire as `expected_version`', () => {
       (c) => new CatalogAdminService(c).updateArtist(ID, { bio: 'B', expected_version: 7 }),
     ],
     ['updateSale', (c) => new SalesAdminService(c).updateSale(ID, { expected_version: 7 })],
+    // G-LOCK-1 (2026-09-25): these two were last-write-wins until the backend
+    // made the lock mandatory on them — an unlocked PATCH now fails server-side.
+    [
+      'updateEntry',
+      (c) => new AccountingAdminService(c).updateEntry(ID, { note: 'N', expected_version: 7 }),
+    ],
+    [
+      'updateRecord',
+      (c) =>
+        new AuctionsAdminService(c).updateRecord(ID, { lot_title: 'L', expected_version: 7 }),
+    ],
   ];
 
   for (const [name, call] of cases) {

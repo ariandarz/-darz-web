@@ -5,44 +5,30 @@
  * (`dzActRowHTML`, app.html:9492-9494): an unseen reply wins, else the status
  * pill with the amount beside it, else the amount alone. Same `.actli*`
  * classes, so it diffs 1:1.
+ *
+ * The work comes off the row itself — the backend nests
+ * `{id, title, artist, image}` on every collector request (G-P5-2) — so a list
+ * of these costs no catalogue reads.
  */
 import { Link } from 'react-router-dom';
 import { statusLabel, useOptions } from '../../api/hooks';
-import type { Artwork, CollectorRequest } from '../../api/types';
-import { primaryImage } from '../catalogue/format';
+import type { CollectorRequest } from '../../api/types';
 import { workLine } from '../requests/RequestController';
 import { requestAmount, statusMeta } from '../requests/status';
 import './conversations.css';
 import { KIND_LABEL, shortDate } from './rows';
 
-export function ConversationRow({
-  request,
-  artwork,
-  to,
-}: {
-  request: CollectorRequest;
-  /** the resolved artwork (undefined while loading, null when unavailable) */
-  artwork: Artwork | null | undefined;
-  to: string;
-}) {
+export function ConversationRow({ request, to }: { request: CollectorRequest; to: string }) {
   const options = useOptions();
   const isMsg = request.kind === 'message';
   const unread = (request.unread_count || 0) > 0;
   const detail = (request.detail ?? {}) as { message?: string };
-  // :9487 — the work line, falling back to "Artwork" when the id resolves to
-  // nothing. A request with NO artwork at all (the artist enquiry, which the
-  // backend cannot link to an artist — G-P5-11) has no work to name: its own
-  // message stands below instead of a misleading "Artwork".
-  const title = isMsg
-    ? 'Chat with Darz'
-    : !request.artwork
-      ? null
-      : artwork
-        ? workLine(artwork)
-        : artwork === null
-          ? 'Artwork'
-          : '…';
-  const image = artwork ? primaryImage(artwork) : null;
+  const artwork = request.artwork;
+  // :9487 — the work line, falling back to "Artwork" when it names nothing. A
+  // request with NO artwork at all (the artist enquiry) has no work to name:
+  // its own message stands below instead of a misleading "Artwork".
+  const title = isMsg ? 'Chat with Darz' : artwork ? workLine(artwork) || 'Artwork' : null;
+  const image = artwork?.image ?? null;
   // a message is a conversation, not a request with a state (:9489)
   const meta = isMsg
     ? null
