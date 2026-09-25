@@ -118,7 +118,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-SALE-4 | `Sale` has no source axis for auction settlement | ✅ Closed | `Sale.source` (market/auction) + `?source=` on the admin sales list (B5) — the Auction Sales tab is now buildable. **Auction→Sale automation now shipped too** (2026-09-25, PR #51): a won lot auto-creates a draft `Sale(source=auction)`, so the tab fills itself. |
+| G-SALE-4 | `Sale` has no source axis for auction settlement | ✅ Closed | `Sale.source` (market/auction) + `?source=` on the admin sales list (B5) — FE ✅ adopted (Phase 2): the Auction Sales tab and the Market Sales Source filter. **Auction→Sale automation now shipped too** (2026-09-25, PR #51): a won lot auto-creates a draft `Sale(source=auction)`, so the tab fills itself. |
 | Auction→Sale automation | Won lots didn't auto-create a Sale (admin entered each by hand) | ✅ Closed | 2026-09-25 (PR #51), follow-up to G-SALE-4. On lot close (won), `LotService.close` auto-creates a **draft** `Sale(source=auction)` with `agreed_price` = hammer + buyer's premium and `commission_amount` = the premium. New `Sale.lot` FK links each sale back to its lot (also the idempotency key). Passed lots create nothing. |
 | G-SALE-1/2/3 | Sales desk tiles, filters, bare-uuid rows | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". **G-SALE-3 breaks the current desk (C-1).** |
 | G-HEALTH-1 | Data Health real counts panel | ✅ Closed | Built #83. |
@@ -128,10 +128,10 @@ trusting any shape (`CLAUDE.md` → "API access").
 
 | ID | Backend now serves | FE state | Phase |
 | --- | --- | --- | --- |
-| G-SALE-1 | `GET /sales/admin/sales/summary/` (total + per status/payment/delivery/source) | Not bound: tiles use 4 `per_page=1` counts | 2 |
-| G-SALE-2 | `?search&payment_status&delivery_status&source&ordering` on the admin sales list | Not sendable (`SaleQuery` has `status` only) | 2 |
+| G-SALE-1 | `GET /sales/admin/sales/summary/` (total + per status/payment/delivery/source) | ✅ Adopted (Phase 2): Market Sales tiles + "N total" + the Source filter's values; the 4 `per_page=1` counts are gone. Ledger-wide, so Auction Sales counts its own rows; "Need attention" (overdue follow-ups) has no aggregate and is counted over a walk (backend candidate: an overdue count on `summary/`) | 2 |
+| G-SALE-2 | `?search&payment_status&delivery_status&source&ordering` on the admin sales list | ✅ Adopted (Phase 2): search + Stage/Payment/Delivery/Source/Sort, each one param (`SalesController.test.ts`) | 2 |
 | G-SALE-3 | Nested `artwork{id,title}`, `collector{id,display_name}`, `responsible{id,name}` on rows (input stays ids) | ✅ Adopted (Phase 0): read off the row; only the artist line is still a cached per-work read | 0 |
-| G-SALE-5 | `follow_up_at` + `follow_up_overdue`, `POST …/follow-up/`, append-only `GET/POST …/notes/` | Not bound | 2 |
+| G-SALE-5 | `follow_up_at` + `follow_up_overdue`, `POST …/follow-up/`, append-only `GET/POST …/notes/` | ✅ Adopted (Phase 2): the deal card's follow-up (presets/date/Clear, "due" from the server) and notes thread; the row's "Follow-up … · due" line; the Need attention tile | 2 |
 | G-AUC-1 | `PATCH /auctions/admin/auctions/{id}/` (lock; draft/scheduled only) + `terms`/`terms_required` on create | Not bound; on-screen copy says "no edit endpoint" | 3 |
 | G-AUC-2 | `PATCH /auctions/admin/lots/{id}/` (lock; scheduled only) | Not bound; copy says "create-only" | 3 |
 | G-AUC-3 | `POST /auctions/admin/registrations/{id}/reset/` (rejected → pending) | Not bound | 3 |
@@ -191,7 +191,7 @@ Full detail and FE work-arounds are in `V1_CONTRACT_ISSUES.md` § B. In short:
 | G-6: Intelligence · Marketing Hub · Document Builder | ⛔ Deferred | API ready, no UI. Owner decision. |
 | Phase 20 Logistics | ⛔ Deferred | No `/api/logistics/` namespace. |
 | Phase 21 Library (saved-items library) | ⛔ Deferred | No library endpoints. **Per-link gallery pricelists are no longer a gap:** status lifecycle, soft cap and a structured builder shipped 2026-09-25 (P3a/P3b, see below). Only the formatted download (P3c) is still unbuilt. |
-| Auction Sales | ⚪ Frontend-only | **Unblocked** by G-SALE-4 (B5) — filter the sales list on `?source=auction`. As of 2026-09-25 (PR #51) won lots also **auto-create** the draft sale, so the tab fills itself; each row's `lot` FK links back to the auction lot. Building the tab is this repo's work. |
+| Auction Sales | ✅ Done | Built V1 Phase 2 (2026-09-25): `/admin/sales?source=auction`, the Sales desk with a fixed `source=auction` scope; the auto-created drafts list there, each row's **Lot N** links to its auction page (lot resolved via `GET …/admin/lots/{id}/`). |
 | G7 "Refine" filter UI, FE-R1…R4 (Records desk/curation/import/sub-tabs) | ⚪ Frontend-only | Backend ready; UI is this repo's Phase 12+. |
 | Legacy-id lookup / catalogue change-stamp | ⚪ Frontend-only | Endpoints exist; nothing consumes them yet. |
 | G-DEL-1 (three admin deletes) | ✅ Closed | Built Phase 6b (2026-09-22). |
@@ -205,7 +205,7 @@ Full detail and FE work-arounds are in `V1_CONTRACT_ISSUES.md` § B. In short:
   no 🔵 rows. There **are** backend *defects*: see `V1_CONTRACT_ISSUES.md` § B.
 - **Frontend adoption of the closed backend work** → `V1_IMPLEMENTATION_PLAN.md` (phases 0–10); per-gap
   detail in `API_GAPS_FRONTEND_ADOPTION.md`. This is the main remaining work.
-- **Frontend-only UI** (⚪ rows, incl. the now-unblocked Auction Sales tab) → this repo's `TASKLIST.md`.
+- **Frontend-only UI** (⚪ rows) → this repo's `TASKLIST.md`.
 - **Deferred/unbuilt phases** (⛔ rows: Logistics/Library/Insights, Marketing Hub & Document Builder
   UIs) → owner-scoped; `TASKLIST.md`.
 

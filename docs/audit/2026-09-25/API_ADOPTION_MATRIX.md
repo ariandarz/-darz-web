@@ -134,7 +134,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | DELETE | /api/auctions/admin/auctions/{id}/cover-image/ | none | — | Not bound | Cover image remove — no binding. |
 | GET | /api/auctions/admin/auctions/{id}/invite-only/ | `AuctionsAdminService.inviteList` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
 | POST | /api/auctions/admin/auctions/{id}/invite-only/ | `AuctionsAdminService.setInviteOnly` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
-| GET | /api/auctions/admin/lots/{id}/ | `AuctionsAdminService.lot` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
+| GET | /api/auctions/admin/lots/{id}/ | `AuctionsAdminService.lot` | `admin/AuctionAdminDetailPage.tsx`, `admin/useSaleRefs.ts` | Integrated | Phase 2: also resolves an auction sale's `lot` to its auction + number (the Lot link). |
 | PATCH | /api/auctions/admin/lots/{id}/ | none | — | Not bound | Edit lot (numbers/estimates/reserve/dates; expected_version) — no binding; lots are create-only in FE. |
 | POST | /api/auctions/admin/lots/{id}/close/ | `AuctionsAdminService.closeLot` | `admin/AuctionAdminDetailPage.tsx` | Integrated | `?force` sent when closing early. |
 | POST | /api/auctions/admin/lots/{id}/go-live/ | `AuctionsAdminService.goLive` | `admin/AuctionAdminDetailPage.tsx` | Integrated |  |
@@ -193,16 +193,16 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/sales/admin/sales/ | `SalesAdminService.sales` | `admin/SalesController.ts`, `admin/SalesPage.tsx` | Integrated | Unsent: `search, ordering, payment_status, delivery_status, source` (SaleQuery = status/page/per_page). SalesPage counts per status via N `per_page=1` calls. |
+| GET | /api/sales/admin/sales/ | `SalesAdminService.sales` | `admin/SalesController.ts`, `admin/SalesPage.tsx` | Integrated | Phase 2 (2026-09-25): every filter sent (`search, status, payment_status, delivery_status, source, ordering`); Auction Sales = fixed `source=auction`; the strip walks the tab's rows for the overdue count. The `per_page=1` counts are gone. |
 | POST | /api/sales/admin/sales/ | `SalesAdminService.createSale` | `admin/SalesPage.tsx` | Integrated |  |
-| GET | /api/sales/admin/sales/summary/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Sales KPI summary — no binding. |
+| GET | /api/sales/admin/sales/summary/ | `SalesAdminService.summary` | `admin/SalesController.ts` (`readStrip`) | Integrated | Phase 2: Market Sales tiles + "N total" + the Source filter's values (`by_source`). Ledger-wide (no `source`), so Auction Sales counts its own rows. |
 | GET | /api/sales/admin/sales/{id}/ | `SalesAdminService.sale` | `admin/SaleDetailPage.tsx` | Integrated |  |
 | PATCH | /api/sales/admin/sales/{id}/ | `SalesAdminService.updateSale` | `admin/SaleDetailPage.tsx` | Integrated |  |
-| DELETE | /api/sales/admin/sales/{id}/ | none | — | Not bound | Delete sale — no binding. |
+| DELETE | /api/sales/admin/sales/{id}/ | `SalesAdminService.deleteSale` | `admin/SaleDetailPage.tsx` | Integrated | Phase 2: "Delete deal" (old deal card `:12664`) behind the old confirm. |
 | POST | /api/sales/admin/sales/{id}/delivery-status/ | `SalesAdminService.setDeliveryStatus` | `admin/SaleDetailPage.tsx` | Integrated |  |
-| POST | /api/sales/admin/sales/{id}/follow-up/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Set follow_up_at — no binding. |
-| GET | /api/sales/admin/sales/{id}/notes/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Sale notes list — no binding. |
-| POST | /api/sales/admin/sales/{id}/notes/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Add sale note — no binding. |
+| POST | /api/sales/admin/sales/{id}/follow-up/ | `SalesAdminService.followUp` | `admin/SaleDetailPage.tsx` | Integrated | Phase 2: presets / date / Clear (`null`); the row's and card's "due" read `follow_up_overdue`. |
+| GET | /api/sales/admin/sales/{id}/notes/ | `SalesAdminService.notes` | `admin/SaleDetailPage.tsx` | Integrated | Phase 2: whole thread walked, newest first. |
+| POST | /api/sales/admin/sales/{id}/notes/ | `SalesAdminService.addNote` | `admin/SaleDetailPage.tsx` | Integrated | Phase 2: appended from the 201 without a reload. |
 | POST | /api/sales/admin/sales/{id}/payment-status/ | `SalesAdminService.setPaymentStatus` | `admin/SaleDetailPage.tsx` | Integrated |  |
 | POST | /api/sales/admin/sales/{id}/transition/ | `SalesAdminService.transitionSale` | `admin/SaleDetailPage.tsx` | Integrated |  |
 
@@ -406,15 +406,16 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 Counts updated by V1 Phase 1 (2026-09-25): four operations moved from Not bound to Integrated —
 `PATCH /api/auth/me/`, `GET /api/auth/my-membership/`, `GET /api/documents/`,
-`GET /api/documents/public/{kind}/`. Status cells elsewhere are the 2026-09-25 baseline unless a row
-says otherwise.
+`GET /api/documents/public/{kind}/`. V1 Phase 2 (2026-09-25) moved five more — the sales
+`summary/`, `DELETE …/sales/{id}/`, `…/follow-up/`, and `…/notes/` GET + POST. Status cells elsewhere
+are the 2026-09-25 baseline unless a row says otherwise.
 
 | Status | Count |
 |---|---|
-| Integrated | 229 |
+| Integrated | 234 |
 | Partial | 3 |
 | Bound, no UI | 9 |
-| Not bound | 81 |
+| Not bound | 76 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
@@ -514,11 +515,6 @@ says otherwise.
 - `POST /api/recommendations/admin/tags/{id}/approve/`
 - `POST /api/recommendations/admin/tags/{id}/lock/`
 - `GET /api/recommendations/question-set/`
-- `GET /api/sales/admin/sales/summary/`
-- `DELETE /api/sales/admin/sales/{id}/`
-- `POST /api/sales/admin/sales/{id}/follow-up/`
-- `GET /api/sales/admin/sales/{id}/notes/`
-- `POST /api/sales/admin/sales/{id}/notes/`
 
 ### Backend-only
 
@@ -526,7 +522,6 @@ says otherwise.
 
 ### Notable unsent query params on integrated endpoints
 
-- `GET /api/sales/admin/sales/` — Unsent: `search, ordering, payment_status, delivery_status, source` (SaleQuery = status/page/per_page). SalesPage counts per status via N `per_page=1` calls.
 - `GET /api/catalog/admin/artists/` — `?search`, `?ordering` unsent — desks fetch `per_page=500` and search client-side; service comment ("backend list takes NO filters, G-CAT-3") is stale.
 - `GET /api/catalog/admin/artworks/` — Unsent (not in ArtworkAdminQuery): `complete, created_after, duplicate_images, gallery_portal, price_min, price_max, size, source_type, tag, refine_*`.
 - `GET /api/projects/admin/projects/` — `?partner`, `?quick` unsent (ProjectQuery lacks them); `archived` sent as True/False.

@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 Phase 2: Sales desk (summary, filters, follow-up, notes) and Auction Sales
+
+- Market Sales: strip from `summary/` (+ Need attention = overdue follow-ups), search + Stage/Payment/Delivery/Source/Sort; deal page gains follow-up set/clear, append-only notes, Source/Lot rows, Delete deal. Auction Sales at `/admin/sales?source=auction`, each sale linking to its lot. Stale G-SALE notes removed.
+- Stub serves a two-sale ledger (market + auction with lot), summary, follow-up, notes. **697 unit · 101 E2E** (desks 62). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3c.
+
 ## 2026-09-25 — V1 Phase 1: collector account (profile edit, my-membership, documents, chip, G-Q-1, legal links)
 
 - Profile › Account is editable via `PATCH /auth/me/` (`AuthService.updateMe`, session `me` refreshed); "Your documents" (G-DOC-1) ported from `dzDocsSectionHTML`; Settings membership row + sheet read `/auth/my-membership/`; chip shows `selection_name`; questionnaire writes phone/lang; legal links use `/documents/public/{kind}/`; "Make an offer" hidden without a currency (Q-6); Profile tiles wait with `.dz-state`.
