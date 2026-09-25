@@ -555,6 +555,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | Nav "Insights" → `/stories` with no route | Not V1: hide the tab or leave it as the old app did (flag) |
 | Stale on-screen "backend gap" notes (≈20, listed in `ADMIN_AUDIT.md`) | Removed by whichever phase makes each one false |
 | `docs/ADMIN_SCREENS.md:118` lists the Settings route as missing | 10 |
+| Collector auction cards run past the right edge at 390px (pre-existing layout, seen in the Phase 3 captures; may be the old horizontal peek — check against `app.html` before changing) | 10 |
 
 ## 5 · Progress
 
