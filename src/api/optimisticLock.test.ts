@@ -92,6 +92,21 @@ describe('the lock reaches the wire as `expected_version`', () => {
       (c) =>
         new AuctionsAdminService(c).updateRecord(ID, { lot_title: 'L', expected_version: 7 }),
     ],
+    // V1 Phase 3 (G-AUC-1/2): the auction and lot editors. Both PATCHes 500
+    // without the lock (C-6) and 409 on a stale one.
+    [
+      'updateAuction',
+      (c) =>
+        new AuctionsAdminService(c).updateAuction(ID, { title: 'T', expected_version: 7 }),
+    ],
+    [
+      'updateLot',
+      (c) =>
+        new AuctionsAdminService(c).updateLot(ID, {
+          opening_amount: '10',
+          expected_version: 7,
+        }),
+    ],
   ];
 
   for (const [name, call] of cases) {

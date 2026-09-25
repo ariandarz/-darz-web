@@ -22,6 +22,8 @@ import type {
   ArtworkSelection,
   Auction,
   AuctionNotification,
+  AuctionCreateBody,
+  AuctionPatch,
   AuctionQuery,
   AuctionRecord,
   AuctionRecordQuery,
@@ -82,6 +84,7 @@ import type {
   GalleryUpdateAdmin,
   BidderRegistrationAdmin,
   LotAdmin,
+  LotPatch,
   LedgerEntryAdmin,
   LedgerQuery,
   LedgerSummary,
@@ -1142,20 +1145,42 @@ export class AuctionsAdminService extends ResourceService {
     super(client, '/auctions/admin');
   }
 
-  auctions(query: { page?: number; per_page?: number } = {}) {
+  /** The working list hides archived auctions unless `archived` is sent
+   * (G-AUC-4); `archived: true` is the old desk's Archived view. */
+  auctions(query: AuctionQuery = {}) {
     return this.list<Auction>('/auctions/', query as RequestOptions['query']);
   }
   auction(id: string) {
     return this.retrieve<Auction>(`/auctions/${id}/`);
   }
-  createAuction(body: {
-    title: string;
-    description?: string;
-    currency: string;
-    starts_at: string;
-    ends_at: string;
-  }) {
+  /** `terms`/`terms_required` ride the create too (G-AUC-1). */
+  createAuction(body: AuctionCreateBody) {
     return this.create<Auction>('/auctions/', body);
+  }
+  /** Edit title/description/currency/window/terms (G-AUC-1). Draft or
+   * scheduled only — anything else is a 400 whose `code` is
+   * `INTERNAL_ERROR` (C-11), so callers branch on the status, not the code.
+   * `expected_version` is mandatory (C-6); a stale one is a 409. */
+  updateAuction(id: string, body: AuctionPatch) {
+    return this.client.send<Auction>('PATCH', `${this.basePath}/auctions/${id}/`, { body });
+  }
+  /** Archive (default) or restore (`restore: true` → `{archived:false}`) —
+   * the old card's Archive / ↩ Restore (`darz-studio.html:31814`, `:31813`). */
+  archiveAuction(id: string, restore = false) {
+    return this.create<Auction>(`/auctions/${id}/archive/`, { archived: !restore });
+  }
+  /** The uploaded poster (old "↑ Upload poster", `:32064`) — multipart,
+   * field `file`; replacing deletes the previous object server-side. */
+  uploadCover(id: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.client.send<Auction>('POST', `${this.basePath}/auctions/${id}/cover-image/`, {
+      body: form,
+    });
+  }
+  /** "Remove uploaded poster" (`:32065`). */
+  removeCover(id: string) {
+    return this.client.send<Auction>('DELETE', `${this.basePath}/auctions/${id}/cover-image/`);
   }
   /** The old panel's `×` on an auction card, titled "Delete auction
    * permanently" (`:31815`, confirm "Delete this auction?"). **Built
@@ -1204,6 +1229,12 @@ export class AuctionsAdminService extends ResourceService {
     soft_close_sec?: number;
   }) {
     return this.create<LotAdmin>(`/auctions/${body.auction}/lots/`, body);
+  }
+  /** Edit a SCHEDULED lot (G-AUC-2) — the old modal's per-lot Est. low /
+   * Est. high / Opening bid / Reserve row (`:32019-32024`). Locked (C-6); a
+   * non-scheduled lot is a 400 (C-11). */
+  updateLot(lotId: string, body: LotPatch) {
+    return this.client.send<LotAdmin>('PATCH', `${this.basePath}/lots/${lotId}/`, { body });
   }
   /** scheduled → live; the artwork transitions to Reserved server-side. */
   /** One lot as the desk sees it — the admin tier, which carries the reserve
@@ -1264,6 +1295,11 @@ export class AuctionsAdminService extends ResourceService {
   }
   rejectRegistration(id: string) {
     return this.create<BidderRegistrationAdmin>(`/registrations/${id}/reject/`);
+  }
+  /** The old ↺ Reset (`:31887`, G-AUC-3): a REJECTED registration goes back
+   * to pending; any other status is a 400 (C-11). */
+  resetRegistration(id: string) {
+    return this.create<BidderRegistrationAdmin>(`/registrations/${id}/reset/`);
   }
 }
 

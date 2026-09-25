@@ -511,3 +511,46 @@ test('a deep link to a thread reads its own request and renders it', async () =>
   await expect(page.locator('.actsh-artt')).toHaveText('Parviz Tanavoli — Poet and Bird');
   expect(thrown).toEqual([]);
 });
+
+/**
+ * V1 Phase 3 — the auction cards read `cover_image_url`. Each card used to
+ * read its first lot (`GET /auctions/{id}/lots/?per_page=1`) for a poster:
+ * one extra request per card. The list is now the only auctions read.
+ */
+test('the auctions list draws the poster from the row, with no per-card lot read', async () => {
+  thrown = [];
+  const reads: string[] = [];
+  const onRequest = (req: { url: () => string }) => {
+    const u = new URL(req.url());
+    if (u.pathname.startsWith('/api/auctions/')) reads.push(u.pathname);
+  };
+  page.on('request', onRequest);
+  try {
+    await page.goto('/auctions');
+    await expect(page.getByText('Spring Evening Auction')).toBeVisible();
+    await expect(page.getByText('Summer Online Auction')).toBeVisible();
+    await expect(page.locator('.auc-split-img img')).toHaveAttribute(
+      'src',
+      /\/files\/auction-cover\.svg$/,
+    );
+    await page.waitForLoadState('networkidle');
+    expect(reads.filter((p) => p.includes('/lots/'))).toEqual([]);
+    expect(reads.filter((p) => p === '/api/auctions/')).toHaveLength(1);
+  } finally {
+    page.off('request', onRequest);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('an event with no lots says so, and its hero is the uploaded poster', async () => {
+  thrown = [];
+  await page.goto('/auctions/00000000-0000-4000-8000-00000000ac02');
+  await expect(page.getByText('No lots in this view.')).toBeVisible();
+
+  await page.goto('/auctions/00000000-0000-4000-8000-00000000ac01');
+  await expect(page.locator('.auc-hero img')).toHaveAttribute(
+    'src',
+    /\/files\/auction-cover\.svg$/,
+  );
+  expect(thrown).toEqual([]);
+});

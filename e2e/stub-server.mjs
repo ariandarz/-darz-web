@@ -116,6 +116,33 @@ const OPTIONS = {
     { value: 'partial', label: 'Partial' },
     { value: 'paid', label: 'Paid' },
   ],
+  // The four auction vocabularies (`apps/auctions/apps.py`) — the Live
+  // Auctions status filter and pills, registrations and records read them.
+  'auctions.auction_status': [
+    { value: 'draft', label: 'Draft' },
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'live', label: 'Live' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'cancelled', label: 'Cancelled' },
+  ],
+  'auctions.lot_status': [
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'live', label: 'Live' },
+    { value: 'sold', label: 'Sold' },
+    { value: 'passed', label: 'Passed' },
+  ],
+  'auctions.registration_status': [
+    { value: 'pending', label: 'Pending' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
+  ],
+  'auctions.record_status': [
+    { value: 'sold', label: 'Sold' },
+    { value: 'unsold', label: 'Unsold' },
+    { value: 'passed', label: 'Passed' },
+    { value: 'withdrawn', label: 'Withdrawn' },
+    { value: 'pending', label: 'Pending' },
+  ],
   'sales.delivery_status': [
     { value: 'pending', label: 'Pending' },
     { value: 'in_transit', label: 'In transit' },
@@ -426,6 +453,201 @@ function bearerIsCollector(req) {
   return auth.includes('e2e-collector');
 }
 
+/**
+ * V1 Phase 3 — the auctions desks (G-AUC-1…4, G-REC-1). Three admin
+ * auctions: a SCHEDULED one with two scheduled lots and an uploaded poster
+ * (editable; the E2E edit/lot/cover walks use it), a LIVE one (read-only
+ * form), and an ARCHIVED one (only on `?archived=true`, as the server does).
+ * Stateless like the rest: a write answers the row as it would be after it,
+ * and a PATCH whose `expected_version` is behind the row's is the 409 a stale
+ * save gets.
+ */
+const STUB_ORIGIN = 'http://127.0.0.1:8787';
+const COVER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a1714"/><stop offset="1" stop-color="#6b5a48"/></linearGradient></defs><rect width="600" height="800" fill="url(#g)"/><text x="50" y="690" fill="#efe9de" font-family="Georgia,serif" font-size="54">Spring Evening</text><text x="50" y="740" fill="#b5a898" font-family="Georgia,serif" font-size="30">Auction · Darz</text></svg>`;
+const COVER_URL = `${STUB_ORIGIN}/files/auction-cover.svg`;
+const AUC_SCHEDULED_ID = '00000000-0000-4000-8000-00000000ac01';
+const AUC_LIVE_ID = '00000000-0000-4000-8000-00000000ac02';
+const AUC_ARCHIVED_ID = '00000000-0000-4000-8000-00000000ac03';
+const AUC_BASE = {
+  description: '',
+  currency: 'USD',
+  terms: '',
+  terms_required: true,
+  invite_only: false,
+  archived: false,
+  cover_image_url: null,
+  version: 4,
+  created_at: '2026-09-01T10:00:00Z',
+  updated_at: '2026-09-01T10:00:00Z',
+};
+const AUCTIONS = [
+  {
+    ...AUC_BASE,
+    id: AUC_SCHEDULED_ID,
+    title: 'Spring Evening Auction',
+    description: 'Contemporary Iranian painting, one evening only.',
+    status: 'scheduled',
+    starts_at: '2026-10-19T16:00:00Z',
+    ends_at: '2026-10-24T16:00:00Z',
+    cover_image_url: COVER_URL,
+    lots_count: 2,
+  },
+  {
+    ...AUC_BASE,
+    id: AUC_LIVE_ID,
+    title: 'Summer Online Auction',
+    status: 'live',
+    starts_at: '2026-09-20T10:00:00Z',
+    ends_at: '2026-10-18T10:00:00Z',
+    lots_count: 0,
+  },
+  {
+    ...AUC_BASE,
+    id: AUC_ARCHIVED_ID,
+    title: 'Winter Archive Sale',
+    status: 'closed',
+    starts_at: '2026-01-10T10:00:00Z',
+    ends_at: '2026-01-17T10:00:00Z',
+    archived: true,
+    lots_count: 0,
+  },
+];
+const LOT_BASE = {
+  auction: AUC_SCHEDULED_ID,
+  reserve_amount: '9000.00',
+  premium_pct: '20.00',
+  currency: 'USD',
+  starts_at: '2026-10-19T16:00:00Z',
+  ends_at: '2026-10-24T16:00:00Z',
+  soft_close_sec: 120,
+  status: 'scheduled',
+  closing_notified: false,
+  current_amount: null,
+  bid_count: 0,
+  leading_bidder: null,
+  reserve_met: false,
+  version: 2,
+  created_at: '2026-09-01T10:00:00Z',
+  updated_at: '2026-09-01T10:00:00Z',
+};
+const AUC_LOTS = [
+  {
+    ...LOT_BASE,
+    id: '00000000-0000-4000-8000-0000000010a1',
+    artwork: '00000000-0000-4000-8000-00000000a101',
+    lot_number: 1,
+    opening_amount: '8000.00',
+    low_estimate: '9000.00',
+    high_estimate: '12000.00',
+  },
+  {
+    ...LOT_BASE,
+    id: '00000000-0000-4000-8000-0000000010a2',
+    artwork: '00000000-0000-4000-8000-00000000a102',
+    lot_number: 2,
+    opening_amount: '15000.00',
+    low_estimate: '18000.00',
+    high_estimate: '25000.00',
+  },
+];
+const LOT_ARTWORK_TITLES = {
+  '00000000-0000-4000-8000-00000000a101': ['Parviz Tanavoli', 'Heech'],
+  '00000000-0000-4000-8000-00000000a102': ['Monir Farmanfarmaian', 'Poet and Bird'],
+};
+const REG_BASE = { auction: AUC_SCHEDULED_ID, paddle_number: null, terms_accepted_at: null };
+const REGISTRATIONS = [
+  {
+    ...REG_BASE,
+    id: '00000000-0000-4000-8000-0000000019a1',
+    collector: '00000000-0000-4000-8000-0000000019c1',
+    status: 'pending',
+    created_at: '2026-09-23T09:00:00Z',
+  },
+  {
+    ...REG_BASE,
+    id: '00000000-0000-4000-8000-0000000019a2',
+    collector: '00000000-0000-4000-8000-0000000019c2',
+    status: 'rejected',
+    created_at: '2026-09-21T09:00:00Z',
+  },
+];
+const REG_COLLECTORS = {
+  '00000000-0000-4000-8000-0000000019c1': 'Sara Ahmadi',
+  '00000000-0000-4000-8000-0000000019c2': 'Reza Karimi',
+};
+const REC_BASE = {
+  artist: null,
+  currency: 'USD',
+  status: 'sold',
+  is_highlight: false,
+  version: 1,
+  sale_name: '',
+  year: '',
+  hammer_amount: null,
+  price_amount: null,
+};
+const AUCTION_RECORDS = [
+  {
+    ...REC_BASE,
+    id: '00000000-0000-4000-8000-0000000018a1',
+    artist_display_name: 'Parviz Tanavoli',
+    lot_title: 'Heech and Chair',
+    house: 'Christie’s',
+    sale_date: '2026-05-10',
+    realized_amount: '120000.00',
+  },
+  {
+    ...REC_BASE,
+    id: '00000000-0000-4000-8000-0000000018a2',
+    artist_display_name: 'Monir Farmanfarmaian',
+    lot_title: 'Mirror Ball',
+    house: 'Tehran Auction',
+    sale_date: '2026-03-02',
+    realized_amount: '95000.00',
+  },
+  {
+    ...REC_BASE,
+    id: '00000000-0000-4000-8000-0000000018a3',
+    artist_display_name: 'Farhad Moshiri',
+    lot_title: 'Kiss',
+    house: 'Artcurial',
+    sale_date: '2025-11-20',
+    realized_amount: '60000.00',
+  },
+];
+const conflict = () => ({
+  status: 409,
+  body: {
+    success: false,
+    error: { code: 'CONFLICT', message: 'This record was modified by someone else.' },
+    timestamp: new Date().toISOString(),
+  },
+});
+/** C-11: an ordinary refusal comes back as a 400 whose code is INTERNAL_ERROR. */
+const refused = (message) => ({
+  status: 400,
+  body: {
+    success: false,
+    error: { code: 'INTERNAL_ERROR', message },
+    timestamp: new Date().toISOString(),
+  },
+});
+/** A locked PATCH: stale → 409; else the row with the body merged, version+1. */
+const lockedPatch = (row, body, editable, refusal) => {
+  if (!row) return notFound('Not found.');
+  if (typeof body?.expected_version !== 'number')
+    return refused('expected_version is required');
+  if (!editable(row)) return refused(refusal);
+  if (body.expected_version !== row.version) return conflict();
+  const { expected_version: _v, ...fields } = body;
+  return envelope({ ...row, ...fields, version: row.version + 1 });
+};
+const auctionById = (path) => AUCTIONS.find((a) => a.id === path.split('/')[5]);
+
+/** The collector's auction list — only non-archived sales here, with the
+ * poster on one card (the card reads `cover_image_url`, no lot request). */
+const COLLECTOR_AUCTIONS = AUCTIONS.filter((a) => !a.archived);
+
 const routes = {
   // `?langs=` turns the multilingual engine on for one walk. The app ships it
   // OFF (no `theme.langs`), and the default here reproduces that — so the stub
@@ -533,6 +755,25 @@ const routes = {
   'GET /api/sales/admin/sales/summary/': () => envelope(saleSummary()),
   'GET /api/sales/admin/sales/': (req) =>
     page(saleList(new URL(req.url, 'http://x').searchParams)),
+  'GET /api/auctions/admin/auctions/': (req) => {
+    const archived = new URL(req.url, 'http://x').searchParams.get('archived');
+    return page(AUCTIONS.filter((a) => a.archived === (archived === 'true')));
+  },
+  'GET /api/auctions/admin/registrations/': (req) => {
+    const sp = new URL(req.url, 'http://x').searchParams;
+    return page(
+      REGISTRATIONS.filter(
+        (r) =>
+          (!sp.get('status') || r.status === sp.get('status')) &&
+          (!sp.get('auction') || r.auction === sp.get('auction')),
+      ),
+    );
+  },
+  'GET /api/auctions/admin/records/': (req) => {
+    const house = new URL(req.url, 'http://x').searchParams.get('house');
+    return page(AUCTION_RECORDS.filter((r) => !house || r.house === house));
+  },
+  'GET /api/auctions/': () => page(COLLECTOR_AUCTIONS),
   'GET /api/catalog/admin/data-health/': () =>
     envelope({
       healthy: true,
@@ -661,12 +902,16 @@ const patterns = [
     },
   ],
   // The auction sale's lot — the admin tier's `LotAdmin`, for its auction id
-  // and number (the Auction Sales tab links to the lot's auction page).
+  // and number (the Auction Sales tab links to the lot's auction page) — and
+  // the Phase 3 auction's two scheduled lots.
   [
     /^\/api\/auctions\/admin\/lots\/[^/]+\/$/,
     'GET',
-    (path) =>
-      path.split('/')[5] === SALE_LOT_ID
+    (path) => {
+      const id = path.split('/')[5];
+      const lot = AUC_LOTS.find((l) => l.id === id);
+      if (lot) return envelope(lot);
+      return id === SALE_LOT_ID
         ? envelope({
             id: SALE_LOT_ID,
             auction: SALE_AUCTION_EVENT_ID,
@@ -677,7 +922,122 @@ const patterns = [
             currency: 'USD',
             status: 'sold',
           })
-        : notFound('No Lot matches the given query.'),
+        : notFound('No Lot matches the given query.');
+    },
+  ],
+  // G-AUC-2: a scheduled lot's locked PATCH.
+  [
+    /^\/api\/auctions\/admin\/lots\/[^/]+\/$/,
+    'PATCH',
+    (path, body) =>
+      lockedPatch(
+        AUC_LOTS.find((l) => l.id === path.split('/')[5]),
+        body,
+        (l) => l.status === 'scheduled',
+        'Only a scheduled lot can be edited.',
+      ),
+  ],
+  [
+    /^\/api\/auctions\/admin\/auctions\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const a = auctionById(path);
+      return a ? envelope(a) : notFound('No Auction matches the given query.');
+    },
+  ],
+  // G-AUC-1: draft/scheduled only; locked.
+  [
+    /^\/api\/auctions\/admin\/auctions\/[^/]+\/$/,
+    'PATCH',
+    (path, body) =>
+      lockedPatch(
+        auctionById(path),
+        body,
+        (a) => a.status === 'draft' || a.status === 'scheduled',
+        'Only a draft or scheduled auction can be edited.',
+      ),
+  ],
+  // G-AUC-4: a bare POST archives; `{archived:false}` restores.
+  [
+    /^\/api\/auctions\/admin\/auctions\/[^/]+\/archive\/$/,
+    'POST',
+    (path, body) => {
+      const a = auctionById(path);
+      if (!a) return notFound('No Auction matches the given query.');
+      const archived = body?.archived ?? true;
+      return envelope({ ...a, archived, version: a.version + 1 });
+    },
+  ],
+  // The poster: multipart upload (the body is not JSON — not read) / delete.
+  [
+    /^\/api\/auctions\/admin\/auctions\/[^/]+\/cover-image\/$/,
+    'POST',
+    (path) => {
+      const a = auctionById(path);
+      if (!a) return notFound('No Auction matches the given query.');
+      return envelope({ ...a, cover_image_url: COVER_URL, version: a.version + 1 });
+    },
+  ],
+  [
+    /^\/api\/auctions\/admin\/auctions\/[^/]+\/cover-image\/$/,
+    'DELETE',
+    (path) => {
+      const a = auctionById(path);
+      if (!a) return notFound('No Auction matches the given query.');
+      return envelope({ ...a, cover_image_url: null, version: a.version + 1 });
+    },
+  ],
+  [
+    /^\/api\/auctions\/admin\/auctions\/[^/]+\/invite-only\/$/,
+    'GET',
+    () => envelope({ invite_only: false, invited_collectors: [] }),
+  ],
+  [
+    /^\/api\/auctions\/admin\/auctions\/[^/]+\/lots\/$/,
+    'GET',
+    (path) => page(AUC_LOTS.filter((l) => l.auction === path.split('/')[5])),
+  ],
+  // The collector's view of the two visible sales (unknown ids keep the
+  // catch-all, which the route walk relies on); their lots are the catch-all's
+  // empty list — the event page's empty state.
+  [
+    /^\/api\/auctions\/00000000-0000-4000-8000-00000000ac0[12]\/$/,
+    'GET',
+    (path) => envelope(COLLECTOR_AUCTIONS.find((a) => a.id === path.split('/')[3])),
+  ],
+  // The lots' artworks and the registrations' collectors, by id.
+  [
+    /^\/api\/catalog\/admin\/artworks\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const id = path.split('/')[5];
+      const t = LOT_ARTWORK_TITLES[id];
+      return t
+        ? envelope({ id, artist_name_raw: t[0], title: t[1] })
+        : notFound('No Artwork matches the given query.');
+    },
+  ],
+  [
+    /^\/api\/auth\/admin\/collectors\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const id = path.split('/')[5];
+      return REG_COLLECTORS[id]
+        ? envelope({ id, display_name: REG_COLLECTORS[id] })
+        : notFound('No Collector matches the given query.');
+    },
+  ],
+  // G-AUC-3: a rejected registration back to pending; anything else is C-11.
+  [
+    /^\/api\/auctions\/admin\/registrations\/[^/]+\/reset\/$/,
+    'POST',
+    (path) => {
+      const r = REGISTRATIONS.find((x) => x.id === path.split('/')[5]);
+      if (!r) return notFound('No BidderRegistration matches the given query.');
+      if (r.status !== 'rejected')
+        return refused('Only a rejected registration can be reset.');
+      return envelope({ ...r, status: 'pending' });
+    },
   ],
   [
     /^\/api\/projects\/admin\/projects\/reports\/$/,
@@ -718,6 +1078,14 @@ function respond(req, res, body) {
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+  // The uploaded poster the stub's auctions point at — a small SVG, so a
+  // render check shows a real image rather than a broken one.
+  if (url.pathname === '/files/auction-cover.svg') {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.writeHead(200);
+    res.end(COVER_SVG);
     return;
   }
   if (hit) {

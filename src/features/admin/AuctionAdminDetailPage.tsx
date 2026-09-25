@@ -1,61 +1,141 @@
 /**
- * AuctionAdminDetailPage — `/admin/auctions/:id`: one sale's record, its
- * Phase-35 privacy, and its lots.
+ * AuctionAdminDetailPage — `/admin/auctions/:id`: one sale's cover, its
+ * editable record and terms, its Phase-35 privacy, and its lots.
  *
- * The API's own shape, stated where it bites:
- *  - an auction has NO edit endpoint (GET/DELETE only, G-AUC-1) — the
- *    record card says so instead of offering dead inputs;
- *  - lots are create-only (G-AUC-2) and move through **Go live**
+ * **V1 Phase 3 — the old Manage-auction modal** (`editAuc`/`saveAuc`,
+ * `darz-studio.html:32027-32172`) is ported onto this page, section by
+ * section and in the modal's own order:
+ *  - **Cover & poster** (`:32060-32068`): "↑ Upload poster" · "Remove
+ *    uploaded poster" · the preview labelled "Uploaded poster — used as the
+ *    cover" — over `POST/DELETE …/cover-image/` (multipart `file`). Cut, and
+ *    said here: the cover-ARTWORK search (no cover-artwork field in this
+ *    backend), the poster text over the cover (headline / subtext / colour /
+ *    position, `:32069-32077`), and the Document Builder poster designer
+ *    (`:32078-32087`, D18). "or PDF" is dropped from the button: the cover is
+ *    drawn as an image on the collector card, so a PDF would render as
+ *    nothing.
+ *  - **Auction details** (`:32089-32099`): Title · Description · Start · End
+ *    (+ Currency, which the old modal kept under terms, `:32109`) with the
+ *    old placeholders. The old Type (timed/live) and Status selects are not
+ *    fields here — status moves through its own actions, and the model has no
+ *    type.
+ *  - **Terms & financial settings** (`:32100-32108`): `AuctionTermsFields`.
+ *  - **Save auction** (`:32127`). The old toast "Auction saved → live in the
+ *    App" is not ported — a draft saved here is not live anywhere — so the
+ *    button's own "✓ Saved" flash (`DeskSave`) is the confirmation.
+ *
+ * The API's own rules, stated where they bite:
+ *  - the PATCH (G-AUC-1) is **draft/scheduled only**; past that the form is
+ *    read-only with the server's own sentence as the reason. A refusal still
+ *    arrives as a 400 whose `code` is `INTERNAL_ERROR` (C-11) — the desk shows
+ *    its `message`, never the code. The lock is mandatory (C-6); a stale save
+ *    is the kit's `ConflictBanner`;
+ *  - the server does not check `starts_at < ends_at` (C-18), so the form does;
+ *  - a **scheduled** lot is editable (G-AUC-2) with the same lock/banner
+ *    pattern — the old modal's per-lot Est. low / Est. high / Opening bid /
+ *    Reserve row (`:32019-32024`) — then moves through **Go live**
  *    (scheduled→live; the artwork transitions to Reserved server-side) and
- *    **Close** — the engine sells only with bids AND the reserve met,
- *    otherwise the lot passes (force never overrides that); before the
- *    scheduled end a close must be *forced* ("Lot has not reached its end
- *    time yet."), so the desk offers **Close early** until then;
+ *    **Close**. The engine sells only with bids AND the reserve met,
+ *    otherwise the lot passes; before the scheduled end a close must be
+ *    *forced* ("Lot has not reached its end time yet."), so the desk offers
+ *    **Close early** until then;
  *  - the reserve is confidential (the model: "never exposed to collectors;
- *    only reserve_met is public") — this desk shows it, because this desk
- *    is the one place that may.
+ *    only reserve_met is public") — this desk shows it, because this desk is
+ *    the one place that may;
+ *  - **Archive / ↩ Restore** (G-AUC-4) sit beside the back link, with the old
+ *    card's titles (`:31813-31814`).
  *
  * Invite-only (Phase 35, the old Club's "Make an auction private…"): the
  * switch plus the invited-collector picker; an uninvited collector never
- * sees the sale and cannot register a paddle — the model's own rule, on
- * the card copy.
+ * sees the sale and cannot register a paddle — the model's own rule, on the
+ * card copy.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import { asArray } from '../../api/shapes';
 import type { OptionsMap } from '../../api/services';
 import type { Auction, Choice, LotAdmin } from '../../api/types';
 import { AuctionPill } from './AuctionsAdminPage';
+import { AuctionTermsFields } from './AuctionTermsFields';
+import {
+  amountOrNull,
+  auctionDraft,
+  auctionDraftError,
+  auctionEditable,
+  auctionPatch,
+  fromLocalInput,
+  lotDraft,
+  lotDraftError,
+  lotPatch,
+  toLocalInput,
+  type AuctionDraft,
+  type LotDraft,
+} from './auctionForm';
 import {
   ConfirmDialog,
+  ConflictBanner,
   DeskBanner,
   DeskPage,
+  DeskSave,
+  DeskToast,
   Picker,
+  isConflict,
+  useDeskToast,
   type Column,
   type PickItem,
   DataTable,
 } from './kit';
 import './admin.css';
 
+/** The server's own refusal (`AuctionService.update`), shown as the reason. */
+const NOT_EDITABLE = 'Only a draft or scheduled auction can be edited.';
+
 export function AuctionAdminDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { auctionsAdmin } = useApi();
   const options = useOptions();
   const navigate = useNavigate();
+  const { say, message } = useDeskToast();
 
   const statuses = choices(options, 'auctions.auction_status');
+  const currencies = choices(options, 'currency');
   const [auction, setAuction] = useState<Auction | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const [busy, setBusy] = useState(false);
+  /** Bumped on every read from the server, so the edit form re-seeds from it
+   * (a conflict's Reload) — and NOT on the form's own save, the cover or the
+   * archive, which would throw away the "✓ Saved" flash or unsaved edits. */
+  const [formKey, setFormKey] = useState(0);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!id) return;
     auctionsAdmin.auction(id).then(
-      (a) => setAuction(a),
+      (a) => {
+        setAuction(a);
+        setFormKey((k) => k + 1);
+      },
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load the auction.'),
     );
-  }, [auctionsAdmin, id]);
+  }, [auctionsAdmin, id, setAuction, setFormKey]);
+  useEffect(load, [load]);
+
+  const setArchive = async (restore: boolean) => {
+    if (!auction) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setAuction(await auctionsAdmin.archiveAuction(auction.id, restore));
+      // `:39831` / `:39826`, cut to what is true here (see AuctionsAdminPage)
+      say(restore ? 'Restored to Live & upcoming' : 'Archived — moved to the archived list');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not archive the auction.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (!auction) {
     return (
@@ -71,7 +151,7 @@ export function AuctionAdminDetailPage() {
       title={auction.title}
       action={<AuctionPill status={auction.status} label={label(statuses, auction.status)} />}
       subtitle={
-        <>
+        <span className="ad-rowacts">
           <button
             type="button"
             className="ad-ghostbtn"
@@ -79,33 +159,273 @@ export function AuctionAdminDetailPage() {
           >
             ← All auctions
           </button>
-        </>
+          {auction.archived ? (
+            <button
+              type="button"
+              className="ad-ghostbtn"
+              disabled={busy}
+              title="Restore this auction to the Live & upcoming list"
+              onClick={() => void setArchive(true)}
+            >
+              ↩ Restore
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="ad-ghostbtn"
+              disabled={busy}
+              title="Archive — hide from the Live list, keep for your record (restorable)"
+              onClick={() => setArchiving(true)}
+            >
+              Archive
+            </button>
+          )}
+          {auction.archived && <span className="ad-chip">archived</span>}
+        </span>
       }
     >
       {error && <DeskBanner>{error}</DeskBanner>}
 
-      <section className="ad-dsec">
-        <div className="ad-dsec-h">
-          <h2 className="ad-dsec-t">Record</h2>
-          <span className="ad-dsec-n">
-            an auction has no edit endpoint yet (G-AUC-1) — the window and copy are fixed at
-            creation
-          </span>
-        </div>
-        <div className="ad-card ad-logins">
-          <Row
-            k="Window"
-            v={`${new Date(auction.starts_at).toLocaleString('en-GB')} → ${new Date(auction.ends_at).toLocaleString('en-GB')}`}
-          />
-          <Row k="Currency" v={auction.currency} />
-          <Row k="Lots" v={String(auction.lots_count ?? '—')} />
-          {auction.description && <Row k="About" v={auction.description} />}
-        </div>
-      </section>
-
+      <CoverCard auction={auction} onChange={setAuction} />
+      <AuctionEditCard
+        key={formKey}
+        auction={auction}
+        currencies={currencies}
+        onSaved={setAuction}
+        onReload={load}
+      />
       <InviteCard auctionId={auction.id} />
       <LotsSection auction={auction} />
+
+      {archiving && (
+        /* `:39823`'s confirm, cut as on the Live Auctions list */
+        <ConfirmDialog
+          message={`Archive “${auction.title || 'this auction'}”? It moves to the archived list. You can restore it anytime.`}
+          okLabel="Archive"
+          onCancel={() => setArchiving(false)}
+          onConfirm={() => {
+            setArchiving(false);
+            void setArchive(false);
+          }}
+        />
+      )}
+      <DeskToast message={message} />
     </DeskPage>
+  );
+}
+
+/** Cover & poster (`:32060-32066`) — upload / replace / remove the poster. */
+function CoverCard({
+  auction,
+  onChange,
+}: {
+  auction: Auction;
+  onChange: (a: Auction) => void;
+}) {
+  const { auctionsAdmin } = useApi();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (fn: () => Promise<Auction>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      onChange(await fn());
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not update the poster.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="ad-dsec">
+      <div className="ad-dsec-h">
+        <h2 className="ad-dsec-t">Cover &amp; poster</h2>
+        {/* `:32063`, first clause — the artwork-cover search has no backend */}
+        <span className="ad-dsec-n">Upload your own designed poster.</span>
+      </div>
+      {error && <DeskBanner>{error}</DeskBanner>}
+      <div className="ad-card ad-form">
+        <input
+          ref={input}
+          type="file"
+          accept="image/*"
+          hidden
+          aria-label="Poster file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) void run(() => auctionsAdmin.uploadCover(auction.id, file));
+          }}
+        />
+        <span className="ad-rowacts">
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            disabled={busy}
+            onClick={() => input.current?.click()}
+          >
+            ↑&nbsp; Upload poster
+          </button>
+          {auction.cover_image_url && (
+            <button
+              type="button"
+              className="ad-ghostbtn"
+              disabled={busy}
+              onClick={() => void run(() => auctionsAdmin.removeCover(auction.id))}
+            >
+              Remove uploaded poster
+            </button>
+          )}
+        </span>
+        {auction.cover_image_url && (
+          <figure className="ad-aucposter">
+            <figcaption className="ad-filter-l">
+              Uploaded poster — used as the cover
+            </figcaption>
+            <img src={auction.cover_image_url} alt="" />
+          </figure>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** Auction details + Terms (`:32089-32108`), locked PATCH (G-AUC-1). */
+function AuctionEditCard({
+  auction,
+  currencies,
+  onSaved,
+  onReload,
+}: {
+  auction: Auction;
+  currencies: Choice[];
+  onSaved: (a: Auction) => void;
+  onReload: () => void;
+}) {
+  const { auctionsAdmin } = useApi();
+  const [draft, setDraft] = useState<AuctionDraft>(() => auctionDraft(auction));
+  const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const editable = auctionEditable(auction.status);
+  const locked = !editable || busy;
+  const set = (patch: Partial<AuctionDraft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  const save = async () => {
+    const bad = auctionDraftError(draft);
+    if (bad) {
+      setError(bad);
+      throw new Error(bad); // no "✓ Saved" flash
+    }
+    setBusy(true);
+    setError(null);
+    setConflict(false);
+    try {
+      onSaved(await auctionsAdmin.updateAuction(auction.id, auctionPatch(auction, draft)));
+    } catch (err: unknown) {
+      if (isConflict(err)) setConflict(true);
+      else setError(err instanceof Error ? err.message : 'Could not save the auction.');
+      throw err;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="ad-dsec">
+      <div className="ad-dsec-h">
+        <h2 className="ad-dsec-t">Auction details</h2>
+        <span className="ad-dsec-n">
+          {editable
+            ? `${auction.lots_count ?? 0} lot${auction.lots_count === 1 ? '' : 's'}`
+            : NOT_EDITABLE}
+        </span>
+      </div>
+      {conflict && <ConflictBanner noun="auction" onReload={onReload} />}
+      <div className="ad-card ad-form">
+        <div className="ad-form-grid">
+          <label className="ad-field ad-field--wide">
+            <span className="ad-filter-l">Title</span>
+            <input
+              value={draft.title}
+              disabled={locked}
+              onChange={(e) => set({ title: e.target.value })}
+              placeholder="e.g. Contemporary Discoveries"
+            />
+          </label>
+          <label className="ad-field ad-field--wide">
+            <span className="ad-filter-l">Description</span>
+            <textarea
+              rows={3}
+              value={draft.description}
+              disabled={locked}
+              onChange={(e) => set({ description: e.target.value })}
+              placeholder="A short introduction collectors see at the top of the event…"
+            />
+          </label>
+          <label className="ad-field">
+            <span className="ad-filter-l">Start</span>
+            <input
+              type="datetime-local"
+              value={draft.startsAt}
+              disabled={locked}
+              onChange={(e) => set({ startsAt: e.target.value })}
+            />
+          </label>
+          <label className="ad-field">
+            <span className="ad-filter-l">End</span>
+            <input
+              type="datetime-local"
+              value={draft.endsAt}
+              disabled={locked}
+              onChange={(e) => set({ endsAt: e.target.value })}
+            />
+          </label>
+          <label className="ad-field">
+            <span className="ad-filter-l">Currency</span>
+            <select
+              value={draft.currency}
+              disabled={locked}
+              onChange={(e) => set({ currency: e.target.value })}
+            >
+              {!currencies.some((c) => c.value === draft.currency) && (
+                <option value={draft.currency}>{draft.currency}</option>
+              )}
+              {currencies.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="ad-form-h ad-form-h--sub">Terms &amp; financial settings</div>
+        <div className="ad-form-grid">
+          <AuctionTermsFields
+            terms={draft.terms}
+            noTermsGate={draft.noTermsGate}
+            onTerms={(terms) => set({ terms })}
+            onNoTermsGate={(noTermsGate) => set({ noTermsGate })}
+            disabled={locked}
+          />
+        </div>
+        {error && (
+          <p className="dz-state err" role="alert">
+            {error}
+          </p>
+        )}
+        {editable && (
+          <div className="ad-form-a">
+            <DeskSave className="ad-action" busy={busy} onClick={save}>
+              Save auction
+            </DeskSave>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -220,6 +540,7 @@ function LotsSection({ auction }: { auction: Auction }) {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<LotAdmin | null>(null);
   const [closing, setClosing] = useState<{ lot: LotAdmin; force: boolean } | null>(null);
   const [names, setNames] = useState<Map<string, string>>(new Map());
 
@@ -360,6 +681,19 @@ function LotsSection({ auction }: { auction: Auction }) {
               type="button"
               className="ad-rowbtn"
               disabled={busyId === l.id}
+              onClick={() => {
+                setAdding(false);
+                setEditing(l);
+              }}
+            >
+              Edit
+            </button>
+          )}
+          {l.status === 'scheduled' && (
+            <button
+              type="button"
+              className="ad-rowbtn"
+              disabled={busyId === l.id}
               onClick={() => void act(l.id, () => auctionsAdmin.goLive(l.id))}
             >
               Go live
@@ -407,26 +741,53 @@ function LotsSection({ auction }: { auction: Auction }) {
       <div className="ad-dsec-h">
         <h2 className="ad-dsec-t">Lots</h2>
         <span className="ad-dsec-n">
-          create-only (G-AUC-2); Go live reserves the artwork; a close before the scheduled end
-          must be forced — the engine still only sells with bids and the reserve met
+          a scheduled lot is editable; Go live reserves the artwork; a close before the
+          scheduled end must be forced — the engine still only sells with bids and the reserve
+          met
         </span>
       </div>
       {error && <DeskBanner>{error}</DeskBanner>}
 
       <p>
-        <button type="button" className="ad-ghostbtn" onClick={() => setAdding(true)}>
+        <button
+          type="button"
+          className="ad-ghostbtn"
+          onClick={() => {
+            setEditing(null);
+            setAdding(true);
+          }}
+        >
           ＋ Add a lot
         </button>
       </p>
 
       {adding && (
-        <NewLotForm
+        <LotForm
           auction={auction}
           nextNumber={(lots?.length ?? 0) + 1}
           onClose={() => setAdding(false)}
           onSaved={() => {
             setAdding(false);
             load();
+          }}
+        />
+      )}
+      {editing && (
+        <LotForm
+          key={`${editing.id}:${editing.version}`}
+          auction={auction}
+          lot={editing}
+          workLabel={names.get(editing.artwork)}
+          onClose={() => setEditing(null)}
+          onReload={async () => {
+            const fresh = await auctionsAdmin.lot(editing.id);
+            setLots((prev) => prev?.map((l) => (l.id === fresh.id ? fresh : l)) ?? prev);
+            setEditing(fresh);
+          }}
+          onSaved={(fresh) => {
+            setEditing(null);
+            if (fresh)
+              setLots((prev) => prev?.map((l) => (l.id === fresh.id ? fresh : l)) ?? prev);
           }}
         />
       )}
@@ -460,135 +821,159 @@ function LotsSection({ auction }: { auction: Auction }) {
   );
 }
 
-function NewLotForm({
+/**
+ * Add a lot, or edit a scheduled one (G-AUC-2). One form for both: the old
+ * modal edited every lot in the same row it was added with (`aucLotRowHTML`,
+ * `:32001-32025`). The artwork is fixed once a lot exists (the PATCH does not
+ * take it), so the edit form names it instead of offering the picker.
+ * "Anti-snipe seconds" is the old modal's (`:32112`, placeholder "120 · 0 =
+ * off"), per lot here because `soft_close_sec` is a lot field.
+ */
+function LotForm({
   auction,
-  nextNumber,
+  lot,
+  workLabel,
+  nextNumber = 1,
   onClose,
   onSaved,
+  onReload,
 }: {
   auction: Auction;
-  nextNumber: number;
+  lot?: LotAdmin;
+  workLabel?: string;
+  nextNumber?: number;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (lot: LotAdmin | null) => void;
+  onReload?: () => Promise<void>;
 }) {
   const { auctionsAdmin, catalogAdmin } = useApi();
   const [work, setWork] = useState<PickItem[]>([]);
-  const [lotNumber, setLotNumber] = useState(String(nextNumber));
-  const [opening, setOpening] = useState('');
-  const [reserve, setReserve] = useState('');
-  const [low, setLow] = useState('');
-  const [high, setHigh] = useState('');
-  const [premium, setPremium] = useState('0');
-  const [startsAt, setStartsAt] = useState(auction.starts_at.slice(0, 16));
-  const [endsAt, setEndsAt] = useState(auction.ends_at.slice(0, 16));
+  const [d, setD] = useState<LotDraft>(() =>
+    lot
+      ? lotDraft(lot)
+      : {
+          lotNumber: String(nextNumber),
+          opening: '',
+          reserve: '',
+          low: '',
+          high: '',
+          premium: '0',
+          startsAt: toLocalInput(auction.starts_at),
+          endsAt: toLocalInput(auction.ends_at),
+          softCloseSec: '',
+        },
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
+  const set = (patch: Partial<LotDraft>) => setD((prev) => ({ ...prev, ...patch }));
 
   const save = async () => {
     if (busy) return;
-    if (work.length === 0 || !opening.trim() || !lotNumber.trim()) {
+    if (!lot && work.length === 0) {
       setError('An artwork, a lot number and an opening amount are required.');
+      return;
+    }
+    const bad = lotDraftError(d);
+    if (bad) {
+      setError(bad);
       return;
     }
     setBusy(true);
     setError(null);
+    setConflict(false);
     try {
-      await auctionsAdmin.createLot({
-        auction: auction.id,
-        artwork: work[0].id,
-        lot_number: Number(lotNumber),
-        opening_amount: opening.trim(),
-        reserve_amount: reserve.trim() || null,
-        low_estimate: low.trim() || null,
-        high_estimate: high.trim() || null,
-        premium_pct: premium.trim() || '0',
-        currency: auction.currency,
-        starts_at: new Date(startsAt).toISOString(),
-        ends_at: new Date(endsAt).toISOString(),
-      });
-      onSaved();
+      if (lot) {
+        onSaved(await auctionsAdmin.updateLot(lot.id, lotPatch(lot, d)));
+      } else {
+        await auctionsAdmin.createLot({
+          auction: auction.id,
+          artwork: work[0].id,
+          lot_number: Number(d.lotNumber),
+          opening_amount: amountOrNull(d.opening) ?? d.opening.trim(),
+          reserve_amount: amountOrNull(d.reserve),
+          low_estimate: amountOrNull(d.low),
+          high_estimate: amountOrNull(d.high),
+          premium_pct: amountOrNull(d.premium) ?? '0',
+          currency: auction.currency,
+          starts_at: fromLocalInput(d.startsAt),
+          ends_at: fromLocalInput(d.endsAt),
+          ...(d.softCloseSec.trim() ? { soft_close_sec: Number(d.softCloseSec) } : {}),
+        });
+        onSaved(null);
+      }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not create the lot.');
+      if (isConflict(err)) setConflict(true);
+      else
+        setError(
+          err instanceof Error
+            ? err.message
+            : lot
+              ? 'Could not save the lot.'
+              : 'Could not create the lot.',
+        );
     } finally {
       setBusy(false);
     }
   };
 
+  const field = (
+    k: keyof LotDraft,
+    labelText: string,
+    extra: { type?: string; placeholder?: string; inputMode?: 'numeric' | 'decimal' } = {},
+  ) => (
+    <label className="ad-field">
+      <span className="ad-filter-l">{labelText}</span>
+      <input
+        type={extra.type}
+        value={d[k]}
+        onChange={(e) => set({ [k]: e.target.value } as Partial<LotDraft>)}
+        inputMode={extra.inputMode}
+        placeholder={extra.placeholder}
+      />
+    </label>
+  );
+
   return (
     <div className="ad-card ad-form">
-      <div className="ad-form-h">Add a lot · {auction.currency}</div>
-      <Picker
-        label="Artwork"
-        placeholder="Search the catalogue — artist, title, medium…"
-        picked={work}
-        onChange={setWork}
-        single
-        search={async (q) => {
-          const page = await catalogAdmin.artworks({ search: q, per_page: 8 });
-          return page.results.map((a) => ({
-            id: a.id,
-            label: a.artist_name_raw ? `${a.artist_name_raw} — ${a.title}` : a.title,
-          }));
-        }}
-      />
+      <div className="ad-form-h">
+        {lot ? `Edit lot ${lot.lot_number}` : 'Add a lot'} · {auction.currency}
+      </div>
+      {conflict && onReload && <ConflictBanner noun="lot" onReload={() => void onReload()} />}
+      {lot ? (
+        <Row k="Artwork" v={workLabel ?? '…'} />
+      ) : (
+        <Picker
+          label="Artwork"
+          placeholder="Search the catalogue — artist, title, medium…"
+          picked={work}
+          onChange={setWork}
+          single
+          search={async (q) => {
+            const page = await catalogAdmin.artworks({ search: q, per_page: 8 });
+            return page.results.map((a) => ({
+              id: a.id,
+              label: a.artist_name_raw ? `${a.artist_name_raw} — ${a.title}` : a.title,
+            }));
+          }}
+        />
+      )}
       <div className="ad-form-grid">
-        <label className="ad-field">
-          <span className="ad-filter-l">Lot number</span>
-          <input
-            value={lotNumber}
-            onChange={(e) => setLotNumber(e.target.value)}
-            inputMode="numeric"
-          />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Opening amount</span>
-          <input
-            value={opening}
-            onChange={(e) => setOpening(e.target.value)}
-            inputMode="decimal"
-          />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Reserve · confidential</span>
-          <input
-            value={reserve}
-            onChange={(e) => setReserve(e.target.value)}
-            inputMode="decimal"
-            placeholder="never shown to collectors"
-          />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Buyer's premium %</span>
-          <input
-            value={premium}
-            onChange={(e) => setPremium(e.target.value)}
-            inputMode="decimal"
-          />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Low estimate</span>
-          <input value={low} onChange={(e) => setLow(e.target.value)} inputMode="decimal" />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">High estimate</span>
-          <input value={high} onChange={(e) => setHigh(e.target.value)} inputMode="decimal" />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Bidding starts</span>
-          <input
-            type="datetime-local"
-            value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
-          />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Bidding ends</span>
-          <input
-            type="datetime-local"
-            value={endsAt}
-            onChange={(e) => setEndsAt(e.target.value)}
-          />
-        </label>
+        {field('lotNumber', 'Lot number', { inputMode: 'numeric' })}
+        {field('opening', 'Opening amount', { inputMode: 'decimal' })}
+        {field('reserve', 'Reserve · confidential', {
+          inputMode: 'decimal',
+          placeholder: 'never shown to collectors',
+        })}
+        {field('premium', "Buyer's premium %", { inputMode: 'decimal' })}
+        {field('low', 'Low estimate', { inputMode: 'decimal' })}
+        {field('high', 'High estimate', { inputMode: 'decimal' })}
+        {field('startsAt', 'Bidding starts', { type: 'datetime-local' })}
+        {field('endsAt', 'Bidding ends', { type: 'datetime-local' })}
+        {field('softCloseSec', 'Anti-snipe seconds', {
+          inputMode: 'numeric',
+          placeholder: '120 · 0 = off',
+        })}
       </div>
       {error && (
         <p className="dz-state err" role="alert">
@@ -605,7 +990,7 @@ function NewLotForm({
           onClick={() => void save()}
           disabled={busy}
         >
-          Add the lot
+          {lot ? 'Save lot' : 'Add the lot'}
         </button>
       </div>
     </div>

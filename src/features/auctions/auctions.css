@@ -225,6 +225,17 @@
 }
 
 /* ---- lots list on the event page (app.html ~1736-1762) ----------------- */
+/* the old lots-list empty line (`.aucempty`, app.html:1077), used for an
+   event with no lots (V1 Phase 3) */
+.aucempty {
+  padding: 26px 16px;
+  text-align: center;
+  color: var(--ink3);
+  font-size: 13px;
+  border: 1px dashed var(--hair);
+  border-radius: 13px;
+  margin: 4px 0;
+}
 .auc-lots-h {
   display: flex;
   align-items: baseline;
