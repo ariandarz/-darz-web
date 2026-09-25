@@ -63,6 +63,8 @@ import type {
   ArtworkImageAdmin,
   ArtistAdmin,
   SaleAdmin,
+  SaleCreateInput,
+  SalePatch,
   SaleQuery,
   DocumentAdmin,
   DocumentQuery,
@@ -426,9 +428,11 @@ export class RecommendationService extends ResourceService {
     return this.create<PublishedRecommendation>(`/published/${id}/dismiss/`);
   }
 
-  /** The collector's own questionnaire. **404 until they have submitted one**
-   * — that is the documented answer, not an error, and the caller treats it as
-   * "not filled in yet" (see `QuestionnaireController.load`). */
+  /** The collector's own questionnaire. Always 200 on the current backend:
+   * `answered: false` (empty answers, null `submitted_at`) until they have sent
+   * one (G-P25-1) — read it through `isQuestionnaireAnswered`, never the status.
+   * An older backend answered that case with a 404; callers still treat any
+   * rejection as "not filled in yet" (see `QuestionnaireController.load`). */
   questionnaire() {
     return this.retrieve<CollectorQuestionnaire>('/questionnaire/');
   }
@@ -771,12 +775,12 @@ export class SalesAdminService extends ResourceService {
   /** `responsible` is required by the serializer — a standard admin (who
    * cannot list team users, that endpoint is owner-only) records the deal
    * under their own principal id. */
-  createSale(body: Partial<SaleAdmin>) {
+  createSale(body: SaleCreateInput) {
     return this.create<SaleAdmin>('/sales/', body);
   }
   /** Draft-only (R7) — the service refuses once confirmed; the desk disables
    * the form first. */
-  updateSale(id: string, body: Partial<SaleAdmin> & { expected_version: number }) {
+  updateSale(id: string, body: SalePatch) {
     return this.client.send<SaleAdmin>('PATCH', `${this.basePath}/sales/${id}/`, { body });
   }
   /** The linear chain draft→confirmed→invoiced→paid→delivered→completed→

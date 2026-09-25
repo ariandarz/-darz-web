@@ -132,7 +132,7 @@ export function SalesPage() {
     {
       key: 'collector',
       header: 'Collector',
-      cell: (s) => refs.collector(s.collector) ?? '…',
+      cell: (s) => refs.collector(s.collector),
     },
     {
       key: 'status',
@@ -321,7 +321,7 @@ function NewDealForm({
       const sale = await salesAdmin.createSale({
         artwork: work[0].id,
         collector: who[0].id,
-        responsible: (isOwner && responsible) || me?.id || null,
+        responsible: (isOwner && responsible) || me?.id || '',
         agreed_price: price.trim(),
         currency: currency as SaleAdmin['currency'],
         commission_amount: commission.trim(),

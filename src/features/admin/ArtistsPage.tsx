@@ -51,6 +51,7 @@ import {
   type Column,
 } from './kit';
 import './admin.css';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 
 const SORTS = [
   { value: 'az', label: 'Name A–Z' },
@@ -70,10 +71,12 @@ export function ArtistsPage() {
   const { say, message } = useDeskToast();
 
   const load = useCallback(() => {
-    catalogAdmin.artists({ per_page: 500 }).then(
-      (page) => {
-        setArtists(page.results);
-        setTotal(page.pagination.total_count);
+    // Walked whole: the backend clamps `per_page` to 100, so the old single
+    // `per_page: 500` read silently stopped at 100 artists (C-5).
+    walkPages((page) => catalogAdmin.artists({ page, per_page: MAX_PER_PAGE })).then(
+      (all) => {
+        setArtists(all);
+        setTotal(all.length);
       },
       (err: unknown) =>
         setError(err instanceof Error ? err.message : 'Could not load the roster.'),

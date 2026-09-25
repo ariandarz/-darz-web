@@ -11,6 +11,7 @@
 import type { AuctionService } from '../../api';
 import type { BidderRegistration } from '../../api/types';
 import { Observable } from '../shared/Observable';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 
 export type RegLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -50,9 +51,12 @@ export class RegistrationController extends Observable<RegistrationSnapshot> {
       error: null,
     });
     try {
-      const data = await this.auctions.registrations({ per_page: 200 });
+      // walked whole: `per_page` is clamped to 100 (C-5)
+      const all = await walkPages((page) =>
+        this.auctions.registrations({ page, per_page: MAX_PER_PAGE }),
+      );
       if (mine !== this.token) return;
-      this.patch({ registrations: data.results, status: 'ready' });
+      this.patch({ registrations: all, status: 'ready' });
     } catch (err) {
       if (mine !== this.token) return;
       this.patch({ status: 'error', error: (err as Error).message });

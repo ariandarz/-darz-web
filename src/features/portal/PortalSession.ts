@@ -95,7 +95,11 @@ export class PortalSession extends Observable<PortalSnapshotState> {
         this.patch({ phase: 'unreachable' });
         return false;
       }
-      throw err;
+      // Anything else (a 5xx, an unexpected 4xx, a 429) is a failure the
+      // collector can only retry. It used to be rethrown with the phase left
+      // on 'opening', which froze the gate on its busy state forever (C-4).
+      this.patch({ phase: 'unreachable' });
+      return false;
     }
   }
 

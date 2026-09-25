@@ -59,19 +59,8 @@ import {
   type LibraryService,
 } from './servicesLibrary';
 import { hasBank, newestBank, readLocalBank, saveLocalBank } from './bankDetails';
+import { walkPages } from '../../../api/paging';
 import './exhibitions.css';
-
-async function walkAll<T>(
-  load: (page: number) => Promise<{ results: T[]; pagination?: { has_next?: boolean } }>,
-) {
-  const out: T[] = [];
-  for (let page = 1; page <= 20; page += 1) {
-    const p = await load(page);
-    out.push(...p.results);
-    if (!p.pagination?.has_next) break;
-  }
-  return out;
-}
 
 export function IssueDocumentPage() {
   const { eventId: fromUrl } = useParams();
@@ -193,12 +182,14 @@ export function IssueDocumentPage() {
     let alive = true;
     Promise.all(
       (SERIES_KINDS[kind === 'exhibition_proposal' ? 'PRO' : 'SINV'] ?? [kind]).map((k) =>
-        documentsAdmin.documents({ kind: k, per_page: 200 }),
+        // Walked whole: the next number needs every issued document of the
+        // series, and `per_page` is clamped to 100 (C-5).
+        walkPages((page) => documentsAdmin.documents({ kind: k, page, per_page: 100 })),
       ),
     ).then(
-      (pages) => {
+      (lists) => {
         if (!alive) return;
-        const all = pages.flatMap((p) => p.results);
+        const all = lists.flat();
         setReference(referenceFrom(all, kind, new Date().getFullYear()));
       },
       () => alive && setReference(referenceFrom([], kind, new Date().getFullYear())),
@@ -210,10 +201,10 @@ export function IssueDocumentPage() {
 
   useEffect(() => {
     Promise.all([
-      walkAll((page) => galleryAdmin.exhibitions({ page, per_page: 100 })),
-      walkAll((page) => galleryAdmin.links({ page, per_page: 100 })),
-      walkAll((page) => projectsAdmin.services({ page, per_page: 100 })),
-      walkAll((page) => projectsAdmin.packages({ page, per_page: 100 })),
+      walkPages((page) => galleryAdmin.exhibitions({ page, per_page: 100 })),
+      walkPages((page) => galleryAdmin.links({ page, per_page: 100 })),
+      walkPages((page) => projectsAdmin.services({ page, per_page: 100 })),
+      walkPages((page) => projectsAdmin.packages({ page, per_page: 100 })),
     ]).then(
       ([evs, links, svcs, pkgs]) => {
         setShows(evs);

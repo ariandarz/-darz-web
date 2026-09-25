@@ -186,16 +186,16 @@ export function SaleDetailPage() {
             <button
               type="button"
               className="ad-rowbtn"
-              onClick={() => navigate(`/admin/artworks/${sale.artwork}`)}
+              onClick={() => navigate(`/admin/artworks/${sale.artwork.id}`)}
             >
               Open
             </button>
           </Row>
-          <Row k="Collector" v={refs.collector(sale.collector) ?? '…'}>
+          <Row k="Collector" v={refs.collector(sale.collector)}>
             <button
               type="button"
               className="ad-rowbtn"
-              onClick={() => navigate(`/admin/collectors/${sale.collector}`)}
+              onClick={() => navigate(`/admin/collectors/${sale.collector.id}`)}
             >
               Open
             </button>

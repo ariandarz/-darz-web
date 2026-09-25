@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-25 — V1 Phase 0: schema regen + four live bugs (C-1…C-5)
+
+- `schema.d.ts` regenerated from backend `df0421f`. Sales desk reads the nested G-SALE-3 rows; `ProjectStatus` is aliased through the field (C-2); the questionnaire and Profile card branch on `answered` (C-3); a portal entry error no longer freezes the gate (C-4).
+- `walkPages` moved to `src/api/paging.ts` and used wherever a list was read as one oversized page (C-5); `Locked<T>` for required locks. **647 unit · 89 E2E** (+Artists-past-100, +Sales-nested walks).
+
 ## 2026-09-25 — V1 re-baseline: both repos synced, gap docs re-measured, phased V1 plan written
 
 - Backend V1 = `darz-backend-api` `development` @ `df0421f` (224 paths / 323 ops); web `development` holds every branch. Matrix, admin, collector and backend-contract audits in `docs/audit/2026-09-25/`.

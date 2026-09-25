@@ -72,6 +72,7 @@ import {
   type PickItem,
 } from './kit';
 import './admin.css';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 
 export function ArtworkEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -107,8 +108,8 @@ export function ArtworkEditorPage() {
   const [artists, setArtists] = useState<ArtistAdmin[]>([]);
   useEffect(() => {
     let alive = true;
-    catalogAdmin.artists({ per_page: 500 }).then(
-      (page) => alive && setArtists(page.results),
+    walkPages((page) => catalogAdmin.artists({ page, per_page: MAX_PER_PAGE })).then(
+      (all) => alive && setArtists(all),
       () => alive && setArtists([]),
     );
     return () => {

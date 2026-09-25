@@ -33,6 +33,7 @@ import { SavedListController } from '../saved/SavedListController';
 import { useSaved } from '../saved/useSaved';
 import { useListController } from '../shared/useListController';
 import { features } from '../shell/features';
+import { isQuestionnaireAnswered } from '../questionnaire/QuestionnaireController';
 import '../questionnaire/questionnaire.css';
 import './profile.css';
 
@@ -233,10 +234,11 @@ function GetToKnowYou() {
 
   useEffect(() => {
     let alive = true;
-    // 404 is the documented "never submitted" answer, so a rejection here is
-    // simply `false` — see `RecommendationService.questionnaire`.
+    // A never-submitted collector reads 200 `answered: false` (G-P25-1), so the
+    // flag decides, not the status; a rejection (an older backend's 404, or a
+    // failed read) is simply `false`.
     recommendations.questionnaire().then(
-      () => alive && setSent(true),
+      (saved) => alive && setSent(isQuestionnaireAnswered(saved)),
       () => alive && setSent(false),
     );
     return () => {
