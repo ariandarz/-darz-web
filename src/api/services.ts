@@ -63,6 +63,8 @@ import type {
   RequestDetailInput,
   RequestKind,
   RequestMessage,
+  MessageAttachments,
+  DocumentActivity,
   RequestMessageQuery,
   SavedArtwork,
   SavedArtworkQuery,
@@ -146,6 +148,23 @@ import type {
   ArtworkSelectionGrant,
 } from './types';
 import type { PortalClient } from './PortalClient';
+
+/** The wire body of a thread reply. `artwork_refs` always goes (the
+ * serializer's own default is `[]`, and the thread has always sent it);
+ * `document_refs` only when a document is attached, so a plain reply's body
+ * is exactly what it was before D19. Exported for the payload test. */
+export function messagePayload(
+  body: string,
+  attach: MessageAttachments = {},
+): { body: string; artwork_refs: string[]; document_refs?: string[] } {
+  const out: { body: string; artwork_refs: string[]; document_refs?: string[] } = {
+    body,
+    artwork_refs: attach.artworkRefs ?? [],
+  };
+  const docs = (attach.documentRefs ?? []).filter(Boolean);
+  if (docs.length) out.document_refs = [...new Set(docs)];
+  return out;
+}
 
 export abstract class ResourceService {
   protected readonly client: ApiClient;
@@ -271,12 +290,21 @@ export class CrmService extends ResourceService {
       query as RequestOptions['query'],
     );
   }
-  /** Admin: reply on a request's thread. */
-  adminPostMessage(requestId: string, body: string, artworkRefs: string[] = []) {
-    return this.create<RequestMessage>(`/admin/requests/${requestId}/messages/`, {
-      body,
-      artwork_refs: artworkRefs,
-    });
+  /** Admin: reply on a request's thread. `documentRefs` (D19) attaches
+   * documents by id — the backend SHARES each with the thread's collector
+   * (the G-DOC-1 path, collector-visible kinds only, else a 400) and answers
+   * the message with the enriched `document_refs: [{id, kind, title}]`. The
+   * key is only sent when something is attached. */
+  adminPostMessage(requestId: string, body: string, attach: MessageAttachments = {}) {
+    return this.create<RequestMessage>(
+      `/admin/requests/${requestId}/messages/`,
+      messagePayload(body, attach),
+    );
+  }
+  /** Admin: archive (default) or restore one thread message (G-CHAT-2). An
+   * admin-desk-only hide — the collector's thread never changes. */
+  adminArchiveMessage(messageId: string, archived = true) {
+    return this.create<RequestMessage>(`/admin/messages/${messageId}/archive/`, { archived });
   }
   /** Admin: mark every collector message on the thread seen. */
   adminMarkSeen(requestId: string) {
@@ -947,6 +975,26 @@ export class DocumentsAdminService extends ResourceService {
   }
   archiveDocument(id: string) {
     return this.create<DocumentAdmin>(`/documents/${id}/archive/`);
+  }
+  /** G-DOC-2 — the document's audit trail, newest first (C-15: flat actor). */
+  activity(id: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<DocumentActivity>(
+      `/documents/${id}/activity/`,
+      query as RequestOptions['query'],
+    );
+  }
+  /** G-DOC-1 — issue the document to a collector (it appears in their
+   * `GET /api/documents/`). Collector-visible kinds only; anything else is a
+   * 400. Not owner-locked server-side (`share_with_collector` has no guard). */
+  shareDocument(id: string, collector: string) {
+    return this.create<DocumentAdmin>(`/documents/${id}/share/`, { collector });
+  }
+  /** Revoke the share: clears `shared_at`, keeps `collector` on record. */
+  unshareDocument(id: string) {
+    return this.client.send<DocumentAdmin>(
+      'DELETE',
+      `${this.basePath}/documents/${id}/share/`,
+    );
   }
   versions(id: string, query: { page?: number; per_page?: number } = {}) {
     return this.list<DocumentVersionAdmin>(

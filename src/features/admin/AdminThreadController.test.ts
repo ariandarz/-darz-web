@@ -45,7 +45,9 @@ function crmWith(messages: RequestMessage[]) {
     adminMessages: vi.fn().mockResolvedValue(page(messages)),
     adminPostMessage: vi.fn(),
     adminMarkSeen: vi.fn().mockResolvedValue({ unread_count: 0 }),
+    adminArchiveMessage: vi.fn(),
   } as unknown as CrmService & {
+    adminArchiveMessage: ReturnType<typeof vi.fn>;
     adminMessages: ReturnType<typeof vi.fn>;
     adminPostMessage: ReturnType<typeof vi.fn>;
     adminMarkSeen: ReturnType<typeof vi.fn>;
@@ -88,7 +90,7 @@ describe('AdminThreadController — the team end of the shared machine', () => {
     await c.reload();
     const ok = await c.send('  from the draft  ');
     expect(ok).toBe(true);
-    expect(crm.adminPostMessage).toHaveBeenCalledWith('r1', 'from the draft');
+    expect(crm.adminPostMessage).toHaveBeenCalledWith('r1', 'from the draft', {});
     expect(c.getSnapshot().messages.at(-1)?.body).toBe('from the server');
   });
 
@@ -106,5 +108,64 @@ describe('AdminThreadController — the team end of the shared machine', () => {
     const c = new AdminThreadController(crm, 'r1');
     expect(await c.send('   ')).toBe(false);
     expect(crm.adminPostMessage).not.toHaveBeenCalled();
+  });
+
+  it('passes the composer’s attached documents to the post (D19)', async () => {
+    const crm = crmWith([]);
+    crm.adminPostMessage.mockResolvedValue(msg({ sender: 'team' }));
+    const c = new AdminThreadController(crm, 'r1');
+    await c.send('Your invoice', { documentRefs: ['d1'] });
+    expect(crm.adminPostMessage).toHaveBeenCalledWith('r1', 'Your invoice', {
+      documentRefs: ['d1'],
+    });
+  });
+});
+
+describe('AdminThreadController — message archive (G-CHAT-2)', () => {
+  it('reads without include_archived by default, and with it once toggled', async () => {
+    const crm = crmWith([]);
+    const c = new AdminThreadController(crm, 'r1');
+    await c.reload();
+    expect(crm.adminMessages).toHaveBeenLastCalledWith('r1', { per_page: 100, page: 1 });
+    await c.setIncludeArchived(true);
+    expect(c.showsArchived).toBe(true);
+    expect(crm.adminMessages).toHaveBeenLastCalledWith('r1', {
+      per_page: 100,
+      page: 1,
+      include_archived: true,
+    });
+  });
+
+  it('an archived message leaves the list while archived ones are hidden', async () => {
+    const a = msg({ id: 'm1' });
+    const b = msg({ id: 'm2' });
+    const crm = crmWith([a, b]);
+    crm.adminArchiveMessage.mockResolvedValue({ ...a, archived: true });
+    const c = new AdminThreadController(crm, 'r1');
+    await c.reload();
+    expect(await c.archive('m1')).toBe(true);
+    expect(crm.adminArchiveMessage).toHaveBeenCalledWith('m1', true);
+    expect(c.getSnapshot().messages.map((m) => m.id)).toEqual(['m2']);
+  });
+
+  it('while archived ones are shown, archive/restore marks the row in place', async () => {
+    const a = msg({ id: 'm1', archived: true });
+    const crm = crmWith([a]);
+    crm.adminArchiveMessage.mockResolvedValue({ ...a, archived: false });
+    const c = new AdminThreadController(crm, 'r1');
+    await c.setIncludeArchived(true);
+    expect(await c.archive('m1', false)).toBe(true);
+    expect(crm.adminArchiveMessage).toHaveBeenCalledWith('m1', false);
+    expect(c.getSnapshot().messages[0].archived).toBe(false);
+  });
+
+  it('a failed archive keeps the row and reports the error', async () => {
+    const crm = crmWith([msg({ id: 'm1' })]);
+    crm.adminArchiveMessage.mockRejectedValue(new Error('refused'));
+    const c = new AdminThreadController(crm, 'r1');
+    await c.reload();
+    expect(await c.archive('m1')).toBe(false);
+    expect(c.getSnapshot().messages).toHaveLength(1);
+    expect(c.getSnapshot().error).toBe('refused');
   });
 });

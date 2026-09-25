@@ -484,3 +484,146 @@ a.ad-ovbox:hover .ad-ovbox-go,
 a.ad-ovbox:focus-visible .ad-ovbox-go {
   opacity: 1;
 }
+
+/* ---- Phase 6: documents + chat ------------------------------------------
+   The owner-lock line on a document (`DocumentDetailPage`): the old legal
+   documents' read-only note (`.lgl-note`, darz-studio.html:30965) in this
+   desk's quiet-banner tone. A disabled "Upload PDF…" label reads like a
+   disabled button. */
+.ad-lockline {
+  margin: 0 0 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--ink2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.ad-rowbtn.is-disabled {
+  opacity: 0.45;
+}
+.ad-rowbtn.is-disabled:hover {
+  border-color: var(--hair);
+}
+
+/* The admin thread: the "Include archived" switch sits at the head's right;
+   an archived bubble (shown only with the switch on) is dimmed and says so
+   beside its time, as the old " · edited" did (`_chatBubble`, :40342). The
+   per-bubble action is the old quiet text row (:40341). */
+.ad-thread-arch {
+  margin-left: auto;
+  flex: none;
+  font-size: 12px;
+}
+.ad-bub.is-archived .ad-bub-b {
+  opacity: 0.55;
+  border-style: dashed;
+}
+.ad-bub-act {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink3);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+}
+.ad-bub-act:hover {
+  color: var(--ink);
+}
+.ad-bub-act:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* A document attached to a message (D19): kind · title, opening the
+   document. Shaped like the kit's picked chip (`.ad-pickchip`). */
+.ad-bub-docs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.ad-bub.is-team .ad-bub-docs {
+  justify-content: flex-end;
+}
+.ad-docchip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+  text-decoration: none;
+}
+.ad-docchip:hover {
+  border-color: var(--ink);
+}
+.ad-docchip-k {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.ad-docchip-t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The composer's "Attach document" picker (no old counterpart — flagged in
+   `DocumentAttach.tsx`). */
+.ad-attach {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 9px;
+}
+.ad-attach.is-open {
+  flex-direction: column;
+  align-items: stretch;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 10px;
+}
+.ad-attach-h {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ad-attach-h .ad-pickin {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ad-attach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ad-attach-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+  font: inherit;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 7px 8px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.ad-attach-row:hover {
+  background: var(--soft);
+}
