@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-26 — V1 Phase 7: Projects quick/partner, status, stage sub-state, FX + totals
+
+- List quick cards ride `?quick=` (only "Deliverables ≤7d" walks); record Status `<select>` saves `status`; a stage move PATCHes the old `setStage` seeding (`moveStages`) then moves; Delayed/Awaiting read real counts; owner FX block + server totals panel (decimal strings, "No currency", converted row). New C-24 (awaits-approval predicate). Stale G-PROJ notes removed.
+- Matrix: totals → Integrated (258/0/9/55/1). **802 unit · 148 E2E** (desks 100). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3h.
+
 ## 2026-09-25 — V1 Phase 6: document history/share/owner-lock, chat document_refs, message archive
 
 - Document page: per-document History (G-DOC-2, flat actor C-15), Share with collector / Stop sharing (G-DOC-1), `owner_lock` disables the guarded moves for a standard admin with the reason; nav "Library & history" restored, History tab stays hidden (per-document feed). Admin chat: Attach document (D19 `document_refs`, never another collector's doc), chips on both threads, per-message Archive/Restore + "Include archived" (G-CHAT-2).
