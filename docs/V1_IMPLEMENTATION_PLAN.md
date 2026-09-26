@@ -398,7 +398,8 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 - **Candidates:**
   - **G-P5-11:** send `artist` on an artist enquiry. No visible change.
   - **G-P25-2(a):** the collector questionnaire is driven by `GET /recommendations/question-set/`, and the
-    `questions.ts` bank is deleted. (b) An admin question-set editor desk.
+    `questions.ts` bank is deleted. (b) An admin question-set editor desk. *(Phase 9a built (a) and kept the
+    bank as the empty/failed-read fallback — see §3j.)*
   - **G-P24-2:** the "selection ready" notice (`/catalog/selections/` + `seen`).
   - **G-P5-4:** durable activity archive.
   - **G-P5-5:** collector withdraw offer / cancel viewing.
@@ -793,6 +794,43 @@ below is the recommended order, by risk and size: live bugs first, then the busi
   computed filters, a summary counted from them, and extend/revoke that mutate the row. Four desk tests plus
   the walk entry; `capture-desks.mjs` gains `22-access`.
 
+## 3j · What Phase 9 did, and what it deferred (recorded 2026-09-26)
+
+Q-5 was answered "use your recommendations": **G-P5-11 and G-P25-2(a) yes (no visible change); the rest per
+owner.** So Phase 9a built exactly those two, and everything else stays an open owner question.
+
+- **G-P5-11 — built.** `RequestController.enquireAboutArtist` now sends the artist's real id as the
+  request's `artist` (nullable FK) beside the old message text, which is unchanged — no visible change.
+  `CrmService.createRequest` takes `artist`. Unit test on the payload; E2E reads the POST body.
+- **G-P25-2(a) — built, with one deviation from the plan text.** The questionnaire runs on
+  `GET /recommendations/question-set/` (`RecommendationService.questionSet()`); `single_choice` → the
+  option labels (single-select), `text` → the free-text step; the set's `title` / `intro` replace the
+  intro's title and lede, the other intro strings keep the built-in / theme wording. **The plan said "the
+  `questions.ts` bank is deleted"; it is kept, as the fallback** — the endpoint's "no active set" answer is
+  an empty shape (`id: null`, `questions: []`) and the read can fail, and in both cases the collector gets
+  the old app's own bank (app.html:9973-9984) rather than an empty screen. Precedence: served set → theme
+  `qbQuestions` → `QB_DEFAULT` (recorded in the `questions.ts` header).
+  - **Draft version.** A served bank's draft version is `set:<hash>` of each step's question, hint and
+    options in order; the built-in bank keeps the numeric `QVER`. A draft saved against another bank (or a
+    reworded set) is discarded, the contact kept; a re-save that changes nothing visible keeps it.
+  - `adoptServerAnswers` joins by the served question texts; answers still go out as `{q, a}`.
+  - **Flag:** the served set has no section names, so a served step's eyebrow (`sec`) is blank — only the
+    chroma seam shows above the question. Inventing a section name would be new copy. If the owner wants
+    one, the backend `Question` needs a field for it.
+  - **Flag:** served questions have no "Select all" type, so every served choice step is single-select;
+    the old bank's multi-select steps exist only in the fallback.
+  - Stub: the active set (3 questions, one `text`), `POST /__stub/question-set/?active=0|1` to serve the
+    empty shape; E2E walks both the served set and the fallback bank.
+- **Deferred — owner question (Q-4/Q-5), API ready.** Not built; each needs the owner to say yes:
+  - **G-P24-2** — the "selection ready" notice (`/catalog/selections/` + `seen`).
+  - **G-P25-2(b)** — an admin question-set editor desk over `/recommendations/admin/question-sets/`.
+  - **G-P5-4** — a durable activity archive (`POST /crm/requests/{id}/archive/`, `?archived=`).
+  - **G-P5-5** — collector withdraw offer / cancel viewing (`POST /crm/requests/{id}/transition/`).
+  - **G-P5-12** — an activity read-back surface (`GET /crm/activity/`).
+  - **G-P13-1** — push opt-in (`vapid-public-key`, `push/subscribe|unsubscribe`, a service worker).
+  - **G-CLUB-3** — the Club "Auction access" section.
+  - **G-P5-9** — the counter-offer display.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -819,5 +857,5 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[x]` 2026-09-25 | see CHANGELOG |
 | 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[x]` 2026-09-26 | see CHANGELOG |
 | 8 | Owner Access desk (owner-only, Q-1) | `v1/phase-8-access-desk` | `[x]` 2026-09-26 | see CHANGELOG |
-| 9 | Owner-decision items | `v1/phase-9x-*` | waiting on owner | |
+| 9 | Owner-decision items — **9a:** G-P5-11 artist link · G-P25-2(a) served question set. **Deferred — owner question (Q-4/Q-5), API ready:** G-P24-2 · G-P25-2(b) · G-P5-4 · G-P5-5 · G-P5-12 · G-P13-1 · G-CLUB-3 · G-P5-9 (see §3j) | `v1/phase-9a-owner-extras` | `[x]` 2026-09-26 (9a) | see CHANGELOG |
 | 10 | Final verification + `DARZ_WEB_V1_STATUS.md` | `v1/phase-10-final` | `[ ]` | |

@@ -51,12 +51,12 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-P5-3 | No single-request read | ✅ Closed | `GET /crm/requests/{id}/`. FE adopted 2026-09-25: a deep link to a thread reads its one request (`ConversationsController.open`). |
 | G-P5-6 | Hold expiry not applied on read | ✅ Closed | Lazy expiry now server-side (list + detail). FE 2026-09-25: the client check stays as a backstop for a hold that lapses while the page is open. |
 | G-P5-8 | Pagination params undeclared | ✅ Closed | Schema-only; no FE change. |
-| G-P5-9 | String `amount`; no counter amount | ✅ Closed | `counter_amount`/`counter_currency` on `countered`; amount stays precise string. **FE: owner decision** — neither `app.html` nor the design package has any counter-offer UI or copy, so nothing is rendered yet (`API_ADOPTION_PLAN.md` Batch 3). |
+| G-P5-9 | String `amount`; no counter amount | ✅ Closed | `counter_amount`/`counter_currency` on `countered`; amount stays precise string. **FE: owner decision** — neither `app.html` nor the design package has any counter-offer UI or copy, so nothing is rendered yet (`API_ADOPTION_PLAN.md` Batch 3). **FE: deferred — owner question (Q-4/Q-5), API ready (V1 Phase 9a, 2026-09-26).** |
 | G-P5-10 | Viewing `mode` not in `/api/options/` | ✅ Closed | FE adopted 2026-09-25: `ViewingSheet` labels come from `crm.viewing_mode` (`viewingMode.ts`). |
-| G-P5-4 | No durable collector archive | ✅ Closed | `POST /crm/requests/{id}/archive/`. Owner-decision UI. |
-| G-P5-5 | No collector withdraw/cancel | ✅ Closed | `POST …/transition/` (whitelisted). Owner-decision UI. |
-| G-P5-11 | Enquiry has no artist link | ✅ Closed | Nullable `artist` FK both tiers. Owner-decision UI. |
-| G-P5-12 | Activity write-only | ✅ Closed | `GET /crm/activity/`. |
+| G-P5-4 | No durable collector archive | ✅ Closed | `POST /crm/requests/{id}/archive/`. Owner-decision UI. **FE: deferred — owner question (Q-4/Q-5), API ready (V1 Phase 9a, 2026-09-26).** |
+| G-P5-5 | No collector withdraw/cancel | ✅ Closed | `POST …/transition/` (whitelisted). Owner-decision UI. **FE: deferred — owner question (Q-4/Q-5), API ready (V1 Phase 9a, 2026-09-26).** |
+| G-P5-11 | Enquiry has no artist link | ✅ Closed | Nullable `artist` FK both tiers. **FE: adopted (V1 Phase 9a, 2026-09-26)** — an artist enquiry sends the real `artist` id (`RequestController.enquireAboutArtist`); no visible change. |
+| G-P5-12 | Activity write-only | ✅ Closed | `GET /crm/activity/`. **FE: deferred — owner question (Q-4/Q-5), API ready (V1 Phase 9a, 2026-09-26).** |
 | G-F1-2..7 | Offer floor, allowed_actions, status vocab, idempotency, nested admin artwork | ✅ Closed | Flow-1 loop; see `FLOW_1_API_GAPS.md` history. |
 | G-CHAT-2 | Nothing archives a message | ✅ Closed | `POST /crm/admin/messages/{id}/archive/` (B4) — admin-desk-only hide, distinct from soft-delete; `?include_archived=` on the admin thread. Collector view untouched. FE ✅ adopted (Phase 6): Archive/Restore on every admin bubble + an "Include archived" switch (`AdminThreadController.archive` / `setIncludeArchived`); archived bubbles marked " · archived". |
 | G-Q-1 | Questionnaire contact step can't write collector contact | ✅ Closed | `PATCH /api/auth/me/` (B1) writes phone/city/full_name/preferred_language. FE ✅ adopted (Phase 1): after a successful submit the contact step's phone and language (English→`en`, Farsi→`fa`) go through `AuthService.updateMe`, best-effort; email is not writable and stays an answer only. |
@@ -66,7 +66,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
 | G-P24-1 | Selection name not exposed to collector | ✅ Closed | `selection_name` on `artworks/selections/`. FE ✅ adopted (Phase 1): the Market chip reads the first row's `selection_name`, else "Curated for You". |
-| G-P24-2 | No change signal for "ready" notice | ✅ Closed | `GET /catalog/selections/` + `POST …/{id}/seen/`. Owner-decision UI. |
+| G-P24-2 | No change signal for "ready" notice | ✅ Closed | `GET /catalog/selections/` + `POST …/{id}/seen/`. Owner-decision UI. **FE: deferred — owner question (Q-4/Q-5), API ready (V1 Phase 9a, 2026-09-26).** |
 | Phase 5b | Database desk 4 hard filters | ✅ Closed | `gallery_portal`/`complete`/`duplicate_images`/`size` on admin filter set. **FE adopted (V1 Phase 4):** Gallery Portal · Images "Duplicates (same image)" · Details "Missing required fields" · Size selects in More filters, sent to the list and to facets. |
 | G-P6-1..4 | Saved/favorites loop | ✅ Closed | See `PHASE_6_API_GAPS.md` history. |
 | G-CAT-1/3/8 | Admin row thumb + artist name, artists search/ordering/works_count, publish gate | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". **FE adopted (V1 Phase 4).** |
@@ -78,19 +78,19 @@ trusting any shape (`CLAUDE.md` → "API access").
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
 | G-P25-1 | `GET questionnaire` 404 on first run | ✅ Closed | Returns 200 `{answers,submitted_at,answered}`. FE ✅ adopted (Phase 0): the controller and the Profile card branch on `answered` (`isQuestionnaireAnswered`). |
-| G-P25-2 | Question set not served (hardcoded) | ✅ Closed | `GET /recommendations/question-set/` + admin CRUD. FE: drive the screen from it. |
+| G-P25-2 | Question set not served (hardcoded) | ✅ Closed | `GET /recommendations/question-set/` + admin CRUD. **FE (a): adopted (V1 Phase 9a, 2026-09-26)** — the questionnaire runs on the served set; the built-in bank stays as the fallback for the empty shape / a failed read. **(b) the admin editor desk:** deferred — owner question (Q-4/Q-5), API ready. |
 
 ## Notifications — web push
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-P13-1 | VAPID public key unpublished | ✅ Closed | `GET /notifications/vapid-public-key/`. FE: only if push is in scope. |
+| G-P13-1 | VAPID public key unpublished | ✅ Closed | `GET /notifications/vapid-public-key/`. FE: only if push is in scope. **FE: deferred — owner question (Q-4/Q-5), API ready (V1 Phase 9a, 2026-09-26).** |
 
 ## Auctions
 
 | ID | Gap | State | Note |
 | --- | --- | --- | --- |
-| G-CLUB-3 | No invitation-only auctions | ✅ Closed | `Auction.invite_only` + `invited_collectors` (Phase 35). FE: admin toggle optional; collector side already filtered server-side. |
+| G-CLUB-3 | No invitation-only auctions | ✅ Closed | `Auction.invite_only` + `invited_collectors` (Phase 35). FE: admin toggle optional; collector side already filtered server-side. The Club "Auction access" section: **deferred — owner question (Q-4/Q-5), API ready (V1 Phase 9a, 2026-09-26).** |
 | G-AUC-4 | No `archived` on an auction | ✅ Closed | `Auction.archived` + `POST /auctions/admin/auctions/{id}/archive/` + `?archived=` (hidden by default) (B2) — FE ✅ adopted (Phase 3): Live Auctions' "Show archived" toggle + Archive / ↩ Restore on the list and the auction page. The collector list does not filter `archived` (backend candidate). |
 | G-REC-1 | No auction-house facet on records list | ✅ Closed | Exact `?house=` on both records lists (B2) — FE ✅ adopted (Phase 3) on the admin Records desk ("All auction houses"; options = standard houses + a walk of the records — no facet endpoint, backend candidate). The collector Records page is the Artist view, where the old app hid the filter. |
 | Auction poster | No `cover_image_url` on `Auction` | ✅ Closed | `cover_image_url` on `AuctionSerializer` + `POST`/`DELETE …/{id}/cover-image/` (B2). FE ✅ adopted (Phase 3): collector cards and the event hero read `cover_image_url`, the per-card first-lot read is deleted; the auction page uploads/removes the poster; the Live Auctions row shows it. |
