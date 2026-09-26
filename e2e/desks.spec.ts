@@ -1378,3 +1378,181 @@ test('Chat: archive hides a message; Include archived shows it marked; restore b
   await expect(oldNote).toHaveCount(0);
   expect(thrown).toEqual([]);
 });
+
+/**
+ * V1 Phase 7 — the Projects suite over the served API: the dashboard reads the
+ * server's Delayed / Awaiting counts (G-PROJ-3), a card opens the list on the
+ * server's `?quick=` (G-PROJ-1), the record's Status select and the FX block
+ * PATCH with the lock (G-PROJ-2/9), the totals panel reads `…/totals/`
+ * (C-22), a board move seeds `stages` before it moves (G-PROJ-3), and a stale
+ * save is the conflict banner. Fixtures: `phase7Patterns` in the stub — stateful,
+ * so these run in this order.
+ */
+const P7_FX = '00000000-0000-4000-8000-000000007001';
+const P7_PLAIN = '00000000-0000-4000-8000-000000007002';
+
+test('Projects dashboard: Delayed and Awaiting approval read the server counts', async () => {
+  thrown = [];
+  await page.goto('/admin/projects');
+  const card = (k: string) =>
+    page.locator('.dzp-att', { has: page.getByText(k, { exact: true }) });
+  await expect(card('Delayed').locator('.n')).toHaveText('1');
+  await expect(card('Awaiting approval').locator('.n')).toHaveText('1');
+  await expect(card('Active projects').locator('.n')).toHaveText('2');
+  await expect(page.getByText('stay at 0', { exact: false })).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Projects list: a quick card reaches the list as ?quick= (G-PROJ-1)', async () => {
+  thrown = [];
+  await page.goto('/admin/projects');
+  const [req] = await Promise.all([
+    page.waitForRequest(
+      (r) => /\/projects\/admin\/projects\/\?/.test(r.url()) && /quick=/.test(r.url()),
+    ),
+    page.locator('.dzp-att', { hasText: 'Awaiting approval' }).click(),
+  ]);
+  const q = new URL(req.url()).searchParams;
+  expect(q.get('quick')).toBe('awaiting_approval');
+  expect(q.get('archived')).toBe('False');
+  await expect(page.locator('.dzp-row', { hasText: '13 Vanak' })).toBeVisible();
+  await expect(page.locator('.dzp-row', { hasText: 'Kargah' })).toHaveCount(0);
+  await expect(page.locator('.dzp-chip', { hasText: 'Awaiting approval' })).toBeVisible();
+  // only the Projects sub-tab is lit — not also Dashboard, whose path is a prefix
+  await expect(page.locator('.ad-subtab.on', { hasText: 'Dashboard' })).toHaveCount(0);
+
+  const [delayed] = await Promise.all([
+    page.waitForRequest((r) => /quick=delayed/.test(r.url())),
+    page.goto('/admin/projects/list?quick=delayed'),
+  ]);
+  expect(delayed.url()).toContain('quick=delayed');
+  await expect(page.locator('.dzp-row', { hasText: 'Kargah' })).toBeVisible();
+  await expect(page.locator('.dzp-row', { hasText: '13 Vanak' })).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Project record: the Status select saves status with the lock (G-PROJ-2)', async () => {
+  thrown = [];
+  await page.goto(`/admin/projects/${P7_PLAIN}`);
+  const status = page.getByRole('combobox', { name: 'Status', exact: true });
+  await expect(status).toHaveValue('Qualified');
+  await status.selectOption('Negotiation');
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'PATCH' && r.url().includes(P7_PLAIN)),
+    page.getByRole('button', { name: 'Save', exact: true }).click(),
+  ]);
+  expect(req.postDataJSON()).toMatchObject({ status: 'Negotiation', expected_version: 1 });
+  await expect(page.getByText('Project saved')).toBeVisible();
+  await expect(status).toHaveValue('Negotiation');
+  await expect(page.getByText('derived from the stage')).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Project record: FX saves with the lock and the totals panel shows the converted total (G-PROJ-9)', async () => {
+  thrown = [];
+  await page.goto(`/admin/projects/${P7_PLAIN}`);
+  await page.locator('summary', { hasText: 'Money' }).click();
+  const money = page.locator('details', {
+    has: page.locator('summary', { hasText: 'Money' }),
+  });
+  // before: no rate — per-currency rows only, and the old deal bar's hint
+  await expect(money.locator('.dzp-mrow', { hasText: 'TMN' })).toContainText(
+    'Client 12,000,000 TMN',
+  );
+  await expect(money.getByText('Enter an exchange rate above')).toBeVisible();
+
+  await money.getByRole('combobox', { name: 'Deal currency' }).selectOption('USD');
+  await money.getByLabel('Exchange rate').fill('600,000');
+  await money.getByRole('combobox', { name: 'Convert to' }).selectOption('TMN');
+  await money.getByLabel('Rate date').fill('2026-09-25');
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'PATCH' && r.url().includes(P7_PLAIN)),
+    page.getByRole('button', { name: 'Save', exact: true }).click(),
+  ]);
+  expect(req.postDataJSON()).toMatchObject({
+    deal_currency: 'USD',
+    deal_fx_target_currency: 'TMN',
+    deal_fx_rate: '600000',
+    deal_fx_rate_date: '2026-09-25',
+    expected_version: 2,
+  });
+  await expect(money.getByText('Converted total')).toBeVisible();
+  // 12,000,000 TMN + 250 USD × 600,000 (fee) — computed by the server, shown as served
+  const converted = money.locator('.dzp-mrow', { hasText: 'Fee 150,000,000 TMN' });
+  await expect(converted).toContainText('Client 12,000,000 TMN');
+  await expect(money.getByText('1 USD = 600,000 TMN (2026-09-25)')).toBeVisible();
+  expect(thrown).toEqual([]);
+});
+
+test('Project record: the backend’s "unknown" bucket reads "No currency" (C-22)', async () => {
+  thrown = [];
+  await page.goto('/admin/projects/00000000-0000-4000-8000-000000007003');
+  await page.locator('summary', { hasText: 'Money' }).click();
+  const row = page.locator('.dzp-mrow', { hasText: 'No currency' });
+  await expect(row).toContainText('Due 75.50');
+  await expect(row).not.toContainText('unknown');
+  await expect(page.locator('.dzp-mrow', { hasText: 'USD' })).toContainText('Client 900 USD');
+  expect(thrown).toEqual([]);
+});
+
+test('Project record: totals list the currencies a rate cannot convert', async () => {
+  thrown = [];
+  await page.goto(`/admin/projects/${P7_FX}`);
+  await page.locator('summary', { hasText: 'Money' }).click();
+  await expect(page.getByText('Not converted: EUR')).toBeVisible();
+  await expect(page.locator('.dzp-mrow', { hasText: 'USD' }).first()).toContainText(
+    'Cost 1,000.10 USD',
+  );
+  expect(thrown).toEqual([]);
+});
+
+test('Pipeline: a move seeds the stage sub-state, then moves with the new version (G-PROJ-3)', async () => {
+  thrown = [];
+  await page.goto('/admin/projects/pipeline');
+  const card = page.locator('.dzp-kcard', { hasText: 'Kargah documentation' });
+  const patch = page.waitForRequest(
+    (r) => r.method() === 'PATCH' && r.url().includes(P7_PLAIN),
+  );
+  const move = page.waitForRequest((r) => r.method() === 'POST' && /\/stage\/$/.test(r.url()));
+  await card.getByRole('button', { name: 'Fwd ›' }).click();
+  const body = (await patch).postDataJSON() as {
+    stages: Record<string, Record<string, unknown>>;
+    expected_version: number;
+  };
+  expect(body.expected_version).toBe(3);
+  // the target is dated and gets the Proposal template's checklist (:13709)
+  expect(body.stages.proposal.start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  expect(
+    (body.stages.proposal.checklist as Array<{ text: string }>).map((c) => c.text),
+  ).toEqual(['Confirm scope with the client', 'Draft deliverables & counts']);
+  // every earlier stage is stamped done (:13711); the existing brief entry keeps its due
+  expect(body.stages.lead.doneTs).toBeGreaterThan(0);
+  expect(body.stages.brief).toMatchObject({ due: '2026-09-01' });
+  expect(body.stages.brief.doneTs).toBeGreaterThan(0);
+  expect((await move).postDataJSON()).toEqual({ stage: 'proposal', expected_version: 4 });
+  await expect(page.getByText('Stage → Proposal')).toBeVisible();
+  await expect(page.getByText('A move records the new stage only')).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Project record: a stale save gets the 409 and the conflict banner', async () => {
+  thrown = [];
+  await page.goto(`/admin/projects/${P7_FX}`);
+  await expect(page.getByLabel('Project name')).toHaveValue('13 Vanak · media partnership');
+  // another editor saves first — the stub's version moves on
+  const other = await page.request.patch(
+    `http://127.0.0.1:8787/api/projects/admin/projects/${P7_FX}/`,
+    { data: { report: 'Edited elsewhere', expected_version: 3 } },
+  );
+  expect(other.status()).toBe(200);
+  await page.getByLabel('Project name').fill('13 Vanak · renamed');
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'PATCH' && r.url().includes(P7_FX)),
+    page.getByRole('button', { name: 'Save', exact: true }).click(),
+  ]);
+  expect(req.postDataJSON()).toMatchObject({ expected_version: 3 });
+  await expect(
+    page.getByText('Someone else saved this project in the meantime'),
+  ).toBeVisible();
+  expect(thrown).toEqual([]);
+});

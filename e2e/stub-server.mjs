@@ -87,6 +87,55 @@ const OPTIONS = {
     { value: 'USD', label: 'US Dollar' },
     { value: 'TMN', label: 'Toman' },
   ],
+  // V1 Phase 7 — the Projects vocabularies (`apps/projects/apps.py:12-14`)
+  'projects.category': [
+    { value: 'media', label: 'Media partnership' },
+    { value: 'exhibition', label: 'Exhibition coverage' },
+    { value: 'curatorial', label: 'Curatorial' },
+    { value: 'documentation', label: 'Documentation' },
+    { value: 'mixed', label: 'Mixed' },
+  ],
+  'projects.stage': [
+    ['lead', 'Lead'],
+    ['qualification', 'Qualification'],
+    ['brief', 'Initial Brief'],
+    ['proposal', 'Proposal'],
+    ['scopeApproval', 'Scope Approval'],
+    ['contract', 'Contract'],
+    ['deposit', 'Deposit'],
+    ['research', 'Research'],
+    ['planning', 'Content Planning'],
+    ['production', 'Production'],
+    ['internalReview', 'Internal Review'],
+    ['clientReview', 'Client Review'],
+    ['finalApproval', 'Final Approval'],
+    ['publication', 'Publication'],
+    ['reporting', 'Reporting'],
+    ['finalPayment', 'Final Payment'],
+    ['archive', 'Archive'],
+  ].map(([value, label]) => ({ value, label })),
+  'projects.status': [
+    'New Lead',
+    'Under Review',
+    'Qualified',
+    'Proposal in Preparation',
+    'Proposal Sent',
+    'Negotiation',
+    'Approved',
+    'Awaiting Contract',
+    'Awaiting Deposit',
+    'In Research',
+    'In Production',
+    'Internal Review',
+    'Client Review',
+    'Scheduled',
+    'Published',
+    'Reporting',
+    'Awaiting Final Payment',
+    'Completed',
+    'Archived',
+    'Cancelled',
+  ].map((s) => ({ value: s, label: s })),
   // The gallery vocabularies (`apps/gallery/apps.py:20-28`). No
   // `gallery.pricelist_status`: the backend does not register one (C-14).
   'gallery.source_type': [
@@ -2350,6 +2399,334 @@ galleryPatterns.push(
   ],
 );
 
+/* ── V1 Phase 7 — the Projects suite ───────────────────────────────────────
+ * Three projects and one partner org, stateful: a PATCH (locked) merges and
+ * bumps the version, a stage move re-stamps the status from the stage
+ * (`STAGE_STATUS_MAP`), and the list, the dashboard summary and the totals
+ * are computed from the live rows with the backend's own predicates
+ * (`ProjectService._is_active/_is_delayed/_awaits_approval/_unpaid_count`,
+ * `ProjectMoneyService.totals`) — so a write the desk makes shows up in the
+ * counts it reads next. */
+const P7_ORG = '00000000-0000-4000-8000-0000000070a1';
+const P7_FX = '00000000-0000-4000-8000-000000007001';
+const P7_PLAIN = '00000000-0000-4000-8000-000000007002';
+const P7_ARCH = '00000000-0000-4000-8000-000000007003';
+const PARTNER_ORGS = [
+  {
+    id: P7_ORG,
+    name: 'Avaplat Studio',
+    kind: 'production',
+    contact: '',
+    city: 'Tehran',
+    country: 'Iran',
+    notes: '',
+    version: 1,
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+];
+const PROJECT_BASE = {
+  client_partner_org: null,
+  client_name: '',
+  contact: '',
+  partner_orgs: [],
+  partner_roles: {},
+  category: 'media',
+  venue: '',
+  city: 'Tehran',
+  country: 'Iran',
+  start_date: null,
+  end_date: null,
+  scope: '',
+  darz_resp: '',
+  partner_resp: '',
+  deliverables: [],
+  timeline: '',
+  internal_deadlines: '',
+  client_deadlines: '',
+  team: [],
+  suppliers: [],
+  money: {},
+  deal_currency: '',
+  deal_fx_target_currency: '',
+  deal_fx_rate: null,
+  deal_fx_rate_date: null,
+  stages: {},
+  applied_package: null,
+  links: [],
+  media_links: [],
+  results: '',
+  report: '',
+  internal_notes: '',
+  archived: false,
+  created_at: '2026-09-10T10:00:00Z',
+  updated_at: '2026-09-20T10:00:00Z',
+};
+const PROJECTS = [
+  {
+    ...PROJECT_BASE,
+    id: P7_FX,
+    no: 'P-0001',
+    name: '13 Vanak · media partnership',
+    client_name: 'Vanak Gallery',
+    team: ['Sara'],
+    status: 'Proposal in Preparation',
+    stage: 'proposal',
+    // awaiting approval: the old move's blank (`intApproved: false`)
+    stages: {
+      proposal: { start: '2026-09-10', intApproved: false, cliApproved: false, doneTs: 0 },
+    },
+    // two currencies + a currency-less payment (it lands in deal_currency)
+    money: {
+      internalCost: { amount: '1000.10', currency: 'USD' },
+      externalCost: { amount: '5000000', currency: 'TMN' },
+      fee: { amount: '300', currency: 'USD' },
+      clientPrice: { amount: '2000', currency: 'USD' },
+      payments: [
+        { id: 'pay1', label: 'Deposit', amount: '500', currency: 'USD', paid: true },
+        { id: 'pay2', label: 'On delivery', amount: '1500', currency: '', paid: false },
+        { id: 'pay3', label: 'Print', amount: '200', currency: 'EUR', paid: false },
+      ],
+      invoiceStatus: 'sent',
+    },
+    deal_currency: 'USD',
+    deal_fx_target_currency: 'TMN',
+    deal_fx_rate: '700000.00000000',
+    deal_fx_rate_date: '2026-09-25',
+    version: 3,
+  },
+  {
+    ...PROJECT_BASE,
+    id: P7_PLAIN,
+    no: 'P-0002',
+    name: 'Kargah documentation',
+    client_partner_org: { id: P7_ORG, name: 'Avaplat Studio' },
+    partner_orgs: [{ id: P7_ORG, name: 'Avaplat Studio' }],
+    category: 'documentation',
+    status: 'Qualified',
+    stage: 'brief',
+    // delayed: a stage due date in the past, not done
+    stages: { brief: { start: '2026-08-01', due: '2026-09-01', doneTs: 0 } },
+    // no deal currency: the currency-less line is the "unknown" bucket
+    money: {
+      clientPrice: { amount: '12000000', currency: 'TMN' },
+      fee: { amount: '250', currency: 'USD' },
+      payments: [{ id: 'pay4', label: 'Deposit', amount: '75.50', paid: false }],
+    },
+    version: 1,
+  },
+  {
+    ...PROJECT_BASE,
+    id: P7_ARCH,
+    no: 'P-0003',
+    name: 'Archived catalogue',
+    status: 'Archived',
+    stage: 'archive',
+    archived: true,
+    // never saved by the walk: its currency-less payment stays the "unknown" bucket
+    money: {
+      clientPrice: { amount: '900', currency: 'USD' },
+      payments: [{ id: 'pay5', label: 'Balance', amount: '75.50', paid: false }],
+    },
+    version: 1,
+  },
+];
+const CHECKLISTS = [
+  {
+    id: '00000000-0000-4000-8000-0000000070c1',
+    name: 'Proposal checklist',
+    stage: 'proposal',
+    items: ['Confirm scope with the client', 'Draft deliverables & counts'],
+    version: 1,
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-01T10:00:00Z',
+  },
+];
+const STAGE_STATUS = {
+  lead: 'New Lead',
+  qualification: 'Under Review',
+  brief: 'Qualified',
+  proposal: 'Proposal in Preparation',
+  scopeApproval: 'Proposal Sent',
+  contract: 'Awaiting Contract',
+  deposit: 'Awaiting Deposit',
+  research: 'In Research',
+  planning: 'In Research',
+  production: 'In Production',
+  internalReview: 'Internal Review',
+  clientReview: 'Client Review',
+  finalApproval: 'Approved',
+  publication: 'Published',
+  reporting: 'Reporting',
+  finalPayment: 'Awaiting Final Payment',
+  archive: 'Archived',
+};
+const pToday = () => new Date().toISOString().slice(0, 10);
+const pActive = (p) => !p.archived && p.stage !== 'archive';
+const pDelayed = (p) =>
+  Object.values(p.stages || {}).some((e) => e && e.due && !e.doneTs && e.due < pToday());
+const pAwaits = (p) =>
+  Object.values(p.stages || {}).some(
+    (e) => e && (e.intApproved === false || e.cliApproved === false),
+  );
+const pUnpaid = (p) => ((p.money || {}).payments || []).filter((x) => !x.paid).length;
+const P_QUICK = {
+  active: pActive,
+  delayed: (p) => pActive(p) && pDelayed(p),
+  awaiting_approval: (p) => pActive(p) && pAwaits(p),
+  unpaid: (p) => pActive(p) && pUnpaid(p) > 0,
+};
+const projectList = (sp) => {
+  let rows = PROJECTS.slice();
+  const archived = sp.get('archived');
+  if (archived) rows = rows.filter((p) => p.archived === (archived === 'True'));
+  for (const k of ['status', 'stage', 'category'])
+    if (sp.get(k)) rows = rows.filter((p) => p[k] === sp.get(k));
+  const partner = sp.get('partner');
+  if (partner)
+    rows = rows.filter(
+      (p) =>
+        p.client_partner_org?.id === partner || p.partner_orgs.some((o) => o.id === partner),
+    );
+  const q = (sp.get('search') || '').toLowerCase();
+  if (q)
+    rows = rows.filter((p) =>
+      [p.name, p.no, p.client_name, p.venue].join(' ').toLowerCase().includes(q),
+    );
+  const quick = P_QUICK[sp.get('quick')];
+  if (quick) rows = rows.filter(quick);
+  return rows;
+};
+/** `ProjectMoneyService.totals` — two-decimal strings, "unknown" when a line
+ * has no currency and the project no deal currency. */
+const projectTotals = (p) => {
+  const m = p.money || {};
+  const by = {};
+  const bucket = (cur) =>
+    (by[cur] ??= { internal: 0, external: 0, fee: 0, client: 0, paid: 0, due: 0 });
+  const curOf = (line) => line.currency || line.cur || p.deal_currency || 'unknown';
+  const num = (v) => Number(String(v ?? '')) || 0;
+  for (const [key, metric] of [
+    ['internalCost', 'internal'],
+    ['externalCost', 'external'],
+    ['fee', 'fee'],
+    ['clientPrice', 'client'],
+  ]) {
+    const line = m[key] || {};
+    if (num(line.amount)) bucket(curOf(line))[metric] += num(line.amount);
+  }
+  for (const pay of m.payments || [])
+    if (num(pay.amount)) bucket(curOf(pay))[pay.paid ? 'paid' : 'due'] += num(pay.amount);
+  const fix = (b) => Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v.toFixed(2)]));
+  const by_currency = Object.fromEntries(Object.entries(by).map(([c, b]) => [c, fix(b)]));
+  const rate = p.deal_fx_rate == null ? null : num(p.deal_fx_rate);
+  const src = p.deal_currency;
+  const tgt = p.deal_fx_target_currency;
+  let fx = null;
+  if (rate != null && src && tgt) {
+    const conv = {};
+    for (const k of ['internal', 'external', 'fee', 'client', 'paid', 'due'])
+      conv[k] = (by[tgt]?.[k] ?? 0) + (by[src]?.[k] ?? 0) * rate;
+    fx = {
+      source_currency: src,
+      target_currency: tgt,
+      rate: rate.toFixed(8),
+      rate_date: p.deal_fx_rate_date,
+      converted: fix(conv),
+      unconvertible_currencies: Object.keys(by)
+        .filter((c) => c !== src && c !== tgt)
+        .sort(),
+    };
+  }
+  return { by_currency, fx };
+};
+const projectById = (path) => PROJECTS.find((p) => p.id === path.split('/')[5]);
+/** Last PATCH body per project — the E2E reads what the desk sent. */
+const PROJECT_PATCHES = {};
+const phase7Patterns = [
+  [
+    /^\/api\/projects\/admin\/projects\/dashboard\/$/,
+    'GET',
+    () => {
+      const active = PROJECTS.filter(pActive);
+      return envelope({
+        active_count: active.length,
+        delayed_count: active.filter(pDelayed).length,
+        awaiting_approval_count: active.filter(pAwaits).length,
+        unpaid_count: active.filter((p) => pUnpaid(p) > 0).length,
+        next_deliverables_count: 0,
+        next_deliverables: [],
+        responsibility_by_member: [{ member: 'Sara', active_count: 1 }],
+      });
+    },
+  ],
+  [
+    /^\/api\/projects\/admin\/projects\/$/,
+    'GET',
+    (_p, _b, url) => pageOf(projectList(url.searchParams), url),
+  ],
+  [
+    /^\/api\/projects\/admin\/projects\/[^/]+\/$/,
+    'GET',
+    (path) => {
+      const p = projectById(path);
+      return p ? envelope(p) : notFound('No Project matches the given query.');
+    },
+  ],
+  [
+    /^\/api\/projects\/admin\/projects\/[^/]+\/$/,
+    'PATCH',
+    (path, body) => {
+      const p = projectById(path);
+      if (!p) return notFound('No Project matches the given query.');
+      if (typeof body?.expected_version !== 'number')
+        return refused('expected_version is required');
+      if (body.expected_version !== p.version) return conflict();
+      PROJECT_PATCHES[p.id] = body;
+      const {
+        expected_version: _v,
+        partner_org_ids: _ids,
+        client_partner_org: _c,
+        ...fields
+      } = body;
+      Object.assign(p, fields, {
+        version: p.version + 1,
+        updated_at: new Date().toISOString(),
+      });
+      return envelope(p);
+    },
+  ],
+  [
+    /^\/api\/projects\/admin\/projects\/[^/]+\/stage\/$/,
+    'POST',
+    (path, body) => {
+      const p = projectById(path);
+      if (!p) return notFound('No Project matches the given query.');
+      if (body?.expected_version !== p.version) return conflict();
+      p.stage = body.stage;
+      p.status = STAGE_STATUS[body.stage] ?? p.status;
+      p.version += 1;
+      return envelope(p);
+    },
+  ],
+  [
+    /^\/api\/projects\/admin\/projects\/[^/]+\/totals\/$/,
+    'GET',
+    (path) => {
+      const p = projectById(path.replace(/totals\/$/, ''));
+      return p ? envelope(projectTotals(p)) : notFound('No Project matches the given query.');
+    },
+  ],
+  [/^\/api\/projects\/admin\/partners\/$/, 'GET', (_p, _b, url) => pageOf(PARTNER_ORGS, url)],
+  [/^\/api\/projects\/admin\/checklists\/$/, 'GET', (_p, _b, url) => pageOf(CHECKLISTS, url)],
+  // the stub's own read-back of the last PATCH a desk sent a project
+  [
+    /^\/__stub\/projects\/[^/]+\/last-patch\/$/,
+    'GET',
+    (path) => envelope(PROJECT_PATCHES[path.split('/')[3]] ?? null),
+  ],
+];
+
 const patterns = [
   // Public documents (`AllowAny`): only `legal_terms` is published here, as a
   // confirmed public `Document`; any other kind is the backend's 404.
@@ -2702,7 +3079,12 @@ function respond(req, res, body, raw = '') {
     res.end(JSON.stringify(status === 200 ? answered : answered.body));
     return;
   }
-  for (const [re, method, answer] of [...galleryPatterns, ...phase6Patterns, ...patterns]) {
+  for (const [re, method, answer] of [
+    ...galleryPatterns,
+    ...phase6Patterns,
+    ...phase7Patterns,
+    ...patterns,
+  ]) {
     if (req.method === method && re.test(url.pathname)) {
       // A write's pattern reads the body it was sent (the follow-up date, a
       // note), as the keyed routes above already do; the gallery routes also
