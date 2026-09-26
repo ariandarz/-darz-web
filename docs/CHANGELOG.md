@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-26 — V1 Phase 8: owner Access desk (G-KEY-1)
+
+- `/admin/access`, owner-only (Q-1): the old stat row (4 of 5 from `summary/`), the "keys need a decision" review banner, search / computed status / "Expiring ≤ 7d", roster table (C-17 status, activity tallies, name → collector), extend + revoke with the old toast/confirm. New C-25 (extend never revives a lazily-expired key).
+- Matrix: roster + summary → Integrated (260/0/9/53/1). **819 unit · 153 E2E** (desks 105). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3i.
+
 ## 2026-09-26 — V1 Phase 7: Projects quick/partner, status, stage sub-state, FX + totals
 
 - List quick cards ride `?quick=` (only "Deliverables ≤7d" walks); record Status `<select>` saves `status`; a stage move PATCHes the old `setStage` seeding (`moveStages`) then moves; Delayed/Awaiting read real counts; owner FX block + server totals panel (decimal strings, "No currency", converted row). New C-24 (awaits-approval predicate). Stale G-PROJ notes removed.

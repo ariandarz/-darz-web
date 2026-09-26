@@ -750,6 +750,49 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 - **E2E:** the stub computes the dashboard summary, `?quick=`/`?partner=` and the totals from live rows
   with the backend's predicates; `projects.*` options added. Eight desk walks, stateful and ordered.
 
+## 3i · What Phase 8 did differently from the plan (recorded 2026-09-26)
+
+- **Sources of the old code.** `darz-studio.html`: `accessView()` (:33024-33113 — the refusal card :33025,
+  `expCell` :33042, the review banner :33045-33059, `extBtns` :33048, the filter bar :33061-33065, the row
+  :33066-33087, heading/sub-line/stat row/table/empty :33108-33113), `stat()` (:21518), `accStatusSel`
+  (:32964), `accExpDays` (:32961), `accessExtend`'s toast (:37096-37101), `OWNER_ONLY` (:11797). The old
+  desk lives in the admin panel, not `app.html`, as every desk does.
+- **Route and gate.** `/admin/access`, lazy, inside `RequireOwner title="Access"` (the old refusal heading);
+  the nav tab gets the path and stays in the Owner group / `OWNER_ONLY` (**Q-1 resolved: owner-only**).
+- **Tiles: four of the old five** — Total Collectors · Active Collectors (green) · Expiring ≤ 7d (amber when
+  non-zero) · Logins today, from `summary/`. **Admin keys has no counterpart** (roster keys are collectors'
+  only; admin sign-in is a Team login) and is named in `accessTiles()`, not faked. The summary's key counts
+  by state (`total/active/locked/expired_keys`) had no old tile and are not shown.
+- **The review banner is ported** ("*n* keys need a decision — extend or let expire", its sub-line, each row's
+  "Expired <date>" / "Expires in n days" and the three extend buttons), fed by two extra reads —
+  `?status=expired` and `?expiring_soon=true`, `per_page=100` each. Its ✉ Invite is not (it sent the
+  plaintext key). The day count uses `expiryParts`' floor so the banner and the Access period cell agree;
+  the old `accExpDays` used `Math.ceil`, so both read one day lower than the old desk did (the shared cell's
+  rounding predates this phase — flagged, not changed).
+- **The "Expiring soon" chip is a toolbar toggle labelled "Expiring ≤ 7d"** (the old tile's words; the old
+  desk had no such filter — the banner was its review). Status is a select ("All statuses") over the served
+  `accounts.access_key_status`; search placeholder "Search by name…" (the old "or key" dropped — no key to
+  search).
+- **Columns:** Name (links to `/admin/collectors/:id`) · Status (a pill, C-17) · Created (`issued_at`) ·
+  Access period (`expCell`, now the shared `ExpiryCell`) · Last login (`last_used_at`) · Logins · Saved ·
+  Holds · Offers · Requests · Auction. **Dropped, with reasons in the page header:** Key (never re-exposed),
+  Type and "All access types" (collector keys only), Classification and notes (not on the row), ＋ Collector
+  / Admin / Gallery Key and ⇩ Export (issue lives on the collector page, Team, Sources; no export endpoint),
+  ✉ Invite / ⧖ Activity / Edit / × (the collector page; remove is Revoke), the OTP panel and the ☁ Cloud
+  footnote (no API / dead architecture). The old status was an editable `<select>`; the API only locks, so
+  it is a read-only pill plus Revoke.
+- **Actions:** +1 week / +1 month / Make permanent / Revoke on every key that is not locked (lapsed ones
+  included, as the old banner did); Revoke confirms with the collector page's copy. After either write the
+  list, tiles and banner re-read; extend toasts the old wording from the server's new `expires_at`. A
+  failure shows the server message and branches on HTTP status (C-11): a 404 re-reads the list.
+- **C-17 exactly, and C-25 (new, backend).** Display = locked, else `is_expired`, else active — the server's
+  own filter/summary rule, so rows, filter and tiles agree. But extend never resets a status the lazy flip
+  already stored as `expired`, and login only considers stored-`active` keys (`accounts/services.py:81`,
+  `:458-480`), so such a key reads Active everywhere yet is still refused at sign-in.
+- **E2E:** stub serves four keys (lapsing, locked, lapsed-stored-active, permanent) with the backend's
+  computed filters, a summary counted from them, and extend/revoke that mutate the row. Four desk tests plus
+  the walk entry; `capture-desks.mjs` gains `22-access`.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -775,6 +818,6 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[x]` 2026-09-25 | see CHANGELOG |
 | 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[x]` 2026-09-25 | see CHANGELOG |
 | 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[x]` 2026-09-26 | see CHANGELOG |
-| 8 | Owner Access desk | `v1/phase-8-access-desk` | `[ ]` (Q-1) | |
+| 8 | Owner Access desk (owner-only, Q-1) | `v1/phase-8-access-desk` | `[x]` 2026-09-26 | see CHANGELOG |
 | 9 | Owner-decision items | `v1/phase-9x-*` | waiting on owner | |
 | 10 | Final verification + `DARZ_WEB_V1_STATUS.md` | `v1/phase-10-final` | `[ ]` | |
