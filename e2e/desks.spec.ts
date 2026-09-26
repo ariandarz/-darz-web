@@ -81,6 +81,8 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/projects/partners', 'Partners'],
   ['/admin/projects/reports', 'Reports'],
   ['/admin/club', 'Collector Club'],
+  // V1 Phase 8 — the owner Access desk (G-KEY-1)
+  ['/admin/access', 'Access Management'],
   ['/admin/access-requests', 'Access Requests'],
 ];
 
@@ -1555,4 +1557,124 @@ test('Project record: a stale save gets the 409 and the conflict banner', async 
     page.getByText('Someone else saved this project in the meantime'),
   ).toBeVisible();
   expect(thrown).toEqual([]);
+});
+
+/* ── V1 Phase 8: the owner Access desk (G-KEY-1) ───────────────────────────
+   The stub serves four keys (`ACCESS_KEYS`): Leila's lapses in 3 days, one of
+   Dariush's is locked, Sara's is stored `active` but past expiry (C-17), and
+   Dariush's other is permanent. Serial, and the extend walk mutates the stub,
+   so the reads come first. */
+const accessTable = () => page.getByRole('table', { name: 'Access keys' });
+const accessRow = (name: string) => accessTable().locator('tbody tr', { hasText: name });
+
+test('Access: the tiles equal the summary; a lapsed stored-active key reads Expired (C-17)', async () => {
+  thrown = [];
+  const summaryRead = page.waitForResponse((r) =>
+    r.url().endsWith('/api/auth/admin/access-keys/summary/'),
+  );
+  await page.goto('/admin/access');
+  const summary = ((await (await summaryRead).json()) as { data: Record<string, number> })
+    .data;
+  const tile = (l: string) =>
+    page
+      .locator('.ad-tile')
+      .filter({ has: page.locator('.ad-tile-l', { hasText: new RegExp(`^${l}$`) }) })
+      .locator('.ad-tile-v');
+  await expect(tile('Total Collectors')).toHaveText(String(summary.total_collectors));
+  await expect(tile('Active Collectors')).toHaveText(String(summary.active_collectors));
+  await expect(tile('Expiring ≤ 7d')).toHaveText(String(summary.expiring_soon));
+  await expect(tile('Logins today')).toHaveText(String(summary.logins_today));
+
+  // Sara's key: stored `active`, `is_expired: true` — the desk must say Expired
+  await expect(accessRow('Sara Nouri').locator('.ad-stpill')).toHaveText('Expired');
+  await expect(accessRow('Sara Nouri').getByRole('button', { name: 'Revoke' })).toBeVisible();
+  // the revoked key: Locked, and nothing to extend
+  const locked = accessTable().locator('tbody tr', {
+    has: page.locator('.ad-stpill', { hasText: 'Locked' }),
+  });
+  await expect(locked).toHaveCount(1);
+  await expect(locked.getByRole('button')).toHaveCount(0);
+  // the name opens the collector
+  await expect(
+    accessRow('Leila Ahmadi').getByRole('link', { name: 'Leila Ahmadi' }),
+  ).toHaveAttribute('href', '/admin/collectors/00000000-0000-4000-8000-0000000c0001');
+  // the review banner: the lapsed key and the lapsing one
+  const banner = page.getByRole('region', { name: 'Keys needing a decision' });
+  await expect(banner).toContainText('2 keys need a decision — extend or let expire');
+  await expect(banner).toContainText('Sara Nouri');
+  await expect(banner).toContainText('Expires in 2 days'); // 3 days less the seconds since boot
+  expect(thrown).toEqual([]);
+});
+
+test('Access: the Expiring ≤ 7d chip and the status filter reach the roster query', async () => {
+  thrown = [];
+  const list = watchQueries('/api/auth/admin/access-keys/');
+  await list.start();
+  // the banner's own two reads ride the same path at per_page=100 — the desk's
+  // list reads are the others
+  const desk = () => list.seen.filter((q) => q.get('per_page') !== '100');
+  try {
+    await page.goto('/admin/access');
+    await expect(accessTable().locator('tbody tr')).toHaveCount(4);
+    await page.getByLabel('Expiring ≤ 7d').check();
+    await expect.poll(() => desk().at(-1)?.get('expiring_soon')).toBe('true');
+    await expect(accessTable().locator('tbody tr')).toHaveCount(1);
+    await expect(accessRow('Leila Ahmadi')).toBeVisible();
+    await page.getByLabel('Expiring ≤ 7d').uncheck();
+    await expect.poll(() => desk().at(-1)?.get('expiring_soon')).toBeNull();
+
+    await deskFilter('Status').locator('select').selectOption('expired');
+    await expect.poll(() => desk().at(-1)?.get('status')).toBe('expired');
+    await expect(accessTable().locator('tbody tr')).toHaveCount(1);
+    await expect(accessRow('Sara Nouri')).toBeVisible();
+    await deskFilter('Status').locator('select').selectOption('');
+  } finally {
+    await list.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Access: +1 week posts the extend and the row re-reads with the new expiry', async () => {
+  thrown = [];
+  await page.goto('/admin/access');
+  const period = accessRow('Leila Ahmadi').locator('td').nth(3);
+  await expect(period).not.toHaveText('');
+  const before = await period.textContent();
+  const [post] = await Promise.all([
+    page.waitForRequest(
+      (r) => r.method() === 'POST' && /\/access-keys\/[^/]+\/extend\/$/.test(r.url()),
+    ),
+    accessRow('Leila Ahmadi').getByRole('button', { name: '+1 week' }).click(),
+  ]);
+  expect(post.postDataJSON()).toEqual({ extend: '1w' });
+  expect(post.url()).toContain('/access-keys/00000000-0000-4000-8000-0000000acc01/extend/');
+  await expect(period).not.toHaveText(before ?? '');
+  await expect(page.locator('.dz-toast')).toContainText(
+    'Leila Ahmadi extended by 1 week — until',
+  );
+  expect(thrown).toEqual([]);
+});
+
+test('Access: a standard admin gets the owner-only refusal card (Q-1)', async ({
+  browser,
+}) => {
+  const std = await browser.newPage();
+  const errors: string[] = [];
+  std.on('pageerror', (e) => errors.push(e.message.split('\n')[0]));
+  try {
+    await std.goto('/admin/login');
+    await std.fill('input[name="email"]', 'standard@example.invalid');
+    await std.fill('input[name="password"]', 'anything');
+    await std.locator('form button[type="submit"]').click();
+    await std.waitForURL('**/admin');
+    await std.goto('/admin/access');
+    await expect(std.getByRole('heading', { name: 'Access', exact: true })).toBeVisible();
+    await expect(
+      std.getByText('This area is private to the owner’s login only.'),
+    ).toBeVisible();
+    await expect(std.getByRole('table', { name: 'Access keys' })).toHaveCount(0);
+    expect(errors).toEqual([]);
+  } finally {
+    await std.close();
+  }
 });

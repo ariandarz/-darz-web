@@ -34,6 +34,9 @@ import type {
   CollectorDocument,
   CollectorRequest,
   AccessKeyAdmin,
+  AccessKeyDeskSummary,
+  AccessKeyRoster,
+  AccessKeyRosterQuery,
   AccessRequestAdmin,
   AppTheme,
   AppThemeVersion,
@@ -554,6 +557,16 @@ export class AdminAccountsService extends ResourceService {
       `/collectors/${collectorId}/access-keys/`,
       expiresAt ? { expires_at: expiresAt } : {},
     );
+  }
+  /** The roster-wide key list (G-KEY-1), soonest-to-lapse first — the owner
+   * Access desk. Never carries a plaintext key. */
+  accessKeysRoster(query: AccessKeyRosterQuery = {}) {
+    return this.list<AccessKeyRoster>('/access-keys/', query as RequestOptions['query']);
+  }
+  /** The Access desk's KPI tiles (G-KEY-1), counted with the roster's own
+   * expiry rule so tiles and filters agree. */
+  accessKeysSummary() {
+    return this.retrieve<AccessKeyDeskSummary>('/access-keys/summary/');
   }
   revokeAccessKey(keyId: string) {
     return this.create<AccessKeyAdmin>(`/access-keys/${keyId}/revoke/`);

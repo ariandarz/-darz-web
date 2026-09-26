@@ -206,6 +206,13 @@ const OPTIONS = {
     { value: 'institutional', label: 'Institutional' },
   ],
   'accounts.collector_access_status': [{ value: 'active', label: 'Active' }],
+  // `AccessKey.STATUS_CHOICES`, registered as `accounts.access_key_status`
+  // (`accounts/apps.py:17`) — the Access desk's status pill and filter.
+  'accounts.access_key_status': [
+    { value: 'active', label: 'Active' },
+    { value: 'locked', label: 'Locked' },
+    { value: 'expired', label: 'Expired' },
+  ],
   'accounts.team_role': [{ value: 'owner', label: 'Owner' }],
   // The real three sales vocabularies (`apps/sales/models.py`). No
   // `sales.source`: the backend does not register one (C-14), so the desk's
@@ -2643,6 +2650,157 @@ const projectTotals = (p) => {
 const projectById = (path) => PROJECTS.find((p) => p.id === path.split('/')[5]);
 /** Last PATCH body per project — the E2E reads what the desk sent. */
 const PROJECT_PATCHES = {};
+/* ── V1 Phase 8: the owner Access desk (G-KEY-1) ─────────────────────────
+ * Four keys, one per case the desk must get right:
+ *  - AK_SOON   — active, lapsing in 3 days (the review window, `expiring_soon`);
+ *  - AK_LOCKED — revoked: stored `locked`, refused at sign-in;
+ *  - AK_LAPSED — **stored `active` but past expiry** (C-17: the lazy flip has
+ *                not run) — the desk must read it "Expired";
+ *  - AK_PERM   — active and permanent.
+ * The filters compute status the backend's way (`AccessKeyEffectiveStatusFilter`),
+ * the summary is counted from these rows so tiles and list agree, and
+ * extend/revoke mutate the row so a re-read shows the change. */
+const AK = (n) => `00000000-0000-4000-8000-0000000acc0${n}`;
+const akBrief = (i) => ({
+  id: ADMIN_COLLECTORS[i].id,
+  display_name: ADMIN_COLLECTORS[i].display_name,
+});
+const akActivity = (saved, holds, offers, requests, auction, logins) => ({
+  saved,
+  holds,
+  offers,
+  requests,
+  auction,
+  logins,
+});
+const ACCESS_KEYS = [
+  {
+    id: AK(1),
+    collector: akBrief(0),
+    status: 'active',
+    expires_at: new Date(Date.now() + 3 * DAY).toISOString(),
+    last_used_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+    activity: akActivity(4, 1, 2, 3, 1, 9),
+    issued_at: '2026-08-01T00:00:00Z',
+    created_at: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: AK(2),
+    collector: akBrief(1),
+    status: 'locked',
+    expires_at: null,
+    last_used_at: '2026-09-01T10:00:00Z',
+    activity: akActivity(0, 0, 1, 0, 0, 2),
+    issued_at: '2026-06-15T00:00:00Z',
+    created_at: '2026-06-15T00:00:00Z',
+  },
+  {
+    id: AK(3),
+    collector: akBrief(2),
+    status: 'active', // stored — lapsed two days ago, nobody has tried it since (C-17)
+    expires_at: new Date(Date.now() - 2 * DAY).toISOString(),
+    last_used_at: null,
+    activity: akActivity(0, 0, 0, 0, 0, 0),
+    issued_at: '2026-09-10T00:00:00Z',
+    created_at: '2026-09-10T00:00:00Z',
+  },
+  {
+    id: AK(4),
+    collector: akBrief(1),
+    status: 'active',
+    expires_at: null,
+    last_used_at: null,
+    activity: akActivity(0, 0, 1, 0, 0, 2),
+    issued_at: '2026-09-20T00:00:00Z',
+    created_at: '2026-09-20T00:00:00Z',
+  },
+];
+const akExpired = (k) =>
+  k.status !== 'locked' && !!k.expires_at && Date.parse(k.expires_at) <= Date.now();
+const akRow = (k) => ({
+  ...k,
+  is_expired: !!k.expires_at && Date.parse(k.expires_at) <= Date.now(),
+});
+const akEffective = (k) =>
+  k.status === 'locked' ? 'locked' : akExpired(k) ? 'expired' : 'active';
+const akSoon = (k) =>
+  k.status !== 'locked' &&
+  !!k.expires_at &&
+  Date.parse(k.expires_at) > Date.now() &&
+  Date.parse(k.expires_at) <= Date.now() + 7 * DAY;
+const accessKeyRoster = (sp) => {
+  const q = (sp.get('search') || '').toLowerCase();
+  const soonOnly = ['true', '1', 'yes'].includes(
+    (sp.get('expiring_soon') || '').toLowerCase(),
+  );
+  const at = (k) => (k.expires_at ? Date.parse(k.expires_at) : Infinity);
+  return ACCESS_KEYS.filter(
+    (k) =>
+      k.collector.display_name.toLowerCase().includes(q) &&
+      (!sp.get('status') || akEffective(k) === sp.get('status')) &&
+      (!sp.get('collector') || k.collector.id === sp.get('collector')) &&
+      (!soonOnly || akSoon(k)),
+  )
+    .sort((a, b) => at(a) - at(b) || b.created_at.localeCompare(a.created_at))
+    .map(akRow);
+};
+const accessKeySummary = () => ({
+  total_keys: ACCESS_KEYS.length,
+  active_keys: ACCESS_KEYS.filter((k) => akEffective(k) === 'active').length,
+  locked_keys: ACCESS_KEYS.filter((k) => k.status === 'locked').length,
+  expired_keys: ACCESS_KEYS.filter(akExpired).length,
+  expiring_soon: ACCESS_KEYS.filter(akSoon).length,
+  logins_today: 5,
+  total_collectors: ADMIN_COLLECTORS.length,
+  active_collectors: ADMIN_COLLECTORS.filter((c) => c.access_status === 'active').length,
+});
+/** The admin serializer's shape (`AccessKeyAdmin`) — what extend/revoke answer. */
+const akAdmin = (k) => ({
+  id: k.id,
+  collector: k.collector.id,
+  status: k.status,
+  issued_at: k.issued_at,
+  expires_at: k.expires_at,
+  last_used_at: k.last_used_at,
+  created_at: k.created_at,
+});
+const phase8Patterns = [
+  [/^\/api\/auth\/admin\/access-keys\/summary\/$/, 'GET', () => envelope(accessKeySummary())],
+  [
+    /^\/api\/auth\/admin\/access-keys\/$/,
+    'GET',
+    (_p, _b, url) => pageOf(accessKeyRoster(url.searchParams), url),
+  ],
+  // Extend from max(now, expiry) — the backend's rule, so a lapsed key
+  // extends from today (`AccessKeyService.extend`); `none` makes it permanent.
+  [
+    /^\/api\/auth\/admin\/access-keys\/[^/]+\/extend\/$/,
+    'POST',
+    (path, body) => {
+      const k = ACCESS_KEYS.find((x) => x.id === path.split('/')[5]);
+      if (!k) return notFound('No AccessKey matches the given query.');
+      const days = { '1w': 7, '1m': 30 }[body?.extend];
+      if (body?.extend === 'none') k.expires_at = null;
+      else if (days) {
+        const base = Math.max(Date.now(), k.expires_at ? Date.parse(k.expires_at) : 0);
+        k.expires_at = new Date(base + days * DAY).toISOString();
+      } else return refused('"extend" must be one of 1w, 1m, none.');
+      // like the backend, extend never touches the stored status (C-25)
+      return envelope(akAdmin(k));
+    },
+  ],
+  [
+    /^\/api\/auth\/admin\/access-keys\/[^/]+\/revoke\/$/,
+    'POST',
+    (path) => {
+      const k = ACCESS_KEYS.find((x) => x.id === path.split('/')[5]);
+      if (!k) return notFound('No AccessKey matches the given query.');
+      k.status = 'locked';
+      return envelope(akAdmin(k));
+    },
+  ],
+];
+
 const phase7Patterns = [
   [
     /^\/api\/projects\/admin\/projects\/dashboard\/$/,
@@ -3083,6 +3241,7 @@ function respond(req, res, body, raw = '') {
     ...galleryPatterns,
     ...phase6Patterns,
     ...phase7Patterns,
+    ...phase8Patterns,
     ...patterns,
   ]) {
     if (req.method === method && re.test(url.pathname)) {

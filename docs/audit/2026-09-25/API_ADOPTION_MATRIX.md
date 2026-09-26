@@ -9,10 +9,10 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
 | POST | /api/auth/access-requests/ | `AuthService.requestAccess` | `auth/LoginPage.tsx` | Integrated |  |
-| GET | /api/auth/admin/access-keys/ | none | — | Not bound | Global access-key desk list (`collector, expiring_soon, search, status`) — no binding; FE only lists keys per collector. |
-| GET | /api/auth/admin/access-keys/summary/ | none | — | Not bound | Access desk KPI summary — no binding. |
-| POST | /api/auth/admin/access-keys/{id}/extend/ | `AdminAccountsService.extendAccessKey` | `admin/CollectorDetailPage.tsx` | Integrated |  |
-| POST | /api/auth/admin/access-keys/{id}/revoke/ | `AdminAccountsService.revokeAccessKey` | `admin/CollectorDetailPage.tsx` | Integrated |  |
+| GET | /api/auth/admin/access-keys/ | `AdminAccountsService.accessKeysRoster` | `admin/AccessDeskController.ts`, `admin/AccessDeskPage.tsx` | Integrated | V1 Phase 8 (G-KEY-1): the owner Access desk. `search`, `status` (computed) and `expiring_soon` sent; the review banner reads `?status=expired` + `?expiring_soon=true`. `?collector` typed in `AccessKeyRosterQuery`, unsent (the collector page reads its own keys). Rows displayed per C-17. |
+| GET | /api/auth/admin/access-keys/summary/ | `AdminAccountsService.accessKeysSummary` | `admin/AccessDeskPage.tsx` | Integrated | V1 Phase 8: the old stat row, four of five (Total Collectors · Active Collectors · Expiring ≤ 7d · Logins today); the per-state key counts are not shown (no old tile). |
+| POST | /api/auth/admin/access-keys/{id}/extend/ | `AdminAccountsService.extendAccessKey` | `admin/AccessDeskPage.tsx`, `admin/CollectorDetailPage.tsx` | Integrated |  |
+| POST | /api/auth/admin/access-keys/{id}/revoke/ | `AdminAccountsService.revokeAccessKey` | `admin/AccessDeskPage.tsx`, `admin/CollectorDetailPage.tsx` | Integrated |  |
 | GET | /api/auth/admin/access-requests/ | `AdminAccountsService.accessRequests` | `admin/AccessRequestsController.ts` | Integrated | FE also sends `?search` (supported by AccessRequestFilterSet though not in schema). |
 | POST | /api/auth/admin/access-requests/{id}/approve/ | `AdminAccountsService.approveAccessRequest` | `admin/AccessRequestsPage.tsx` | Integrated |  |
 | POST | /api/auth/admin/access-requests/{id}/decline/ | `AdminAccountsService.declineAccessRequest` | `admin/AccessRequestsPage.tsx` | Integrated |  |
@@ -418,14 +418,16 @@ pricelist build — and sent `?search` on the links list. The portal's `GET mess
 exhibitions list), so a second read would only duplicate it. `GET exhibition-catalogue/{id}/` likewise
 (list rows suffice). V1 Phase 6 (2026-09-25) moved four Not bound (document `activity/`, `share/` POST and
 DELETE, crm message `archive/`) and both Partial thread POSTs to Integrated, and sent `?include_archived`
-on the admin thread. Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
+on the admin thread. V1 Phase 7 (2026-09-26) moved `GET …/projects/{id}/totals/` to Integrated. V1 Phase 8
+(2026-09-26) moved two Not bound (`GET /api/auth/admin/access-keys/` and its `summary/`) to Integrated — the
+owner Access desk. Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
 
 | Status | Count |
 |---|---|
-| Integrated | 258 |
+| Integrated | 260 |
 | Partial | 0 |
 | Bound, no UI | 9 |
-| Not bound | 55 |
+| Not bound | 53 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
@@ -448,8 +450,6 @@ on the admin thread. Status cells elsewhere are the 2026-09-25 baseline unless a
 ### Not bound
 
 - `GET /api/auctions/records/highlights/`
-- `GET /api/auth/admin/access-keys/`
-- `GET /api/auth/admin/access-keys/summary/`
 - `GET /api/auth/admin/membership-codes/{id}/`
 - `GET /api/auth/admin/team-users/{id}/`
 - `GET /api/catalog/admin/artists/{id}/`

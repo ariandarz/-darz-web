@@ -109,7 +109,7 @@ A route of — means the desk is not built; the capture still exists for when it
 | Content Calendar (`socialCal`) | — | **none** | — |
 | AI Settings (`socialAi`) | — | **none** | — |
 | **Owner** | | | |
-| Access (`access`) | — | `22-access` | — |
+| Access (`access`) | `/admin/access` | `22-access` | — |
 | Team (`team`) | `/admin/team` | `23-team` | — |
 | Strategy (`strategy`) | — | **none** | — |
 | Marketing (`marketing`) | — | `24-marketing` | — |
