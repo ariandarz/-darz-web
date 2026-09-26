@@ -118,6 +118,9 @@ const ArtworkEditorPage = lazy(() =>
 const ArtworksPage = lazy(() =>
   import('./features/admin/ArtworksPage').then((m) => ({ default: m.ArtworksPage })),
 );
+const AccessDeskPage = lazy(() =>
+  import('./features/admin/AccessDeskPage').then((m) => ({ default: m.AccessDeskPage })),
+);
 const AccessRequestsPage = lazy(() =>
   import('./features/admin/AccessRequestsPage').then((m) => ({
     default: m.AccessRequestsPage,
@@ -592,6 +595,17 @@ export function AppRoutes() {
         {/* owner-only (`OWNER_ONLY` has `system`): the nav hides the tab from a
             standard admin and RequireOwner answers a typed URL with the old
             panel's own refusal card (:33116) rather than a redirect. */}
+        {/* V1 Phase 8 — the owner Access desk (G-KEY-1). Owner-only by Q-1
+            (the old `OWNER_ONLY` has `access`, :11797); the refusal card's
+            heading is the old one, "Access" (:33025). */}
+        <Route
+          path="/admin/access"
+          element={
+            <RequireOwner title="Access">
+              <AccessDeskPage />
+            </RequireOwner>
+          }
+        />
         <Route
           path="/admin/access-requests"
           element={

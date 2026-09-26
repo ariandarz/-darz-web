@@ -524,10 +524,12 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'access',
         'Access',
-        null,
+        '/admin/access',
         'ready',
-        '11b·2',
-        'AccessKey issue/revoke/extend + login events.',
+        'V1·8',
+        'The roster-wide key desk (G-KEY-1): summary tiles, the review banner, ' +
+          'computed status (C-17), extend/revoke. Owner-only (Q-1). Issuing a ' +
+          'key stays on the collector’s page.',
       ),
       tab('team', 'Team', '/admin/team', 'ready', '11b·4'),
       tab(

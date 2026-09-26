@@ -362,6 +362,29 @@ export interface CollectorAdminQuery {
  * responses, exactly once. */
 export type AccessKeyAdmin = Schemas['AccessKeyAdmin'];
 
+/** A row of the roster-wide key list, `GET /auth/admin/access-keys/` (G-KEY-1)
+ * — the old owner Access desk (`darz-studio.html:33024`). Carries the
+ * collector's `{id, display_name}`, a computed `is_expired` and the old desk's
+ * activity tallies. **`status` is the stored value and lags expiry (C-17)** —
+ * never display it raw; `accessDesk.displayStatus()` is the rule. */
+export type AccessKeyRoster = Schemas['AccessKeyRoster'];
+
+/** `GET /auth/admin/access-keys/summary/` — the desk's KPI tiles (G-KEY-1). */
+export type AccessKeyDeskSummary = Schemas['AccessKeyDeskSummary'];
+
+/** The roster's query — the server's `AccessKeyFilterSet`
+ * (`accounts/filters.py:101-112`). `status` is the **computed** state (the same
+ * C-17 rule the desk displays); `expiring_soon` is the 7-day review window;
+ * `search` matches the collector's name. */
+export interface AccessKeyRosterQuery {
+  search?: string;
+  status?: 'active' | 'locked' | 'expired';
+  collector?: string;
+  expiring_soon?: boolean;
+  per_page?: number;
+  page?: number;
+}
+
 /** A collector sign-in event (backend Phase 33) — the real log,
  * `AccessKey.last_used_at` only keeps the most recent. */
 export type CollectorLoginEvent = Schemas['CollectorLoginEvent'];
