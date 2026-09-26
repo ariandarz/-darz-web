@@ -302,15 +302,15 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/projects/admin/partners/{id}/ | `ProjectsAdminService.partner` | bound-unused | Bound, no UI | `partner()` has no caller (marked unbound in service comment). |
 | PATCH | /api/projects/admin/partners/{id}/ | `ProjectsAdminService.updatePartner` | `admin/projects/ProjectPartnersPage.tsx` | Integrated |  |
 | DELETE | /api/projects/admin/partners/{id}/ | `ProjectsAdminService.deletePartner` | `admin/projects/ProjectPartnersPage.tsx` | Integrated |  |
-| GET | /api/projects/admin/projects/ | `ProjectsAdminService.projects` | `admin/projects/ProjectsDashboardPage.tsx`, `admin/projects/ProjectsListPage.tsx`, `admin/projects/ProjectsReportsPage.tsx`, `admin/projects/projectForm.ts` | Integrated | `?partner`, `?quick` unsent (ProjectQuery lacks them); `archived` sent as True/False. |
+| GET | /api/projects/admin/projects/ | `ProjectsAdminService.projects` | `admin/projects/ProjectsDashboardPage.tsx`, `admin/projects/ProjectsListPage.tsx`, `admin/projects/ProjectsReportsPage.tsx`, `admin/projects/projectForm.ts` | Integrated | V1 Phase 7: `?quick` sent by the List's quick cards (`approval` → `awaiting_approval`; "Deliverables ≤7d" has no server filter and still walks). `?partner` typed in `ProjectQuery`, deliberately unsent (the Partners desk counts off its one walk; the filter skips lane-only orgs). `archived` sent as True/False. |
 | POST | /api/projects/admin/projects/ | `ProjectsAdminService.createProject` | `admin/projects/NewProjectPage.tsx` | Integrated |  |
 | GET | /api/projects/admin/projects/dashboard/ | `ProjectsAdminService.dashboard` | `admin/projects/ProjectsDashboardPage.tsx` | Integrated |  |
 | GET | /api/projects/admin/projects/reports/ | `ProjectsAdminService.reports` | `admin/projects/ProjectsReportsPage.tsx` | Integrated |  |
 | GET | /api/projects/admin/projects/{id}/ | `ProjectsAdminService.project` | `admin/projects/ProjectPage.tsx`, `admin/projects/ProjectReportPage.tsx` | Integrated |  |
-| PATCH | /api/projects/admin/projects/{id}/ | `ProjectsAdminService.updateProject` | `admin/projects/PackageEditorPage.tsx`, `admin/projects/PackagesPage.tsx`, `admin/projects/ProjectPage.tsx`, `admin/projects/ProjectsCalculatorPage.tsx` | Integrated |  |
+| PATCH | /api/projects/admin/projects/{id}/ | `ProjectsAdminService.updateProject` | `admin/projects/PackageEditorPage.tsx`, `admin/projects/PackagesPage.tsx`, `admin/projects/ProjectPage.tsx`, `admin/projects/ProjectPipelinePage.tsx`, `admin/projects/ProjectsCalculatorPage.tsx` | Integrated | V1 Phase 7: also `status` (G-PROJ-2), `stages` (the stage-move seeding, G-PROJ-3) and the four `deal_*` FX fields (G-PROJ-9); lock pinned in `optimisticLock.test.ts`. |
 | DELETE | /api/projects/admin/projects/{id}/ | `ProjectsAdminService.deleteProject` | `admin/projects/ProjectPage.tsx` | Integrated |  |
 | POST | /api/projects/admin/projects/{id}/stage/ | `ProjectsAdminService.setStage` | `admin/projects/ProjectPage.tsx`, `admin/projects/ProjectPipelinePage.tsx` | Integrated |  |
-| GET | /api/projects/admin/projects/{id}/totals/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Money totals (G-PROJ-9) — no binding; FE computes totals client-side (projectForm.ts projMoneyCalc). |
+| GET | /api/projects/admin/projects/{id}/totals/ | `ProjectsAdminService.totals` | `admin/projects/ProjectPage.tsx` | Integrated | V1 Phase 7 (G-PROJ-9): the record's Money totals (owner only); decimal strings rendered without float maths, `"unknown"` bucket labelled, converted row only when `fx` is served (C-22). |
 | GET | /api/projects/admin/projects/{project_pk}/attachments/ | `ProjectsAdminService.attachments` | `admin/projects/ProjectPage.tsx` | Integrated |  |
 | POST | /api/projects/admin/projects/{project_pk}/attachments/ | `ProjectsAdminService.uploadAttachment` | `admin/projects/ProjectPage.tsx` | Integrated |  |
 | DELETE | /api/projects/admin/projects/{project_pk}/attachments/{id}/ | `ProjectsAdminService.deleteAttachment` | `admin/projects/ProjectPage.tsx` | Integrated |  |
@@ -422,10 +422,10 @@ on the admin thread. Status cells elsewhere are the 2026-09-25 baseline unless a
 
 | Status | Count |
 |---|---|
-| Integrated | 257 |
+| Integrated | 258 |
 | Partial | 0 |
 | Bound, no UI | 9 |
-| Not bound | 56 |
+| Not bound | 55 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
@@ -478,7 +478,6 @@ on the admin thread. Status cells elsewhere are the 2026-09-25 baseline unless a
 - `POST /api/notifications/push/subscribe/`
 - `POST /api/notifications/push/unsubscribe/`
 - `GET /api/notifications/vapid-public-key/`
-- `GET /api/projects/admin/projects/{id}/totals/`
 - `GET /api/recommendations/admin/artworks/{artwork_pk}/tags/`
 - `POST /api/recommendations/admin/artworks/{artwork_pk}/tags/ai/`
 - `POST /api/recommendations/admin/artworks/{artwork_pk}/tags/auto/`
@@ -512,7 +511,7 @@ on the admin thread. Status cells elsewhere are the 2026-09-25 baseline unless a
 
 - `GET /api/catalog/admin/artists/` — ~~`?search`, `?ordering` unsent~~ sent by the Artists desk since V1 Phase 4; the pickers walk every page without them (by design).
 - `GET /api/catalog/admin/artworks/` — Unsent: `price_min, price_max, tag, refine_*` (the old Database desk had no control for them). `complete, created_after, duplicate_images, gallery_portal, size, source_type` sent since V1 Phase 4.
-- `GET /api/projects/admin/projects/` — `?partner`, `?quick` unsent (ProjectQuery lacks them); `archived` sent as True/False.
+- `GET /api/projects/admin/projects/` — ~~`?partner`, `?quick` unsent~~ `?quick` sent since V1 Phase 7; `?partner` typed but unsent by decision (the Partners desk counts off its walk, which also sees lane-only orgs).
 - `GET /api/auctions/records/` — `?house` typed but unsent by decision (Phase 3: the collector Records page is the Artist view).
 - `GET /api/gallery/admin/links/` — `?search` unsent (query type has source_type/page/per_page only).
 - `GET /api/crm/requests/` — `?archived` unsent (CollectorRequestQuery lacks it).

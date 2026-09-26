@@ -386,8 +386,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/projects',
         'ready',
         '11c',
-        'GET /projects/admin/projects/dashboard/ — Delayed and Awaiting-approval ' +
-          'read the stage sub-state, which the API does not accept yet (G-PROJ-3).',
+        'GET /projects/admin/projects/dashboard/ — every card opens the list on ' +
+          'the same server predicate (?quick=, G-PROJ-1).',
       ),
       tab('projList', 'Projects', '/admin/projects/list', 'ready', '11c'),
       tab(
@@ -396,7 +396,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/projects/pipeline',
         'ready',
         '11c',
-        '17 stages; the status label is derived server-side (G-PROJ-2: not settable).',
+        '17 stages; a move seeds the stage sub-state (G-PROJ-3), then the server ' +
+          're-derives the status label.',
       ),
       tab('projPackages', 'Packages', '/admin/projects/packages', 'ready', '11c'),
       tab(

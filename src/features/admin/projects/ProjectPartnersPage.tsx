@@ -28,11 +28,14 @@
  *  - partners are server-paged and server-searched (`PartnerOrgQuery.
  *    search`); the grid keeps the old card markup and takes the kit's
  *    Pager. The old 170 ms debounce (:15409) is not ported.
- *  - the per-org counts, the roles, the overlap banner and the matrices
- *    need every active project; the API has no partner filter (G-PROJ-1),
- *    so the page walks `archived: false, per_page: 100` once per visit.
- *    "Active" here is the old `!archived` (:15387, :15396), not the
- *    stage-aware `isActive`.
+ *  - the roles, the overlap banner and the matrices need every active
+ *    project, so the page walks `archived: false, per_page: 100` once per
+ *    visit, and the per-org counts are read off that same walk. The server's
+ *    `?partner=` (G-PROJ-1) is NOT used for them: it matches the client org
+ *    and the linked partners only, while the old `projForOrg` (:13352) also
+ *    counted an org that merely owns a lane — and one count request per card
+ *    would repeat what the walk already holds. "Active" here is the old
+ *    `!archived` (:15387, :15396), not the stage-aware `isActive`.
  *  - the editor is an inline `.dzp-panel` in place of the modal;
  *    `updatePartner` carries `expected_version`, and a 409 is a banner
  *    with a Reload button.
@@ -166,7 +169,7 @@ export function ProjectPartnersPage() {
     PartnerOrgQuery
   >(() => new PartnersController(projectsAdmin));
 
-  // the active projects, walked once per visit (G-PROJ-1)
+  // the active projects, walked once per visit (matrices, roles and counts)
   const [walk, setWalk] = useState<{ rows: ProjectAdmin[] | null; error: string | null }>({
     rows: null,
     error: null,

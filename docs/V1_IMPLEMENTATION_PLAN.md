@@ -700,6 +700,56 @@ below is the recommended order, by risk and size: live bugs first, then the busi
   and a collector message carrying `document_refs`. The Chat desk list now serves that one
   conversation, so the thread walk opens it from the list (router state names the collector).
 
+## 3h · What Phase 7 did differently from the plan (recorded 2026-09-26)
+
+- **Sources of the old code.** `darz-studio.html`: the Projects dashboard/list/board (:13591-13704), the
+  record's detail and Overview Status `<select>` over `PROJ_STATUSES` (:13240, :13769, :13781), `setStage`
+  (:13706-13719 — the seeding at :13707-13714), `projChecklistFor` (:13321), `projMoneyCalc` and the Totals
+  rows (:13298-13302, :13797-13807), `projAwaitApproval` (:13314); the private deal's "Currency &
+  conversion" bar and its hint (:23344-23350, :23404-23413).
+- **Quick cards.** Four of the five ride `?quick=` (`serverQuick`; `approval` goes out as
+  `awaiting_approval`), paged and in the server's order like the normal list — the old
+  last-updated sort (:13641) has no ordering key, and the search is the server's
+  (name/no/client/venue, the stated absence stays). **"Deliverables ≤7d" has no server filter** and
+  still walks and filters client-side with the old haystack.
+- **`?partner=` is typed but not sent.** The Partners desk needs every active project for its roles,
+  overlap banner and matrices, so the per-org counts stay on that one walk; the server filter also
+  skips an org that only owns a lane, which the old `projForOrg` (:13352) counted. The Pipeline board
+  keeps its walk (a paged kanban hides columns).
+- **Status** is the old Overview `<select>` over `projects.status`, saved with the rest of the record
+  (locked PATCH). The backend re-stamps it on the next stage move exactly as the old `setStage` did
+  (:13716), so nothing new is said on screen (a code comment records it). The old list had no status
+  setter, only the filter, whose "never matches" note is gone.
+- **Stage moves are two writes.** Record rail and board both PATCH `stages` with `moveStages` (target
+  start date, the template's checklist when the stage has none, `doneTs` on every earlier stage; unknown
+  keys kept), then POST the move with the version that PATCH returned; the board adopts the PATCHed row
+  first so a failed move does not leave a stale version. The templates are read once per page; a failed
+  read seeds no checklist (the old move's no-template case). The scope gate still keys on stage order —
+  it now agrees with the old `doneTs` rule for every project moved here.
+- **C-24 (new, backend).** The old blank carries `intApproved:false, cliApproved:false`, written verbatim;
+  the backend's `_awaits_approval` counts any such entry, where the old desk asked only a project sitting
+  in a review stage. So Awaiting approval ≈ every moved active project until the backend narrows the
+  predicate. Delayed needs a stage `due`, which no old control sets — it reads the server value (usually 0).
+- **FX has no old project source (flagged).** The block sits at the top of the owner-only Money section,
+  labelled like the old private deal's bar ("Currency & conversion", Deal currency, Exchange rate
+  (optional) with "1 {cur} = ?", Convert to, Rate date); the deal currency may be "— none —", a target
+  outside the choices is kept, a grouped rate ("700,000") is stripped before saving, blanks go as null.
+- **Totals come from `GET …/totals/`, not the draft.** The old rows were live over the working copy; now
+  they follow the saved record (re-read on every adopted version) and an unsaved edit adds "Totals show
+  the last save." (new copy). Rows keep the old words ("Client · Fee · Cost · Paid / Due", Cost = exact
+  BigInt sum of internal + external); the `"unknown"` bucket reads "No currency" and sorts last; the
+  converted total is a "Converted total" row + "1 USD = 700,000 TMN (date) · Not converted: EUR" (new
+  copy), shown only when `fx` is served and source ≠ target (the backend double-counts that case); with
+  no rate the old deal hint "Enter an exchange rate above to see the amount in another currency (e.g.
+  Toman)." A failed read says "Could not load the totals." (new copy). The list row's per-currency money
+  line stays client-side (it has no per-row totals endpoint).
+- **Found on the way:** a deeper sub-tab with a query (`/admin/projects/list?quick=…`) also lit the
+  `/admin/projects` Dashboard tab — `subtabOn` now yields to a sibling that owns the pathname. The
+  record's own draft fills a currency-less money line with the default currency on the first save, so
+  the `"unknown"` bucket lasts only until the owner saves (pre-existing `projDefCur` behaviour, kept).
+- **E2E:** the stub computes the dashboard summary, `?quick=`/`?partner=` and the totals from live rows
+  with the backend's predicates; `projects.*` options added. Eight desk walks, stateful and ordered.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
 | Item | Phase |
@@ -724,7 +774,7 @@ below is the recommended order, by risk and size: live bugs first, then the busi
 | 4 | Database/Artists/Collectors/Club/Data Health | `v1/phase-4-catalogue-collectors` | `[x]` 2026-09-25 | see CHANGELOG |
 | 5 | Gallery portal P1/P3/P4 · Sources desk · exhibition catalogue | `v1/phase-5-gallery-portal` | `[x]` 2026-09-25 | see CHANGELOG |
 | 6 | Document history/share · chat document_refs · message archive | `v1/phase-6-documents-chat` | `[x]` 2026-09-25 | see CHANGELOG |
-| 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[ ]` | |
+| 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[x]` 2026-09-26 | see CHANGELOG |
 | 8 | Owner Access desk | `v1/phase-8-access-desk` | `[ ]` (Q-1) | |
 | 9 | Owner-decision items | `v1/phase-9x-*` | waiting on owner | |
 | 10 | Final verification + `DARZ_WEB_V1_STATUS.md` | `v1/phase-10-final` | `[ ]` | |

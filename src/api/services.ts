@@ -122,6 +122,7 @@ import type {
   ProjectDashboard,
   ProjectReportRow,
   ProjectQuery,
+  ProjectTotals,
   PartnerOrgAdmin,
   PartnerOrgInput,
   PartnerOrgPatch,
@@ -1770,6 +1771,12 @@ export class ProjectsAdminService extends ResourceService {
       stage,
       expected_version: expectedVersion,
     });
+  }
+  /** G-PROJ-9 — the per-currency money roll-up (the old desk's
+   * `projMoneyCalc`, server-side) plus the converted total when the project
+   * carries a manual rate. Decimals come back as strings (C-22). */
+  totals(id: string) {
+    return this.retrieve<ProjectTotals>(`/projects/${id}/totals/`);
   }
   dashboard() {
     return this.retrieve<ProjectDashboard>('/projects/dashboard/');

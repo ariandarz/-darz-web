@@ -1163,10 +1163,16 @@ export type ProjectStage = Schemas['StageEnum'];
  * writable, and it will rename it again on the next collision (C-2). */
 export type ProjectStatus = Schemas['Project']['status'];
 export type ProjectCreateInput = Schemas['ProjectCreate'];
-/** `PATCH …/projects/{id}/` — the optimistic lock is required, not optional. */
-export type ProjectPatch = Omit<Schemas['PatchedProjectUpdate'], 'expected_version'> & {
-  expected_version: number;
-};
+/** `PATCH …/projects/{id}/` — the optimistic lock is required, not optional.
+ * Since G-PROJ-2/3/9 it also carries `status` (reset by the next stage move),
+ * the `stages` sub-state JSON and the four manual-FX fields. */
+export type ProjectPatch = Locked<Schemas['PatchedProjectUpdate']>;
+/** `GET …/projects/{id}/totals/` (G-PROJ-9): per-currency buckets plus the
+ * converted total when a rate is set (`fx` is null otherwise). Every amount is
+ * a decimal STRING (C-22) — rendered as served, never through float maths. */
+export type ProjectTotals = Schemas['ProjectMoneyTotals'];
+export type ProjectMoneyBucket = Schemas['_ProjectMoneyBucket'];
+export type ProjectMoneyFx = Schemas['_ProjectMoneyFx'];
 export type ProjectAttachmentAdmin = Schemas['ProjectAttachment'];
 export type ProjectDashboard = Schemas['ProjectDashboardSummary'];
 /** One row of `GET …/projects/reports/` (`reports_deliverables_rollup`). */
@@ -1199,17 +1205,25 @@ export type ChecklistTemplatePatch = Partial<ChecklistTemplateInput> & {
 };
 
 /** `ProjectFilterSet` — search on name/no/client_name/venue; exact status,
- * stage, category, archived; ordering `created|-created|name|-name`.
+ * stage, category, archived; `partner` and `quick` (G-PROJ-1); ordering
+ * `created|-created|name|-name`.
  * `archived` is a boolean here and the service spells it `True`/`False` on
  * the wire: the filter hands the raw string to Django's BooleanField, which
  * 400s on the lowercase `true`/`false` the endpoint's own docs name
  * (found live; G-PROJ-6). */
+/** G-PROJ-1 — the dashboard cards as a server filter (`ProjectService.
+ * apply_quick`); an unknown value is ignored server-side, so the union keeps
+ * the desks to the four the backend knows. */
+export type ProjectQuickFilter = 'active' | 'delayed' | 'awaiting_approval' | 'unpaid';
 export interface ProjectQuery {
   search?: string;
   status?: string;
   stage?: string;
   category?: string;
   archived?: boolean;
+  quick?: ProjectQuickFilter;
+  /** a partner-org id: projects where it is the client org or a linked partner */
+  partner?: string;
   ordering?: 'created' | '-created' | 'name' | '-name';
   page?: number;
   per_page?: number;

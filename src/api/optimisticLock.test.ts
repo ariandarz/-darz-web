@@ -30,6 +30,7 @@ import {
   AuctionsAdminService,
   CatalogAdminService,
   GalleryAdminService,
+  ProjectsAdminService,
   SalesAdminService,
 } from './services';
 
@@ -114,6 +115,18 @@ describe('the lock reaches the wire as `expected_version`', () => {
       (c) =>
         new GalleryAdminService(c).updateExhibitionCatalogueItem(ID, {
           title: 'Photo',
+          expected_version: 7,
+        }),
+    ],
+    // V1 Phase 7 (G-PROJ-2/3/9): the project record's PATCH now carries
+    // `status`, the `stages` sub-state and the manual FX fields.
+    [
+      'updateProject',
+      (c) =>
+        new ProjectsAdminService(c).updateProject(ID, {
+          status: 'Negotiation',
+          stages: { lead: { doneTs: 1 } },
+          deal_fx_rate: '700000',
           expected_version: 7,
         }),
     ],
