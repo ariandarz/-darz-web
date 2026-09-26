@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-26 — V1 Phase 10: final verification, V1 status (final edition)
+
+- Matrix re-verified against the code (271 bindings, 0 dangling): 261 Integrated · 1 Bound-no-UI · **0 Not bound** · 14 owner-deferred · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only, each with a reason. Fixes: 390px auction cards, Published card actions, Insights tab hidden (no published story), served availability/lot labels, Market hero from `/app-theme/`, artist works error state.
+- `DARZ_WEB_V1_STATUS.md` final edition; gaps/contract/plan/handoff/tasklist final pass. **838 unit · 155 E2E**. Details: `V1_IMPLEMENTATION_PLAN.md` §3k/§4.
+
 ## 2026-09-26 — V1 Phase 9a: owner extras per Q-5 (G-P5-11, G-P25-2(a))
 
 - Artist enquiry sends `artist`; the questionnaire runs on `GET /recommendations/question-set/` (built-in bank kept as the empty/failed fallback, draft versioned by the served questions). Deferred, API ready: G-P24-2 · G-P25-2(b) · G-P5-4/5/12 · G-P13-1 · G-CLUB-3 · G-P5-9.
