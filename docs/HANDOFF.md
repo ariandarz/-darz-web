@@ -54,10 +54,16 @@ work in this order:
      (`v1/phase-9x-<slug>` pattern, same gate/stub/render/docs rules).
    - **Q-2** project money UI-only · **Q-8** G-6 stays deferred · C-18 validation copy · request-kind wording ·
      i18n (G-I18N-1) · `/artists` menu entry.
-2. **Backend defects to raise** (`V1_CONTRACT_ISSUES.md` § B, final status column): **C-13 security** before
-   any real portal link, **C-19** WSGI (no auction WebSockets in prod), **C-6** lock 500s, **C-23** chat attach
-   re-homes documents, **C-24** Awaiting-approval over-count, **C-25** extend does not revive a lapsed key;
-   the rest have FE work-arounds in place.
+2. **Backend defects: fix PRs are open, waiting on the backend owner.** On 2026-09-26 every open-backend row
+   except the notes C-16/C-21 got a draft fix PR on `darz-backend-api`, **#71–#77**. None is merged; the backend
+   owner merges them. The mapping, what each changes on the wire, the merge overlaps and the owner calls they
+   raise (**`NUM_PROXIES`** first) are in `V1_CONTRACT_ISSUES.md` § "Backend fix PRs". **C-13 security (#74,
+   #76) must merge before any real portal link is issued.** Once they merge, do the FE follow-up listed there:
+   - regenerate the schema;
+   - retire the `HoldDetail`/`PortalState` hand types;
+   - add the C-12 image preview;
+   - add a portal 429 message;
+   - read the new option labels.
 3. **Small FE follow-ups:** the portal "Save draft" (the one Bound-no-UI operation), `isPathAllowed`
    cleanup, the post-V1 candidates in the matrix.
 4. **Post-V1 features with no backend:** Logistics, Library, Insights & Stories, the Social suite — owner-

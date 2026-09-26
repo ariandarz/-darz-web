@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-26 — Backend fix PRs linked (C-6…C-25)
+
+- Opened draft fix PRs on `darz-backend-api` #71–#77, one per fix; none merged (backend owner merges). They cover every open-backend contract row except the notes C-16/C-21.
+- `V1_CONTRACT_ISSUES.md` gains a "Backend fix PRs" section: the mapping, wire changes, merge overlaps, owner calls and the FE follow-up. Status and handoff docs point to it. Docs only.
+
 ## 2026-09-26 — V1 Phase 10: final verification, V1 status (final edition)
 
 - Matrix re-verified against the code (271 bindings, 0 dangling): 261 Integrated · 1 Bound-no-UI · **0 Not bound** · 14 owner-deferred · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only, each with a reason. Fixes: 390px auction cards, Published card actions, Insights tab hidden (no published story), served availability/lot labels, Market hero from `/app-theme/`, artist works error state.
