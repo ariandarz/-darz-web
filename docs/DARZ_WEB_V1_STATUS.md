@@ -230,6 +230,9 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
   lookup, records highlights, exhibition delete.
 
 ### Backend limitations (open on `darz-backend-api`, detail in `V1_CONTRACT_ISSUES.md` § B)
+
+**Update 2026-09-26:** each row below except C-16 and C-21 now has a draft fix PR on `darz-backend-api`, #71–#77. None of them is merged yet; they wait on the backend owner. See `V1_CONTRACT_ISSUES.md` § "Backend fix PRs" for which PR fixes which row. The FE work-arounds stay until the PRs merge.
+
 - **C-6** PATCH without `expected_version` → 500 (not 400) on 18 endpoints; FE always sends it.
 - **C-7** no hold member in the request-detail union; FE hand-types `HoldDetail`.
 - **C-8** portal state schema undeclared; FE hand-types `PortalState`.
