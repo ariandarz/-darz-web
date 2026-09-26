@@ -60,6 +60,7 @@ A route of — means the desk is not built; the capture still exists for when it
 | Galleries (`galleries`) | `/admin/sources?type=gallery` | `04-galleries` | — |
 | Sources & Partners (`sources`) | `/admin/sources` | `05-sources-partners` | — |
 | Exhibition Services (`exhservices`) | `/admin/exhibition-services` | **none** | — |
+| Service checklist (`exhcatalogue`) | `/admin/exhibition-catalogue` | **none** (V1 Phase 5; compare against the old checklist editor, darz-studio.html:27896) | — |
 | Issue a document (`issue`) | `/admin/issue` | **none** | — |
 | **Market App** | | | |
 | Published works (`market`) | `/admin/published` | `06-market-published` | — |
@@ -82,7 +83,7 @@ A route of — means the desk is not built; the capture still exists for when it
 | Collector Club (`club`) | `/admin/club` | `14-collector-club` | — |
 | **Sales** | | | |
 | Market Sales (`marketSales`) | `/admin/sales` | `15-market-sales` | ✅ |
-| Auction Sales (`auctionSales`) | — | `16-auction-sales` | — |
+| Auction Sales (`auctionSales`) | `/admin/sales?source=auction` | `16-auction-sales` | — |
 | **Projects** | | | |
 | Dashboard (`projDash`) | `/admin/projects` | `35-projects-dashboard` | — |
 | Projects (`projList`) | `/admin/projects/list` | `36-projects-list` | — |
@@ -115,7 +116,7 @@ A route of — means the desk is not built; the capture still exists for when it
 | Marketing (`marketing`) | — | `24-marketing` | — |
 | Accounting (`accounting`) | `/admin/accounting` | `31-accounting` | ✅ |
 | Automations (`automations`) | — | **none** | — |
-| Settings (`settings`) | — | `25-settings` | ✅ |
+| Settings (`settings`) | `/admin/settings` | `25-settings` | ✅ |
 | Languages (`languages`) | — | **none** | — |
 | Market Portal (`portal`) | — | `26-portal` | — |
 | **Access Management** | | | |

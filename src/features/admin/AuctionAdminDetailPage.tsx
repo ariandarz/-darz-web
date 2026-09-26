@@ -536,6 +536,9 @@ function InviteCard({ auctionId }: { auctionId: string }) {
 
 function LotsSection({ auction }: { auction: Auction }) {
   const { auctionsAdmin, catalogAdmin } = useApi();
+  // V1 Phase 10: the status pill reads the served `auctions.lot_status`
+  // label (raw value until /options/ arrives), like the auction pill above.
+  const lotStatuses = choices(useOptions(), 'auctions.lot_status');
   const [lots, setLots] = useState<LotAdmin[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -667,7 +670,7 @@ function LotsSection({ auction }: { auction: Auction }) {
         <span
           className={`ad-stpill is-${l.status === 'live' ? 'ok' : l.status === 'sold' ? 'res' : l.status === 'scheduled' ? 'neut' : 'gone'}`}
         >
-          {l.status}
+          {label(lotStatuses, l.status)}
         </span>
       ),
     },
