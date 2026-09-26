@@ -14,7 +14,7 @@ import {
   contactPatch,
   isQuestionnaireAnswered,
 } from './QuestionnaireController';
-import { QB_DEFAULT, QVER } from './questions';
+import { QB_DEFAULT, QVER, servedVersion } from './questions';
 import { __resetOwnerSettings } from '../shell/ownerSettings';
 
 /**
@@ -60,14 +60,54 @@ type Api = {
   submitQuestionnaire: (
     answers: Array<{ q: string; a: string }>,
   ) => Promise<{ answers?: unknown; submitted_at: string }>;
+  questionSet: () => Promise<unknown>;
 };
 
-/** A service stand-in — only the two methods the controller calls. */
+/** The server's "no active set" answer (G-P25-2) — 200, never 404. */
+const EMPTY_SET = { id: null, title: '', intro: '', is_active: false, questions: [] };
+
+/** A small active set: two single-choice questions and one free-text one,
+ * served out of `order` to prove the controller sorts. */
+const SERVED_SET = {
+  id: 'qs1',
+  title: 'Tell us how you collect',
+  intro: 'Three short questions.',
+  is_active: true,
+  version: 3,
+  questions: [
+    { id: 'q3', prompt: 'Anything else?', question_type: 'text', options: [], order: 2 },
+    {
+      id: 'q1',
+      prompt: 'What draws you?',
+      question_type: 'single_choice',
+      options: [
+        { value: 'abs', label: 'Abstraction' },
+        { value: 'fig', label: 'Figuration' },
+      ],
+      order: 0,
+    },
+    {
+      id: 'q2',
+      prompt: 'Your stage?',
+      question_type: 'single_choice',
+      options: [
+        { value: 'new', label: 'Just beginning' },
+        { value: 'est', label: 'Established' },
+      ],
+      order: 1,
+    },
+  ],
+};
+
+/** A service stand-in — only the methods the controller calls. The question
+ * set defaults to the empty shape, so every older case runs on the built-in
+ * bank exactly as before. */
 function api(over: Partial<Api> = {}): Api {
   return {
     questionnaire: () => Promise.reject(new Error('404')),
     submitQuestionnaire: (answers) =>
       Promise.resolve({ answers, submitted_at: '2026-09-22T10:00:00Z' }),
+    questionSet: () => Promise.resolve(EMPTY_SET),
     ...over,
   };
 }
@@ -193,6 +233,130 @@ describe('load', () => {
     const c = make();
     await expect(c.load()).resolves.toBeUndefined();
     expect(c.getSnapshot().answers).toEqual({});
+  });
+});
+
+describe('served question set (G-P25-2(a))', () => {
+  it('runs on the served set, in order, with its title and intro', async () => {
+    const c = make({ questionSet: () => Promise.resolve(SERVED_SET) });
+    await c.load();
+    const s = c.getSnapshot();
+    expect(s.source).toBe('served');
+    expect(s.bank.map((b) => b.q)).toEqual([
+      'What draws you?',
+      'Your stage?',
+      'Anything else?',
+    ]);
+    expect(s.bank[0]).toEqual({
+      sec: '',
+      hint: 'Choose one',
+      q: 'What draws you?',
+      opts: ['Abstraction', 'Figuration'],
+    });
+    // text → the free-text step: no options, optional
+    expect(s.bank[2].opts).toEqual([]);
+    expect(s.intro.title).toBe('Tell us how you collect');
+    expect(s.intro.lede).toBe('Three short questions.');
+    // the fields the set does not carry keep the built-in wording
+    expect(s.intro.button).toBe('Begin');
+  });
+
+  it('falls back to the built-in bank on the empty shape', async () => {
+    const c = make({ questionSet: () => Promise.resolve(EMPTY_SET) });
+    await c.load();
+    expect(c.getSnapshot().source).toBe('builtin');
+    expect(c.getSnapshot().bank).toEqual([...QB_DEFAULT]);
+    expect(c.getSnapshot().intro.title).toBe('A few questions about\nhow you collect');
+  });
+
+  it('falls back to the built-in bank when the read fails', async () => {
+    const c = make({ questionSet: () => Promise.reject(new Error('500')) });
+    await c.load();
+    expect(c.getSnapshot().source).toBe('builtin');
+    expect(c.getSnapshot().bank).toEqual([...QB_DEFAULT]);
+    expect(c.getSnapshot().status).toBe('idle');
+  });
+
+  it('falls back when every served question is unusable', async () => {
+    const c = make({
+      questionSet: () =>
+        Promise.resolve({ ...SERVED_SET, questions: [{ prompt: '  ' }, null, 'x'] }),
+    });
+    await c.load();
+    expect(c.getSnapshot().source).toBe('builtin');
+  });
+
+  it('discards a draft saved against the built-in bank, keeping the contact', async () => {
+    localStorage.setItem(
+      'darz_questionnaire',
+      JSON.stringify({ qver: QVER, ans: { 1: ['Figuration'] }, email: 'keep@x.y' }),
+    );
+    const c = make({ questionSet: () => Promise.resolve(SERVED_SET) });
+    await c.load();
+    expect(c.getSnapshot().answers).toEqual({});
+    expect(c.getSnapshot().contact.email).toBe('keep@x.y');
+  });
+
+  it('keeps a draft saved against the same served set, and drops it once the set changes', async () => {
+    const first = make({ questionSet: () => Promise.resolve(SERVED_SET) });
+    await first.load();
+    first.pick(1, 'Figuration', true);
+    const saved = JSON.parse(localStorage.getItem('darz_questionnaire') ?? '{}') as {
+      qver: unknown;
+    };
+    expect(saved.qver).toBe(servedVersion(first.getSnapshot().bank));
+
+    // same questions, a re-save that only bumped `version` — the draft stays
+    const again = make({ questionSet: () => Promise.resolve({ ...SERVED_SET, version: 4 }) });
+    await again.load();
+    expect(again.getSnapshot().answers[1]).toEqual(['Figuration']);
+
+    // the owner reworded step 1 — the draft is stale and goes
+    const edited = {
+      ...SERVED_SET,
+      questions: SERVED_SET.questions.map((q) =>
+        q.id === 'q1' ? { ...q, prompt: 'Which draws your eye?' } : q,
+      ),
+    };
+    const later = make({ questionSet: () => Promise.resolve(edited) });
+    await later.load();
+    expect(later.getSnapshot().answers).toEqual({});
+  });
+
+  it('maps sent answers back by the served question texts, and sends them as {q, a}', async () => {
+    const c = make({
+      questionSet: () => Promise.resolve(SERVED_SET),
+      questionnaire: () =>
+        Promise.resolve({
+          answers: [
+            { q: 'Your stage?', a: 'Established' },
+            { q: 'Anything else?', a: 'Quiet works' },
+            { q: QB_DEFAULT[0].q, a: 'Abstraction' },
+          ],
+          submitted_at: 'x',
+          answered: true,
+        }),
+    });
+    await c.load();
+    // a built-in question is not in the served set, so its answer is not shown
+    expect(c.getSnapshot().answers).toEqual({ 2: ['Established'], 3: ['Quiet works'] });
+    expect(c.payload()).toEqual([
+      { q: 'Your stage?', a: 'Established' },
+      { q: 'Anything else?', a: 'Quiet works' },
+    ]);
+  });
+
+  it('a single_choice step is single-select and required', async () => {
+    const c = make({ questionSet: () => Promise.resolve(SERVED_SET) });
+    await c.load();
+    c.begin();
+    c.next();
+    expect(c.getSnapshot().step).toBe(1);
+    expect(c.canContinue()).toBe(false);
+    c.pick(1, 'Abstraction', true);
+    c.pick(1, 'Figuration', true);
+    expect(c.getSnapshot().answers[1]).toEqual(['Figuration']);
+    expect(c.canContinue()).toBe(true);
   });
 });
 

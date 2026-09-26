@@ -239,6 +239,14 @@ export type CollectorQuestionnaire = Schemas['CollectorQuestionnaire'];
 /** One `{q, a}` pair — free text on both sides, so a past submission stays
  * readable after the question bank is edited. */
 export type QuestionnaireAnswer = Schemas['QuestionnaireAnswer'];
+/** The active owner-editable question set (G-P25-2). **When no set is active
+ * the server answers 200 with an empty shape** — `id: null`, blank
+ * title/intro, `questions: []` — which the generated type (id `string`) does
+ * not say; `id` is widened here so callers must handle it. A question's
+ * `options` is `unknown` in the schema (a JSONField of `{value, label}`), so it
+ * is read through `asArray` too. */
+export type QuestionSet = Omit<Schemas['QuestionSet'], 'id'> & { id: string | null };
+export type QuestionSetQuestion = Schemas['Question'];
 export type Me = Schemas['Me'];
 export type Principal = Me['principal'];
 

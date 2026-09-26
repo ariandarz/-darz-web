@@ -123,8 +123,66 @@ test('leaving a broken screen clears it — the boundary is keyed on the path', 
   await expect(page.getByText('Something went wrong')).toHaveCount(0);
 });
 
+const STUB = 'http://127.0.0.1:8787';
+
 /**
- * The questionnaire, walked end to end.
+ * G-P25-2(a) — the questionnaire runs on the owner's served set: the intro
+ * carries the set's title and intro, the steps are the set's questions (three,
+ * plus the contact step), the free-text one is last, and the answers go out as
+ * `{q, a}` under the served question text.
+ */
+test('the questionnaire runs on the served question set', async () => {
+  thrown = [];
+  await page.goto('/questionnaire');
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByRole('heading', { name: 'Tell us how you collect' })).toBeVisible();
+  await expect(page.locator('.qintro-lede')).toHaveText(
+    'Three short questions so Darz can tailor what it shares with you.',
+  );
+  await page.getByRole('button', { name: /^Begin/ }).click();
+
+  await expect(page.locator('.qstepn')).toHaveText('1 / 4');
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // the first served question, its option labels, single-select and required
+  await expect(page.locator('.qstepn')).toHaveText('2 / 4');
+  await expect(page.locator('.qbig')).toHaveText('Which kind of work draws you first?');
+  await expect(page.locator('.qopt')).toHaveText([/Abstraction/, /Figuration/, /Photography/]);
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Abstraction' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  await expect(page.locator('.qbig')).toHaveText('How often do you acquire?');
+  await page.getByRole('button', { name: 'Once in a while' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // `text` → the free-text step, which is last
+  await expect(page.locator('.qbig')).toHaveText('Any artists you follow?');
+  await page.locator('.qta2').fill('Monir Farmanfarmaian');
+  await page.getByRole('button', { name: 'Review →' }).click();
+
+  const sent = page.waitForRequest(
+    (r) => r.method() === 'POST' && r.url().endsWith('/api/recommendations/questionnaire/'),
+  );
+  await page.getByRole('button', { name: 'Confirm & send' }).click();
+  // the contact rows (pre-filled from the account) come first; the served
+  // answers follow, under the served question text
+  const { answers } = (await sent).postDataJSON() as { answers: unknown[] };
+  expect(answers.slice(-3)).toEqual([
+    { q: 'Which kind of work draws you first?', a: 'Abstraction' },
+    { q: 'How often do you acquire?', a: 'Once in a while' },
+    { q: 'Any artists you follow?', a: 'Monir Farmanfarmaian' },
+  ]);
+  await expect(page.getByRole('heading', { name: 'Thank you' })).toBeVisible();
+
+  expect(thrown, 'page errors during the served questionnaire').toEqual([]);
+});
+
+/**
+ * The questionnaire, walked end to end — on the BUILT-IN bank, which is what a
+ * collector gets when the server has no active set (its empty shape). The stub
+ * hook switches the set off for this test and back on after it.
  *
  * It is the one collector screen with real multi-step state, and three of its
  * rules are invisible from a single page load: the step counter counts the
@@ -135,6 +193,15 @@ test('leaving a broken screen clears it — the boundary is keyed on the path', 
  */
 test('the questionnaire runs intro → contact → questions → review → sent', async () => {
   thrown = [];
+  await page.request.post(`${STUB}/__stub/question-set/?active=0`);
+  try {
+    await walkBuiltInBank();
+  } finally {
+    await page.request.post(`${STUB}/__stub/question-set/?active=1`);
+  }
+});
+
+async function walkBuiltInBank() {
   await page.goto('/questionnaire');
   await page.waitForLoadState('networkidle');
 
@@ -173,7 +240,7 @@ test('the questionnaire runs intro → contact → questions → review → sent
 
   expect(thrown, 'page errors during the questionnaire').toEqual([]);
   await expect(page.getByText('Something went wrong')).toHaveCount(0);
-});
+}
 
 /** The Profile card is the only way in, so it is part of the screen. */
 test('the profile overview opens the questionnaire', async () => {
@@ -568,5 +635,28 @@ test('a document attached in chat renders as a chip that opens its PDF', async (
   await expect(chip.locator('.l')).toHaveText('Invoice');
   await expect(chip.locator('.s')).toHaveText('Parviz Tanavoli — Heech');
   await expect(chip).toHaveAttribute('href', /\/files\/inv-0001\.pdf$/);
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * G-P5-11 — "Enquire about works by <artist>" files an `information` request
+ * that carries the artist's real id, not just the name in the message.
+ */
+test('the artist enquiry sends the artist id', async () => {
+  thrown = [];
+  const ARTIST = '00000000-0000-4000-8000-00000000a715';
+  await page.goto(`/artists/${ARTIST}`);
+  await page.waitForLoadState('networkidle');
+  const posted = page.waitForRequest(
+    (r) => r.method() === 'POST' && r.url().endsWith('/api/crm/requests/'),
+  );
+  await page.getByRole('button', { name: 'Enquire about works by Parvaneh Etemadi' }).click();
+  expect((await posted).postDataJSON()).toMatchObject({
+    kind: 'information',
+    artwork: null,
+    artist: ARTIST,
+    detail: { message: 'Please let me know about available works by Parvaneh Etemadi.' },
+  });
+  await expect(page.getByText('Enquiry received')).toBeVisible();
   expect(thrown).toEqual([]);
 });

@@ -1336,6 +1336,66 @@ const phase6Patterns = [
   ],
 ];
 
+/**
+ * V1 Phase 9a — G-P25-2(a): the owner's active question set. Three questions,
+ * one of them free text, so the questionnaire's served path is walked end to
+ * end. `questionSetActive` is flipped by the test-only `/__stub/question-set/`
+ * hook (`?active=0|1`) so a spec can also walk the empty-shape fallback — the
+ * server's real "no active set" answer (200, `id: null`, `questions: []`).
+ */
+const QUESTION_SET = {
+  id: '00000000-0000-4000-8000-0000000095e1',
+  title: 'Tell us how you collect',
+  intro: 'Three short questions so Darz can tailor what it shares with you.',
+  is_active: true,
+  version: 1,
+  created_at: '2026-09-20T09:00:00Z',
+  updated_at: '2026-09-20T09:00:00Z',
+  questions: [
+    {
+      id: '00000000-0000-4000-8000-0000000095a1',
+      prompt: 'Which kind of work draws you first?',
+      question_type: 'single_choice',
+      options: [
+        { value: 'abstraction', label: 'Abstraction' },
+        { value: 'figuration', label: 'Figuration' },
+        { value: 'photography', label: 'Photography' },
+      ],
+      order: 0,
+    },
+    {
+      id: '00000000-0000-4000-8000-0000000095a2',
+      prompt: 'How often do you acquire?',
+      question_type: 'single_choice',
+      options: [
+        { value: 'often', label: 'Several times a year' },
+        { value: 'rarely', label: 'Once in a while' },
+      ],
+      order: 1,
+    },
+    {
+      id: '00000000-0000-4000-8000-0000000095a3',
+      prompt: 'Any artists you follow?',
+      question_type: 'text',
+      options: [],
+      order: 2,
+    },
+  ],
+};
+const EMPTY_QUESTION_SET = { id: null, title: '', intro: '', is_active: false, questions: [] };
+let questionSetActive = true;
+
+/** G-P5-11 — one collector-facing artist with a real detail read, so the
+ * artist page's "Enquire about works by …" has a subject (the catch-all's
+ * paginated envelope has no `id` / `display_name`). */
+const E2E_ARTIST = {
+  id: '00000000-0000-4000-8000-00000000a715',
+  display_name: 'Parvaneh Etemadi',
+  nationality: 'Iranian',
+  birth_year: 1948,
+  bio: '',
+};
+
 const routes = {
   // `?langs=` turns the multilingual engine on for one walk. The app ships it
   // OFF (no `theme.langs`), and the default here reproduces that — so the stub
@@ -1455,6 +1515,30 @@ const routes = {
   // back (the thank-you screen renders from its own state, not the response).
   'POST /api/recommendations/questionnaire/': () =>
     envelope({ answers: [], submitted_at: new Date().toISOString(), answered: true }),
+  // G-P25-2(a) — the active set, or the empty shape while a spec has the
+  // test-only hook below switched off.
+  'GET /api/recommendations/question-set/': () =>
+    envelope(questionSetActive ? QUESTION_SET : EMPTY_QUESTION_SET),
+  // test-only: `?active=0` serves the empty shape, `?active=1` restores the set
+  'POST /__stub/question-set/': (req) => {
+    questionSetActive = new URL(req.url, 'http://x').searchParams.get('active') !== '0';
+    return envelope({ active: questionSetActive });
+  },
+  [`GET /api/catalog/artists/${E2E_ARTIST.id}/`]: () => envelope(E2E_ARTIST),
+  // A collector request create (201). Answers a minimal row — the app renders
+  // its confirmation from its own copy; the spec reads the REQUEST body.
+  'POST /api/crm/requests/': (_req, body) => ({
+    status: 201,
+    body: envelope({
+      id: '00000000-0000-4000-8000-0000000095c1',
+      kind: body?.kind ?? 'information',
+      status: 'new',
+      artwork: body?.artwork ?? null,
+      artist: body?.artist ? { id: body.artist, display_name: E2E_ARTIST.display_name } : null,
+      detail: body?.detail ?? {},
+      created_at: new Date().toISOString(),
+    }),
+  }),
   'GET /api/sales/admin/sales/summary/': () => envelope(saleSummary()),
   'GET /api/sales/admin/sales/': (req) =>
     page(saleList(new URL(req.url, 'http://x').searchParams)),

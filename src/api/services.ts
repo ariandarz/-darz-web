@@ -63,6 +63,7 @@ import type {
   PublishedRecommendation,
   CollectorQuestionnaire,
   QuestionnaireAnswer,
+  QuestionSet,
   RequestDetailInput,
   RequestKind,
   RequestMessage,
@@ -248,6 +249,8 @@ export class CrmService extends ResourceService {
   async createRequest(body: {
     kind: RequestKind;
     artwork?: string | null;
+    /** G-P5-11 — the artist an artist enquiry is about (nullable FK). */
+    artist?: string | null;
     detail?: RequestDetailInput;
     client_req_id?: string;
   }): Promise<CreatedRequest> {
@@ -494,6 +497,12 @@ export class RecommendationService extends ResourceService {
    * rebuilds the collector's preference rows from them. */
   submitQuestionnaire(answers: QuestionnaireAnswer[]) {
     return this.create<CollectorQuestionnaire>('/questionnaire/', { answers });
+  }
+  /** The active owner-editable question set (G-P25-2). Always 200: an empty
+   * shape (`id: null`, `questions: []`) when none is active — the
+   * questionnaire then falls back to its built-in bank (`questions.ts`). */
+  questionSet() {
+    return this.retrieve<QuestionSet>('/question-set/');
   }
 }
 
