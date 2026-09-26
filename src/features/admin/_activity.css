@@ -693,6 +693,13 @@
   gap: 6px;
   padding: 10px 12px 12px;
 }
+/* V1 Phase 10: the old card's actions wrap (`.ws-card-acts{display:flex;
+   gap:6px;flex-wrap:wrap}`, darz-studio.html:43529); the table-row
+   `nowrap` ran "Remove from Market App" past a 190px card at 1280. */
+.ad-pubcard .ad-rowacts {
+  flex-wrap: wrap;
+  white-space: normal;
+}
 a.ad-ghostbtn {
   text-decoration: none;
   display: inline-flex;

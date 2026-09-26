@@ -831,18 +831,34 @@ owner.** So Phase 9a built exactly those two, and everything else stays an open 
   - **G-CLUB-3** — the Club "Auction access" section.
   - **G-P5-9** — the counter-offer display.
 
+## 3k · What Phase 10 did (recorded 2026-09-26)
+
+- **Matrix re-verified against the code.** A script parsed every binding in `services.ts` (+ `AuthSession`,
+  the portal service on `PortalClient`): 271 bindings, 0 dangling; every Integrated row has a UI caller (16
+  colliding method names resolved by receiver). No Integrated row was wrong. The 62 other rows got final
+  statuses with reasons — **0 "Not bound" left**: 261 Integrated · 1 Bound, no UI · 14 Excluded
+  (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only.
+- **Cross-cutting fixes** (below, §4) — the 390px auction card, the Published card actions, the Insights tab,
+  two served labels, the Market hero copy from `/app-theme/`, `ADMIN_SCREENS.md`. Before/after captures were
+  taken against the stub (not committed).
+- **Screen walk** for loading / empty / error: one miss fixed (the artist page's works list read a failed
+  request as "No available works"); the rest are listed in `DARZ_WEB_V1_STATUS.md`.
+- **Branches:** every `v1/phase-0…9a` PR (#102–#111) is merged into `development`; this branch holds only
+  Phase 10.
+
 ## 4 · Cross-cutting fixes, and which phase takes them
 
-| Item | Phase |
-| --- | --- |
-| Profile has no loading state (tiles read 0 while loading) | 1 |
-| Auction event lots have no loading or empty state | 3 |
-| Hardcoded labels that `/options/` serves (availability, record, lot/auction status, request kind) | Take each one in the phase that touches its screen (1 → catalogue/requests, 3 → auctions/records); the request-kind wording is an owner call |
-| Market hero copy not read from `/app-theme/` | 1 (only if the old theme keys exist; otherwise flag) |
-| Nav "Insights" → `/stories` with no route | Not V1: hide the tab or leave it as the old app did (flag) |
-| Stale on-screen "backend gap" notes (≈20, listed in `ADMIN_AUDIT.md`) | Removed by whichever phase makes each one false |
-| `docs/ADMIN_SCREENS.md:118` lists the Settings route as missing | 10 |
-| Collector auction cards run past the right edge at 390px (pre-existing layout, seen in the Phase 3 captures; may be the old horizontal peek — check against `app.html` before changing) | 10 |
+| Item | Phase | Final state |
+| --- | --- | --- |
+| Profile has no loading state (tiles read 0 while loading) | 1 | ✅ Done (Phase 1) |
+| Auction event lots have no loading or empty state | 3 | ✅ Done (Phase 3) |
+| Hardcoded labels that `/options/` serves (availability, record, lot/auction status, request kind) | Take each one in the phase that touches its screen (1 → catalogue/requests, 3 → auctions/records); the request-kind wording is an owner call | ✅ Done / documented (Phase 10): collector availability → `catalog.availability_status` (same six words); admin lot pill → `auctions.lot_status` (was the raw value). **Kept hardcoded on purpose, the old copy differs from the served label:** collector lot words (Upcoming / Withdrawn for scheduled / cancelled), collector record results (Sold only with a price, "Final price pending", "Estimate only"), the time-derived auction state (Live / Upcoming / Ended). **Request-kind wording** (Chat / Profile / buttons) stays the old copy — owner call. |
+| Market hero copy not read from `/app-theme/` | 1 (only if the old theme keys exist; otherwise flag) | ✅ Done (Phase 10 — Phase 1 had not taken it): the old keys exist (`heroEyebrow`/`heroTitle`/`heroIntro`/`showHero`, THEME_DEFAULT app.html:2845, rendered :8679-8682), so `marketHero()` reads them with the old rules (default when missing, a blank key hides its line, `showHero:false` hides the block). `heroCompact` not ported. |
+| Nav "Insights" → `/stories` with no route | Not V1: hide the tab or leave it as the old app did (flag) | ✅ Done (Phase 10): the old tab shows only when the owner shows it **and** a story is published (`dzStoriesVisible`, app.html:5464-5465). No stories backend → never published → hidden even with the flag on (`PUBLISHED_STORIES` in `AppShell.tsx`). No route invented. |
+| Stale on-screen "backend gap" notes (≈20, listed in `ADMIN_AUDIT.md`) | Removed by whichever phase makes each one false | ✅ Done (Phases 2–8, each phase's rule 8); no stale "G-… (backend)" note found in `src/features` in the Phase 10 grep |
+| `docs/ADMIN_SCREENS.md:118` lists the Settings route as missing | 10 | ✅ Done (Phase 10): Settings `/admin/settings`, Auction Sales `/admin/sales?source=auction`, and the missing Service checklist row added (the table now matches `adminNav.ts`). |
+| Collector auction cards run past the right edge at 390px (pre-existing layout, seen in the Phase 3 captures; may be the old horizontal peek — check against `app.html` before changing) | 10 | ✅ Fixed (Phase 10): **not** the old peek — the old card sits inside the gutter (`09-auctions` capture). The shared `.card{width:100%}` plus the 16px margins pushed it 16px out; `.card.auc-split{width:auto}`. |
+| Published desk at 1280: "Remove from Market App" runs past its card (seen in the Phase 4 render check) | 10 | ✅ Fixed (Phase 10): the card actions wrap, as the old `.ws-card-acts{flex-wrap:wrap}` (darz-studio.html:43529). |
 
 ## 5 · Progress
 
@@ -858,4 +874,4 @@ owner.** So Phase 9a built exactly those two, and everything else stays an open 
 | 7 | Projects quick/partner · status/stages · FX · totals | `v1/phase-7-projects` | `[x]` 2026-09-26 | see CHANGELOG |
 | 8 | Owner Access desk (owner-only, Q-1) | `v1/phase-8-access-desk` | `[x]` 2026-09-26 | see CHANGELOG |
 | 9 | Owner-decision items — **9a:** G-P5-11 artist link · G-P25-2(a) served question set. **Deferred — owner question (Q-4/Q-5), API ready:** G-P24-2 · G-P25-2(b) · G-P5-4 · G-P5-5 · G-P5-12 · G-P13-1 · G-CLUB-3 · G-P5-9 (see §3j) | `v1/phase-9a-owner-extras` | `[x]` 2026-09-26 (9a) | see CHANGELOG |
-| 10 | Final verification + `DARZ_WEB_V1_STATUS.md` | `v1/phase-10-final` | `[ ]` | |
+| 10 | Final verification + `DARZ_WEB_V1_STATUS.md` (final edition) · matrix re-verified · cross-cutting §4 | `v1/phase-10-final` | `[x]` 2026-09-26 | see CHANGELOG |

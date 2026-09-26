@@ -22,7 +22,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useApi } from '../../api/hooks';
+import { useApi, useOptions } from '../../api/hooks';
 import { useActivity } from '../activity/useActivity';
 import { Toast } from '../../components';
 import { ActionButtons } from '../requests/ActionButtons';
@@ -119,6 +119,7 @@ const IC_TRUCK = (
 export function ArtworkDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { catalog } = useApi();
+  const options = useOptions();
   const navigate = useNavigate();
   const {
     status,
@@ -232,7 +233,7 @@ export function ArtworkDetailPage() {
         {artwork.availability_status !== 'available' && (
           <div className="d-eyebrow">
             <span className={`d-status ${availabilityClass(artwork.availability_status)}`}>
-              {availabilityLabel(artwork.availability_status)}
+              {availabilityLabel(artwork.availability_status, options)}
             </span>
           </div>
         )}

@@ -16,6 +16,12 @@
   overflow: hidden;
   padding: 0;
   margin: 12px 16px;
+  /* V1 Phase 10: the shared `.card` (catalogue.css, a button reset) sets
+     `width: 100%`, which with the 16px side margins pushed the card 16px past
+     the right edge at 390px. The old card sits inside the gutter with no peek
+     (design/market-app/screenshots/mobile/dark/09-auctions.jpg), so the width
+     is left to the block box. */
+  width: auto;
   border: 1px solid var(--hair);
   border-radius: var(--radius);
   background: #16120f;

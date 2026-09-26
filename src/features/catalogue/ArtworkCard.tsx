@@ -11,6 +11,7 @@
  * category field, so only the medium is shown (flagged, not invented).
  */
 import { Link, type LinkProps } from 'react-router-dom';
+import { useOptions } from '../../api/hooks';
 import type { Artwork } from '../../api/types';
 import { SaveButton } from '../saved/SaveButton';
 import { availabilityClass, availabilityLabel, formatMoney, primaryImage } from './format';
@@ -23,6 +24,7 @@ export function ArtworkCard({
   /** router state to carry into the detail (the browse set, a `from` label) */
   state?: LinkProps['state'];
 }) {
+  const options = useOptions();
   const image = primaryImage(artwork);
   const showStatusBadge = artwork.availability_status !== 'available';
   const onRequest = artwork.price_type === 'on_request' || !artwork.price_amount;
@@ -43,7 +45,7 @@ export function ArtworkCard({
           )}
           {showStatusBadge && (
             <span className={`cardstat ${availabilityClass(artwork.availability_status)}`}>
-              {availabilityLabel(artwork.availability_status)}
+              {availabilityLabel(artwork.availability_status, options)}
             </span>
           )}
         </div>

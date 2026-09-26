@@ -164,9 +164,20 @@ export function ArtistDetailPage() {
             </div>
           </>
         )}
-        {works.status !== 'loading' && works.results.length === 0 && (
-          <div className="dza-aempty">No available works from this artist right now.</div>
+        {/* V1 Phase 10: a failed works read said "No available works" — the
+            shared loading/error lines now stand in, the empty copy only
+            when the read succeeded with nothing. */}
+        {works.status === 'loading' && works.results.length === 0 && (
+          <p className="dz-state">Loading…</p>
         )}
+        {works.status === 'error' && works.results.length === 0 && (
+          <p className="dz-state err">{works.error}</p>
+        )}
+        {works.status !== 'loading' &&
+          works.status !== 'error' &&
+          works.results.length === 0 && (
+            <div className="dza-aempty">No available works from this artist right now.</div>
+          )}
 
         <div className="dza-enq">
           <button

@@ -1,6 +1,6 @@
 # Darz API adoption matrix
 
-Backend `darz-backend-api@development` (224 paths, 323 method+path operations) vs frontend `-darz-web@claude/darz-v1-api-integration-plan-gaiw9v` (= development).
+Backend `darz-backend-api@development` @ `df0421f` (224 paths, 323 method+path operations) vs frontend `-darz-web@v1/phase-10-final` (= `development` after PRs #102–#111). **Final V1 state, re-verified 2026-09-26 (V1 Phase 10).**
 
 Method: every FE binding parsed from `src/api/services.ts` (base path + relative path, HTTP verb from `list/retrieve/create/remove/client.send`) plus `AuthSession.ts`; every FE method matched a backend operation (no dangling bindings). UI callers: grep of `.method(` across `src/` (excl. `src/api`, tests), with receivers resolved to the right service where names collide (e.g. `artworks`, `lots`, `records`, `exhibitions`). Paths listed as feature-relative (`admin/X.tsx` = `src/features/admin/X.tsx`). No feature file calls the HTTP client directly. "Unsent params" = backend query params from `schema.json` (plus a few hand-parsed ones checked in the views) not present in the FE query type, so the FE cannot send them.
 
@@ -27,13 +27,13 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | DELETE | /api/auth/admin/collectors/{id}/ | `AdminAccountsService.deleteCollector` | `admin/CollectorDetailPage.tsx` | Integrated |  |
 | GET | /api/auth/admin/membership-codes/ | `AdminAccountsService.membershipCodes` | `admin/MembershipsPage.tsx` | Integrated |  |
 | POST | /api/auth/admin/membership-codes/ | `AdminAccountsService.createMembershipCode` | `admin/MembershipsPage.tsx` | Integrated |  |
-| GET | /api/auth/admin/membership-codes/{id}/ | none | — | Not bound | Single read unbound; list rows suffice. |
+| GET | /api/auth/admin/membership-codes/{id}/ | none | — | Not needed (list rows suffice) | The Memberships desk edits from the list row. |
 | PATCH | /api/auth/admin/membership-codes/{id}/ | `AdminAccountsService.updateMembershipCode` | `admin/MembershipsPage.tsx` | Integrated |  |
 | DELETE | /api/auth/admin/membership-codes/{id}/ | `AdminAccountsService.deleteMembershipCode` | `admin/MembershipsPage.tsx` | Integrated |  |
 | POST | /api/auth/admin/membership-codes/{id}/renew/ | `AdminAccountsService.renewMembershipCode` | `admin/MembershipsPage.tsx` | Integrated |  |
 | GET | /api/auth/admin/team-users/ | `AdminAccountsService.teamUsers` | `admin/SalesPage.tsx`, `admin/TeamPage.tsx`, `admin/useSaleRefs.ts` | Integrated |  |
 | POST | /api/auth/admin/team-users/ | `AdminAccountsService.createTeamUser` | `admin/TeamPage.tsx` | Integrated |  |
-| GET | /api/auth/admin/team-users/{id}/ | none | — | Not bound | Single read unbound; list rows suffice. |
+| GET | /api/auth/admin/team-users/{id}/ | none | — | Not needed (list rows suffice) | The Team desk edits from the list row. |
 | PATCH | /api/auth/admin/team-users/{id}/ | `AdminAccountsService.updateTeamUser` | `admin/TeamPage.tsx` | Integrated |  |
 | DELETE | /api/auth/admin/team-users/{id}/ | `AdminAccountsService.deleteTeamUser` | `admin/TeamPage.tsx` | Integrated |  |
 | POST | /api/auth/collector/login/ | `AuthService.loginCollector` | `App.tsx`, `auth/LoginPage.tsx` | Integrated |  |
@@ -51,7 +51,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 |---|---|---|---|---|---|
 | GET | /api/catalog/admin/artists/ | `CatalogAdminService.artists` | `admin/ArtistsPage.tsx`, `admin/ArtworkEditorPage.tsx`, `admin/ArtworksPage.tsx`, `admin/RecordEditorPage.tsx` | Integrated | V1 Phase 4: the Artists desk sends `?search`, `?ordering` (works · name · -created) and pages with the kit; `works_count` shown. The editor/Database/record pickers still walk every page. |
 | POST | /api/catalog/admin/artists/ | `CatalogAdminService.createArtist` | `admin/ArtistsPage.tsx` | Integrated |  |
-| GET | /api/catalog/admin/artists/{id}/ | none | — | Not bound | Single read unbound (PATCH/DELETE bound). |
+| GET | /api/catalog/admin/artists/{id}/ | none | — | Not needed (list rows suffice) | The Artists desk edits from the list row (PATCH/DELETE bound). |
 | PATCH | /api/catalog/admin/artists/{id}/ | `CatalogAdminService.updateArtist` | `admin/ArtistsPage.tsx` | Integrated |  |
 | DELETE | /api/catalog/admin/artists/{id}/ | `CatalogAdminService.deleteArtist` | `admin/ArtistsPage.tsx` | Integrated |  |
 | GET | /api/catalog/admin/artworks/ | `CatalogAdminService.artworks` | `admin/ArtworksController.ts`, `admin/AuctionAdminDetailPage.tsx`, `admin/ClubPage.tsx`, `admin/DataHealthPage.tsx`, `admin/SalesPage.tsx`, `admin/SourceDetailPage.tsx` | Integrated | V1 Phase 4: `gallery_portal, complete, duplicate_images, size, source_type, created_after` sent (Database filters + link chips, Data Health counts, `?published=true` on the Published desk). Still unsent: `price_min, price_max, tag, refine_*`. |
@@ -80,18 +80,18 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/catalog/artists/ | `CatalogService.artists` | `catalogue/ArtistListController.ts` | Integrated |  |
 | GET | /api/catalog/artists/{id}/ | `CatalogService.artist` | `catalogue/ArtistDetailPage.tsx` | Integrated |  |
 | GET | /api/catalog/artworks/ | `CatalogService.artworks` | `admin/PublishedPage.tsx`, `catalogue/CatalogueController.ts` | Integrated | All schema filters present in CatalogueQuery. |
-| GET | /api/catalog/artworks/change-stamp/ | none | — | Not bound | Catalogue change-stamp (Phase 19) — no binding. |
+| GET | /api/catalog/artworks/change-stamp/ | none | — | Not needed (the catalogue is server-paged) | The stamp guards the old full-list walk + swap; the collector catalogue reads one server page per view and re-reads on navigation, so there is nothing to guard. Post-V1 candidate only if a background poller is added. |
 | GET | /api/catalog/artworks/selections/ | `CatalogService.artworkSelections` | `catalogue/CatalogueController.ts`, `catalogue/useCuratedCount.ts` | Integrated | Phase 1: `selection_name` read for the chip label (G-P24-1). |
 | GET | /api/catalog/artworks/{id}/ | `CatalogService.artwork` | `catalogue/ArtworkCache.ts`, `catalogue/ArtworkDetailPage.tsx` | Integrated |  |
-| GET | /api/catalog/legacy-lookup/ | none | — | Not bound | Legacy id → UUID (`?legacy_id`) — no binding. |
-| GET | /api/catalog/selections/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P24-2 (Q-5, V1 Phase 9a), V1 Phase 9a. Collector's named curated selections + change signal — no binding (FE uses `/catalog/artworks/selections/`). |
-| POST | /api/catalog/selections/{id}/seen/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P24-2, V1 Phase 9a. Mark selection seen — no binding. |
+| GET | /api/catalog/legacy-lookup/ | none | — | Excluded (not V1: no legacy-link route) | Resolving old Darz/Airtable deep links needs a redirect route the approved app does not have; post-V1 candidate if such links are still in circulation (owner call). |
+| GET | /api/catalog/selections/ | none | — | Excluded (owner-deferred, API ready) | G-P24-2 (Q-5, V1 Phase 9a), V1 Phase 9a. Collector's named curated selections + change signal — no binding (FE uses `/catalog/artworks/selections/`). |
+| POST | /api/catalog/selections/{id}/seen/ | none | — | Excluded (owner-deferred, API ready) | G-P24-2, V1 Phase 9a. Mark selection seen — no binding. |
 
 ## crm
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/crm/activity/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P5-12, V1 Phase 9a. Collector's own activity list — no binding (POST is bound). |
+| GET | /api/crm/activity/ | none | — | Excluded (owner-deferred, API ready) | G-P5-12, V1 Phase 9a. Collector's own activity list — no binding (POST is bound). |
 | POST | /api/crm/activity/ | `CrmService.logActivity` | `activity/ActivityLogger.ts` | Integrated |  |
 | GET | /api/crm/admin/activity/ | `CrmService.adminActivity` | `admin/ActivityFeedController.ts` | Integrated | All schema filters sent-capable. |
 | POST | /api/crm/admin/messages/{id}/archive/ | `CrmService.adminArchiveMessage` | `admin/AdminThreadController.ts`, `admin/AdminThreadPage.tsx` | Integrated | Phase 6: Archive/Restore per bubble; sends `{archived}` both ways (G-CHAT-2). |
@@ -102,17 +102,17 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | POST | /api/crm/admin/requests/{id}/transition/ | `CrmService.transitionRequest` | `admin/AdminRequestsController.ts`, `admin/AdminRequestsPage.tsx` | Integrated |  |
 | GET | /api/crm/admin/selections/ | `CrmService.adminSelections` | `admin/ClubPage.tsx` | Integrated |  |
 | POST | /api/crm/admin/selections/ | `CrmService.createSelection` | `admin/ClubPage.tsx` | Integrated |  |
-| GET | /api/crm/admin/selections/{id}/ | none | — | Not bound | Single read unbound; list rows suffice. |
+| GET | /api/crm/admin/selections/{id}/ | none | — | Not needed (list rows suffice) | The Club desk edits from the list row. |
 | PATCH | /api/crm/admin/selections/{id}/ | `CrmService.updateSelection` | `admin/ClubPage.tsx` | Integrated |  |
 | DELETE | /api/crm/admin/selections/{id}/ | `CrmService.deleteSelection` | `admin/ClubPage.tsx` | Integrated |  |
 | GET | /api/crm/requests/ | `CrmService.requests` | `conversations/ConversationsController.ts` | Integrated | `?archived` unsent (CollectorRequestQuery lacks it). |
 | POST | /api/crm/requests/ | `CrmService.createRequest` | `conversations/ConversationsController.ts`, `requests/RequestController.ts` | Integrated | V1 Phase 9a (G-P5-11): an artist enquiry sends `artist`. |
 | GET | /api/crm/requests/{id}/ | `CrmService.request` | `conversations/ConversationsController.ts` | Integrated |  |
-| POST | /api/crm/requests/{id}/archive/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P5-4, V1 Phase 9a. Collector archive request — no binding. |
+| POST | /api/crm/requests/{id}/archive/ | none | — | Excluded (owner-deferred, API ready) | G-P5-4, V1 Phase 9a. Collector archive request — no binding. |
 | GET | /api/crm/requests/{id}/messages/ | `CrmService.messages` | `conversations/ThreadController.ts` | Integrated |  |
 | POST | /api/crm/requests/{id}/messages/ | `CrmService.postMessage` | `conversations/ThreadController.ts` | Integrated | Phase 6: `document_refs` is team-only (the backend 400s a collector's), so the collector end correctly never sends it; the enriched refs are READ and drawn as chips (`chat/DocChips.tsx`). |
 | POST | /api/crm/requests/{id}/messages/mark-seen/ | `CrmService.markSeen` | `conversations/ThreadController.ts` | Integrated |  |
-| POST | /api/crm/requests/{id}/transition/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P5-5, V1 Phase 9a. Collector-side transition — no binding. |
+| POST | /api/crm/requests/{id}/transition/ | none | — | Excluded (owner-deferred, API ready) | G-P5-5, V1 Phase 9a. Collector-side transition — no binding. |
 | GET | /api/crm/saved/ | `CrmService.saved` | `saved/SavedListController.ts` | Integrated | All schema filters in SavedArtworkQuery. |
 | POST | /api/crm/saved/ | `CrmService.save` | `saved/SavedController.ts` | Integrated |  |
 | DELETE | /api/crm/saved/{artwork_id}/ | `CrmService.unsave` | `saved/SavedController.ts` | Integrated |  |
@@ -153,7 +153,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/auctions/notifications/ | `AuctionService.notifications` | `auctions/AuctionNotificationsController.ts` | Integrated |  |
 | POST | /api/auctions/notifications/{id}/read/ | `AuctionService.markRead` | `auctions/AuctionNotificationsController.ts` | Integrated |  |
 | GET | /api/auctions/records/ | `AuctionService.records` | `auctions/RecordsController.ts`, `records/RecordsArchiveController.ts` | Integrated | `?house` now typed (Phase 3) but unsent by decision: the collector page is the Artist view, where the old app hid the house filter (`app.html:5082`). |
-| GET | /api/auctions/records/highlights/ | none | — | Not bound | "Auction highlights" strip — no binding (only the admin Records desk uses `?is_highlight=True` on the list). |
+| GET | /api/auctions/records/highlights/ | none | — | Excluded (not V1: old app hides Highlights) | The old app hard-hides its Highlights tab (app.html:463, :2979); the admin Records desk manages `is_highlight` on the list. |
 | GET | /api/auctions/records/{id}/ | `AuctionService.record` | `auctions/useAuctions.ts` | Integrated |  |
 | GET | /api/auctions/registrations/ | `AuctionService.registrations` | `auctions/RegistrationController.ts` | Integrated |  |
 | POST | /api/auctions/registrations/ | `AuctionService.register` | `auctions/RegistrationController.ts` | Integrated |  |
@@ -170,7 +170,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/accounting/admin/deals/{id}/ | `AccountingAdminService.deal` | `admin/DealEditorPage.tsx` | Integrated |  |
 | PATCH | /api/accounting/admin/deals/{id}/ | `AccountingAdminService.updateDeal` | `admin/DealEditorPage.tsx` | Integrated |  |
 | DELETE | /api/accounting/admin/deals/{id}/ | `AccountingAdminService.deleteDeal` | `admin/AccountingDeals.tsx` | Integrated |  |
-| GET | /api/accounting/admin/deals/{id}/attachments/ | `AccountingAdminService.dealAttachments` | bound-unused | Bound, no UI | `dealAttachments()` has no caller; DealEditorPage reads attachments off the deal payload. |
+| GET | /api/accounting/admin/deals/{id}/attachments/ | `AccountingAdminService.dealAttachments` | bound-unused | Not needed (embedded in the deal payload) | `dealAttachments()` bound, never called; the deal editor reads `attachments` off the deal read. |
 | POST | /api/accounting/admin/deals/{id}/attachments/ | `AccountingAdminService.uploadDealAttachment` | `admin/DealEditorPage.tsx` | Integrated |  |
 | DELETE | /api/accounting/admin/deals/{id}/attachments/{attachment_id}/ | `AccountingAdminService.deleteDealAttachment` | `admin/DealEditorPage.tsx` | Integrated |  |
 | GET | /api/accounting/admin/ledger/ | `AccountingAdminService.ledger` | `admin/AccountingPage.tsx` | Integrated | Filters (book, entry_type, status, category, person, position, month) hand-parsed, absent from schema; LedgerQuery covers all. |
@@ -232,13 +232,13 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 |---|---|---|---|---|---|
 | GET | /api/gallery/admin/exhibition-catalogue/ | `GalleryAdminService.exhibitionCatalogue` | `admin/ExhibitionCatalogPage.tsx`, `admin/ExhibitionComposePage.tsx` | Integrated | V1 Phase 5 (2026-09-25): the Service checklist desk (paged) and the compose menu (walked, active rows) — G-PORT-12b. |
 | POST | /api/gallery/admin/exhibition-catalogue/ | `GalleryAdminService.createExhibitionCatalogueItem` | `admin/ExhibitionCatalogPage.tsx` | Integrated | V1 Phase 5 (2026-09-25): + Add service (key/title/description/default_price/position/is_active). |
-| GET | /api/gallery/admin/exhibition-catalogue/{id}/ | none | — | Not bound | **NEW (not in FE schema.d.ts).** Exhibition-services catalogue CRUD — no binding (FE ExhibitionServicesPage uses projects service-catalog/packages instead). |
+| GET | /api/gallery/admin/exhibition-catalogue/{id}/ | none | — | Not needed (list rows suffice) | The Exhibition Services desk (V1 Phase 5) edits from the list row. |
 | PATCH | /api/gallery/admin/exhibition-catalogue/{id}/ | `GalleryAdminService.updateExhibitionCatalogueItem` | `admin/ExhibitionCatalogPage.tsx` | Integrated | V1 Phase 5 (2026-09-25): locked (`expected_version`, `optimisticLock.test.ts`), key never sent; 409 → ConflictBanner; Turn off/on = `is_active`. |
 | DELETE | /api/gallery/admin/exhibition-catalogue/{id}/ | `GalleryAdminService.deleteExhibitionCatalogueItem` | `admin/ExhibitionCatalogPage.tsx` | Integrated | V1 Phase 5 (2026-09-25): ✕ with a confirm (the old row's remove). |
 | GET | /api/gallery/admin/exhibitions/ | `GalleryAdminService.exhibitions` | `admin/ExhibitionsQueue.tsx`, `admin/SourceExhibitions.tsx`, `admin/exhibitions/IssueDocumentPage.tsx` | Integrated | All schema filters (`link, published, request_status`) in ExhibitionQuery. |
 | GET | /api/gallery/admin/exhibitions/{id}/ | `GalleryAdminService.exhibition` | `admin/ExhibitionComposePage.tsx` | Integrated |  |
-| PATCH | /api/gallery/admin/exhibitions/{id}/ | `GalleryAdminService.updateExhibition` | bound-unused | Bound, no UI | `GalleryAdminService.updateExhibition` exists but nothing calls it. |
-| DELETE | /api/gallery/admin/exhibitions/{id}/ | `GalleryAdminService.deleteExhibition` | bound-unused | Bound, no UI | `deleteExhibition` deliberately unbound in UI (no delete in old panel, per service comment). |
+| PATCH | /api/gallery/admin/exhibitions/{id}/ | `GalleryAdminService.updateExhibition` | bound-unused | Not needed (compose carries the admin fields) | `GalleryAdminService.updateExhibition` bound, never called: `compose/` writes currency, discount, admin note and approval; the show fields are gallery-owned and read-only on the desk (ExhibitionComposePage.tsx "gallery-owned — edited from the portal"). |
+| DELETE | /api/gallery/admin/exhibitions/{id}/ | `GalleryAdminService.deleteExhibition` | bound-unused | Excluded (not V1: no delete in the old panel) | `deleteExhibition` bound, deliberately unused — a delete button would invent a destructive action (service comment). |
 | POST | /api/gallery/admin/exhibitions/{id}/compose/ | `GalleryAdminService.composeExhibition` | `admin/ExhibitionComposePage.tsx`, `admin/exhibitions/IssueDocumentPage.tsx` | Integrated |  |
 | GET | /api/gallery/admin/exhibitions/{id}/documents/ | `GalleryAdminService.exhibitionDocuments` | `admin/ExhibitionComposePage.tsx`, `admin/SourceDocuments.tsx` | Integrated |  |
 | POST | /api/gallery/admin/exhibitions/{id}/documents/ | `GalleryAdminService.createExhibitionDocument` | `admin/exhibitions/IssueDocumentPage.tsx` | Integrated |  |
@@ -249,7 +249,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/gallery/admin/links/ | `GalleryAdminService.links` | `admin/SourcesPage.tsx`, `admin/exhibitions/IssueDocumentPage.tsx` | Integrated | V1 Phase 5: `?search` sent — the partner search is server-side (G-PORT-15). |
 | POST | /api/gallery/admin/links/ | `GalleryAdminService.issueLink` | `admin/SourcesPage.tsx` | Integrated |  |
 | GET | /api/gallery/admin/links/{id}/ | `GalleryAdminService.link` | `admin/ExhibitionComposePage.tsx`, `admin/SourceDetailPage.tsx` | Integrated |  |
-| DELETE | /api/gallery/admin/links/{id}/ | none | — | Not bound | Delete link — no binding. |
+| DELETE | /api/gallery/admin/links/{id}/ | none | — | Not needed (reissue covers the old delete) | The old panel deletes a link only inside "Regenerate" (darz-studio.html:38605-38611), which `links/{id}/reissue/` replaces; there is no standalone delete, and Disable covers "stop this link". |
 | POST | /api/gallery/admin/links/{id}/disable/ | `GalleryAdminService.disableLink` | `admin/SourceDetailPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/links/{id}/enable/ | `GalleryAdminService.enableLink` | `admin/SourceDetailPage.tsx` | Integrated |  |
 | POST | /api/gallery/admin/links/{id}/features/ | `GalleryAdminService.setLinkFeatures` | `admin/SourceDetailPage.tsx` | Integrated |  |
@@ -272,15 +272,15 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/gallery/portal/{token}/exhibitions/ | `GalleryPortalService.exhibitions` | `portal/PortalSession.ts` | Integrated | Called by PortalSession.loadExhibitions. |
 | POST | /api/gallery/portal/{token}/exhibitions/ | `GalleryPortalService.createExhibition` | `portal/PortalExhibitions.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | GET | /api/gallery/portal/{token}/exhibitions/catalogue/ | `GalleryPortalService.exhibitionCatalogue` | `portal/PortalSession.ts` | Integrated | Called by PortalSession.loadExhibitions. |
-| GET | /api/gallery/portal/{token}/exhibitions/{event_id}/ | none | — | Not bound | Single exhibition read — no binding (list is used). |
-| PATCH | /api/gallery/portal/{token}/exhibitions/{event_id}/ | `GalleryPortalService.updateExhibition` | bound-unused (`portal/PortalSession.ts` wrapper only) | Bound, no UI | Only the PortalSession.updateExhibition wrapper calls it; no portal component calls that wrapper. |
+| GET | /api/gallery/portal/{token}/exhibitions/{event_id}/ | none | — | Not needed (embedded in portal state) | The portal exhibitions list carries every show in full. |
+| PATCH | /api/gallery/portal/{token}/exhibitions/{event_id}/ | `GalleryPortalService.updateExhibition` | bound-unused (`portal/PortalSession.ts` wrapper only) | Bound, no UI | FE gap: the old portal's "Save draft" of a ticked selection (gallery-update.html:1551 `exhSaveDraft`) is not built — "Send to Darz" writes the selection with the submit. `PortalSession.updateExhibition` exists, no component calls it. |
 | POST | /api/gallery/portal/{token}/exhibitions/{event_id}/documents/{document_id}/sign/ | `GalleryPortalService.signExhibitionDocument` | `portal/PortalExhibitions.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | POST | /api/gallery/portal/{token}/exhibitions/{event_id}/submit/ | `GalleryPortalService.submitExhibition` | `portal/PortalExhibitions.tsx`, `portal/PortalSession.ts` | Integrated |  |
-| GET | /api/gallery/portal/{token}/messages/ | none | — | Not bound | No binding; thread arrives inside the `GET portal/{token}/` state payload. |
+| GET | /api/gallery/portal/{token}/messages/ | none | — | Not needed (embedded in portal state) | The thread arrives inside `GET portal/{token}/`. |
 | POST | /api/gallery/portal/{token}/messages/ | `GalleryPortalService.sendMessage` | `portal/PortalMessages.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | POST | /api/gallery/portal/{token}/pricelists/ | `GalleryPortalService.uploadPricelist` | `portal/PortalPricelists.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | POST | /api/gallery/portal/{token}/pricelists/build/ | `GalleryPortalService.buildPricelist` | `portal/PortalPricelists.tsx`, `portal/PortalSession.ts` | Integrated | V1 Phase 5 (2026-09-25): the in-portal builder; `pin` in the JSON body (C-9); per-line errors from `details.lines`. |
-| GET | /api/gallery/portal/{token}/status/ | none | — | Not bound | No binding; funnel status arrives inside the state payload. |
+| GET | /api/gallery/portal/{token}/status/ | none | — | Not needed (embedded in portal state) | Funnel status arrives inside `GET portal/{token}/`. |
 | POST | /api/gallery/portal/{token}/updates/ | `GalleryPortalService.submitUpdate` | `portal/PortalSession.ts`, `portal/PortalWorks.tsx` | Integrated |  |
 
 ## projects
@@ -289,7 +289,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 |---|---|---|---|---|---|
 | GET | /api/projects/admin/checklists/ | `ProjectsAdminService.checklists` | `admin/projects/PackagesPage.tsx`, `admin/projects/ProjectsReportsPage.tsx` | Integrated |  |
 | POST | /api/projects/admin/checklists/ | `ProjectsAdminService.createChecklist` | `admin/projects/PackagesPage.tsx`, `admin/projects/ProjectsReportsPage.tsx` | Integrated |  |
-| GET | /api/projects/admin/checklists/{id}/ | `ProjectsAdminService.checklist` | bound-unused | Bound, no UI | `checklist()` has no caller. |
+| GET | /api/projects/admin/checklists/{id}/ | `ProjectsAdminService.checklist` | bound-unused | Not needed (list rows suffice) | `ProjectsAdminService.checklist` bound, never called; the checklist desk edits from the list row. |
 | PATCH | /api/projects/admin/checklists/{id}/ | `ProjectsAdminService.updateChecklist` | `admin/projects/ProjectsReportsPage.tsx` | Integrated |  |
 | DELETE | /api/projects/admin/checklists/{id}/ | `ProjectsAdminService.deleteChecklist` | `admin/projects/ProjectsReportsPage.tsx` | Integrated |  |
 | GET | /api/projects/admin/packages/ | `ProjectsAdminService.packages` | `admin/exhibitions/ExhibitionServicesPage.tsx`, `admin/exhibitions/IssueDocumentPage.tsx`, `admin/projects/PackagesPage.tsx` | Integrated |  |
@@ -299,7 +299,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | DELETE | /api/projects/admin/packages/{id}/ | `ProjectsAdminService.deletePackage` | `admin/projects/PackagesPage.tsx` | Integrated |  |
 | GET | /api/projects/admin/partners/ | `ProjectsAdminService.partners` | `admin/projects/NewProjectPage.tsx`, `admin/projects/ProjectPage.tsx`, `admin/projects/ProjectPartnersPage.tsx`, `admin/projects/ProjectReportPage.tsx` | Integrated |  |
 | POST | /api/projects/admin/partners/ | `ProjectsAdminService.createPartner` | `admin/projects/ProjectPartnersPage.tsx` | Integrated |  |
-| GET | /api/projects/admin/partners/{id}/ | `ProjectsAdminService.partner` | bound-unused | Bound, no UI | `partner()` has no caller (marked unbound in service comment). |
+| GET | /api/projects/admin/partners/{id}/ | `ProjectsAdminService.partner` | bound-unused | Not needed (list rows suffice) | `ProjectsAdminService.partner` bound, never called; the Partners desk edits from the list row. |
 | PATCH | /api/projects/admin/partners/{id}/ | `ProjectsAdminService.updatePartner` | `admin/projects/ProjectPartnersPage.tsx` | Integrated |  |
 | DELETE | /api/projects/admin/partners/{id}/ | `ProjectsAdminService.deletePartner` | `admin/projects/ProjectPartnersPage.tsx` | Integrated |  |
 | GET | /api/projects/admin/projects/ | `ProjectsAdminService.projects` | `admin/projects/ProjectsDashboardPage.tsx`, `admin/projects/ProjectsListPage.tsx`, `admin/projects/ProjectsReportsPage.tsx`, `admin/projects/projectForm.ts` | Integrated | V1 Phase 7: `?quick` sent by the List's quick cards (`approval` → `awaiting_approval`; "Deliverables ≤7d" has no server filter and still walks). `?partner` typed in `ProjectQuery`, deliberately unsent (the Partners desk counts off its one walk; the filter skips lane-only orgs). `archived` sent as True/False. |
@@ -316,7 +316,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | DELETE | /api/projects/admin/projects/{project_pk}/attachments/{id}/ | `ProjectsAdminService.deleteAttachment` | `admin/projects/ProjectPage.tsx` | Integrated |  |
 | GET | /api/projects/admin/service-catalog/ | `ProjectsAdminService.services` | `admin/ExhibitionComposePage.tsx`, `admin/exhibitions/ExhibitionServicesPage.tsx`, `admin/exhibitions/IssueDocumentPage.tsx`, `admin/projects/ProjectProposal.tsx`, `admin/projects/ProjectReportPage.tsx`, `admin/projects/projectForm.ts` | Integrated |  |
 | POST | /api/projects/admin/service-catalog/ | `ProjectsAdminService.createService` | `admin/exhibitions/ExhibitionServicesPage.tsx`, `admin/projects/PackagesPage.tsx` | Integrated |  |
-| GET | /api/projects/admin/service-catalog/{id}/ | `ProjectsAdminService.service` | bound-unused | Bound, no UI | `service()` has no caller. |
+| GET | /api/projects/admin/service-catalog/{id}/ | `ProjectsAdminService.service` | bound-unused | Not needed (list rows suffice) | `ProjectsAdminService.service` bound, never called; the Packages/services desk edits from the list row. |
 | PATCH | /api/projects/admin/service-catalog/{id}/ | `ProjectsAdminService.updateService` | `admin/exhibitions/ExhibitionServicesPage.tsx`, `admin/projects/PackagesPage.tsx` | Integrated |  |
 | DELETE | /api/projects/admin/service-catalog/{id}/ | `ProjectsAdminService.deleteService` | `admin/exhibitions/ExhibitionServicesPage.tsx`, `admin/projects/PackagesPage.tsx` | Integrated |  |
 
@@ -324,31 +324,31 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/recommendations/admin/artworks/{artwork_pk}/tags/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/artworks/{artwork_pk}/tags/ai/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/artworks/{artwork_pk}/tags/auto/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/batches/{id}/publish/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/batches/{id}/unpublish/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/admin/collectors/{collector_pk}/batches/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/collectors/{collector_pk}/batches/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/admin/collectors/{collector_pk}/preferences/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/collectors/{collector_pk}/preferences/rebuild/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/admin/collectors/{collector_pk}/recommendations/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/collectors/{collector_pk}/recommendations/generate/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/admin/feature-settings/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/feature-settings/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/admin/question-sets/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
-| POST | /api/recommendations/admin/question-sets/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
-| GET | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
-| PATCH | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
-| DELETE | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
-| POST | /api/recommendations/admin/question-sets/{id}/activate/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
-| PATCH | /api/recommendations/admin/recommendations/{id}/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| DELETE | /api/recommendations/admin/recommendations/{id}/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/tags/{id}/approve/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/tags/{id}/lock/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/published/ | `RecommendationService.published` | bound-unused | Bound, no UI | `published()` has no caller (TD-6, whole surface unbuilt). |
-| POST | /api/recommendations/published/{id}/dismiss/ | `RecommendationService.dismiss` | bound-unused | Bound, no UI | `dismiss()` has no caller. |
+| GET | /api/recommendations/admin/artworks/{artwork_pk}/tags/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/artworks/{artwork_pk}/tags/ai/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/artworks/{artwork_pk}/tags/auto/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/batches/{id}/publish/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/batches/{id}/unpublish/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| GET | /api/recommendations/admin/collectors/{collector_pk}/batches/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/collectors/{collector_pk}/batches/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| GET | /api/recommendations/admin/collectors/{collector_pk}/preferences/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/collectors/{collector_pk}/preferences/rebuild/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| GET | /api/recommendations/admin/collectors/{collector_pk}/recommendations/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/collectors/{collector_pk}/recommendations/generate/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| GET | /api/recommendations/admin/feature-settings/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/feature-settings/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| GET | /api/recommendations/admin/question-sets/ | none | — | Excluded (owner-deferred, API ready) | G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| POST | /api/recommendations/admin/question-sets/ | none | — | Excluded (owner-deferred, API ready) | G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| GET | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded (owner-deferred, API ready) | G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| PATCH | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded (owner-deferred, API ready) | G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| DELETE | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded (owner-deferred, API ready) | G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| POST | /api/recommendations/admin/question-sets/{id}/activate/ | none | — | Excluded (owner-deferred, API ready) | G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| PATCH | /api/recommendations/admin/recommendations/{id}/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| DELETE | /api/recommendations/admin/recommendations/{id}/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/tags/{id}/approve/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| POST | /api/recommendations/admin/tags/{id}/lock/ | none | — | Excluded (not V1: G-6 owner-deferred) | Intelligence desk (Q-8) — no FE binding, API ready. |
+| GET | /api/recommendations/published/ | `RecommendationService.published` | bound-unused | Excluded (not V1: G-6 owner-deferred) | "Curated for you" feed (Q-8). `RecommendationService.published` bound, never called. |
+| POST | /api/recommendations/published/{id}/dismiss/ | `RecommendationService.dismiss` | bound-unused | Excluded (not V1: G-6 owner-deferred) | "Curated for you" dismiss (Q-8). `RecommendationService.dismiss` bound, never called. |
 | GET | /api/recommendations/question-set/ | `RecommendationService.questionSet` | `questionnaire/QuestionnaireController.ts` | Integrated | V1 Phase 9a (G-P25-2(a)): the questionnaire runs on the served set; the empty shape (`id: null`) or a failed read falls back to the built-in bank (`questions.ts`). |
 | GET | /api/recommendations/questionnaire/ | `RecommendationService.questionnaire` | `profile/ProfilePage.tsx`, `questionnaire/QuestionnaireController.ts` | Integrated |  |
 | POST | /api/recommendations/questionnaire/ | `RecommendationService.submitQuestionnaire` | `questionnaire/QuestionnaireController.ts` | Integrated |  |
@@ -357,23 +357,23 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| POST | /api/notifications/push/subscribe/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P13-1, V1 Phase 9a. Web-push subscribe — no binding, no service worker in FE. |
-| POST | /api/notifications/push/unsubscribe/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P13-1, V1 Phase 9a. Web-push unsubscribe — no binding. |
-| GET | /api/notifications/vapid-public-key/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P13-1, V1 Phase 9a. VAPID key for web-push — no binding. |
+| POST | /api/notifications/push/subscribe/ | none | — | Excluded (owner-deferred, API ready) | G-P13-1, V1 Phase 9a. Web-push subscribe — no binding, no service worker in FE. |
+| POST | /api/notifications/push/unsubscribe/ | none | — | Excluded (owner-deferred, API ready) | G-P13-1, V1 Phase 9a. Web-push unsubscribe — no binding. |
+| GET | /api/notifications/vapid-public-key/ | none | — | Excluded (owner-deferred, API ready) | G-P13-1, V1 Phase 9a. VAPID key for web-push — no binding. |
 
 ## marketing
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/marketing/admin/campaigns/ | none | — | Not bound | Marketing app — no FE service at all (supports `?status`). |
-| POST | /api/marketing/admin/campaigns/ | none | — | Not bound | Marketing app — no FE service at all. |
-| POST | /api/marketing/admin/campaigns/generate-copy/ | none | — | Not bound | Marketing app — no FE service at all. |
-| GET | /api/marketing/admin/campaigns/{campaign_pk}/analytics/ | none | — | Not bound | Marketing app — no FE service at all. |
-| POST | /api/marketing/admin/campaigns/{campaign_pk}/analytics/ | none | — | Not bound | Marketing app — no FE service at all. |
-| DELETE | /api/marketing/admin/campaigns/{campaign_pk}/analytics/{id}/ | none | — | Not bound | Marketing app — no FE service at all. |
-| GET | /api/marketing/admin/campaigns/{id}/ | none | — | Not bound | Marketing app — no FE service at all. |
-| PATCH | /api/marketing/admin/campaigns/{id}/ | none | — | Not bound | Marketing app — no FE service at all. |
-| DELETE | /api/marketing/admin/campaigns/{id}/ | none | — | Not bound | Marketing app — no FE service at all. |
+| GET | /api/marketing/admin/campaigns/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| POST | /api/marketing/admin/campaigns/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| POST | /api/marketing/admin/campaigns/generate-copy/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| GET | /api/marketing/admin/campaigns/{campaign_pk}/analytics/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| POST | /api/marketing/admin/campaigns/{campaign_pk}/analytics/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| DELETE | /api/marketing/admin/campaigns/{campaign_pk}/analytics/{id}/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| GET | /api/marketing/admin/campaigns/{id}/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| PATCH | /api/marketing/admin/campaigns/{id}/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
+| DELETE | /api/marketing/admin/campaigns/{id}/ | none | — | Excluded (not V1: G-6 owner-deferred) | Marketing Hub (Q-8) — no FE service, API ready. |
 
 ## dashboard
 
@@ -402,7 +402,100 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 |---|---|---|---|---|---|
 | GET | /api/health/ | none | — | Backend-only | Liveness probe for infra/load balancer; no browser use. |
 
-## Summary
+## Summary — final V1 state (V1 Phase 10, 2026-09-26)
+
+**Re-verified against the code, not the docs.** A script parsed every binding out of `src/api/services.ts`
+(each class's `basePath` + the path of every `list/retrieve/create/remove/client.send[Enveloped]` call,
+incl. `GalleryPortalService` on `PortalClient`) plus `AuthSession.ts`: **271 bindings, 0 dangling** (every
+one matches a backend operation). A UI caller is a `.method(` call in `src/` outside `src/api` and tests
+(`ThemeService.publicTheme` is called from `src/api/ApiProvider.tsx`, counted as UI); the 16 method names that
+exist on two services (`auctions`, `lots`, `records`, `artists`, `summary`, `exhibitions`, …) were resolved
+by receiver type by hand. Result: every one of the 261 **Integrated** rows has a binding and a UI caller; no
+Integrated row was wrong. What changed in Phase 10 is the vocabulary of the other 62 rows — every one now
+carries a final status and a one-line reason, and **no "Not bound" row remains**:
+
+- 9 **Bound, no UI** → 1 kept (portal exhibition PATCH — a real FE gap, the old "Save draft"), 5 **Not
+  needed** (three single reads, deal attachments embedded in the deal, the admin exhibition PATCH that
+  `compose/` supersedes), 1 **Excluded** (admin exhibition DELETE — no delete in the old panel), 2
+  **Excluded (G-6)** (`recommendations/published/` + `dismiss/`).
+- 38 **Not bound** → 26 **Excluded (G-6)** (17 recommendations-admin/Intelligence + 9 Marketing Hub),
+  10 **Not needed** (5 single reads where list rows suffice, 3 portal reads embedded in the state, link
+  DELETE covered by reissue, the catalogue change-stamp), 2 **Excluded** (legacy-id lookup, records highlights).
+- The 14 owner-deferred rows keep their status, now spelled in full.
+
+Count (scripted — `awk -F'|' '/^\| (GET|POST|PATCH|PUT|DELETE) /{gsub(/^ +| +$/,"",$6); print $6}' API_ADOPTION_MATRIX.md | sed 's/ (.*//' | sort | uniq -c`,
+with the `Excluded (…)` pair split by hand):
+
+| Status | Count |
+|---|---|
+| Integrated | 261 |
+| Bound, no UI | 1 |
+| Not bound | 0 |
+| Excluded (owner-deferred, API ready) | 14 |
+| Excluded (not V1: …) | 31 |
+| Not needed (…) | 15 |
+| Backend-only | 1 |
+| **Total** | **323** |
+
+Of the 31 "Excluded (not V1)": 28 G-6 owner-deferred (Intelligence 17 · Marketing 9 · Curated-for-you 2),
+1 no delete in the old panel, 1 no legacy-link route, 1 old app hides Highlights.
+
+### Bound, no UI (1)
+
+- `PATCH /api/gallery/portal/{token}/exhibitions/{event_id}/` — the old portal's "Save draft" of a ticked
+  services selection (gallery-update.html:1551 `exhSaveDraft`) is not built; "Send to Darz" writes the
+  selection with the submit.
+
+### Not needed (15)
+
+- List rows suffice (8): `GET` membership-codes/{id}, team-users/{id}, catalog admin artists/{id}, crm admin
+  selections/{id}, gallery admin exhibition-catalogue/{id}, projects checklists/{id}, partners/{id},
+  service-catalog/{id} (the last three are bound, never called).
+- Embedded in portal state (3): portal `GET messages/`, `GET status/`, `GET exhibitions/{event_id}/`.
+- Embedded in the deal payload (1): `GET accounting/admin/deals/{id}/attachments/` (bound, never called).
+- `compose/` carries the admin fields (1): `PATCH gallery/admin/exhibitions/{id}/` (bound, never called).
+- Reissue covers the old delete (1): `DELETE gallery/admin/links/{id}/`.
+- Server-paged catalogue (1): `GET catalog/artworks/change-stamp/`.
+
+### Excluded (owner-deferred, API ready) (14)
+
+- `GET /api/catalog/selections/` — G-P24-2
+- `POST /api/catalog/selections/{id}/seen/` — G-P24-2
+- `GET /api/crm/activity/` — G-P5-12
+- `POST /api/crm/requests/{id}/archive/` — G-P5-4
+- `POST /api/crm/requests/{id}/transition/` — G-P5-5
+- `POST /api/notifications/push/subscribe/` — G-P13-1
+- `POST /api/notifications/push/unsubscribe/` — G-P13-1
+- `GET /api/notifications/vapid-public-key/` — G-P13-1
+- `GET|POST /api/recommendations/admin/question-sets/`, `GET|PATCH|DELETE …/{id}/`, `POST …/{id}/activate/` — G-P25-2(b) (6)
+
+### Excluded (not V1) (31)
+
+- G-6 owner-deferred (Q-8), 28: every `recommendations/admin/*` operation except the question sets (17 —
+  tags, batches, preferences, per-collector recommendations, feature settings); every `marketing/admin/*`
+  operation (9); `GET recommendations/published/` + `POST …/{id}/dismiss/` (2, bound, never called).
+- `DELETE gallery/admin/exhibitions/{id}/` — no delete in the old panel (bound, deliberately unused).
+- `GET catalog/legacy-lookup/` — no legacy-link redirect route in the approved app.
+- `GET auctions/records/highlights/` — the old app hard-hides its Highlights tab (app.html:463, :2979).
+
+### Backend-only (1)
+
+- `GET /api/health/` — liveness probe for infra/load balancer; no browser use.
+
+### Notable unsent query params on integrated endpoints
+
+- `GET /api/catalog/admin/artworks/` — `price_min, price_max, tag, refine_*` unsent (the old Database desk
+  had no control for them).
+- `GET /api/projects/admin/projects/` — `?partner` typed but unsent by decision (the Partners desk counts off
+  its walk, which also sees lane-only orgs).
+- `GET /api/auctions/records/` — `?house` typed but unsent by decision (the collector Records page is the
+  Artist view).
+- `GET /api/auth/admin/access-keys/` — `?collector` typed, unsent (the collector page reads its own keys).
+- `GET /api/crm/requests/` — `?archived` unsent: belongs to G-P5-4 (owner-deferred).
+- Sent since V1: admin artists `?search/?ordering` (Phase 4), links `?search` (Phase 5), thread
+  `?include_archived` (Phase 6), projects `?quick` (Phase 7).
+
+### History (per-phase moves, kept as the record)
 
 Counts updated by V1 Phase 1 (2026-09-25): four operations moved from Not bound to Integrated —
 `PATCH /api/auth/me/`, `GET /api/auth/my-membership/`, `GET /api/documents/`,
@@ -429,100 +522,3 @@ G-P5-12 (`GET crm/activity/`) and G-P13-1 (push subscribe/unsubscribe, `vapid-pu
 operation of their own (the invite-only endpoints and the `counter_*` fields are already read). Status cells
 elsewhere are the 2026-09-25 baseline unless a row says otherwise.
 
-| Status | Count |
-|---|---|
-| Integrated | 261 |
-| Partial | 0 |
-| Bound, no UI | 9 |
-| Not bound | 38 |
-| Excluded (owner-deferred, API ready) | 14 |
-| Backend-only | 1 |
-| **Total** | **323** |
-
-### Partial
-
-- None since V1 Phase 6 (both thread POSTs moved to Integrated).
-
-### Bound, no UI
-
-- `GET /api/accounting/admin/deals/{id}/attachments/`
-- `PATCH /api/gallery/admin/exhibitions/{id}/`
-- `DELETE /api/gallery/admin/exhibitions/{id}/`
-- `PATCH /api/gallery/portal/{token}/exhibitions/{event_id}/`
-- `GET /api/projects/admin/checklists/{id}/`
-- `GET /api/projects/admin/partners/{id}/`
-- `GET /api/projects/admin/service-catalog/{id}/`
-- `GET /api/recommendations/published/`
-- `POST /api/recommendations/published/{id}/dismiss/`
-
-### Not bound
-
-- `GET /api/auctions/records/highlights/`
-- `GET /api/auth/admin/membership-codes/{id}/`
-- `GET /api/auth/admin/team-users/{id}/`
-- `GET /api/catalog/admin/artists/{id}/`
-- `GET /api/catalog/artworks/change-stamp/`
-- `GET /api/catalog/legacy-lookup/`
-- `GET /api/crm/admin/selections/{id}/`
-- `GET /api/gallery/admin/exhibition-catalogue/{id}/`
-- `DELETE /api/gallery/admin/links/{id}/`
-- `GET /api/gallery/portal/{token}/exhibitions/{event_id}/`
-- `GET /api/gallery/portal/{token}/messages/`
-- `GET /api/gallery/portal/{token}/status/`
-- `GET /api/marketing/admin/campaigns/`
-- `POST /api/marketing/admin/campaigns/`
-- `POST /api/marketing/admin/campaigns/generate-copy/`
-- `GET /api/marketing/admin/campaigns/{campaign_pk}/analytics/`
-- `POST /api/marketing/admin/campaigns/{campaign_pk}/analytics/`
-- `DELETE /api/marketing/admin/campaigns/{campaign_pk}/analytics/{id}/`
-- `GET /api/marketing/admin/campaigns/{id}/`
-- `PATCH /api/marketing/admin/campaigns/{id}/`
-- `DELETE /api/marketing/admin/campaigns/{id}/`
-- `GET /api/recommendations/admin/artworks/{artwork_pk}/tags/`
-- `POST /api/recommendations/admin/artworks/{artwork_pk}/tags/ai/`
-- `POST /api/recommendations/admin/artworks/{artwork_pk}/tags/auto/`
-- `POST /api/recommendations/admin/batches/{id}/publish/`
-- `POST /api/recommendations/admin/batches/{id}/unpublish/`
-- `GET /api/recommendations/admin/collectors/{collector_pk}/batches/`
-- `POST /api/recommendations/admin/collectors/{collector_pk}/batches/`
-- `GET /api/recommendations/admin/collectors/{collector_pk}/preferences/`
-- `POST /api/recommendations/admin/collectors/{collector_pk}/preferences/rebuild/`
-- `GET /api/recommendations/admin/collectors/{collector_pk}/recommendations/`
-- `POST /api/recommendations/admin/collectors/{collector_pk}/recommendations/generate/`
-- `GET /api/recommendations/admin/feature-settings/`
-- `POST /api/recommendations/admin/feature-settings/`
-- `PATCH /api/recommendations/admin/recommendations/{id}/`
-- `DELETE /api/recommendations/admin/recommendations/{id}/`
-- `POST /api/recommendations/admin/tags/{id}/approve/`
-- `POST /api/recommendations/admin/tags/{id}/lock/`
-
-### Excluded (owner-deferred, API ready)
-
-- `GET /api/catalog/selections/` — G-P24-2
-- `POST /api/catalog/selections/{id}/seen/` — G-P24-2
-- `GET /api/crm/activity/` — G-P5-12
-- `POST /api/crm/requests/{id}/archive/` — G-P5-4
-- `POST /api/crm/requests/{id}/transition/` — G-P5-5
-- `POST /api/notifications/push/subscribe/` — G-P13-1
-- `POST /api/notifications/push/unsubscribe/` — G-P13-1
-- `GET /api/notifications/vapid-public-key/` — G-P13-1
-- `GET /api/recommendations/admin/question-sets/` — G-P25-2(b)
-- `POST /api/recommendations/admin/question-sets/` — G-P25-2(b)
-- `GET /api/recommendations/admin/question-sets/{id}/` — G-P25-2(b)
-- `PATCH /api/recommendations/admin/question-sets/{id}/` — G-P25-2(b)
-- `DELETE /api/recommendations/admin/question-sets/{id}/` — G-P25-2(b)
-- `POST /api/recommendations/admin/question-sets/{id}/activate/` — G-P25-2(b)
-
-### Backend-only
-
-- `GET /api/health/` — Liveness probe for infra/load balancer; no browser use.
-
-### Notable unsent query params on integrated endpoints
-
-- `GET /api/catalog/admin/artists/` — ~~`?search`, `?ordering` unsent~~ sent by the Artists desk since V1 Phase 4; the pickers walk every page without them (by design).
-- `GET /api/catalog/admin/artworks/` — Unsent: `price_min, price_max, tag, refine_*` (the old Database desk had no control for them). `complete, created_after, duplicate_images, gallery_portal, size, source_type` sent since V1 Phase 4.
-- `GET /api/projects/admin/projects/` — ~~`?partner`, `?quick` unsent~~ `?quick` sent since V1 Phase 7; `?partner` typed but unsent by decision (the Partners desk counts off its walk, which also sees lane-only orgs).
-- `GET /api/auctions/records/` — `?house` typed but unsent by decision (Phase 3: the collector Records page is the Artist view).
-- `GET /api/gallery/admin/links/` — `?search` unsent (query type has source_type/page/per_page only).
-- `GET /api/crm/requests/` — `?archived` unsent (CollectorRequestQuery lacks it).
-- `GET /api/crm/admin/requests/{id}/messages/` — ~~`?include_archived` unsent~~ sent since V1 Phase 6.

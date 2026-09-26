@@ -10,6 +10,41 @@ implementation, as the brief requires. `V1_IMPLEMENTATION_PLAN.md` refers to the
 Legend. **Owner:** who has to act (**BE** = backend repo, **FE** = this repo, **Arian** = owner decision).
 **FE stance:** what this repo does until the backend changes.
 
+## Final status (V1 Phase 10, 2026-09-26)
+
+**FE-fixed** = fixed or fully handled in this repo · **open-backend** = the backend still has to act; the FE
+works around it as the row's "FE stance" says · **owner-open** = waits on Arian.
+
+| ID | Final status | One line |
+| --- | --- | --- |
+| C-1 · C-2 · C-3 · C-4 · C-5 | FE-fixed (Phase 0) | Nested sales rows · status enum aliased by schema path · questionnaire `answered` · portal entry retry card · `walkPages` past 100. C-2's `ENUM_NAME_OVERRIDES` is still a backend nicety. |
+| C-6 | open-backend | PATCH without `expected_version` → 500 on 18 endpoints; FE sends it on every locked PATCH (`Locked<T>`, `optimisticLock.test.ts`). |
+| C-7 | open-backend | No hold member in the detail union; FE keeps the hand-typed `HoldDetail`. |
+| C-8 | open-backend | Portal state schema undeclared; FE hand-types `PortalState` (Phase 5). |
+| C-9 | open-backend | Schema documents the portal `pin` as a query param on writes; FE sends it in the body/form, wire-pinned. |
+| C-10 | open-backend | Error `details` untyped; FE reads `ValidationError.fields` (publish gate `missing`, Phase 4). |
+| C-11 | open-backend | 4xx refusals coded `INTERNAL_ERROR`; FE branches on HTTP status. |
+| C-12 | open-backend | No URL for a portal replacement image; the desk says "Image submitted — open via Darz storage". |
+| C-13 | open-backend (**security**) | Portal PIN brute force, unthrottled logins, unvalidated anonymous uploads, builder artwork scope. Raise before any real portal link is issued. |
+| C-14 | open-backend | Options missing sale `source`, pricelist `status`, `source_type`, `preferred_language`, …; FE falls back to the raw value. |
+| C-15 | FE-fixed (Phase 6) | Flat activity `actor` typed as served; the backend CHANGELOG wording is the only thing wrong. |
+| C-16 | open-backend (note) | List-only rollups are null on detail/PATCH; FE never overwrites a list row with them. |
+| C-17 | FE-fixed (Phase 8) | Computed access-key status on the Access desk. |
+| C-18 | open-backend · owner-open (copy) | No window validation server-side; FE validates client-side with placeholder copy the owner must confirm; lots do not follow a moved window. |
+| C-19 | open-backend (deploy) | Prod Dockerfile is WSGI, so no auction WebSockets; the room degrades to 8 s REST polling with a notice. |
+| C-20 | FE-fixed (Phase 7) | Every project read is endpoint-typed. |
+| C-21 | open-backend (note) | No pricelist status guard; FE re-reads the link's pricelists after every change. |
+| C-22 | FE-fixed (Phase 7) | Totals rendered from the served strings; "unknown" → "No currency". |
+| C-23 | open-backend | Attaching a document in chat re-homes it; FE offers only this collector's or unissued documents. |
+| C-24 | open-backend | Awaiting approval counts every moved project; FE writes the old seeding verbatim and shows the server count. |
+| C-25 | open-backend | Extend does not reset a stored `expired` status; such a key reads Active yet is refused at sign-in. |
+| Q-1 · Q-3 · Q-6 · Q-7 | resolved | Access owner-only · language editable · offer hidden without currency · pricelist availability from options. |
+| Q-5 | resolved in part · owner-open | G-P5-11 and G-P25-2(a) built (Phase 9a); G-P24-2, G-P25-2(b), G-P5-4, G-P5-5, G-P5-12, G-P13-1, G-CLUB-3 club section, G-P5-9 still owner-open. |
+| Q-2 | owner-open | Project money / internal notes hidden in the UI only. |
+| Q-4 | owner-open | Counter-offer display wording. |
+| Q-8 | owner-open (kept deferred) | Intelligence · Marketing Hub · Document Builder stay not V1. |
+| Q-9 | owner-open (go-live) | A real `VITE_API_BASE_URL`. |
+
 ---
 
 ## A · Already broken against the current backend (fix in Phase 0)
