@@ -1,5 +1,9 @@
 # API adoption plan — batch by batch
 
+> **Superseded from Batch 4 onward (2026-09-25)** by **`V1_IMPLEMENTATION_PLAN.md`**, which re-measures
+> against backend `df0421f` (PRs #54–#70 added ~35 closed gaps this plan never saw) and folds Batches 4–8 into
+> Phases 0–9. Batches 1–3 below are done (#99) and stay as the record.
+
 **Written 2026-09-25.** Execution plan for `API_GAPS_FRONTEND_ADOPTION.md` (the *what* of each gap).
 This file is the *order*: one batch per session, one PR per batch. Tick batches off here; tick
 individual gaps in `TASKLIST.md` / `API_GAPS.md` / `CHANGELOG.md` as usual.

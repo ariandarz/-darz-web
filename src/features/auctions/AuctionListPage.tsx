@@ -7,6 +7,13 @@
  * days, 23 hours" green · "Opens in …" slate), "Closes 14 Sept, 14:06 · Tehran
  * time", "4 LOTS", teaser.
  *
+ * **The poster is `cover_image_url`** (V1 Phase 3) — the admin's uploaded
+ * poster, which the old card used first (`a.coverImg`, `app.html:8148`).
+ * Until then each card read its first lot (`per_page=1`) for an artwork
+ * image: one extra request per card, now gone. The old fallback to the
+ * cover ARTWORK has no field in this backend, so a sale with no poster shows
+ * the badge on the bare frame.
+ *
  * The **empty state** (no visible sale) is the old app's announcement card —
  * its copy is owner-editable (`THEME_DEFAULT.aucAnn*`); the shipped default is
  * used here. The "Register for the Next Online Auction" CTA needs an auction
@@ -14,7 +21,6 @@
  */
 import { Link } from 'react-router-dom';
 import type { Auction } from '../../api/types';
-import { primaryImage } from '../catalogue/format';
 import { Pager } from '../catalogue/Pager';
 import './auctions.css';
 import {
@@ -24,14 +30,13 @@ import {
   auctionState,
   auctionStateLabel,
 } from './format';
-import { useAuctionList, useAuctionPoster } from './useAuctions';
+import { useAuctionList } from './useAuctions';
 
 function EventCard({ auction }: { auction: Auction }) {
   const st = auctionState(auction);
   const cd = auctionCountdown(auction);
   const clock = auctionClockLine(auction);
-  const poster = useAuctionPoster(auction.id);
-  const img = poster.status === 'ok' && poster.data ? primaryImage(poster.data) : null;
+  const img = auction.cover_image_url;
 
   return (
     <Link to={`/auctions/${auction.id}`} className="card auc-split">

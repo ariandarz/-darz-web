@@ -8,14 +8,11 @@
  * | old tile (`:33774`) | here |
  * | --- | --- |
  * | **Private selections** | the selections this desk already loads — no second read |
- * | **Private auctions** | **absent.** Invitation-only auctions do not exist in this backend: `auctions.auction_status` is draft/scheduled/live/closed/cancelled and the model has no invited-keys relation, so there is nothing to count. Backend gap **G-CLUB-3**, already recorded on the desk for the "Auction access" section it also blocks |
+ * | **Private auctions** | **not built yet — Phase 9.** Invite-only auctions exist now (G-CLUB-3 closed, `Auction.invite_only`) and are managed on the auction's own page; the Club's tile and its "Auction access" section are an owner-gated Phase 9 item (Q-5), see `ClubPage.tsx` |
  * | **Collector keys** | the collector roster's `total_count` |
  *
- * The old panel greys "Private auctions" (`'#9A9A9A'` at its call site) rather
- * than colouring it — a tile it treats as informational. That does not make it
- * optional here; it is simply unanswerable, and a `0` would be the worse lie,
- * since zero private auctions and no such concept read identically on screen
- * and mean different things.
+ * The old panel greys "Private auctions" (`'#9A9A9A'` at its call site) — a tile
+ * it treats as informational; it returns with the section it summarises.
  *
  * **"Collector keys" is the roster count, and that is the old panel's meaning
  * too.** `nKeys` there counts collector records, not issued key strings — a

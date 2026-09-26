@@ -1,10 +1,10 @@
 # Handoff — start here
 
-**Rewritten 2026-09-24.** This is the two-minute version: where things stand, what is genuinely
-next, and the traps that have already cost time.
+**Rewritten 2026-09-24; § 1 and § 3 updated 2026-09-26 for post-V1.** This is the two-minute version:
+where things stand, what is genuinely next, and the traps that have already cost time.
 
-`docs/TASKLIST.md` is the single source of truth for *what's built and what's left*; `docs/API_GAPS.md`
-is the gap index (fixed/pending); `docs/NOTES-FOR-ARIAN.md` is the owner's decision list. Historical
+`docs/DARZ_WEB_V1_STATUS.md` is the completed-V1 picture; `docs/TASKLIST.md` is the single source of truth
+for *what's built and what's left*; `docs/API_GAPS.md` is the gap index; `docs/NOTES-FOR-ARIAN.md` is the owner's decision list. Historical
 detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/`.
 
 ---
@@ -13,15 +13,15 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 
 | | |
 | --- | --- |
-| Branches | `main` and `development` kept level; `development` is the working line. |
-| Last landed | Node-20 support (jsdom 29, engines/CI/Dockerfile/.nvmrc) + admin panel code-split (main bundle 976→539 kB) + docs consolidation. |
-| Backend | `darz-backend-api` `development` @ `5f6d7ea` — **every V1 API gap is closed** (see `API_GAPS.md`). |
-| Gate | **620 unit** (56 files) · **82 E2E** (collector 25 · desks 54 · smoke 3) · typecheck · lint 0 · format · build · `npm audit` **0**. Runs on **Node 20**. |
-| Live | https://darz-web.vercel.app — auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set. |
+| Branches | `main` and `development`; `development` is the working line. All V1 phase PRs (#102–#111) are merged into `development`; Phase 10 is `v1/phase-10-final`. `development` is ahead of `main` until the owner says "release development to main". |
+| V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
+| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API, 323 operations. |
+| API adoption | 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). |
+| Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
+| Live | https://darz-web.vercel.app — auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
-**The admin panel and the collector app are functionally complete for V1, and every buildable task is
-built and merged.** What remains is owner decisions, frontend adoption of the now-closed backend work,
-the non-V1 backend gaps, and backend-blocked/deferred features — all in `TASKLIST.md` § Open work.
+**The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
+owner decisions, backend defects and post-V1 features — see § 3.
 
 ---
 
@@ -40,35 +40,32 @@ the non-V1 backend gaps, and backend-blocked/deferred features — all in `TASKL
 
 ---
 
-## 3 · What is actually next
+## 3 · What is actually next (post-V1)
 
-**The frontend has not yet adopted the closed backend work** — that is the main queue now.
-**`docs/API_ADOPTION_PLAN.md` is the batch order (one PR per batch — resume at the first unticked one)**;
-`docs/API_GAPS_FRONTEND_ADOPTION.md` is the per-gap detail. **Step 0 is regenerate `src/api/schema.d.ts`**
-from a running backend, then work the typecheck flags. Highlights: handle the access-request 200/429,
-wire `ConflictBanner` on the two G-LOCK-1 desks, delete the hand-typed `detail` union, use the nested
-`artwork`, pull viewing-mode from `/api/options/`, chip `selection_name`, questionnaire `answered`.
+V1 is done; there is no frontend V1 queue left. Start from **`DARZ_WEB_V1_STATUS.md` § Remaining gaps**, and
+work in this order:
 
-**Needs an owner decision — do not start without one** (`NOTES-FOR-ARIAN.md`):
+1. **Owner decisions** (`V1_CONTRACT_ISSUES.md` § C, `NOTES-FOR-ARIAN.md`) — nothing below starts without one:
+   - **Q-9 · real `VITE_API_BASE_URL`** — the live site is visual-only until it is set. The single biggest
+     thing between the owner and a working site.
+   - **Q-5 remainder, API ready:** G-P24-2 selection-ready notice · G-P25-2(b) question-set editor · G-P5-4
+     archive · G-P5-5 withdraw/cancel · G-P5-12 activity read-back · G-P13-1 push · G-CLUB-3 Club "Auction
+     access" · G-P5-9 counter-offer (**Q-4** wording). Each is a small phase of its own
+     (`v1/phase-9x-<slug>` pattern, same gate/stub/render/docs rules).
+   - **Q-2** project money UI-only · **Q-8** G-6 stays deferred · C-18 validation copy · request-kind wording ·
+     i18n (G-I18N-1) · `/artists` menu entry.
+2. **Backend defects to raise** (`V1_CONTRACT_ISSUES.md` § B, final status column): **C-13 security** before
+   any real portal link, **C-19** WSGI (no auction WebSockets in prod), **C-6** lock 500s, **C-23** chat attach
+   re-homes documents, **C-24** Awaiting-approval over-count, **C-25** extend does not revive a lapsed key;
+   the rest have FE work-arounds in place.
+3. **Small FE follow-ups:** the portal "Save draft" (the one Bound-no-UI operation), `isPathAllowed`
+   cleanup, the post-V1 candidates in the matrix.
+4. **Post-V1 features with no backend:** Logistics, Library, Insights & Stories, the Social suite — owner-
+   scoped, `TASKLIST.md` § D.
 
-| Ref | Question |
-| --- | --- |
-| **API URL** | `.env.production` is the `api.invalid` placeholder → the live site is visual-only. The single biggest thing between the owner and a working site. One line changes. |
-| **i18n — G-I18N-1** | Engine built and off. Which languages ship; does RTL get a real layout audit (our CSS never has; the old engine ships an RTL override sheet this port lacks); is the picker visible? Recommendation on file: **Farsi first, with a real RTL pass.** |
-| **`/artists` menu entry** | Exists at `/artists`, nothing links to it (the old app orphans it too). Nav / Market screen / deep link only? ~30 min. |
-| **G-6** | Intelligence · Marketing · Document Builder — API ready, no UI. Deferred unless reversed. |
-
-**Non-V1 backend gaps (Group B) — ✅ all shipped backend-side 2026-09-24** (B1–B5; see
-`../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md` and `API_GAPS.md`). What's left is **frontend
-adoption** of them → `API_GAPS_FRONTEND_ADOPTION.md`: G-F1-1 · G-CHAT-2 · G-Q-1 + profile-edit ·
-G-MEMB-3/6/7 · G-DOC-1 · G-AUC-4 · G-REC-1 · G-SALE-4 · G-HEALTH-2/3/4. **Auction Sales** is now
-unblocked (filter `?source=auction`). **Still backend-blocked/deferred:** Logistics (Phase 20),
-Library/pricelist (Phase 21), Insights & Stories (Phase 22). **The three 2026-09-24 backend candidates
-are now ALL shipped & merged (2026-09-25, PRs #49/#50/#51 — backend `development` @ `57d408c`):**
-`document_refs` on `RequestMessage` (attach a document into a thread, team-only, attach = share),
-the roster-wide `GET /api/auth/admin/access-keys/` list + `…/summary/` (G-KEY-1), and auction→Sale
-automation (a won lot auto-creates a draft `Sale(source=auction)`). All three now need **frontend
-adoption** → `API_GAPS_FRONTEND_ADOPTION.md`.
+When the backend moves past `df0421f`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
+`API_ADOPTION_MATRIX.md`; Phase 10's script approach is described in its Summary), and update the stub in the
+same PR.
 
 ---
 

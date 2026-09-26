@@ -17,8 +17,34 @@
  * Answers reach the backend as `{q, a}` text pairs (`QuestionnaireAnswer`),
  * which is the same thing the old app synced to Admin, so every past
  * submission stays readable even after the bank changes.
+ *
+ * ## The served set comes first (G-P25-2(a), V1 Phase 9a)
+ *
+ * The owner now edits the questions on the backend, and
+ * `GET /api/recommendations/question-set/` serves the one active set. The
+ * precedence, highest first:
+ *
+ *  1. **The served set** (`servedBank`), when it has at least one usable
+ *     question. Its `title` / `intro` replace the intro's title and lede.
+ *  2. **The theme override** (`liveBank` / `liveIntro`) — the old app's own
+ *     owner-edit path, unchanged.
+ *  3. **The built-in bank below** (`QB_DEFAULT` / `INTRO_DEFAULT`).
+ *
+ * **The built-in bank is kept on purpose, not left over.** The endpoint's
+ * "no set is active" answer is an empty shape (`id: null`, `questions: []`),
+ * and the read can fail; in both cases the collector still gets a
+ * questionnaire, and the one they get is the old app's own content
+ * (app.html:9973-9984) — so the screen never goes empty. The plan's "delete
+ * the bank" line (V1_IMPLEMENTATION_PLAN Phase 9) is superseded by this: it
+ * stays as the fallback.
+ *
+ * A served set has its own draft version (`servedVersion`) — a hash of the
+ * questions' texts, types and options in order, so an owner edit that changes
+ * what step N asks discards a stale local draft, and a save that changes
+ * nothing the collector sees does not.
  */
 import { asArray } from '../../api/shapes';
+import type { QuestionSet } from '../../api/types';
 import { settingRecord, settingUnknown } from '../shell/ownerSettings';
 
 /** Bumped when the bank is rewritten — see the file header. */
@@ -260,4 +286,96 @@ export function liveIntro(): QuestionnaireIntro {
     button: pick('button'),
     stitle: pick('stitle'),
   };
+}
+
+/* ---- the served set (G-P25-2(a)) ----------------------------------------- */
+
+/** What the controller runs on: the bank, the intro copy, and the draft
+ * version a saved draft must match to be restored. */
+export interface ResolvedBank {
+  bank: Question[];
+  intro: QuestionnaireIntro;
+  /** `QVER` for the built-in / theme bank; `set:<hash>` for a served one. */
+  version: number | string;
+  source: 'served' | 'builtin';
+}
+
+/** The built-in (or theme-edited) bank — the fallback when nothing is served. */
+export function fallbackBank(): ResolvedBank {
+  return { bank: liveBank(), intro: liveIntro(), version: QVER, source: 'builtin' };
+}
+
+/** One served option's display text: the `{value, label}` label, falling back
+ * to the value; a bare string is accepted too. The label is what the collector
+ * picks and what goes out in `{q, a}`. */
+function optionText(o: unknown): string {
+  if (typeof o === 'string') return o.trim();
+  if (!o || typeof o !== 'object') return '';
+  const { label, value } = o as { label?: unknown; value?: unknown };
+  if (typeof label === 'string' && label.trim()) return label.trim();
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/**
+ * Map a served question set onto the screen's `Question` shape, or `null`
+ * when it has nothing usable (the empty "no active set" shape, a malformed
+ * payload, or questions that are all blank) — the caller then falls back.
+ *
+ *  - `single_choice` → `hint: 'Choose one'` with its option labels (the step
+ *    renders single-select from the hint, as it always has).
+ *  - `text` → `hint: 'Optional'`, no options — the free-text step.
+ *  - `sec` (the step's eyebrow) is blank: the served set has no section
+ *    names, and inventing one would be new copy.
+ *  - A `single_choice` question whose options are all unusable is kept as a
+ *    free-text step rather than dropped, so it still gets asked.
+ *
+ * Questions are ordered by `order` (the server already does; a stable sort
+ * here keeps a hand-built payload honest).
+ */
+export function servedBank(set: Partial<QuestionSet> | null | undefined): ResolvedBank | null {
+  if (!set || typeof set !== 'object') return null;
+  const rows = asArray<Record<string, unknown>>(set.questions)
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => !!r && typeof r === 'object')
+    .sort((a, b) => {
+      const oa = typeof a.r.order === 'number' ? a.r.order : 0;
+      const ob = typeof b.r.order === 'number' ? b.r.order : 0;
+      return oa - ob || a.i - b.i;
+    });
+  const bank: Question[] = [];
+  for (const { r } of rows) {
+    const q = typeof r.prompt === 'string' ? r.prompt.trim() : '';
+    if (!q) continue;
+    const opts =
+      r.question_type === 'text'
+        ? []
+        : asArray<unknown>(r.options)
+            .map(optionText)
+            .filter((o) => o !== '');
+    bank.push({ sec: '', hint: opts.length ? 'Choose one' : 'Optional', q, opts });
+  }
+  if (bank.length === 0) return null;
+
+  const base = liveIntro();
+  const title = typeof set.title === 'string' ? set.title.trim() : '';
+  const lede = typeof set.intro === 'string' ? set.intro.trim() : '';
+  return {
+    bank,
+    intro: { ...base, title: title || base.title, lede: lede || base.lede },
+    version: servedVersion(bank),
+    source: 'served',
+  };
+}
+
+/** The draft version of a served bank — `set:` + a short hash of every
+ * step's question, hint and options, in order. The draft is indexed by step
+ * number, so this is exactly "does step N still ask the same thing". A string
+ * can never equal the numeric `QVER`, so switching between the served set and
+ * the built-in bank always discards the other's draft. */
+export function servedVersion(bank: readonly Question[]): string {
+  const text = bank.map((b) => [b.q, b.hint, ...b.opts].join('\u0001')).join('\u0002');
+  // djb2 — not security, just a compact stable fingerprint.
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return `set:${(h >>> 0).toString(36)}:${bank.length}`;
 }

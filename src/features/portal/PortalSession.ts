@@ -21,11 +21,13 @@ import type {
   PortalCatalogueEntry,
   PortalExhibition,
   PortalExhibitionInput,
+  PortalPricelistBuild,
   PortalState,
   PortalUpdateSubmit,
 } from '../../api/types';
 import { HttpError, NetworkError, UnauthorizedError } from '../../api/errors';
 import { Observable } from '../shared/Observable';
+import { normalisePortalState } from './portalForm';
 
 export type PortalPhase = 'gate' | 'opening' | 'ready' | 'dead' | 'unreachable';
 
@@ -34,9 +36,10 @@ export interface PortalSnapshotState {
   /** inline error under the PIN boxes (old #pinErr) */
   pinError: string;
   data: PortalState | null;
-  /** in-session "Sent to Darz" marks — artwork id → ISO stamp. The server
-   * keeps no portal-readable pending list (G-PORT-2), so these live only as
-   * long as the tab. */
+  /** OPTIMISTIC "Sent to Darz" marks — artwork id → ISO stamp, set the moment
+   * a send lands and cleared by the next successful reload, when the server's
+   * own `updates[]` (G-PORT-2) carries the truth. Between the two, a pill
+   * must not blink off. */
   sentAt: Record<string, string>;
   /** Exhibition Services — loaded on first open of the tab. */
   exhibitions: PortalExhibition[] | null;
@@ -71,7 +74,7 @@ export class PortalSession extends Observable<PortalSnapshotState> {
   async enter(pin: string): Promise<boolean> {
     this.patch({ phase: 'opening', pinError: '' });
     try {
-      const data = await this.service.state(this.token, pin);
+      const data = normalisePortalState(await this.service.state(this.token, pin));
       this.pin = pin;
       this.patch({ phase: 'ready', data, pinError: '' });
       return true;
@@ -95,7 +98,11 @@ export class PortalSession extends Observable<PortalSnapshotState> {
         this.patch({ phase: 'unreachable' });
         return false;
       }
-      throw err;
+      // Anything else (a 5xx, an unexpected 4xx, a 429) is a failure the
+      // collector can only retry. It used to be rethrown with the phase left
+      // on 'opening', which froze the gate on its busy state forever (C-4).
+      this.patch({ phase: 'unreachable' });
+      return false;
     }
   }
 
@@ -109,8 +116,9 @@ export class PortalSession extends Observable<PortalSnapshotState> {
    * guess" (:1434). A link disabled mid-session turns the phase dead. */
   async reload(): Promise<void> {
     try {
-      const data = await this.service.state(this.token, this.pin);
-      this.patch({ data });
+      const data = normalisePortalState(await this.service.state(this.token, this.pin));
+      // the server's updates[] now carries every send — drop the optimistic marks
+      this.patch({ data, sentAt: {} });
     } catch (err) {
       if (err instanceof UnauthorizedError) this.patch({ phase: 'dead' });
       // transport blips keep the last good state (old reload ignores them)
@@ -141,6 +149,16 @@ export class PortalSession extends Observable<PortalSnapshotState> {
 
   uploadPricelist(file: File, title: string) {
     return this.service.uploadPricelist(this.token, this.pin, file, title);
+  }
+
+  /** G-PORT-1 — a replacement photo for an assigned work (multipart, PIN in the form). */
+  replaceImage(artworkId: string, file: File) {
+    return this.service.replaceImage(this.token, this.pin, artworkId, file);
+  }
+
+  /** P3b — a structured pricelist built in the portal. */
+  buildPricelist(body: PortalPricelistBuild) {
+    return this.service.buildPricelist(this.token, this.pin, body);
   }
 
   sendMessage(body: string) {

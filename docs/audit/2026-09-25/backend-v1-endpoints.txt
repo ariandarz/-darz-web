@@ -1,0 +1,225 @@
+224
+GET POST /api/accounting/admin/deals/
+GET /api/accounting/admin/deals/summary/
+GET PATCH DELETE /api/accounting/admin/deals/{id}/
+GET POST /api/accounting/admin/deals/{id}/attachments/
+DELETE /api/accounting/admin/deals/{id}/attachments/{attachment_id}/
+GET POST /api/accounting/admin/ledger/
+GET /api/accounting/admin/ledger/arian/duplicates/
+GET /api/accounting/admin/ledger/summary/
+GET PATCH DELETE /api/accounting/admin/ledger/{id}/
+GET POST /api/accounting/admin/ledger/{id}/attachments/
+DELETE /api/accounting/admin/ledger/{id}/attachments/{attachment_id}/
+POST /api/accounting/admin/ledger/{id}/review/
+POST /api/accounting/admin/ledger/{id}/status/
+GET PUT /api/accounting/admin/settlement/
+GET /api/accounting/admin/settlement/versions/
+GET PUT /api/admin/app-theme/
+POST /api/admin/app-theme/reset/
+GET POST /api/admin/app-theme/versions/
+DELETE /api/admin/app-theme/versions/{id}/
+POST /api/admin/app-theme/versions/{id}/activate/
+GET /api/admin/audit-log/
+GET /api/app-theme/
+GET /api/auctions/
+GET POST /api/auctions/admin/auctions/
+GET POST /api/auctions/admin/auctions/{auction_pk}/lots/
+GET PATCH DELETE /api/auctions/admin/auctions/{id}/
+POST /api/auctions/admin/auctions/{id}/archive/
+POST DELETE /api/auctions/admin/auctions/{id}/cover-image/
+GET POST /api/auctions/admin/auctions/{id}/invite-only/
+GET PATCH /api/auctions/admin/lots/{id}/
+POST /api/auctions/admin/lots/{id}/close/
+POST /api/auctions/admin/lots/{id}/go-live/
+GET POST /api/auctions/admin/records/
+GET PATCH DELETE /api/auctions/admin/records/{id}/
+GET /api/auctions/admin/registrations/
+POST /api/auctions/admin/registrations/{id}/approve/
+POST /api/auctions/admin/registrations/{id}/reject/
+POST /api/auctions/admin/registrations/{id}/reset/
+GET /api/auctions/lots/{id}/
+GET POST /api/auctions/lots/{id}/bids/
+GET /api/auctions/notifications/
+POST /api/auctions/notifications/{id}/read/
+GET /api/auctions/records/
+GET /api/auctions/records/highlights/
+GET /api/auctions/records/{id}/
+GET POST /api/auctions/registrations/
+GET /api/auctions/{auction_pk}/lots/
+GET /api/auctions/{id}/
+POST /api/auth/access-requests/
+GET /api/auth/admin/access-keys/
+GET /api/auth/admin/access-keys/summary/
+POST /api/auth/admin/access-keys/{id}/extend/
+POST /api/auth/admin/access-keys/{id}/revoke/
+GET /api/auth/admin/access-requests/
+POST /api/auth/admin/access-requests/{id}/approve/
+POST /api/auth/admin/access-requests/{id}/decline/
+GET POST /api/auth/admin/collectors/
+GET /api/auth/admin/collectors/summary/
+GET POST /api/auth/admin/collectors/{collector_pk}/access-keys/
+GET /api/auth/admin/collectors/{collector_pk}/login-events/
+GET PATCH DELETE /api/auth/admin/collectors/{id}/
+GET POST /api/auth/admin/membership-codes/
+GET PATCH DELETE /api/auth/admin/membership-codes/{id}/
+POST /api/auth/admin/membership-codes/{id}/renew/
+GET POST /api/auth/admin/team-users/
+GET PATCH DELETE /api/auth/admin/team-users/{id}/
+POST /api/auth/collector/login/
+POST /api/auth/logout/
+GET PATCH /api/auth/me/
+POST /api/auth/membership/redeem/
+GET /api/auth/my-membership/
+POST /api/auth/team/login/
+POST /api/auth/token/refresh/
+GET POST /api/catalog/admin/artists/
+GET PATCH DELETE /api/catalog/admin/artists/{id}/
+GET POST /api/catalog/admin/artworks/
+GET /api/catalog/admin/artworks/facets/
+GET POST /api/catalog/admin/artworks/{artwork_pk}/images/
+DELETE /api/catalog/admin/artworks/{artwork_pk}/images/{image_pk}/
+GET POST /api/catalog/admin/artworks/{artwork_pk}/selection-grants/
+DELETE /api/catalog/admin/artworks/{artwork_pk}/selection-grants/{grant_pk}/
+GET PATCH DELETE /api/catalog/admin/artworks/{id}/
+POST /api/catalog/admin/artworks/{id}/publish/
+POST /api/catalog/admin/artworks/{id}/transition/
+POST /api/catalog/admin/artworks/{id}/unpublish/
+GET /api/catalog/admin/data-health/
+GET POST /api/catalog/admin/import/batches/
+PATCH /api/catalog/admin/import/batches/{batch_pk}/rows/{id}/
+POST /api/catalog/admin/import/batches/{batch_pk}/rows/{id}/reject/
+GET /api/catalog/admin/import/batches/{id}/
+POST /api/catalog/admin/import/batches/{id}/confirm/
+POST /api/catalog/admin/import/batches/{id}/discard/
+GET /api/catalog/artists/
+GET /api/catalog/artists/{id}/
+GET /api/catalog/artworks/
+GET /api/catalog/artworks/change-stamp/
+GET /api/catalog/artworks/selections/
+GET /api/catalog/artworks/{id}/
+GET /api/catalog/legacy-lookup/
+GET /api/catalog/selections/
+POST /api/catalog/selections/{id}/seen/
+GET POST /api/crm/activity/
+GET /api/crm/admin/activity/
+POST /api/crm/admin/messages/{id}/archive/
+GET /api/crm/admin/requests/
+GET POST /api/crm/admin/requests/{id}/messages/
+POST /api/crm/admin/requests/{id}/messages/mark-seen/
+POST /api/crm/admin/requests/{id}/transition/
+GET POST /api/crm/admin/selections/
+GET PATCH DELETE /api/crm/admin/selections/{id}/
+GET POST /api/crm/requests/
+GET /api/crm/requests/{id}/
+POST /api/crm/requests/{id}/archive/
+GET POST /api/crm/requests/{id}/messages/
+POST /api/crm/requests/{id}/messages/mark-seen/
+POST /api/crm/requests/{id}/transition/
+GET POST /api/crm/saved/
+DELETE /api/crm/saved/{artwork_id}/
+GET /api/dashboard/admin/summary/
+GET /api/documents/
+GET POST /api/documents/admin/documents/
+GET PATCH DELETE /api/documents/admin/documents/{id}/
+GET /api/documents/admin/documents/{id}/activity/
+POST /api/documents/admin/documents/{id}/archive/
+POST /api/documents/admin/documents/{id}/confirm/
+POST DELETE /api/documents/admin/documents/{id}/share/
+POST /api/documents/admin/documents/{id}/sign/
+POST /api/documents/admin/documents/{id}/upload/
+GET /api/documents/admin/documents/{id}/versions/
+GET /api/documents/public/{kind}/
+GET POST /api/gallery/admin/exhibition-catalogue/
+GET PATCH DELETE /api/gallery/admin/exhibition-catalogue/{id}/
+GET /api/gallery/admin/exhibitions/
+GET PATCH DELETE /api/gallery/admin/exhibitions/{id}/
+POST /api/gallery/admin/exhibitions/{id}/compose/
+GET POST /api/gallery/admin/exhibitions/{id}/documents/
+POST /api/gallery/admin/exhibitions/{id}/documents/{document_id}/confirm/
+POST /api/gallery/admin/exhibitions/{id}/documents/{document_id}/sign/
+POST /api/gallery/admin/exhibitions/{id}/documents/{document_id}/upload/
+POST /api/gallery/admin/exhibitions/{id}/publish/
+GET POST /api/gallery/admin/links/
+GET DELETE /api/gallery/admin/links/{id}/
+POST /api/gallery/admin/links/{id}/disable/
+POST /api/gallery/admin/links/{id}/enable/
+POST /api/gallery/admin/links/{id}/features/
+POST /api/gallery/admin/links/{id}/reissue/
+GET POST /api/gallery/admin/links/{link_pk}/artworks/
+DELETE /api/gallery/admin/links/{link_pk}/artworks/{id}/
+POST /api/gallery/admin/links/{link_pk}/artworks/{id}/funnel/
+POST /api/gallery/admin/links/{link_pk}/exhibitions/
+GET POST /api/gallery/admin/links/{link_pk}/messages/
+GET /api/gallery/admin/links/{link_pk}/pricelists/
+GET /api/gallery/admin/links/{link_pk}/pricelists/cap/
+POST /api/gallery/admin/pricelists/{id}/status/
+GET /api/gallery/admin/updates/
+POST /api/gallery/admin/updates/{id}/approve/
+POST /api/gallery/admin/updates/{id}/reject/
+GET /api/gallery/portal/{token}/
+POST /api/gallery/portal/{token}/artworks/{artwork_pk}/image/
+GET POST /api/gallery/portal/{token}/exhibitions/
+GET /api/gallery/portal/{token}/exhibitions/catalogue/
+GET PATCH /api/gallery/portal/{token}/exhibitions/{event_id}/
+POST /api/gallery/portal/{token}/exhibitions/{event_id}/documents/{document_id}/sign/
+POST /api/gallery/portal/{token}/exhibitions/{event_id}/submit/
+GET POST /api/gallery/portal/{token}/messages/
+POST /api/gallery/portal/{token}/pricelists/
+POST /api/gallery/portal/{token}/pricelists/build/
+GET /api/gallery/portal/{token}/status/
+POST /api/gallery/portal/{token}/updates/
+GET /api/health/
+GET POST /api/marketing/admin/campaigns/
+POST /api/marketing/admin/campaigns/generate-copy/
+GET POST /api/marketing/admin/campaigns/{campaign_pk}/analytics/
+DELETE /api/marketing/admin/campaigns/{campaign_pk}/analytics/{id}/
+GET PATCH DELETE /api/marketing/admin/campaigns/{id}/
+POST /api/notifications/push/subscribe/
+POST /api/notifications/push/unsubscribe/
+GET /api/notifications/vapid-public-key/
+GET /api/options/
+GET POST /api/projects/admin/checklists/
+GET PATCH DELETE /api/projects/admin/checklists/{id}/
+GET POST /api/projects/admin/packages/
+GET PATCH DELETE /api/projects/admin/packages/{id}/
+GET POST /api/projects/admin/partners/
+GET PATCH DELETE /api/projects/admin/partners/{id}/
+GET POST /api/projects/admin/projects/
+GET /api/projects/admin/projects/dashboard/
+GET /api/projects/admin/projects/reports/
+GET PATCH DELETE /api/projects/admin/projects/{id}/
+POST /api/projects/admin/projects/{id}/stage/
+GET /api/projects/admin/projects/{id}/totals/
+GET POST /api/projects/admin/projects/{project_pk}/attachments/
+DELETE /api/projects/admin/projects/{project_pk}/attachments/{id}/
+GET POST /api/projects/admin/service-catalog/
+GET PATCH DELETE /api/projects/admin/service-catalog/{id}/
+GET /api/recommendations/admin/artworks/{artwork_pk}/tags/
+POST /api/recommendations/admin/artworks/{artwork_pk}/tags/ai/
+POST /api/recommendations/admin/artworks/{artwork_pk}/tags/auto/
+POST /api/recommendations/admin/batches/{id}/publish/
+POST /api/recommendations/admin/batches/{id}/unpublish/
+GET POST /api/recommendations/admin/collectors/{collector_pk}/batches/
+GET /api/recommendations/admin/collectors/{collector_pk}/preferences/
+POST /api/recommendations/admin/collectors/{collector_pk}/preferences/rebuild/
+GET /api/recommendations/admin/collectors/{collector_pk}/recommendations/
+POST /api/recommendations/admin/collectors/{collector_pk}/recommendations/generate/
+GET POST /api/recommendations/admin/feature-settings/
+GET POST /api/recommendations/admin/question-sets/
+GET PATCH DELETE /api/recommendations/admin/question-sets/{id}/
+POST /api/recommendations/admin/question-sets/{id}/activate/
+PATCH DELETE /api/recommendations/admin/recommendations/{id}/
+POST /api/recommendations/admin/tags/{id}/approve/
+POST /api/recommendations/admin/tags/{id}/lock/
+GET /api/recommendations/published/
+POST /api/recommendations/published/{id}/dismiss/
+GET /api/recommendations/question-set/
+GET POST /api/recommendations/questionnaire/
+GET POST /api/sales/admin/sales/
+GET /api/sales/admin/sales/summary/
+GET PATCH DELETE /api/sales/admin/sales/{id}/
+POST /api/sales/admin/sales/{id}/delivery-status/
+POST /api/sales/admin/sales/{id}/follow-up/
+GET POST /api/sales/admin/sales/{id}/notes/
+POST /api/sales/admin/sales/{id}/payment-status/
+POST /api/sales/admin/sales/{id}/transition/

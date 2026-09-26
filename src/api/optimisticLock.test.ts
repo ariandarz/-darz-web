@@ -29,6 +29,8 @@ import {
   AdminAccountsService,
   AuctionsAdminService,
   CatalogAdminService,
+  GalleryAdminService,
+  ProjectsAdminService,
   SalesAdminService,
 } from './services';
 
@@ -91,6 +93,42 @@ describe('the lock reaches the wire as `expected_version`', () => {
       'updateRecord',
       (c) =>
         new AuctionsAdminService(c).updateRecord(ID, { lot_title: 'L', expected_version: 7 }),
+    ],
+    // V1 Phase 3 (G-AUC-1/2): the auction and lot editors. Both PATCHes 500
+    // without the lock (C-6) and 409 on a stale one.
+    [
+      'updateAuction',
+      (c) =>
+        new AuctionsAdminService(c).updateAuction(ID, { title: 'T', expected_version: 7 }),
+    ],
+    [
+      'updateLot',
+      (c) =>
+        new AuctionsAdminService(c).updateLot(ID, {
+          opening_amount: '10',
+          expected_version: 7,
+        }),
+    ],
+    // V1 Phase 5 (G-PORT-12b): the portal's Exhibition Services menu.
+    [
+      'updateExhibitionCatalogueItem',
+      (c) =>
+        new GalleryAdminService(c).updateExhibitionCatalogueItem(ID, {
+          title: 'Photo',
+          expected_version: 7,
+        }),
+    ],
+    // V1 Phase 7 (G-PROJ-2/3/9): the project record's PATCH now carries
+    // `status`, the `stages` sub-state and the manual FX fields.
+    [
+      'updateProject',
+      (c) =>
+        new ProjectsAdminService(c).updateProject(ID, {
+          status: 'Negotiation',
+          stages: { lead: { doneTs: 1 } },
+          deal_fx_rate: '700000',
+          expected_version: 7,
+        }),
     ],
   ];
 

@@ -11,7 +11,8 @@
  *
  * The visible v0.1 order is Market → Records → Chat → Profile → Settings
  * (`features.ts`, the port of the old `theme.navOff` gate, app.html:2969-2976).
- * Auctions and Insights render only when their flag is on; Highlights was
+ * Auctions renders only when its flag is on; Insights also needs a published
+ * story, which cannot exist yet (`PUBLISHED_STORIES`); Highlights was
  * already hard-hidden in the old app. The Profile dot (`.navdot`,
  * app.html:455-460) signals unseen Darz replies; Chat carries the same dot.
  */
@@ -45,6 +46,16 @@ interface Tab {
   show: boolean;
   dot?: boolean;
 }
+
+/**
+ * How many Insights & Stories are published. The old tab shows only when the
+ * owner shows it AND at least one story is live (`dzStoriesVisible()`,
+ * app.html:5464-5465; `#nav [data-tab="stories"]{display:none}` until then,
+ * :460-466). There is no stories backend (Phase 22), so nothing is ever
+ * published and the tab stays hidden even with the `stories` flag on —
+ * instead of linking to a `/stories` route that does not exist (V1 Phase 10).
+ */
+const PUBLISHED_STORIES: number = 0;
 
 const LEAVE_ICON = (
   <svg
@@ -117,7 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       to: '/stories',
       icon: <StoriesIcon />,
       match: ['/stories'],
-      show: features.stories,
+      show: features.stories && PUBLISHED_STORIES > 0,
     },
     {
       key: 'chat',

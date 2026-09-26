@@ -273,8 +273,9 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
     // 53 + the two Exhibition Services tabs the owner asked for on
     // 2026-09-19 (the library, and the one-page issue flow), + the
     // Documents group's Create tab, which is that same issue flow's second
-    // entry point (2026-09-22 — see `adminNav.ts` and the test below).
-    expect(allTabs().length).toBe(58);
+    // entry point (2026-09-22 — see `adminNav.ts` and the test below),
+    // + the portal's Exhibition Services menu (V1 Phase 5, G-PORT-12b).
+    expect(allTabs().length).toBe(59);
   });
 
   it('counts what is actually built, so progress cannot be overstated', () => {
@@ -288,6 +289,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'galleries',
       'sources',
       'exhservices',
+      'exhcatalogue',
       'issue',
       'market',
       'design',
@@ -302,6 +304,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'activity',
       'club',
       'marketSales',
+      'auctionSales',
       'projDash',
       'projList',
       'projPipeline',
@@ -311,6 +314,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'projReports',
       'design',
       'health',
+      'access',
       'team',
       'accounting',
       'settings',

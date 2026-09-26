@@ -24,18 +24,20 @@
  * Mechanics that changed:
  *  - the board reads EVERY project of the toggled archive state in one
  *    walk (`archived`, `per_page: 100`, `has_next` followed): the API has
- *    no board endpoint and no server-side partner / quick filters
- *    (G-PROJ-1), and a paged kanban would hide columns. The search
+ *    no board endpoint, and a paged kanban would hide columns (the quick /
+ *    partner filters of G-PROJ-1 narrow a list, not a board). The search
  *    (:13684 — no · name · client · city) filters that set client-side,
  *    per keystroke (the old 170 ms debounce, :13702, is not ported).
- *  - a move is ONLY `POST …/stage/ {stage, expected_version}`. The old
- *    `setStage` also dated the target stage's start, seeded its checklist
- *    from the template and stamped `doneTs` on every earlier stage
- *    (:13709-13714); the API does not accept the `stages` sub-state
- *    (G-PROJ-3), so none of that happens — the page says so under the
- *    board. The status label is re-derived server-side (`STAGE_STATUS_MAP`).
+ *  - a move is two locked writes: `PATCH {stages}` with the old seeding
+ *    (`moveStages`, :13709-13714 — the target stage's start date, its
+ *    checklist from the template, `doneTs` on every earlier stage; G-PROJ-3),
+ *    then `POST …/stage/ {stage, expected_version}` with the version that
+ *    PATCH returned. The status label is re-derived server-side
+ *    (`STAGE_STATUS_MAP`), as the old move did (:13716). The checklist
+ *    templates are read once per visit; if that read fails, a move seeds no
+ *    checklist, as the old one did when no template matched.
  *  - the scope gate keys on stage ORDER, not `stages[k].doneTs`
- *    (`scopeGate`, projectForm.ts — the same G-PROJ-3 reason).
+ *    (`scopeGate`, projectForm.ts, says why the two agree).
  *  - a 409 on the move (someone else saved the project) is a banner with
  *    a Reload button that re-reads the board.
  */
@@ -43,7 +45,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ConflictError } from '../../../api/errors';
 import { useApi, useOptions } from '../../../api/hooks';
-import type { Choice, ProjectAdmin, ProjectStage } from '../../../api/types';
+import type {
+  ChecklistTemplateAdmin,
+  Choice,
+  ProjectAdmin,
+  ProjectStage,
+} from '../../../api/types';
 import {
   ConflictBanner,
   DeskAction,
@@ -53,13 +60,16 @@ import {
   ToggleFilter,
 } from '../kit';
 import {
+  checklistFor,
   choices,
   clientName,
+  moveStages,
   projFlag,
   scopeGate,
   stageIndex,
   stageLabel,
   todayIso,
+  walkPages,
   walkProjects,
   type ProjFlag,
 } from './projectForm';
@@ -108,6 +118,19 @@ export function ProjectPipelinePage() {
     };
   }, [projectsAdmin, archived, walkKey]);
 
+  // the checklist templates a move seeds from (`projChecklistFor`, :13321)
+  const [templates, setTemplates] = useState<ChecklistTemplateAdmin[]>([]);
+  useEffect(() => {
+    let alive = true;
+    walkPages((page) => projectsAdmin.checklists({ page, per_page: 100 })).then(
+      (rows) => alive && setTemplates(rows),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [projectsAdmin]);
+
   // a walk for another key is stale — the board is loading again
   const current = walk.key === walkKey ? walk : null;
   const all = current?.rows ?? null;
@@ -145,11 +168,19 @@ export function ProjectPipelinePage() {
     setConflict(false);
     setBusyId(p.id);
     try {
+      // :13709-13714 — the sub-state first, then the move with its version
+      const seeded = await projectsAdmin.updateProject(p.id, {
+        stages: moveStages(p.stages, stages, target, checklistFor(templates, target), today),
+        expected_version: p.version,
+      });
+      const adopt = (row: ProjectAdmin) =>
+        setWalk((w) =>
+          w.rows ? { ...w, rows: w.rows.map((x) => (x.id === row.id ? row : x)) } : w,
+        );
+      // adopted at once, so a failed move below leaves the card on its new version
+      adopt(seeded);
       // the stage choices ARE the backend's StageEnum values
-      const next = await projectsAdmin.setStage(p.id, target as ProjectStage, p.version);
-      setWalk((w) =>
-        w.rows ? { ...w, rows: w.rows.map((x) => (x.id === next.id ? next : x)) } : w,
-      );
+      adopt(await projectsAdmin.setStage(p.id, target as ProjectStage, seeded.version));
       setNote(`Stage → ${stageLabel(stages, target)}`); // :13718
     } catch (err: unknown) {
       if (err instanceof ConflictError) setConflict(true);
@@ -247,13 +278,6 @@ export function ProjectPipelinePage() {
             ))}
           </div>
         )}
-
-        {/* stated absence — G-PROJ-3: the old move also seeded the stage sub-state */}
-        <p className="dzp-mut" role="note">
-          A move records the new stage only. The old board also dated the stage’s start, seeded
-          its checklist from the template and marked every earlier stage done — that stage
-          sub-state is not writable on this API yet (G-PROJ-3).
-        </p>
       </div>
     </DeskPage>
   );

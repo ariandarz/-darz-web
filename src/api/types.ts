@@ -8,6 +8,13 @@ import type { components } from './schema';
 
 type Schemas = components['schemas'];
 
+/** A PATCH body whose optimistic lock is **required**. drf-spectacular types every
+ * `Patched*` body with `expected_version` optional, yet the backend needs it:
+ * without it the view 500s (a `KeyError` on `validated.pop`, C-6), with a stale
+ * one it 409s. Wrap every locked PATCH body in this so the compiler catches a
+ * missing lock. */
+export type Locked<T> = Omit<T, 'expected_version'> & { expected_version: number };
+
 /** `artist` is nullable at the DB level (`on_delete=SET_NULL` — legacy rows
  * with an unmatched artist name) even though the generated type omits `null`;
  * every consumer must handle it. `allowed_actions` (G-F1-3), `is_saved`/
@@ -16,6 +23,10 @@ type Schemas = components['schemas'];
 export type Artwork = Omit<Schemas['ArtworkCollector'], 'artist'> & {
   artist: Schemas['ArtistCollector'] | null;
 };
+/** A row of the collector's curated works (`GET /api/catalog/artworks/selections/`)
+ * — the same artwork, plus `selection_name` (G-P24-1): the name of the named
+ * selection that granted it, `null` for a bare per-work grant. */
+export type ArtworkSelection = Artwork & Pick<Schemas['ArtworkSelection'], 'selection_name'>;
 export type Artist = Schemas['ArtistCollector'];
 export type ArtworkImage = Schemas['ArtworkImage'];
 export type SavedArtwork = Schemas['SavedArtwork'];
@@ -66,6 +77,9 @@ export interface AuctionRecordQuery {
   /** admin-only (BE-R4): sold | unsold | passed | withdrawn | pending. */
   status?: string;
   is_highlight?: string;
+  /** Exact auction-house name (G-REC-1) — the "All auction houses" select;
+   * distinct from `search`, which also matches house as free text. */
+  house?: string;
   per_page?: number;
   page?: number;
 }
@@ -83,11 +97,27 @@ export interface LotStateFrame {
   ends_at: string;
 }
 
-/** Auctions list params (`GET /api/auctions/`). */
+/** Auctions list params (`GET /api/auctions/`, and the admin list). */
 export interface AuctionQuery {
   per_page?: number;
   page?: number;
+  /** Admin list only (G-AUC-4): omitted = archived hidden (the working list);
+   * `true` = the archived list alone. */
+  archived?: boolean;
 }
+
+/** `PATCH /auctions/admin/auctions/{id}/` (G-AUC-1) — draft/scheduled only;
+ * the lock is mandatory (C-6). */
+export type AuctionPatch = Locked<Schemas['PatchedAuctionUpdate']>;
+/** `POST /auctions/admin/auctions/` — `terms`/`terms_required` optional
+ * (blank terms = the app's default text; `terms_required` defaults true). */
+export type AuctionCreateBody = Omit<
+  Schemas['AuctionCreate'],
+  'description' | 'terms' | 'terms_required'
+> &
+  Partial<Pick<Schemas['AuctionCreate'], 'description' | 'terms' | 'terms_required'>>;
+/** `PATCH /auctions/admin/lots/{id}/` (G-AUC-2) — scheduled lots only; locked. */
+export type LotPatch = Locked<Schemas['PatchedLotUpdate']>;
 /** `RequestCollector` now carries `unread_count` (G-F1-6, unseen team
  * replies); `RequestAdmin` nests `collector`/`artwork` (G-F1-7, no more bare
  * uuids), reports `allowed_transitions` (G-F1-4) and `unread_count` (unseen
@@ -103,11 +133,28 @@ export type RequestMessage = Omit<Schemas['RequestMessage'], 'artwork_refs'> & {
   artwork_refs: string[];
 };
 export type RequestMessageSender = Schemas['RequestMessageSenderEnum'];
+/** A document attached to a thread message (D19, backend `document_refs`):
+ * the enriched READ shape `{id, kind, title}` on both threads
+ * (`RequestMessageDocumentRefSerializer`). The WRITE shape is a bare uuid
+ * list — see `MessageAttachments`. */
+export type MessageDocumentRef = Schemas['RequestMessageDocumentRef'];
 
-/** `GET /api/crm/requests/{id}/messages/` params. */
+/** What a reply carries besides its text. Only the team attaches documents
+ * (`RequestMessageService.post` 400s a collector's `document_refs`), and
+ * attaching SHARES the document with the thread's collector — the backend
+ * reuses the G-DOC-1 share path, allow-list included. */
+export interface MessageAttachments {
+  artworkRefs?: string[];
+  documentRefs?: string[];
+}
+
+/** `GET /api/crm/requests/{id}/messages/` params. `include_archived` is the
+ * ADMIN thread's only (G-CHAT-2): archived messages are hidden from the desk
+ * by default and never from the collector. */
 export interface RequestMessageQuery {
   per_page?: number;
   page?: number;
+  include_archived?: boolean;
 }
 
 /** What `POST /api/crm/requests/` answers. `replayed` is true when the
@@ -192,6 +239,14 @@ export type CollectorQuestionnaire = Schemas['CollectorQuestionnaire'];
 /** One `{q, a}` pair — free text on both sides, so a past submission stays
  * readable after the question bank is edited. */
 export type QuestionnaireAnswer = Schemas['QuestionnaireAnswer'];
+/** The active owner-editable question set (G-P25-2). **When no set is active
+ * the server answers 200 with an empty shape** — `id: null`, blank
+ * title/intro, `questions: []` — which the generated type (id `string`) does
+ * not say; `id` is widened here so callers must handle it. A question's
+ * `options` is `unknown` in the schema (a JSONField of `{value, label}`), so it
+ * is read through `asArray` too. */
+export type QuestionSet = Omit<Schemas['QuestionSet'], 'id'> & { id: string | null };
+export type QuestionSetQuestion = Schemas['Question'];
 export type Me = Schemas['Me'];
 export type Principal = Me['principal'];
 
@@ -228,6 +283,9 @@ export interface DataHealthReport {
   duplicate_images: { count: number; items: Array<Record<string, unknown>> };
   incomplete_records: { count: number; items: Array<Record<string, unknown>> };
   published_but_hidden: { count: number; items: Array<Record<string, unknown>> };
+  /** G-HEALTH-3 — a count only: soft-deleted artworks (the old "Deleted
+   * (permanent)" tile). Optional: read defensively, like the rest. */
+  deleted_records?: { count: number };
   healthy: boolean;
 }
 
@@ -243,6 +301,22 @@ export type ArtworkImportRow = Schemas['ArtworkImportRow'];
  * redeemed code sets a real `Collector.tier`. No payment processing anywhere,
  * by design. */
 export type MembershipCodeAdmin = Schemas['MembershipCodeAdmin'];
+
+/** The collector's own membership summary (`GET /api/auth/my-membership/`,
+ * G-MEMB-3/6/7): `tier` (`CollectorTierEnum`, or null), `status` (the
+ * collector's `access_status`) and `active_until` — a **date** (`YYYY-MM-DD`),
+ * the expiry of the most recently redeemed code, `null` when none was ever
+ * redeemed (an admin-set tier has no end date). */
+export type MyMembership = Schemas['MyMembership'];
+
+/** The collector's own profile edit (`PATCH /api/auth/me/`, G-B1): exactly
+ * `full_name` · `phone` · `city` · `preferred_language`. `email`, `display_name`,
+ * `tier` and `access_status` are admin-controlled and not accepted. No lock —
+ * the serializer takes no `expected_version`. */
+export type MeUpdate = Schemas['PatchedCollectorProfileUpdate'];
+/** `preferred_language` values (`Collector.LANGUAGE_CHOICES`). The labels are
+ * NOT in `/api/options/` (C-14), so this enum is the only vocabulary source. */
+export type PreferredLanguage = Schemas['PreferredLanguageEnum'];
 
 /** The owner "Team logins" desk's row (backend Phase 31). The password exists
  * only on the create response, exactly once. */
@@ -263,6 +337,11 @@ export type AppThemeVersion = Schemas['AppThemeVersion'];
  * send it back on PATCH or the write 409s. */
 export type CollectorAdmin = Schemas['CollectorAdmin'];
 
+/** `GET /api/auth/admin/collectors/summary/` (G-COL-1) — the old Collectors
+ * overview strip, `darz-studio.html:32632`: Collectors · VIP · Active 30d ·
+ * Engaged, counted server-side over the whole roster. */
+export type CollectorDeskSummary = Schemas['CollectorDeskSummary'];
+
 /** `GET/POST /api/auth/admin/collectors/` query — `apps/accounts/filters.py::
  * CollectorFilterSet`: free-text `search` over display_name/full_name/email/
  * phone, exact `tier`/`access_status`, `ordering` of name|-name|created|-created. */
@@ -270,7 +349,18 @@ export interface CollectorAdminQuery {
   search?: string;
   tier?: string;
   access_status?: string;
-  ordering?: 'name' | '-name' | 'created' | '-created';
+  /** `activity`/`purchases` (G-COL-2) sort on the list-only rollups
+   * `last_activity_at`/`purchase_count`; the descending forms put
+   * never-active / never-buying collectors last (`nulls_last`). */
+  ordering?:
+    | 'name'
+    | '-name'
+    | 'created'
+    | '-created'
+    | 'activity'
+    | '-activity'
+    | 'purchases'
+    | '-purchases';
   per_page?: number;
   page?: number;
 }
@@ -279,6 +369,29 @@ export interface CollectorAdminQuery {
  * leaves the server; `access_key` (plaintext) exists ONLY on the issue/approve
  * responses, exactly once. */
 export type AccessKeyAdmin = Schemas['AccessKeyAdmin'];
+
+/** A row of the roster-wide key list, `GET /auth/admin/access-keys/` (G-KEY-1)
+ * — the old owner Access desk (`darz-studio.html:33024`). Carries the
+ * collector's `{id, display_name}`, a computed `is_expired` and the old desk's
+ * activity tallies. **`status` is the stored value and lags expiry (C-17)** —
+ * never display it raw; `accessDesk.displayStatus()` is the rule. */
+export type AccessKeyRoster = Schemas['AccessKeyRoster'];
+
+/** `GET /auth/admin/access-keys/summary/` — the desk's KPI tiles (G-KEY-1). */
+export type AccessKeyDeskSummary = Schemas['AccessKeyDeskSummary'];
+
+/** The roster's query — the server's `AccessKeyFilterSet`
+ * (`accounts/filters.py:101-112`). `status` is the **computed** state (the same
+ * C-17 rule the desk displays); `expiring_soon` is the 7-day review window;
+ * `search` matches the collector's name. */
+export interface AccessKeyRosterQuery {
+  search?: string;
+  status?: 'active' | 'locked' | 'expired';
+  collector?: string;
+  expiring_soon?: boolean;
+  per_page?: number;
+  page?: number;
+}
 
 /** A collector sign-in event (backend Phase 33) — the real log,
  * `AccessKey.last_used_at` only keeps the most recent. */
@@ -433,10 +546,10 @@ export interface AccessRequest {
   created_at: string;
 }
 
-/** Admin artwork row/detail — `ArtworkAdminSerializer`, all fields. The list
- * rows carry NO images and the artist as a bare uuid + `artist_name_raw`
- * (G-CAT-1: no thumbnail or resolved artist name on the admin list row — the
- * desk resolves names against the artists roster instead). Updates require
+/** Admin artwork row/detail — `ArtworkAdminSerializer`, all fields. Since
+ * G-CAT-1 every row carries `thumb` (the primary image's URL, or null) and
+ * `artist_name` (the linked artist's name, else the raw legacy name), so the
+ * Database desk no longer resolves names against the roster. Updates require
  * `expected_version`; `availability_status`/`is_published` are read-only and
  * change only through `/transition/` and `/publish/`·`/unpublish/`. */
 export type ArtworkAdmin = Schemas['ArtworkAdmin'];
@@ -445,10 +558,20 @@ export type ArtworkAdmin = Schemas['ArtworkAdmin'];
  * object key is always server-generated. */
 export type ArtworkImageAdmin = Schemas['ArtworkImage'];
 
-/** Admin artist row — `ArtistAdminSerializer`. The admin roster list takes no
- * filters at all (no search/ordering/works count — G-CAT-3); the desk fetches
- * pages and searches client-side. */
+/** Admin artist row — `ArtistAdminSerializer`. `works_count` (G-CAT-3) is a
+ * list-only annotation — **null on detail, create and PATCH** (C-16), so a
+ * list row is never overwritten with a write's response. */
 export type ArtistAdmin = Schemas['ArtistAdmin'];
+
+/** The admin artists roster's query — `ArtistAdminFilterSet` (G-CAT-3):
+ * `search` over the display name, `ordering` name|-name|created|-created|works
+ * (`works` = most works first). */
+export interface ArtistAdminQuery {
+  search?: string;
+  ordering?: 'name' | '-name' | 'created' | '-created' | 'works';
+  page?: number;
+  per_page?: number;
+}
 
 /** The admin catalogue list's query — `ArtworkFilterSet`, shared with the
  * collector catalogue: `search` over artist name/title/medium/dimensions,
@@ -479,6 +602,20 @@ export interface ArtworkAdminQuery {
   published?: boolean;
   /** The old "Images: with / without". */
   has_images?: boolean;
+  /* ── Phase 5b + G-HEALTH-2/4 (backend `catalog/filters.py:180-203`) ── */
+  /** `visibility = gallery_portal` (true) or any other visibility (false). */
+  gallery_portal?: boolean;
+  /** Every required field + an image (true) / incomplete (false) — the same
+   * definition as the Data Health report. */
+  complete?: boolean;
+  /** Shares a stored image (`object_key`) with another work. */
+  duplicate_images?: boolean;
+  /** Largest side in cm: small ≤ 50 · medium 50–120 · large > 120. */
+  size?: 'small' | 'medium' | 'large';
+  /** `gallery | artist | collector | dealer | other` (not in `/options/`, C-14). */
+  source_type?: string;
+  /** ISO datetime — works created at/after it ("Recently added"). */
+  created_after?: string;
   page?: number;
   per_page?: number;
 }
@@ -493,21 +630,43 @@ export interface ArtworkFacets {
   sources: string[];
 }
 
-/** A sale — `SaleAdminSerializer` (backend Phase 7 sales admin). `artwork` /
- * `collector` / `responsible` / `source_request` are bare uuids (G-SALE-3);
- * the desk resolves them. The commercial snapshot (price/commission/discount/
- * fees) is draft-only editable — locked once confirmed (R7); `status` moves
- * only through `/transition/` on the linear chain, `payment_status` /
+/** A sale — `SaleAdminSerializer` (backend Phase 7 sales admin). Since G-SALE-3
+ * the row nests `artwork {id,title}`, `collector {id,display_name}` and
+ * `responsible {id,name} | null`; `source_request` and `lot` stay bare uuids.
+ * `follow_up_at` (a date) and the server-computed `follow_up_overdue` are the
+ * old deal card's follow-up (G-SALE-5); `source` is `market` | `auction`.
+ * **Input still takes plain ids** (`SaleCreateInput` / `SalePatch`), so the read
+ * and write shapes differ on purpose. The commercial snapshot (price/commission/
+ * discount/fees) is draft-only editable — locked once confirmed (R7); `status`
+ * moves only through `/transition/` on the linear chain, `payment_status` /
  * `delivery_status` through their own setters. */
 export type SaleAdmin = Schemas['SaleAdmin'];
+export type SaleCreateInput = Schemas['SaleCreate'];
+/** `PATCH …/sales/{id}/` — the lock is required (C-6). */
+export type SalePatch = Locked<Schemas['PatchedSaleUpdate']>;
 
-/** The sales list takes exactly one filter: `status`. No search, no payment/
- * delivery filter, no aggregates (G-SALE-1/2). */
+/** The sales list's filters — the server's `SaleAdminFilterSet`
+ * (`apps/sales/filters.py`, G-SALE-2): `search` over artwork title /
+ * collector name / seller source, the exact `status` / `payment_status` /
+ * `delivery_status` / `source` axes, and `ordering` created|-created|price|
+ * -price (default `-created`). */
 export interface SaleQuery {
+  search?: string;
   status?: string;
+  payment_status?: string;
+  delivery_status?: string;
+  source?: string;
+  ordering?: string;
   page?: number;
   per_page?: number;
 }
+
+/** `GET …/sales/summary/` — the desk's header counts (G-SALE-1): `total` plus
+ * per-status / payment / delivery / source maps over every non-deleted sale,
+ * each choice seeded to 0. Ledger-wide: the endpoint takes no filter. */
+export type SaleDeskSummary = Schemas['SaleDeskSummary'];
+/** One internal deal note (G-SALE-5) — append-only, newest first. */
+export type SaleNote = Schemas['SaleNote'];
 
 /** A document — `DocumentSerializer` (backend Phase 11 documents admin).
  * `fields` is the document's own freeform content (shape depends on `kind`,
@@ -519,6 +678,24 @@ export interface SaleQuery {
  * `owner_lock` restricts confirm/sign/edit to the owner role. */
 export type DocumentAdmin = Schemas['Document'];
 export type DocumentVersionAdmin = Schemas['DocumentVersion'];
+/** One row of a document's History (G-DOC-2,
+ * `GET /documents/admin/documents/{id}/activity/`, newest first). **C-15:**
+ * the actor is FLAT — `actor` (uuid | null) + `actor_name` (string | null),
+ * not the `{id, name}` object the backend CHANGELOG describes; the code
+ * (`DocumentActivitySerializer`) wins. `changes` is the audit log's
+ * `{field: [from, to]}` map, freeform on the wire. */
+export type DocumentActivity = Schemas['DocumentActivity'];
+
+/** One of the signed-in collector's own documents (`GET /api/documents/`,
+ * G-DOC-1) — `CollectorDocumentSerializer`: collector-safe fields only, never
+ * the freeform `fields` blob. Only shared documents of a collector-visible
+ * kind reach this list (`Document.COLLECTOR_VISIBLE_KINDS`), newest-shared
+ * first. `pdf_url` is a signed, expiring URL, or `null` before a PDF exists. */
+export type CollectorDocument = Schemas['CollectorDocument'];
+/** `GET /api/documents/public/{kind}/` — the latest confirmed, public-visibility
+ * document of a kind, served whole (`DocumentSerializer`), `AllowAny`. A kind
+ * with nothing published is a 404. */
+export type PublicDocument = Schemas['Document'];
 
 /** The documents list takes exactly one filter: exact `kind`. */
 export interface DocumentQuery {
@@ -539,11 +716,28 @@ export type GalleryLinkAdmin = Schemas['GalleryLink'];
  * saw). `funnel_status` is the Darz-set override; blank derives live. */
 export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
 
-/** A pricelist a partner sent from the portal — `GalleryPricelistSerializer`
- * (`title`, `notes`, `created_at`). The file behind it is stored
- * (`GalleryPricelist.object_key`) but not serialized, so the desk can name
- * the submission and not open it (G-PORT-14). */
+/** A pricelist a partner sent from the portal — `GalleryPricelistSerializer`:
+ * `file_url` (a presigned read of the uploaded file, G-PORT-14; `null` for a
+ * pricelist built in-portal), `status` (submitted/accepted/superseded, P3a —
+ * NOT in `/api/options/`, C-14) and the structured builder `lines` (P3b). */
 export type GalleryPricelistAdmin = Schemas['GalleryPricelist'];
+export type GalleryPricelistLine = Schemas['GalleryPricelistLine'];
+/** `GalleryPricelist.STATUS_CHOICES` — the wire values, from the schema enum. */
+export type GalleryPricelistStatus = Schemas['GalleryPricelist']['status'];
+/** `GET admin/links/{id}/pricelists/cap/` — advisory only, never a block. */
+export type GalleryPricelistCap = Schemas['GalleryPricelistCap'];
+
+/** An item of the editable Exhibition Services menu (G-PORT-12b,
+ * `ExhibitionServiceCatalogItemSerializer`) — what the portal's catalogue
+ * endpoint serves (active items only) and what the desk composes from. `key`
+ * is the stable id and is read-only after create. */
+export type ExhibitionCatalogItem = Schemas['ExhibitionServiceCatalogItem'];
+export type ExhibitionCatalogInput = Pick<
+  ExhibitionCatalogItem,
+  'key' | 'title' | 'description' | 'default_price' | 'position' | 'is_active'
+>;
+/** The locked PATCH — `key` is not editable (`…UpdateSerializer.read_only_fields`). */
+export type ExhibitionCatalogPatch = Locked<Partial<Omit<ExhibitionCatalogInput, 'key'>>>;
 
 /** A portal submission in the review queue — approving an availability /
  * price / correction update applies it to the artwork through the real
@@ -552,8 +746,8 @@ export type GalleryUpdateAdmin = Schemas['GalleryUpdate'];
 
 /** Admin lot — `LotAdminSerializer`: the collector shape PLUS the
  * confidential `reserve_amount` and `leading_bidder`, with the artwork as a
- * bare uuid. Lots are create-only (no PATCH — G-AUC-2); they move through
- * `go-live` and `close` (+`?force=` sells under reserve). */
+ * bare uuid. A scheduled lot is editable (`LotPatch`, G-AUC-2); it moves
+ * through `go-live` and `close` (+`?force=` closes early). */
 export type LotAdmin = Schemas['LotAdmin'];
 
 /** A paddle request — `BidderRegistrationAdminSerializer`. Approving assigns
@@ -691,7 +885,9 @@ export type ArtworkSelectionGrant = Schemas['ArtworkSelectionGrant'];
 
 /** `GalleryLinkArtwork.snapshot` — the denormalized per-link copy the portal
  * reads (`apps/gallery/services.py::GalleryLinkArtworkService.assign`). The
- * portal never sees the live Artwork; note there is NO image key (G-PORT-1). */
+ * portal never sees the live Artwork. The snapshot stores the primary image's
+ * storage key only; the portal reads it as the presigned `image_url` beside
+ * it (G-PORT-1, `GalleryLinkArtworkSerializer.get_image_url`). */
 export interface PortalSnapshot {
   title?: string | null;
   artist?: string | null;
@@ -703,6 +899,7 @@ export interface PortalSnapshot {
   currency?: string | null;
   price_type?: string | null;
   availability_status?: string | null;
+  image_key?: string | null;
 }
 
 /** One funnel entry from `FunnelDerivationService.for_link` — stage is the
@@ -720,21 +917,78 @@ export interface PortalFunnel {
   };
 }
 
+/** `GalleryLinkArtworkSerializer` (`serializers.py:66-83`). */
 export interface PortalWork {
   id: string;
   link: string;
   artwork: string;
   snapshot: PortalSnapshot;
+  /** presigned read of the snapshot's image; `null` when the work has none */
+  image_url: string | null;
   funnel_status: string;
   created_at: string;
   /** injected by `portal_state` when the link has `feat_funnel` */
   funnel?: PortalFunnel | null;
 }
 
+/** One structured builder line — `GalleryPricelistLineSerializer`
+ * (`serializers.py:141-147`). */
+export interface PortalPricelistLine {
+  id: string;
+  artwork: string | null;
+  work_title: string;
+  price: string | null;
+  currency: string;
+  /** free text on the backend; the builder offers `catalog.availability_status` (Q-7) */
+  availability: string;
+  note: string;
+  position: number;
+}
+
+/** `GalleryPricelistSerializer` (`serializers.py:150-165`). A file upload has
+ * `object_key` + `file_url`; a built one has `lines` and no file. */
 export interface PortalPricelist {
   id: string;
   title: string;
   notes: string;
+  object_key: string;
+  file_url: string | null;
+  /** submitted · accepted · superseded — not in `/api/options/` (C-14) */
+  status: string;
+  lines: PortalPricelistLine[];
+  created_at: string;
+}
+
+/** One builder line on the wire — `_GalleryPricelistLineInputSerializer`
+ * (`serializers.py:180-192`): an `artwork` OR a `work_title` is required. */
+export interface PortalPricelistLineInput {
+  artwork?: string | null;
+  work_title?: string;
+  /** a plain decimal string, or null for "price on request" */
+  price?: string | null;
+  currency?: string;
+  availability?: string;
+  note?: string;
+}
+
+/** `POST portal/{token}/pricelists/build/` body, minus the riding `pin`
+ * (`GalleryPricelistBuilderSerializer`, `serializers.py:195-201`). */
+export interface PortalPricelistBuild {
+  title?: string;
+  notes?: string;
+  lines: PortalPricelistLineInput[];
+}
+
+/** The source's own submitted update (G-PORT-2) — `PortalUpdateSerializer`
+ * (`serializers.py:95-105`): the admin tier minus the reviewer identity. */
+export interface PortalUpdate {
+  id: string;
+  kind: string;
+  artwork: string | null;
+  payload: Record<string, unknown>;
+  /** pending · approved · rejected (`gallery.update_status`) */
+  status: string;
+  review_note: string;
   created_at: string;
 }
 
@@ -746,8 +1000,14 @@ export interface PortalMessage {
   created_at: string;
 }
 
-/** `GET /gallery/portal/{token}/` — the link (minus token/pin_hash) plus the
- * three embedded lists. */
+/** `GET /gallery/portal/{token}/` — declared in the schema as a bare
+ * `GalleryLink` (C-8), so hand-typed from the view: `views.py:95-114`
+ * (`portal_state`) — the link (`GalleryLinkSerializer`, minus token/pin_hash)
+ * plus `assigned_artworks` (each with `image_url`, and `funnel` when the link
+ * has `feat_funnel`), `pricelists`, `messages`, the source's own `updates`
+ * (G-PORT-2) and `cover` — the first assigned work's image, or null
+ * (G-PORT-9). The embedded arrays are read through `normalisePortalState`
+ * (`asArray`), never trusted blind. */
 export interface PortalState {
   id: string;
   source_type: 'gallery' | 'artist' | 'collector' | 'dealer';
@@ -768,9 +1028,12 @@ export interface PortalState {
   assigned_artworks: PortalWork[];
   pricelists: PortalPricelist[];
   messages: PortalMessage[];
+  updates: PortalUpdate[];
+  cover: string | null;
 }
 
-/** `POST /gallery/portal/{token}/updates/` body (minus the riding `pin`). */
+/** `POST /gallery/portal/{token}/updates/` body (minus the riding `pin`).
+ * `ask` and `withdraw` must carry an assigned `artwork` (`views.py:186-188`). */
 export interface PortalUpdateSubmit {
   kind: string;
   artwork?: string | null;
@@ -797,6 +1060,8 @@ export interface PortalServiceLine {
   service_key: string;
   title: string;
   description: string;
+  /** G-PORT-16 — how many of this service; `price` stays the LINE amount */
+  quantity: number;
   price: string | null;
   currency: string;
   status: 'proposed' | 'confirmed' | 'declined' | 'delivered';
@@ -832,7 +1097,10 @@ export interface PortalCatalogueEntry {
   key: string;
   title: string;
   description: string;
-  default_price: number | null;
+  /** Since G-PORT-12b the menu is the editable table, whose `DecimalField`
+   * reaches the wire as a string ("700000.00"); the old seeded constant was a
+   * number. Read it through `num()`, never with `+`. */
+  default_price: number | string | null;
 }
 
 /** Gallery-owned fields of a show — what `create`/`PATCH` from the portal may
@@ -880,6 +1148,8 @@ export interface ExhibitionLineInput {
   service_key: string;
   title?: string;
   description?: string;
+  /** G-PORT-16 — min 1, default 1 (`ExhibitionServiceLineInputSerializer`) */
+  quantity?: number;
   price?: string | null;
   currency?: string;
   status?: 'proposed' | 'confirmed' | 'declined' | 'delivered';
@@ -919,12 +1189,21 @@ export type ProjectAdmin = Schemas['Project'];
 export type ProjectPartnerRef = Schemas['_ProjectPartnerOrg'];
 export type ProjectCategory = Schemas['ProjectCategoryEnum'];
 export type ProjectStage = Schemas['StageEnum'];
-export type ProjectStatus = Schemas['ProjectStatusEnum'];
+/** Named through the field, not the enum: drf-spectacular renamed the colliding
+ * enum (`ProjectStatusEnum` → `Status2c3Enum`) once G-PROJ-2 made `status`
+ * writable, and it will rename it again on the next collision (C-2). */
+export type ProjectStatus = Schemas['Project']['status'];
 export type ProjectCreateInput = Schemas['ProjectCreate'];
-/** `PATCH …/projects/{id}/` — the optimistic lock is required, not optional. */
-export type ProjectPatch = Omit<Schemas['PatchedProjectUpdate'], 'expected_version'> & {
-  expected_version: number;
-};
+/** `PATCH …/projects/{id}/` — the optimistic lock is required, not optional.
+ * Since G-PROJ-2/3/9 it also carries `status` (reset by the next stage move),
+ * the `stages` sub-state JSON and the four manual-FX fields. */
+export type ProjectPatch = Locked<Schemas['PatchedProjectUpdate']>;
+/** `GET …/projects/{id}/totals/` (G-PROJ-9): per-currency buckets plus the
+ * converted total when a rate is set (`fx` is null otherwise). Every amount is
+ * a decimal STRING (C-22) — rendered as served, never through float maths. */
+export type ProjectTotals = Schemas['ProjectMoneyTotals'];
+export type ProjectMoneyBucket = Schemas['_ProjectMoneyBucket'];
+export type ProjectMoneyFx = Schemas['_ProjectMoneyFx'];
 export type ProjectAttachmentAdmin = Schemas['ProjectAttachment'];
 export type ProjectDashboard = Schemas['ProjectDashboardSummary'];
 /** One row of `GET …/projects/reports/` (`reports_deliverables_rollup`). */
@@ -957,17 +1236,25 @@ export type ChecklistTemplatePatch = Partial<ChecklistTemplateInput> & {
 };
 
 /** `ProjectFilterSet` — search on name/no/client_name/venue; exact status,
- * stage, category, archived; ordering `created|-created|name|-name`.
+ * stage, category, archived; `partner` and `quick` (G-PROJ-1); ordering
+ * `created|-created|name|-name`.
  * `archived` is a boolean here and the service spells it `True`/`False` on
  * the wire: the filter hands the raw string to Django's BooleanField, which
  * 400s on the lowercase `true`/`false` the endpoint's own docs name
  * (found live; G-PROJ-6). */
+/** G-PROJ-1 — the dashboard cards as a server filter (`ProjectService.
+ * apply_quick`); an unknown value is ignored server-side, so the union keeps
+ * the desks to the four the backend knows. */
+export type ProjectQuickFilter = 'active' | 'delayed' | 'awaiting_approval' | 'unpaid';
 export interface ProjectQuery {
   search?: string;
   status?: string;
   stage?: string;
   category?: string;
   archived?: boolean;
+  quick?: ProjectQuickFilter;
+  /** a partner-org id: projects where it is the client org or a linked partner */
+  partner?: string;
   ordering?: 'created' | '-created' | 'name' | '-name';
   page?: number;
   per_page?: number;

@@ -1,17 +1,64 @@
 # Frontend adoption — the V1 **and Group-B** API gaps are now closed backend-side
 
-**Written 2026-09-24. Audience: a session working in THIS repo (`-darz-web`).**
-
-Every gap in `../darzmarket-api/docs/V1_API_GAPS_PLAN.md` **and**
-`../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md` has shipped on the backend (`darz-backend-api`
-`development` @ `a140548`; see its `docs/CHANGELOG.md`, all entries dated 2026-09-24). This file is the
-frontend's side of that work: for each closed gap, the endpoint/field now available, the work-around to
-delete, and where that work-around lives in this repo. V1 adoptions are below; the **Group-B** section
-is at the end.
+**Final V1 state 2026-09-26** (V1 Phase 10). Originally written 2026-09-24 as the how-to for adopting the
+backend's V1 and Group-B work; **every per-gap section below "Step 0" is now history** — each gap's final FE
+state is in `API_GAPS.md` and the per-operation state in `docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`. The
+completed-V1 picture is `DARZ_WEB_V1_STATUS.md`.
 
 Gap IDs (`G-P…`, `G-LOCK-1`) match `docs/PHASE_5_API_GAPS.md`, `docs/PHASE_24_35_API_GAPS.md` and the
-backend plan — after adopting each, delete or update its note in those files so the two repos stay
-honest.
+backend plans.
+
+## ⟶ Final V1 state (re-baselined 2026-09-26 — read this first)
+
+Measured against backend `development` @ `df0421f` (PR #70, **final V1: 224 paths / 323 operations**) and
+`-darz-web` `v1/phase-10-final` (= `development` after PRs #102–#111). The matrix was re-verified against the
+code in Phase 10 (script-parsed bindings: 271, 0 dangling; every Integrated row has a UI caller). **No "Not
+bound" row remains** — each non-integrated operation carries a final status and a reason.
+
+**Totals: 261 Integrated · 1 Bound, no UI · 14 Excluded (owner-deferred, API ready) · 31 Excluded (not V1) ·
+15 Not needed · 1 Backend-only = 323.** (Baseline 2026-09-25: 225 · 3 partial · 9 bound-no-UI · 85 not bound ·
+1 backend-only.)
+
+### Backend V1 availability vs frontend adoption, by app (final)
+
+| App | Operations | Integrated | Bound, no UI | Excluded (owner-deferred) | Excluded (not V1) | Not needed | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| accounts / auth | 36 | 34 | – | – | – | 2 | single membership-code / team-user reads (list rows suffice) |
+| catalog | 37 | 32 | – | 2 | 1 | 2 | `selections/` + `seen` = G-P24-2; legacy lookup excluded (no legacy-link route); admin artist read and change-stamp not needed |
+| crm | 25 | 21 | – | 3 | – | 1 | archive (G-P5-4), transition (G-P5-5), `GET activity/` (G-P5-12); admin selection read not needed |
+| auctions | 38 | 37 | – | – | 1 | – | `records/highlights/` excluded (the old app hides Highlights) |
+| accounting | 24 | 23 | – | – | – | 1 | deal attachments list: embedded in the deal read |
+| sales | 12 | 12 | – | – | – | – | |
+| documents | 15 | 15 | – | – | – | – | |
+| gallery | 52 | 44 | 1 | – | 1 | 6 | portal exhibition PATCH = the unbuilt old "Save draft"; admin exhibition DELETE excluded (no old delete); 3 portal reads embedded in state, catalogue item read, link DELETE (reissue covers it), admin exhibition PATCH (compose covers it): not needed |
+| projects | 32 | 29 | – | – | – | 3 | single reads (bound, unused) |
+| recommendations | 28 | 3 | – | 6 | 19 | – | question-set editor = G-P25-2(b); Intelligence 17 + Curated-for-you 2 = G-6 (Q-8) |
+| notifications | 3 | – | – | 3 | – | – | G-P13-1 push |
+| marketing | 9 | – | – | – | 9 | – | G-6 (Q-8) |
+| dashboard, core/options/theme/audit, health | 12 | 11 | – | – | – | – | `GET /api/health/` is backend-only |
+
+### What the 2026-09-25 re-baseline listed, and where it went
+
+- **Live bugs C-1, C-3, C-4, C-5** — fixed in Phase 0.
+- **Partially integrated** (the two thread POSTs, auction create) — Integrated since Phases 6 and 3.
+- **Portal/desk mis-wirings** (image flag with no file, withdraw sent as availability, pricelist rows always
+  "Received", lost Sent pills, the withdraw-approval confirm, compose `quantity`) — fixed in Phase 5;
+  **document `owner_lock`** enforced in the UI in Phase 6.
+- **Missing UI / forms / actions / tables / filters** — built in Phases 1–8 as planned; the few params left
+  unsent on purpose are listed in the matrix § "Notable unsent query params".
+- **Missing loading / error / empty states** — Profile loading (Phase 1), auction event lots (Phase 3), portal
+  entry (Phase 0), the artist page's works list (Phase 10). Admin list desks render all three through
+  `DeskList`; `DeskBoundary`/`ScreenBoundary` catch render throws.
+- **Authorisation** — still UI-only: project `money`/`internal_notes` (Q-2), document delete, the sale
+  "responsible" picker, Access Requests and the Access desk (Q-1: owner-only in the UI, any admin in the
+  API). Backend security defects: C-13.
+- **Payload mismatches** — all in `V1_CONTRACT_ISSUES.md` with their final status.
+
+---
+
+> **History below this line.** The sections from "Step 0" on are the 2026-09-24 per-gap how-to notes. Every
+> gap they describe is now adopted, deferred-owner or excluded — see `API_GAPS.md`. Keep them as the record
+> of what each work-around was and why; do not treat them as open work.
 
 ## Step 0 — regenerate the typed client first (do this before any task)
 

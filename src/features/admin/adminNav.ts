@@ -191,6 +191,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         'the price list every proposal and invoice is built from — its own section on the owner’s instruction, 2026-09-19.',
       ),
       tab(
+        'exhcatalogue',
+        'Service checklist',
+        '/admin/exhibition-catalogue',
+        'ready',
+        'V1·5',
+        'the portal’s Exhibition Services menu (G-PORT-12b) — the old passport’s per-gallery “Service checklist” (`darz-studio.html:27843`), one list for every portal now. Not in the old ADGROUPS: added for V1 Phase 5.',
+      ),
+      tab(
         'issue',
         'Issue a document',
         '/admin/issue',
@@ -210,7 +218,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/published',
         'ready',
         '12·2',
-        'the collector list endpoint IS the published set (G-CAT-2).',
+        'the admin list filtered ?published=true — every published work (V1 Phase 4).',
       ),
       // App Design is in this group AND under Operations — one screen, two
       // entry points (:11730 and :11764). A fact to port, not a bug to fix.
@@ -253,14 +261,25 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       ),
       tab('docProposals', 'Proposals', '/admin/documents?kind=proposal', 'ready', '12·3'),
       tab('docInvoices', 'Invoices', '/admin/documents?kind=invoice', 'ready', '12·3'),
-      tab('docFiles', 'Library', '/admin/documents', 'ready', '12·3'),
+      // `:11735` — the old label, whole again (Phase 6): History is not a tab
+      // of its own any more, it is reached from this list, one document at a
+      // time (see `docHistory` below).
+      tab('docFiles', 'Library & history', '/admin/documents', 'ready', '12·3'),
+      // **Kept hidden on purpose (Phase 6).** The old group had no History tab
+      // — its "Library & history" drew the history under the library, and
+      // `_docTab` sends a stray 'history' there (`workspaces-runtime.js:522`,
+      // `:703-731`). The backend serves the trail PER DOCUMENT (G-DOC-2,
+      // `…/documents/{id}/activity/`; no global feed, by the owner's call), so
+      // the history is the History section on each document's page, reached
+      // through the Library. A tab pointing at the Library would be a second
+      // copy of the tab beside it.
       tab(
         'docHistory',
         'History',
         null,
-        'partial',
+        'ready',
         '12+',
-        'its issued half IS the Library list; the activity half waits on an audit feed (G-DOC-2).',
+        'not a desk: each document’s History section (G-DOC-2, per-document feed), reached from Library & history.',
       ),
       tab(
         'library',
@@ -338,15 +357,18 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/sales',
         'ready',
         '12·2',
-        'sales admin, 5 routes.',
+        'sales admin: list + summary tiles, search/filters/sort, follow-up, notes (V1 Phase 2).',
       ),
+      // One route, two tabs — the Galleries `?type=gallery` shape: the
+      // Sales desk scoped to `source=auction` (G-SALE-4), which the
+      // auction→Sale automation fills with a draft per won lot.
       tab(
         'auctionSales',
         'Auction Sales',
-        null,
-        'partial',
-        '12+',
-        'Sale has no source axis (G-SALE-4) — auction settlement is its own loop.',
+        '/admin/sales?source=auction',
+        'ready',
+        'V1·2',
+        'the Sales desk scoped to source=auction; each row links to its lot.',
       ),
     ],
   },
@@ -364,8 +386,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/projects',
         'ready',
         '11c',
-        'GET /projects/admin/projects/dashboard/ — Delayed and Awaiting-approval ' +
-          'read the stage sub-state, which the API does not accept yet (G-PROJ-3).',
+        'GET /projects/admin/projects/dashboard/ — every card opens the list on ' +
+          'the same server predicate (?quick=, G-PROJ-1).',
       ),
       tab('projList', 'Projects', '/admin/projects/list', 'ready', '11c'),
       tab(
@@ -374,7 +396,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         '/admin/projects/pipeline',
         'ready',
         '11c',
-        '17 stages; the status label is derived server-side (G-PROJ-2: not settable).',
+        '17 stages; a move seeds the stage sub-state (G-PROJ-3), then the server ' +
+          're-derives the status label.',
       ),
       tab('projPackages', 'Packages', '/admin/projects/packages', 'ready', '11c'),
       tab(
@@ -501,10 +524,12 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       tab(
         'access',
         'Access',
-        null,
+        '/admin/access',
         'ready',
-        '11b·2',
-        'AccessKey issue/revoke/extend + login events.',
+        'V1·8',
+        'The roster-wide key desk (G-KEY-1): summary tiles, the review banner, ' +
+          'computed status (C-17), extend/revoke. Owner-only (Q-1). Issuing a ' +
+          'key stays on the collector’s page.',
       ),
       tab('team', 'Team', '/admin/team', 'ready', '11b·4'),
       tab(

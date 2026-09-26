@@ -5,6 +5,66 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-26 — V1 Phase 10: final verification, V1 status (final edition)
+
+- Matrix re-verified against the code (271 bindings, 0 dangling): 261 Integrated · 1 Bound-no-UI · **0 Not bound** · 14 owner-deferred · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only, each with a reason. Fixes: 390px auction cards, Published card actions, Insights tab hidden (no published story), served availability/lot labels, Market hero from `/app-theme/`, artist works error state.
+- `DARZ_WEB_V1_STATUS.md` final edition; gaps/contract/plan/handoff/tasklist final pass. **838 unit · 155 E2E**. Details: `V1_IMPLEMENTATION_PLAN.md` §3k/§4.
+
+## 2026-09-26 — V1 Phase 9a: owner extras per Q-5 (G-P5-11, G-P25-2(a))
+
+- Artist enquiry sends `artist`; the questionnaire runs on `GET /recommendations/question-set/` (built-in bank kept as the empty/failed fallback, draft versioned by the served questions). Deferred, API ready: G-P24-2 · G-P25-2(b) · G-P5-4/5/12 · G-P13-1 · G-CLUB-3 · G-P5-9.
+- Matrix: question-set → Integrated, 14 owner-deferred → Excluded (261/0/9/38/14/1). **832 unit · 155 E2E**. Details: `V1_IMPLEMENTATION_PLAN.md` §3j.
+
+## 2026-09-26 — V1 Phase 8: owner Access desk (G-KEY-1)
+
+- `/admin/access`, owner-only (Q-1): the old stat row (4 of 5 from `summary/`), the "keys need a decision" review banner, search / computed status / "Expiring ≤ 7d", roster table (C-17 status, activity tallies, name → collector), extend + revoke with the old toast/confirm. New C-25 (extend never revives a lazily-expired key).
+- Matrix: roster + summary → Integrated (260/0/9/53/1). **819 unit · 153 E2E** (desks 105). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3i.
+
+## 2026-09-26 — V1 Phase 7: Projects quick/partner, status, stage sub-state, FX + totals
+
+- List quick cards ride `?quick=` (only "Deliverables ≤7d" walks); record Status `<select>` saves `status`; a stage move PATCHes the old `setStage` seeding (`moveStages`) then moves; Delayed/Awaiting read real counts; owner FX block + server totals panel (decimal strings, "No currency", converted row). New C-24 (awaits-approval predicate). Stale G-PROJ notes removed.
+- Matrix: totals → Integrated (258/0/9/55/1). **802 unit · 148 E2E** (desks 100). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3h.
+
+## 2026-09-25 — V1 Phase 6: document history/share/owner-lock, chat document_refs, message archive
+
+- Document page: per-document History (G-DOC-2, flat actor C-15), Share with collector / Stop sharing (G-DOC-1), `owner_lock` disables the guarded moves for a standard admin with the reason; nav "Library & history" restored, History tab stays hidden (per-document feed). Admin chat: Attach document (D19 `document_refs`, never another collector's doc), chips on both threads, per-message Archive/Restore + "Include archived" (G-CHAT-2).
+- Matrix: 4 Not bound + 2 Partial → Integrated (257/0/9/56/1). **783 unit · 140 E2E** (collector 38, desks 92). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3g.
+
+## 2026-09-25 — V1 Phase 5: gallery portal (P1/P3/P4), Sources desk, exhibition catalogue
+
+- Portal: typed/normalised state (C-8), work images + cover, Replace image (multipart, PIN in form, C-9), Ask + Remove-from-portal (withdraw), server Sent pills / Pending review / History, pricelist status + builder. Desk: server partner search, Regenerate (reissue), pricelist file/lines/status/cap, ask/withdraw/image review copy, new Service checklist desk (catalogue CRUD, lock), compose quantity, service descriptions via API.
+- Matrix: 9 ops → Integrated (251/2/9/60/1). **765 unit · 133 E2E** (portal 6, desks 86). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3f.
+
+## 2026-09-25 — V1 Phase 4: Database, Artists, Published, Collectors, Club, Data Health, Dashboard
+
+- Database rows lead with `thumb` + `artist_name`; Gallery Portal / Duplicates / Details / Size filters (list + facets), `source_type`/`created_after` link chips; publish `details.missing` → the old refusal popup (row + editor). Artists: server search/sort/pager + Works. Published: admin `?published=true`. Collectors: `summary/` strip + Recently active / Most purchases. Club cover from `thumb`. Data Health: all nine boxes in three bands, linked. Dashboard catalogue tiles link.
+- Matrix: 1 op → Integrated (242/2/9/69/1). **739 unit · 119 E2E** (desks 78). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3e.
+
+## 2026-09-25 — V1 Phase 3: auctions admin (edit, lot edit, archive, poster, reset, house) + collector cover
+
+- Auction page ports the old Manage-auction modal: poster upload/remove, details + terms form (locked PATCH, ConflictBanner, read-only past scheduled, C-18 checks), lot edit; Live Auctions walks all pages, "Show archived" + Archive/↩ Restore, poster thumbs; Register to Bid ↺ Reset; Records "All auction houses" (`?house=`). Collector cards read `cover_image_url` (per-card lot read gone); event lots get loading/empty states. C-19 already degrades (poll + notice).
+- Matrix: 7 ops → Integrated (241/2/9/70/1). **720 unit · 111 E2E** (desks 70). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3d.
+
+## 2026-09-25 — V1 Phase 2: Sales desk (summary, filters, follow-up, notes) and Auction Sales
+
+- Market Sales: strip from `summary/` (+ Need attention = overdue follow-ups), search + Stage/Payment/Delivery/Source/Sort; deal page gains follow-up set/clear, append-only notes, Source/Lot rows, Delete deal. Auction Sales at `/admin/sales?source=auction`, each sale linking to its lot. Stale G-SALE notes removed.
+- Stub serves a two-sale ledger (market + auction with lot), summary, follow-up, notes. **697 unit · 101 E2E** (desks 62). Deviations: `V1_IMPLEMENTATION_PLAN.md` §3c.
+
+## 2026-09-25 — V1 Phase 1: collector account (profile edit, my-membership, documents, chip, G-Q-1, legal links)
+
+- Profile › Account is editable via `PATCH /auth/me/` (`AuthService.updateMe`, session `me` refreshed); "Your documents" (G-DOC-1) ported from `dzDocsSectionHTML`; Settings membership row + sheet read `/auth/my-membership/`; chip shows `selection_name`; questionnaire writes phone/lang; legal links use `/documents/public/{kind}/`; "Make an offer" hidden without a currency (Q-6); Profile tiles wait with `.dz-state`.
+- Stub reads request bodies (and now answers a cold-load refresh with the right principal). **677 unit · 97 E2E** (collector 35).
+
+## 2026-09-25 — V1 Phase 0: schema regen + four live bugs (C-1…C-5)
+
+- `schema.d.ts` regenerated from backend `df0421f`. Sales desk reads the nested G-SALE-3 rows; `ProjectStatus` is aliased through the field (C-2); the questionnaire and Profile card branch on `answered` (C-3); a portal entry error no longer freezes the gate (C-4).
+- `walkPages` moved to `src/api/paging.ts` and used wherever a list was read as one oversized page (C-5); `Locked<T>` for required locks. **647 unit · 89 E2E** (+Artists-past-100, +Sales-nested walks).
+
+## 2026-09-25 — V1 re-baseline: both repos synced, gap docs re-measured, phased V1 plan written
+
+- Backend V1 = `darz-backend-api` `development` @ `df0421f` (224 paths / 323 ops); web `development` holds every branch. Matrix, admin, collector and backend-contract audits in `docs/audit/2026-09-25/`.
+- New `V1_IMPLEMENTATION_PLAN.md` (Phases 0–10), `V1_CONTRACT_ISSUES.md` (C-1…C-22, Q-1…Q-9), baseline `DARZ_WEB_V1_STATUS.md`; `API_GAPS.md` + `API_GAPS_FRONTEND_ADOPTION.md` re-baselined. Docs only; gate unchanged (636 unit).
+
 ## 2026-09-25 — API adoption Batch 3: thread deep link, viewing-mode labels, hold-expiry backstop
 
 - A deep link to a thread reads its one request (`GET /crm/requests/{id}/`, G-P5-3); ViewingSheet labels come from `crm.viewing_mode` (G-P5-10); the client hold check is now a documented backstop (G-P5-6).

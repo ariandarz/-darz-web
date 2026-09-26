@@ -15,11 +15,11 @@
  *    constants (partner roles, deliverable classes, dashboard card copy…).
  *  - `money.*.currency` is the backend key (the old blobs used `cur`, :13877);
  *    the guards read both so an old blob still renders.
- *  - `stages` (the per-stage sub-state) is NOT writable on the API
- *    (G-PROJ-3), so the old `setStage` seeding (:13709-13714: start date,
- *    checklist from the template, `doneTs` on every earlier stage) has NO
- *    port — there is no `moveStages` here. `asStages` is a read-only guard,
- *    and `scopeGate` keys on stage ORDER instead of `stages[k].doneTs`.
+ *  - `stages` (the per-stage sub-state) is writable since G-PROJ-3: the old
+ *    `setStage` seeding (:13706-13714: the target stage's start date and
+ *    checklist from its template, `doneTs` on every earlier stage) is
+ *    `moveStages`, sent as a locked PATCH before the stage move itself.
+ *    `scopeGate` still keys on stage ORDER (see its note).
  *  - the dashboard/list flags mirror the BACKEND's rules
  *    (`ProjectService._is_active/_is_delayed/_awaits_approval/_unpaid_count`,
  *    `services.py:208-232`) rather than the old :13315-13320 ones, so the
@@ -34,14 +34,17 @@ import type {
   Choice,
   PackageTemplateAdmin,
   PackageTemplateInput,
-  Paginated,
   ProjectAdmin,
+  ProjectMoneyBucket,
   ProjectPatch,
+  ProjectQuickFilter,
+  ProjectTotals,
   ServiceCatalogItemAdmin,
 } from '../../../api/types';
 import type { OptionsMap, ProjectsAdminService } from '../../../api/services';
 import type { DocumentPdfFields } from '../pdf/renderPdf';
 import { fmtThousands } from '../../portal/portalForm';
+import { walkPages } from '../../../api/paging';
 
 export { fmtDate } from '../../portal/portalForm';
 
@@ -97,7 +100,7 @@ export interface ChecklistItem {
   done: boolean;
 }
 
-/** :13710 — the per-stage sub-state (read-only here, G-PROJ-3). */
+/** :13707 / :13710 — the per-stage sub-state (written by `moveStages`). */
 export interface StageState {
   owner: string;
   start: string;
@@ -220,6 +223,23 @@ export const QUICK_LABELS: Record<Quick, string> = {
   deliverables: 'Deliverables ≤7d',
   unpaid: 'Unpaid',
 };
+
+/** G-PROJ-1 — the quick filters the server applies (`?quick=`,
+ * `ProjectService.apply_quick`, the same predicates as the dashboard counts).
+ * `deliverables` has no server filter, so its list is still read whole and
+ * filtered here (`matchesQuick`); null says so. */
+export function serverQuick(q: Quick): ProjectQuickFilter | null {
+  switch (q) {
+    case 'active':
+    case 'delayed':
+    case 'unpaid':
+      return q;
+    case 'approval':
+      return 'awaiting_approval';
+    case 'deliverables':
+      return null;
+  }
+}
 
 export interface DashCard {
   q: Quick;
@@ -452,7 +472,7 @@ function asChecklistItems(u: unknown): ChecklistItem[] {
   return out;
 }
 
-/** `stages` (:13710 shape) — READ-ONLY (G-PROJ-3). `intApproved`/`cliApproved`
+/** `stages` (:13710 shape) — the typed read. `intApproved`/`cliApproved`
  * are kept only when they are real booleans, because the backend's
  * awaits-approval rule is a strict `is False` (`services.py:224`). */
 export function asStages(u: unknown): StageMap {
@@ -675,10 +695,13 @@ export function stageState(
 export type ScopeGate = { ok: true } | { ok: false; reason: string };
 
 /**
- * :13323 `projScopeGate` — a curatorial/mixed project cannot enter Research
+ * :13320 `projScopeGate` — a curatorial/mixed project cannot enter Research
  * or Production before Scope Approval, Contract and Deposit. The old rule
- * read `stages[k].doneTs`, which this API cannot record (G-PROJ-3); the port
- * keys on ORDER, which is what a forward move through the pipeline means:
+ * read `stages[k].doneTs`; the port keys on ORDER, which is what a forward
+ * move through the pipeline means. The two agree for every project moved
+ * since `stages` became writable (`moveStages` stamps `doneTs` on every
+ * earlier stage, :13711), and the order rule also covers a project moved
+ * before that, whose sub-state carries no stamps:
  * allowed once the CURRENT stage's index ≥ index('deposit'); "still needed"
  * = the gate stages beyond the current index.
  */
@@ -707,6 +730,90 @@ export function scopeGate(
     }
   }
   return { ok: true };
+}
+
+/* ── stage move seeding (:13706-13714) ──────────────────────────────────── */
+
+/** :13707 — the blank sub-state the old move created for a stage it touched.
+ * `intApproved`/`cliApproved` are the old literal `false` (see `moveStages`). */
+export function blankStageState(): Record<string, unknown> {
+  return {
+    owner: '',
+    start: '',
+    due: '',
+    deps: [],
+    files: [],
+    checklist: [],
+    intApproved: false,
+    cliApproved: false,
+    notes: '',
+    doneTs: 0,
+  };
+}
+
+/** :13321 `projChecklistFor` — the first template for the stage, as its
+ * items (null when there is none). */
+export function checklistFor(
+  templates: ReadonlyArray<{ stage?: string | null; items?: unknown }>,
+  stageKey: string,
+): string[] | null {
+  const t = templates.find((x) => (x.stage ?? '') === stageKey);
+  return t ? asChecklistStrings(t.items) : null;
+}
+
+/**
+ * :13706-13714 — the `stages` JSON a move to `target` writes, from the
+ * record's current one (`raw`, untouched): the target entry is created blank
+ * if missing, dated `today` if it has no start, and given the template's
+ * checklist if it has none; every stage BEFORE the target (in the
+ * `projects.stage` order) is created blank if missing and stamped
+ * `doneTs = now` if it has no stamp yet. Keys the page does not know are
+ * kept as they were. The status half of the old move (`projStatusForStage`)
+ * is the server's (`POST …/stage/`), so it is not written here.
+ *
+ * Note (flagged, C-24): the old blank carried `intApproved: false` and
+ * `cliApproved: false`, and they are kept verbatim. The old desk only asked
+ * those flags of a project sitting IN a review stage (:13314); the backend's
+ * `_awaits_approval` asks them of every entry, so a moved project counts as
+ * awaiting approval until someone records the approvals.
+ */
+export function moveStages(
+  raw: unknown,
+  order: Choice[],
+  target: string,
+  template: string[] | null,
+  today: string,
+  now: number = Date.now(),
+): Record<string, unknown> {
+  const src = isObj(raw) ? raw : {};
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(src)) out[k] = isObj(v) ? { ...v } : v;
+  const entry = (k: string): Record<string, unknown> => {
+    const cur = out[k];
+    if (isObj(cur)) return cur;
+    const fresh = blankStageState();
+    out[k] = fresh;
+    return fresh;
+  };
+  const s = entry(target);
+  if (!str(s.start)) s.start = today;
+  if (!Array.isArray(s.checklist) || s.checklist.length === 0) {
+    if (template)
+      s.checklist = template.map((text) => ({
+        id: uid('ci', now),
+        text,
+        owner: '',
+        due: '',
+        done: false,
+      }));
+  }
+  const idx = stageIndex(order, target);
+  order.forEach((ps, i) => {
+    if (i >= idx) return;
+    const e = entry(ps.value);
+    if (!projN(e.doneTs)) e.doneTs = now;
+  });
+  return out;
 }
 
 /* ── flags — mirror the backend (`services.py:208-232`) ─────────────────── */
@@ -1195,31 +1302,20 @@ export function buildProposalFields(
 }
 
 /* ---- reading a paginated list whole -------------------------------------
-   Every desk in this group needs a whole list the API only pages: the old
-   panel read its one local store (`projLoad()`, `svcLoad()`) and filtered in
-   memory, and no server-side "active", quick-filter or board endpoint
-   replaces that (G-PROJ-1). One walker, one cap, so the desks cannot differ
-   on how much of a list they actually read. */
+   Some desks here still need a whole list the API only pages: the old panel
+   read its one local store (`projLoad()`, `svcLoad()`) and filtered in memory.
+   The quick cards are server filters now (G-PROJ-1, `serverQuick`), but the
+   board, the "Deliverables ≤7d" card and the Partners matrices read every
+   project. One walker, one cap, so the desks cannot differ on how much of a
+   list they actually read. */
 
-/** The page cap — 50 pages × 100 rows is far past any real roster, and it
- * stops a bad `has_next` from looping forever. */
-export const WALK_MAX_PAGES = 50;
+/* `WALK_MAX_PAGES` / `walkPages` now live in `src/api/paging.ts` (every desk that
+   reads a list whole shares them); re-exported so the desks here keep importing
+   from this file. */
+export { WALK_MAX_PAGES, walkPages } from '../../../api/paging';
 
-/** Every page of a list, in order. */
-export async function walkPages<T>(
-  fetchPage: (page: number) => Promise<Paginated<T>>,
-): Promise<T[]> {
-  const out: T[] = [];
-  for (let page = 1; page <= WALK_MAX_PAGES; page++) {
-    const res = await fetchPage(page);
-    out.push(...res.results);
-    if (!res.pagination.has_next) break;
-  }
-  return out;
-}
-
-/** Every project of one archive state (the board, the quick filters, the
- * per-partner counts, the project picks). */
+/** Every project of one archive state (the board, the deliverables card,
+ * the Partners desk, the project picks). */
 export function walkProjects(
   api: ProjectsAdminService,
   archived = false,
@@ -1237,4 +1333,168 @@ export function walkServices(api: ProjectsAdminService): Promise<ServiceCatalogI
  * fallback, else ''. The one rule every desk names a client by. */
 export function clientName(p: ProjectAdmin): string {
   return p.client_partner_org?.name || p.client_name || '';
+}
+
+/* ── money totals (G-PROJ-9) — decimal STRINGS, never float maths (C-22) ── */
+
+const DEC = /^(-?)(\d+)(?:\.(\d+))?$/;
+
+/** Exact sum of two decimal strings (BigInt on the scaled digits). An operand
+ * that is not a plain decimal counts as 0 — the backend's own `_money_num`
+ * rule for an unparsable amount. */
+export function decAdd(a: string, b: string): string {
+  const pa = DEC.exec(String(a ?? '').trim());
+  const pb = DEC.exec(String(b ?? '').trim());
+  const fa = pa?.[3] ?? '';
+  const fb = pb?.[3] ?? '';
+  const scale = Math.max(fa.length, fb.length);
+  const big = (m: RegExpExecArray | null, frac: string): bigint => {
+    if (!m) return 0n;
+    const digits = BigInt(m[2] + frac.padEnd(scale, '0'));
+    return m[1] === '-' ? -digits : digits;
+  };
+  const sum = big(pa, fa) + big(pb, fb);
+  const neg = sum < 0n;
+  const abs = (neg ? -sum : sum).toString().padStart(scale + 1, '0');
+  const int = abs.slice(0, abs.length - scale) || '0';
+  const frac = scale ? '.' + abs.slice(abs.length - scale) : '';
+  return (neg ? '-' : '') + int + frac;
+}
+
+/** True for "0", "0.00", "-0.0", "" — read off the string. */
+export function decIsZero(v: string | null | undefined): boolean {
+  const m = DEC.exec(String(v ?? '').trim());
+  return !m || /^0*$/.test(m[2] + (m[3] ?? ''));
+}
+
+/**
+ * A served decimal as the desk shows money: thousands-grouped, an all-zero
+ * fraction dropped ("1200.00" → "1,200", "1200.50" → "1,200.50"), with the
+ * currency after it like the old `projMoney` (:13288). No float step at all —
+ * the old rounding (`Math.round`) is not applied to a served amount. Anything
+ * that is not a plain decimal is shown verbatim.
+ */
+export function fmtDecimal(v: string | null | undefined, cur?: string): string {
+  const s = String(v ?? '').trim();
+  const m = DEC.exec(s);
+  let out = s;
+  if (m) {
+    const frac = m[3] && !/^0+$/.test(m[3]) ? '.' + m[3] : '';
+    out = m[1] + m[2].replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') + frac;
+    if (out === '-0') out = '0';
+  }
+  return out + (cur ? ' ' + cur : '');
+}
+
+/** The 8-dp rate as typed: trailing zeros of the fraction dropped
+ * ("700000.00000000" → "700,000", "0.00125000" → "0.00125"). */
+export function fmtRate(v: string | null | undefined): string {
+  const s = String(v ?? '').trim();
+  const m = DEC.exec(s);
+  if (!m) return s;
+  const frac = (m[3] ?? '').replace(/0+$/, '');
+  return fmtDecimal(m[1] + m[2] + (frac ? '.' + frac : ''));
+}
+
+/** The bucket key the backend uses for a currency-less line with no deal
+ * currency (`_money_currency`, services.py:322-326). */
+export const UNKNOWN_CURRENCY = 'unknown';
+
+/** How a bucket key reads on screen: "unknown" is not a currency code. */
+export function currencyLabel(cur: string): string {
+  return cur === UNKNOWN_CURRENCY ? 'No currency' : cur;
+}
+
+export interface TotalsRow {
+  cur: string;
+  label: string;
+  client: string;
+  fee: string;
+  /** internal + external, exact — the old row's "Cost" (:13800) */
+  cost: string;
+  paid: string;
+  due: string;
+  /** the old row showed Paid / Due only when either was non-zero (:13800) */
+  showPaid: boolean;
+}
+
+/** One `.dzp-mrow` per bucket, in the old row's shape (:13800). */
+export function totalsRow(
+  cur: string,
+  b: Partial<ProjectMoneyBucket> | null | undefined,
+): TotalsRow {
+  const v = (k: keyof ProjectMoneyBucket): string => String(b?.[k] ?? '0');
+  return {
+    cur,
+    label: currencyLabel(cur),
+    client: v('client'),
+    fee: v('fee'),
+    cost: decAdd(v('internal'), v('external')),
+    paid: v('paid'),
+    due: v('due'),
+    showPaid: !decIsZero(v('paid')) || !decIsZero(v('due')),
+  };
+}
+
+/** Every bucket of a totals response — the `"unknown"` bucket last, the
+ * rest in the order served. A malformed `by_currency` reads as none. */
+export function totalsRows(
+  t: Pick<ProjectTotals, 'by_currency'> | null | undefined,
+): TotalsRow[] {
+  const raw: unknown = t?.by_currency;
+  const by: Record<string, unknown> = isObj(raw) ? raw : {};
+  const keys = Object.keys(by).sort(
+    (a, b) => Number(a === UNKNOWN_CURRENCY) - Number(b === UNKNOWN_CURRENCY),
+  );
+  return keys.map((k) =>
+    totalsRow(k, isObj(by[k]) ? (by[k] as Partial<ProjectMoneyBucket>) : null),
+  );
+}
+
+/* ── manual FX (G-PROJ-9) ────────────────────────────────────────────────── */
+
+/** The FX inputs as typed. */
+export interface FxDraft {
+  deal_currency: string;
+  deal_fx_target_currency: string;
+  deal_fx_rate: string;
+  deal_fx_rate_date: string;
+}
+
+export function fxDraftFrom(
+  p: Partial<
+    Pick<
+      ProjectAdmin,
+      'deal_currency' | 'deal_fx_target_currency' | 'deal_fx_rate' | 'deal_fx_rate_date'
+    >
+  >,
+): FxDraft {
+  return {
+    deal_currency: p.deal_currency ?? '',
+    deal_fx_target_currency: p.deal_fx_target_currency ?? '',
+    deal_fx_rate: p.deal_fx_rate ?? '',
+    deal_fx_rate_date: p.deal_fx_rate_date ?? '',
+  };
+}
+
+/**
+ * The four FX fields on the wire: blank rate / date → null (the model's
+ * nullable columns), the rate's thousands separators stripped ("700,000" →
+ * "700000") so a grouped entry is not a 400, the target upper-cased (the
+ * backend takes any 3 characters, C-22). A rate that is still not a decimal
+ * goes as typed — the server's 400 names the field.
+ */
+export function fxPatch(
+  d: FxDraft,
+): Pick<
+  ProjectPatch,
+  'deal_currency' | 'deal_fx_target_currency' | 'deal_fx_rate' | 'deal_fx_rate_date'
+> {
+  const rate = d.deal_fx_rate.replace(/[,\s ٬]/g, '');
+  return {
+    deal_currency: d.deal_currency.trim() as NonNullable<ProjectPatch['deal_currency']>,
+    deal_fx_target_currency: d.deal_fx_target_currency.trim().toUpperCase(),
+    deal_fx_rate: rate ? rate : null,
+    deal_fx_rate_date: d.deal_fx_rate_date.trim() || null,
+  };
 }

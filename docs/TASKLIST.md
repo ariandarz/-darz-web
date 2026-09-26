@@ -1,6 +1,6 @@
 # Darz Market Web — Task List (single source of truth)
 
-**Last updated: 2026-09-24.** This is the one place for *what is built and what is left*. It replaces
+**Last updated: 2026-09-26 (V1 Phase 10 — V1 complete).** This is the one place for *what is built and what is left*. It replaces
 the long historical task log (that detail now lives in `CHANGELOG.md` and `docs/archive/`).
 
 - **Gap state** (which API gaps are fixed/pending) → **`API_GAPS.md`**.
@@ -21,85 +21,63 @@ structure — trace every decision to the approved package + `app.html`.
 
 | | |
 | --- | --- |
-| Branches | `main` and `development` kept level; `development` is the working line. |
-| Last landed | Node-20 support (jsdom 29, engines/CI/Dockerfile/.nvmrc) + admin panel code-split (main bundle 976→539 kB, chunk warning cleared). |
-| Backend | `darz-backend-api` `development` @ `5f6d7ea` — **every V1 API gap closed** (see `API_GAPS.md`). |
-| Gate | 620 unit (56 files) · 82 E2E (collector 25 · desks 54 · smoke 3) · typecheck · lint 0 · format · build · `npm audit` 0. Runs on **Node 20**. |
-| Live site | https://darz-web.vercel.app — Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set. |
+| Branches | `main` and `development`; `development` is the working line. **All V1 phases (0–9a, PRs #102–#111) are merged into `development`**; Phase 10 is `v1/phase-10-final`. |
+| V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
+| API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
+| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API. Open defects: `V1_CONTRACT_ISSUES.md` § B (C-6…C-25). |
+| Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
+| Live site | https://darz-web.vercel.app — Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
-**The app is feature-complete for V1.** Collector app + admin panel (~111 files, 52 routes, most
-admin endpoints bound) are built. What remains is: owner decisions, frontend adoption of the
-now-closed backend gaps, the non-V1 backend gaps, and deferred/backend-blocked features — all below.
+**V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
+`DARZ_WEB_V1_STATUS.md` § Remaining gaps.
 
 ---
 
 ## Open work
 
-### A · Owner decisions (nothing below starts without one) — see `NOTES-FOR-ARIAN.md`
-- [ ] **Real `VITE_API_BASE_URL`** — `.env.production` is the deliberate `api.invalid` placeholder, so
-      the live site has no sign-in/data. One line + redeploy once the backend has a public URL. **The
-      single biggest blocker to a working site.**
-- [ ] **i18n (G-I18N-1)** — the engine ships OFF (as the old app does). Decide: which languages ship,
-      whether RTL gets a real layout pass, whether the picker is visible. ~430 strings unwired pending
-      this. Recommendation: Farsi-first with a proper RTL pass.
-- [ ] **`/artists` has no menu entry** — the old app orphans it the same way, so this is "add a link it
-      never had," not "restore one." Nav / Market screen / deep-link only? ~30 min once decided.
-- [ ] **G-6** (Intelligence · Marketing Hub · Document Builder) — API ready, no UI. Deferred unless the
-      owner reverses it.
+> The 2026-09-25 V1 plan (`V1_IMPLEMENTATION_PLAN.md`, Phases 0–10) absorbed the old Batches 4–8 and the
+> old sections B–E; they are done or have a recorded final disposition. What is left:
 
-### B · Frontend adoption of the now-closed backend gaps → `API_GAPS_FRONTEND_ADOPTION.md`
-**Batch order and progress: `API_ADOPTION_PLAN.md`** (Batches 1–7 buildable now; 8+ need the owner).
-Backend shipped these; the frontend still has the work-arounds. Do **Step 0 (regenerate `schema.d.ts`)**
-first, then:
-- [x] **Access-request** (G-P34-1/2): 200 replay = success, one key reused across retries, 429 copy. *(Batch 1)*
-- [x] **G-LOCK-1**: `expected_version` + `ConflictBanner` on the ledger entry form (`AccountingPage`) and
-      `RecordEditorPage` — the backend makes the lock **required**, so every edit on both was failing (a 500 today). *(Batch 2)*
-- [x] **CRM precision cluster** (G-P5-1/2/3/6/10 + G-F1-1, Batches 1+3) — **G-P5-9 counter display waits on the owner** (no old-app UI/copy); delete the hand-typed `detail` union, use nested
-      `artwork`, deep-link `GET /crm/requests/{id}/`, drop the client hold-expiry, show `counter_amount`,
-      pull viewing-mode labels from `/api/options/`.
-- [ ] **G-P24-1**: curated chip reads `selection_name`. **G-P25-1**: questionnaire branches on `answered`
-      (no more 404 special-case).
-- [ ] Owner-decision UI (build only if wanted): G-P24-2 "selection ready" notice, G-P25-2 owner-editable
-      questions, G-P5-4/5/11/12 (archive/withdraw/artist-link/activity read), G-P13-1 push opt-in,
-      G-CLUB-3 invite-only auction admin toggle, Phase 5b Database-desk filters.
+### A · Owner decisions (nothing below starts without one) — see `NOTES-FOR-ARIAN.md` and `V1_CONTRACT_ISSUES.md` § C
+- [ ] **Real `VITE_API_BASE_URL`** (Q-9) — `.env.production` is the deliberate `api.invalid` placeholder, so
+      the live site has no sign-in/data. **The single biggest blocker to a working site.**
+- [ ] **Raise C-13 (security) with the backend before any real portal link is issued.**
+- [ ] **Q-5 remainder — owner-deferred, API ready:** G-P24-2 selection-ready notice · G-P25-2(b) question-set
+      editor · G-P5-4 archive · G-P5-5 withdraw/cancel · G-P5-12 activity read-back · G-P13-1 push opt-in ·
+      G-CLUB-3 Club "Auction access" section · G-P5-9 counter-offer display (**Q-4**: wording).
+- [ ] **Q-2** — project money / internal notes hidden in the UI only; ask the backend to strip them?
+- [ ] **C-18 copy** — confirm the placeholder auction/lot window validation messages.
+- [ ] **Request-kind wording** — the collector-facing kind words are the old copy, not `/api/options/`.
+- [ ] **i18n (G-I18N-1)** — the engine ships OFF. Which languages, a real RTL pass, is the picker visible?
+- [ ] **`/artists` has no menu entry** — as in the old app.
+- [ ] **G-6 (Q-8)** — Intelligence · Marketing Hub · Document Builder stay not V1 unless reversed.
 
-### C · Non-V1 backend gaps (Group B) — ✅ all shipped backend-side (B1–B5, 2026-09-24)
-Every Group-B gap is now closed on `darz-backend-api` `development` (see `API_GAPS.md`). What remains
-here is **frontend adoption** (the UI that consumes them) — tracked in `API_GAPS_FRONTEND_ADOPTION.md`,
-not as a backend block:
-- [x] Backend done: G-F1-1 (typed `detail` on the create schema), G-CHAT-2 (message archive), G-Q-1 +
-      profile-edit (`PATCH /auth/me/`), G-MEMB-3/6/7 (`GET /auth/my-membership/`), G-DOC-1
-      (`GET /documents/`), G-AUC-4 (auction archive), G-REC-1 (`?house=`), G-SALE-4 (`Sale.source`),
-      G-HEALTH-2/3/4 (source_type / deleted count / created_after), auction `cover_image_url`, records
-      `?section=` (found already served).
-- [ ] Frontend adoption of the above → `API_GAPS_FRONTEND_ADOPTION.md`.
+### B · Backend defects to raise on `darz-backend-api` → `V1_CONTRACT_ISSUES.md` § B
+- [ ] **C-13** security · **C-19** WSGI Dockerfile (no auction WebSockets) · **C-6** lock 500s · **C-23**
+      chat attach re-homes documents · **C-24** Awaiting-approval over-count · **C-25** extend does not
+      revive a lapsed key · C-7, C-8, C-9, C-10, C-11, C-12, C-14, C-16, C-18, C-21 (the FE works around each).
+
+### C · Frontend follow-ups (post-V1, small)
+- [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation).
+- [ ] Remove or wire `adminNav.isPathAllowed` (unused).
+- [ ] Post-V1 candidates recorded in the matrix: legacy-id deep-link redirect, a `change-stamp` poller, the
+      Database Refine filters (G7), FE-R1…R4 Records extras.
 
 ### D · Deferred / backend-blocked features (owner-scoped)
-- [ ] **Auction Sales** — **unblocked** (G-SALE-4 shipped B5): `Sale.source` (market/auction) +
-      `?source=` on the admin sales list. Build the tab by filtering `?source=auction`. **Backend update
-      2026-09-25 (PR #51): auction→Sale automation is now live** — a won lot auto-creates a draft
-      `Sale(source=auction)` (hammer + buyer's premium; new read-only `lot` FK links back), so the tab
-      fills itself; surface the drafts for review and use `lot` to link back to the auction lot.
-- [ ] **Owner "Access" desk (G-KEY-1)** — **now unblocked** (backend PR #50, 2026-09-25):
-      `GET /api/auth/admin/access-keys/` (roster-wide; filters status/collector/expiring_soon/search) +
-      `…/access-keys/summary/` (KPI tiles). Build the standalone Access desk (see
-      `API_GAPS_FRONTEND_ADOPTION.md`). Plaintext keys never exposed.
-- [ ] **Attach documents to a thread (document_refs / D19)** — **now unblocked** (backend PR #49,
-      2026-09-25): `RequestMessage.document_refs` (team-only attach = share). Wire the admin chat composer
-      to send `document_refs: [id]`; render enriched `[{id,kind,title}]` on messages.
-- [!] **Logistics & Payment desk** (backend Phase 20 — no `/api/logistics/` namespace exists).
-- [!] **Library + pricelist builders** (backend Phase 21 — no standalone pricelist builder API).
-- [!] **Insights & Stories** (backend Phase 22 — no editorial model).
-- [ ] **Deploy Phase 14** — Vercel auto-deploys `main` (the old permission block cleared 2026-09-22).
-      `DEPLOY_ARVAN.md` + `Dockerfile`/`nginx.conf` exist for an ArvanCloud option, but the `docker build`
-      + deep-route `curl` have **not been run**. DNS/hosting cutover pends the real API URL and
-      `darzmarket-api` Phase 18.
+- [!] **Logistics & Payment desk** (backend Phase 20 — no `/api/logistics/` namespace).
+- [!] **Library + pricelist formatting** (backend Phase 21; P3c formatted download).
+- [!] **Insights & Stories** (backend Phase 22 — the nav tab stays hidden until a story can be published).
+- [!] Social suite, Strategy, Automations, Languages, Analytics, Team Workspace, "Notify collectors"
+      (no push-send endpoint), portal referral / drawn signature / offer engine.
+- [ ] **Deploy Phase 14** — Vercel auto-deploys `main`; the ArvanCloud `docker build` + deep-route `curl`
+      have **not been run**. DNS/hosting cutover pends the real API URL and `darzmarket-api` Phase 18.
 
-### E · Frontend-only follow-ups (backend ready — not API gaps)
-- [ ] **G7 "Refine" filter panel** (12 dimensions, `refine_tags`) — frontend Phase 12+.
-- [ ] **FE-R1…R4** — admin Records desk extras, highlight curation, import trigger, collector
-      Past/Upcoming/Live/Highlights sub-tabs.
-- [ ] Consume the legacy-id lookup / catalogue change-stamp endpoints when a surface needs them.
+### Done in V1 (was open on 2026-09-24)
+- [x] Frontend adoption of every closed V1 and Group-B gap (Batches 1–8 → V1 Phases 0–9a).
+- [x] Auction Sales (Phase 2) · Owner Access desk G-KEY-1 (Phase 8) · chat `document_refs` (Phase 6).
+- [x] G-P24-1 chip name (Phase 1) · G-P25-1 questionnaire `answered` (Phase 0) · Phase 5b Database filters
+      (Phase 4) · G-P5-11 artist link and G-P25-2(a) served question set (Phase 9a).
+- [x] Phase 10: matrix re-verified, cross-cutting fixes, final `DARZ_WEB_V1_STATUS.md`.
 
 ---
 
@@ -124,11 +102,12 @@ not as a backend block:
 | 13 · Testing | ✅ 620 unit + two E2E tiers (stub in CI, real-backend local); desk/collector walks are gates. CRUD-write/409 E2E needs a seeded CI backend. |
 | 14 · Deploy | `[~]` Vercel live (visual-only); ArvanCloud guide written, not yet run. |
 | — · Node 20 + admin code-split | ✅ 2026-09-24 (replaced the Node-22 floor; split shrank the bundle, cleared the chunk warning). |
+| V1 · Phases 0–10 | ✅ 2026-09-25/26 (PRs #102–#111 + Phase 10): schema regen and live bugs, collector account, Sales + Auction Sales, auctions admin, catalogue/collectors, gallery portal P1/P3/P4, documents + chat, projects, owner Access desk, owner extras, final verification. See `V1_IMPLEMENTATION_PLAN.md` §5 and `DARZ_WEB_V1_STATUS.md`. |
 
 ---
 
 ## Notes for a new session
-- Read `HANDOFF.md`, then this file, then `API_GAPS.md`.
+- Read `HANDOFF.md`, then this file, then `DARZ_WEB_V1_STATUS.md` and `API_GAPS.md`.
 - Regenerate `src/api/schema.d.ts` from a locally-running backend before trusting any API shape.
 - Verify every screen you touch against a real render (`CLAUDE.md` rule 5) — source-reading isn't enough.
 - Historical detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/`.

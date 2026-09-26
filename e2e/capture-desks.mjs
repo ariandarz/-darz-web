@@ -78,6 +78,7 @@ const DESKS = [
   ['/admin/projects/partners', '40-projects-partners'],
   ['/admin/projects/reports', '41-projects-reports'],
   ['/admin/data-health', '19-data-health'],
+  ['/admin/access', '22-access'],
   ['/admin/team', '23-team'],
   ['/admin/accounting', '31-accounting'],
   ['/admin/settings', '25-settings'],

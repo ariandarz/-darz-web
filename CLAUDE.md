@@ -42,6 +42,13 @@ Two sources are required **together** for every feature — neither alone is eno
   PR ready, requesting a review, or approving it are not merge instructions; only "merge it" (or
   "release development to main") is. `development` is 18 commits ahead of `main` as of
   2026-09-23 for exactly this reason, and that is the correct state, not a backlog to clear.
+  **2026-09-25 — a scoped standing instruction, the first of its kind:** after merging #101 on
+  request ("merge 101"), the owner said, in as many words, *"start the phases, merge each phase
+  when green, use your recommendations"* — about the phases of `docs/V1_IMPLEMENTATION_PLAN.md`.
+  That authorises merging **each V1 plan phase PR into `development` once its CI is green**, and
+  nothing else: not other PRs, not `development` → `main` (no release was asked for), and not
+  after the V1 plan is finished. "Use your recommendations" answers the owner questions Q-1…Q-9
+  in `docs/V1_CONTRACT_ISSUES.md` with the recommendation recorded there.
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full

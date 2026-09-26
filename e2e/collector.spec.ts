@@ -123,8 +123,66 @@ test('leaving a broken screen clears it — the boundary is keyed on the path', 
   await expect(page.getByText('Something went wrong')).toHaveCount(0);
 });
 
+const STUB = 'http://127.0.0.1:8787';
+
 /**
- * The questionnaire, walked end to end.
+ * G-P25-2(a) — the questionnaire runs on the owner's served set: the intro
+ * carries the set's title and intro, the steps are the set's questions (three,
+ * plus the contact step), the free-text one is last, and the answers go out as
+ * `{q, a}` under the served question text.
+ */
+test('the questionnaire runs on the served question set', async () => {
+  thrown = [];
+  await page.goto('/questionnaire');
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByRole('heading', { name: 'Tell us how you collect' })).toBeVisible();
+  await expect(page.locator('.qintro-lede')).toHaveText(
+    'Three short questions so Darz can tailor what it shares with you.',
+  );
+  await page.getByRole('button', { name: /^Begin/ }).click();
+
+  await expect(page.locator('.qstepn')).toHaveText('1 / 4');
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // the first served question, its option labels, single-select and required
+  await expect(page.locator('.qstepn')).toHaveText('2 / 4');
+  await expect(page.locator('.qbig')).toHaveText('Which kind of work draws you first?');
+  await expect(page.locator('.qopt')).toHaveText([/Abstraction/, /Figuration/, /Photography/]);
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Abstraction' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  await expect(page.locator('.qbig')).toHaveText('How often do you acquire?');
+  await page.getByRole('button', { name: 'Once in a while' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // `text` → the free-text step, which is last
+  await expect(page.locator('.qbig')).toHaveText('Any artists you follow?');
+  await page.locator('.qta2').fill('Monir Farmanfarmaian');
+  await page.getByRole('button', { name: 'Review →' }).click();
+
+  const sent = page.waitForRequest(
+    (r) => r.method() === 'POST' && r.url().endsWith('/api/recommendations/questionnaire/'),
+  );
+  await page.getByRole('button', { name: 'Confirm & send' }).click();
+  // the contact rows (pre-filled from the account) come first; the served
+  // answers follow, under the served question text
+  const { answers } = (await sent).postDataJSON() as { answers: unknown[] };
+  expect(answers.slice(-3)).toEqual([
+    { q: 'Which kind of work draws you first?', a: 'Abstraction' },
+    { q: 'How often do you acquire?', a: 'Once in a while' },
+    { q: 'Any artists you follow?', a: 'Monir Farmanfarmaian' },
+  ]);
+  await expect(page.getByRole('heading', { name: 'Thank you' })).toBeVisible();
+
+  expect(thrown, 'page errors during the served questionnaire').toEqual([]);
+});
+
+/**
+ * The questionnaire, walked end to end — on the BUILT-IN bank, which is what a
+ * collector gets when the server has no active set (its empty shape). The stub
+ * hook switches the set off for this test and back on after it.
  *
  * It is the one collector screen with real multi-step state, and three of its
  * rules are invisible from a single page load: the step counter counts the
@@ -135,6 +193,15 @@ test('leaving a broken screen clears it — the boundary is keyed on the path', 
  */
 test('the questionnaire runs intro → contact → questions → review → sent', async () => {
   thrown = [];
+  await page.request.post(`${STUB}/__stub/question-set/?active=0`);
+  try {
+    await walkBuiltInBank();
+  } finally {
+    await page.request.post(`${STUB}/__stub/question-set/?active=1`);
+  }
+});
+
+async function walkBuiltInBank() {
   await page.goto('/questionnaire');
   await page.waitForLoadState('networkidle');
 
@@ -173,7 +240,7 @@ test('the questionnaire runs intro → contact → questions → review → sent
 
   expect(thrown, 'page errors during the questionnaire').toEqual([]);
   await expect(page.getByText('Something went wrong')).toHaveCount(0);
-});
+}
 
 /** The Profile card is the only way in, so it is part of the screen. */
 test('the profile overview opens the questionnaire', async () => {
@@ -191,17 +258,29 @@ test('the profile overview opens the questionnaire', async () => {
  *
  * Worth a walk rather than a unit test alone because the two things most
  * likely to break are both integration: the six-month discount has to reach
- * the rendered card, and the redeemed plan has to be LABELLED from
- * `GET /api/options/` rather than the old app's basic/premium mapping, which
- * would print "Basic Access" for a VIP (`tiers.ts`).
+ * the rendered card, and the plan has to be LABELLED from `GET /api/options/`
+ * rather than the old app's basic/premium mapping, which would print "Basic
+ * Access" for a VIP (`tiers.ts`). The standing membership is the server's
+ * (`GET /api/auth/my-membership/`, G-MEMB-3/6/7): the stub answers an active
+ * VIP until 2027-03-12.
  */
-test('the membership sheet prices both terms and confirms a redeem', async () => {
+test('the membership row and sheet read my-membership, price both terms, and redeem', async () => {
   thrown = [];
   await page.goto('/settings');
   await page.waitForLoadState('networkidle');
 
-  await page.getByRole('button', { name: /Membership/ }).click();
-  await expect(page.locator('.mb-h')).toHaveText('Choose your access');
+  // app.html:9925-9926 — the plan sub-line and the green pill
+  const row = page.getByRole('button', { name: /Membership/ });
+  await expect(row).toContainText(/VIP · active until /);
+  await expect(row.locator('.mb-pill.on')).toHaveText('ACTIVE');
+
+  await row.click();
+  await expect(page.locator('.mb-h')).toHaveText('Your membership');
+  await expect(page.locator('.mb-active-lab')).toHaveText('Active membership');
+  await expect(page.locator('.mb-active-plan')).toHaveText('VIP');
+  await expect(page.locator('.mb-active-plan')).not.toHaveText(/Basic Access/);
+  await expect(page.locator('.mb-active-sub')).toContainText('Active until');
+  await expect(page.locator('.mb-redeem-t')).toHaveText('Enter a new access code');
   await expect(page.locator('.mb-tier').first()).toContainText('5,000,000 Toman / month');
 
   await page.getByRole('button', { name: '6 months · save 10%' }).click();
@@ -209,16 +288,225 @@ test('the membership sheet prices both terms and confirms a redeem', async () =>
   await expect(page.locator('.mb-tier').first()).toContainText('27,000,000 Toman / 6 months');
   await expect(page.locator('.mb-tier').last()).toContainText('49,000,000 Toman / 6 months');
 
+  const reread = page.waitForRequest((r) => r.url().endsWith('/api/auth/my-membership/'));
   await page.fill('.mb-code', 'dz-p-abc123');
   await page.getByRole('button', { name: 'Activate' }).click();
-
-  // The stub redeems a `vip` code. The label must come from the options map —
-  // "VIP", never the old mapping's fallback "Basic Access".
-  await expect(page.locator('.mb-active-plan')).toHaveText('VIP');
-  await expect(page.locator('.mb-active-plan')).not.toHaveText(/Basic Access/);
-  await expect(page.locator('.mb-h')).toHaveText('Your membership');
+  await reread;
+  // `Lib.toast('✓ '+plan+' activated')` (:10355), labelled from the options map
+  await expect(page.locator('.toast.show')).toHaveText('✓ VIP activated');
 
   expect(thrown, 'page errors in the membership sheet').toEqual([]);
+});
+
+test('a collector with no membership sees the plans and the default row', async () => {
+  thrown = [];
+  await page.route('**/api/auth/my-membership/', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: { tier: null, status: 'invited', active_until: null },
+        message: '',
+        timestamp: '',
+      }),
+    }),
+  );
+  await page.goto('/settings');
+  await page.waitForLoadState('networkidle');
+  const row = page.getByRole('button', { name: /Membership/ });
+  await expect(row).toContainText('View plans and your access to the private room');
+  await expect(row.locator('.mb-pill')).toHaveCount(0);
+  await row.click();
+  await expect(page.locator('.mb-h')).toHaveText('Choose your access');
+  await expect(page.locator('.mb-active')).toHaveCount(0);
+  await page.unroute('**/api/auth/my-membership/');
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * Profile › Account — the editable card (`profAccountHTML`, app.html:9765),
+ * saved through `PATCH /api/auth/me/` (G-B1). A text field saves when it is
+ * left, the language the moment it is picked; each PATCH carries only what
+ * changed.
+ */
+test('profile account edits round-trip through PATCH /auth/me/', async () => {
+  thrown = [];
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.locator('.pf-grp').first()).toHaveText('Account details');
+  await expect(page.locator('#pf-full_name')).toHaveValue('E2E Collector');
+  await expect(page.locator('#pf-city')).toHaveValue('Tehran');
+  // the old note is gone: the card is editable now
+  await expect(page.getByText('write to Darz in Chat')).toHaveCount(0);
+
+  const cityPatch = page.waitForRequest(
+    (r) => r.method() === 'PATCH' && r.url().endsWith('/api/auth/me/'),
+  );
+  await page.fill('#pf-city', 'Isfahan');
+  await page.locator('#pf-city').blur();
+  expect((await cityPatch).postDataJSON()).toEqual({ city: 'Isfahan' });
+  await expect(page.locator('.toast.show')).toHaveText('Saved');
+  await expect(page.locator('#pf-city')).toHaveValue('Isfahan');
+
+  const langPatch = page.waitForRequest(
+    (r) => r.method() === 'PATCH' && r.url().endsWith('/api/auth/me/'),
+  );
+  await page.getByRole('button', { name: 'Preferred communication language' }).click();
+  await page.getByRole('option', { name: 'Farsi' }).click();
+  expect((await langPatch).postDataJSON()).toEqual({ preferred_language: 'fa' });
+
+  // leaving a field unchanged sends nothing
+  let extra = 0;
+  const count = (r: { method: () => string }) => r.method() === 'PATCH' && extra++;
+  page.on('request', count);
+  await page.locator('#pf-full_name').focus();
+  await page.locator('#pf-full_name').blur();
+  await page.waitForLoadState('networkidle');
+  page.off('request', count);
+  expect(extra).toBe(0);
+
+  expect(thrown).toEqual([]);
+});
+
+test('a rejected profile field shows the server’s message under that field', async () => {
+  thrown = [];
+  await page.route('**/api/auth/me/', (route) =>
+    route.request().method() === 'PATCH'
+      ? route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Invalid input.',
+              details: { phone: ['Ensure this field has no more than 50 characters.'] },
+            },
+            timestamp: '',
+          }),
+        })
+      : route.fallback(),
+  );
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+  await page.fill('#pf-phone', '9'.repeat(60));
+  await page.locator('#pf-phone').blur();
+  await expect(page.locator('#pf-phone')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('.dz-field-err')).toHaveText(
+    'Ensure this field has no more than 50 characters.',
+  );
+  await page.unroute('**/api/auth/me/');
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * G-DOC-1 — "Your documents" (`dzDocsSectionHTML`, app.html:7909), from
+ * `GET /api/documents/`: collapsed, counted, each row "New" until it is opened
+ * on this device (`darz_docs_seen`).
+ */
+test('your documents list renders from /api/documents/ and marks an opened one seen', async () => {
+  thrown = [];
+  await page.evaluate(() => localStorage.removeItem('darz_docs_seen'));
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+
+  const docs = page.locator('details.pf-docs');
+  await expect(docs).toBeVisible();
+  await expect(docs.locator('summary')).toContainText('Your documents');
+  await expect(docs.locator('summary')).toContainText('Invoices, certificates & provenance');
+  await expect(docs.locator('.pf-docs-n')).toHaveText('2');
+  await expect(docs.locator('.pf-docs-dot')).toHaveCount(1);
+
+  await docs.locator('summary').click();
+  const rows = docs.locator('.pf-doc');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0).locator('.l')).toHaveText('Invoice');
+  await expect(rows.nth(1).locator('.l')).toHaveText('Certificate');
+  await expect(rows.nth(0)).toContainText('Parviz Tanavoli — Heech');
+  await expect(docs.locator('.pf-doc-new')).toHaveCount(2);
+  await expect(rows.nth(0)).toHaveAttribute('href', /inv-0001\.pdf$/);
+
+  const popup = page.waitForEvent('popup');
+  await rows.nth(0).click();
+  await (await popup).close();
+  await expect(rows.nth(0).locator('.pf-doc-view')).toContainText('View');
+  await expect(docs.locator('.pf-doc-new')).toHaveCount(1);
+  expect(thrown).toEqual([]);
+});
+
+test('no documents, no section — the old app hid it', async () => {
+  thrown = [];
+  await page.route(/\/api\/documents\/(\?.*)?$/, (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: {
+          pagination: {
+            page: 1,
+            per_page: 100,
+            total_pages: 1,
+            total_count: 0,
+            has_next: false,
+            has_previous: false,
+          },
+          results: [],
+        },
+        message: '',
+        timestamp: '',
+      }),
+    }),
+  );
+  await page.goto('/profile?tab=account');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('#pf-full_name')).toBeVisible();
+  await expect(page.locator('details.pf-docs')).toHaveCount(0);
+  await page.unroute(/\/api\/documents\/(\?.*)?$/);
+  expect(thrown).toEqual([]);
+});
+
+test('settings: edit profile leads to the editable card; terms resolve to the published document', async () => {
+  thrown = [];
+  await page.goto('/settings');
+  await page.waitForLoadState('networkidle');
+  // the stub publishes `legal_terms` only; privacy keeps its fallback
+  await expect(page.getByRole('link', { name: /Terms & Conditions/ })).toHaveAttribute(
+    'href',
+    /legal_terms\.pdf$/,
+  );
+  await expect(page.getByRole('link', { name: /Privacy Policy/ })).toHaveAttribute(
+    'href',
+    'https://darzmarket.art/privacy',
+  );
+  await page.getByRole('link', { name: /Edit profile/ }).click();
+  await expect(page).toHaveURL(/\/profile\?tab=account$/);
+  await expect(page.locator('#pf-full_name')).toBeVisible();
+  expect(thrown).toEqual([]);
+});
+
+/** G-P24-1 — the chip carries the selection's name. */
+test('the curated chip shows the selection name', async () => {
+  thrown = [];
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('.dz-curchip .dz-curl')).toHaveText('Autumn Selection');
+  await expect(page.locator('.dz-curchip .dz-curn')).toHaveText('1');
+  expect(thrown).toEqual([]);
+});
+
+/** Q-6 — no "Make an offer" on a work without a currency. */
+test('make an offer is hidden on a work with no currency', async () => {
+  thrown = [];
+  await page.goto('/artwork/00000000-0000-4000-8000-00000000a101');
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('button', { name: 'Make an offer' })).toBeVisible();
+
+  await page.goto('/artwork/00000000-0000-4000-8000-00000000a104');
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('button', { name: '48h hold' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Make an offer' })).toHaveCount(0);
+  expect(thrown).toEqual([]);
 });
 
 /**
@@ -288,5 +576,87 @@ test('a deep link to a thread reads its own request and renders it', async () =>
   await direct;
   await expect(page.getByRole('heading', { name: 'Offer made' })).toBeVisible();
   await expect(page.locator('.actsh-artt')).toHaveText('Parviz Tanavoli — Poet and Bird');
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * V1 Phase 3 — the auction cards read `cover_image_url`. Each card used to
+ * read its first lot (`GET /auctions/{id}/lots/?per_page=1`) for a poster:
+ * one extra request per card. The list is now the only auctions read.
+ */
+test('the auctions list draws the poster from the row, with no per-card lot read', async () => {
+  thrown = [];
+  const reads: string[] = [];
+  const onRequest = (req: { url: () => string }) => {
+    const u = new URL(req.url());
+    if (u.pathname.startsWith('/api/auctions/')) reads.push(u.pathname);
+  };
+  page.on('request', onRequest);
+  try {
+    await page.goto('/auctions');
+    await expect(page.getByText('Spring Evening Auction')).toBeVisible();
+    await expect(page.getByText('Summer Online Auction')).toBeVisible();
+    await expect(page.locator('.auc-split-img img')).toHaveAttribute(
+      'src',
+      /\/files\/auction-cover\.svg$/,
+    );
+    await page.waitForLoadState('networkidle');
+    expect(reads.filter((p) => p.includes('/lots/'))).toEqual([]);
+    expect(reads.filter((p) => p === '/api/auctions/')).toHaveLength(1);
+  } finally {
+    page.off('request', onRequest);
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('an event with no lots says so, and its hero is the uploaded poster', async () => {
+  thrown = [];
+  await page.goto('/auctions/00000000-0000-4000-8000-00000000ac02');
+  await expect(page.getByText('No lots in this view.')).toBeVisible();
+
+  await page.goto('/auctions/00000000-0000-4000-8000-00000000ac01');
+  await expect(page.locator('.auc-hero img')).toHaveAttribute(
+    'src',
+    /\/files\/auction-cover\.svg$/,
+  );
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * V1 Phase 6 (D19) — a document Darz attached to a message shows on the
+ * collector's thread as the "Your documents" row, and opens the same signed
+ * PDF that list holds (the ref itself carries no URL).
+ */
+test('a document attached in chat renders as a chip that opens its PDF', async () => {
+  thrown = [];
+  await page.goto('/chat/00000000-0000-4000-8000-00000000c104');
+  const chip = page.locator('.dz-bub.darz .dz-chatdoc');
+  await expect(chip).toHaveCount(1);
+  await expect(chip.locator('.l')).toHaveText('Invoice');
+  await expect(chip.locator('.s')).toHaveText('Parviz Tanavoli — Heech');
+  await expect(chip).toHaveAttribute('href', /\/files\/inv-0001\.pdf$/);
+  expect(thrown).toEqual([]);
+});
+
+/**
+ * G-P5-11 — "Enquire about works by <artist>" files an `information` request
+ * that carries the artist's real id, not just the name in the message.
+ */
+test('the artist enquiry sends the artist id', async () => {
+  thrown = [];
+  const ARTIST = '00000000-0000-4000-8000-00000000a715';
+  await page.goto(`/artists/${ARTIST}`);
+  await page.waitForLoadState('networkidle');
+  const posted = page.waitForRequest(
+    (r) => r.method() === 'POST' && r.url().endsWith('/api/crm/requests/'),
+  );
+  await page.getByRole('button', { name: 'Enquire about works by Parvaneh Etemadi' }).click();
+  expect((await posted).postDataJSON()).toMatchObject({
+    kind: 'information',
+    artwork: null,
+    artist: ARTIST,
+    detail: { message: 'Please let me know about available works by Parvaneh Etemadi.' },
+  });
+  await expect(page.getByText('Enquiry received')).toBeVisible();
   expect(thrown).toEqual([]);
 });

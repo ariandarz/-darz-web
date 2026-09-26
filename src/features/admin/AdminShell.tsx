@@ -209,7 +209,7 @@ export function AdminShell() {
  * A query-less tab keeps NavLink's own answer — filters and deep links on a
  * desk must not un-light its tab — EXCEPT when a sibling tab claims this
  * exact location (the Documents pattern: three tabs, one pathname, `?kind=`
- * apart). */
+ * apart) or this pathname (a deeper sibling carrying a query). */
 function subtabOn(
   tabPath: string,
   siblings: ReadonlyArray<{ path: string | null }>,
@@ -219,5 +219,10 @@ function subtabOn(
 ): boolean {
   if (tabPath.includes('?')) return tabPath === pathname + search;
   if (!isActive) return false;
-  return !siblings.some((o) => o.path !== tabPath && o.path === pathname + search);
+  // a sibling owns this location outright, or owns its pathname (a deeper tab
+  // with a query on it: `/admin/projects/list?quick=…` must not also light
+  // the `/admin/projects` Dashboard tab, whose NavLink matches as a prefix)
+  return !siblings.some(
+    (o) => o.path !== tabPath && (o.path === pathname + search || o.path === pathname),
+  );
 }

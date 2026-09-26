@@ -19,8 +19,11 @@ import type {
   Artist,
   ArtistQuery,
   Artwork,
+  ArtworkSelection,
   Auction,
   AuctionNotification,
+  AuctionCreateBody,
+  AuctionPatch,
   AuctionQuery,
   AuctionRecord,
   AuctionRecordQuery,
@@ -28,8 +31,12 @@ import type {
   BidHistoryItem,
   CatalogueQuery,
   CollectorActivity,
+  CollectorDocument,
   CollectorRequest,
   AccessKeyAdmin,
+  AccessKeyDeskSummary,
+  AccessKeyRoster,
+  AccessKeyRosterQuery,
   AccessRequestAdmin,
   AppTheme,
   AppThemeVersion,
@@ -39,11 +46,15 @@ import type {
   DataHealthReport,
   CollectorActivityAdmin,
   CollectorAdmin,
+  CollectorDeskSummary,
   CollectorAdminQuery,
   CollectorSelection,
   CollectorLoginEvent,
   CollectorRequestQuery,
   MembershipCodeAdmin,
+  MeUpdate,
+  MyMembership,
+  PublicDocument,
   TeamUserAdmin,
   DashboardSummary,
   CreatedRequest,
@@ -52,9 +63,12 @@ import type {
   PublishedRecommendation,
   CollectorQuestionnaire,
   QuestionnaireAnswer,
+  QuestionSet,
   RequestDetailInput,
   RequestKind,
   RequestMessage,
+  MessageAttachments,
+  DocumentActivity,
   RequestMessageQuery,
   SavedArtwork,
   SavedArtworkQuery,
@@ -62,7 +76,12 @@ import type {
   ArtworkAdminQuery,
   ArtworkImageAdmin,
   ArtistAdmin,
+  ArtistAdminQuery,
   SaleAdmin,
+  SaleDeskSummary,
+  SaleNote,
+  SaleCreateInput,
+  SalePatch,
   SaleQuery,
   DocumentAdmin,
   DocumentQuery,
@@ -73,6 +92,7 @@ import type {
   GalleryUpdateAdmin,
   BidderRegistrationAdmin,
   LotAdmin,
+  LotPatch,
   LedgerEntryAdmin,
   LedgerQuery,
   LedgerSummary,
@@ -87,6 +107,13 @@ import type {
   PortalExhibition,
   PortalExhibitionInput,
   PortalCatalogueEntry,
+  PortalPricelistBuild,
+  PortalUpdate,
+  GalleryPricelistCap,
+  GalleryPricelistStatus,
+  ExhibitionCatalogItem,
+  ExhibitionCatalogInput,
+  ExhibitionCatalogPatch,
   ExhibitionAdmin,
   ExhibitionAdminPatch,
   ExhibitionLineInput,
@@ -99,6 +126,7 @@ import type {
   ProjectDashboard,
   ProjectReportRow,
   ProjectQuery,
+  ProjectTotals,
   PartnerOrgAdmin,
   PartnerOrgInput,
   PartnerOrgPatch,
@@ -125,6 +153,23 @@ import type {
   ArtworkSelectionGrant,
 } from './types';
 import type { PortalClient } from './PortalClient';
+
+/** The wire body of a thread reply. `artwork_refs` always goes (the
+ * serializer's own default is `[]`, and the thread has always sent it);
+ * `document_refs` only when a document is attached, so a plain reply's body
+ * is exactly what it was before D19. Exported for the payload test. */
+export function messagePayload(
+  body: string,
+  attach: MessageAttachments = {},
+): { body: string; artwork_refs: string[]; document_refs?: string[] } {
+  const out: { body: string; artwork_refs: string[]; document_refs?: string[] } = {
+    body,
+    artwork_refs: attach.artworkRefs ?? [],
+  };
+  const docs = (attach.documentRefs ?? []).filter(Boolean);
+  if (docs.length) out.document_refs = [...new Set(docs)];
+  return out;
+}
 
 export abstract class ResourceService {
   protected readonly client: ApiClient;
@@ -167,7 +212,10 @@ export class CatalogService extends ResourceService {
    * behaviour. Needs a collector session; a team token gets a 403.
    */
   artworkSelections(query: CatalogueQuery = {}) {
-    return this.list<Artwork>('/artworks/selections/', query as RequestOptions['query']);
+    return this.list<ArtworkSelection>(
+      '/artworks/selections/',
+      query as RequestOptions['query'],
+    );
   }
   artwork(id: string) {
     return this.retrieve<Artwork>(`/artworks/${id}/`);
@@ -201,6 +249,8 @@ export class CrmService extends ResourceService {
   async createRequest(body: {
     kind: RequestKind;
     artwork?: string | null;
+    /** G-P5-11 — the artist an artist enquiry is about (nullable FK). */
+    artist?: string | null;
     detail?: RequestDetailInput;
     client_req_id?: string;
   }): Promise<CreatedRequest> {
@@ -247,12 +297,21 @@ export class CrmService extends ResourceService {
       query as RequestOptions['query'],
     );
   }
-  /** Admin: reply on a request's thread. */
-  adminPostMessage(requestId: string, body: string, artworkRefs: string[] = []) {
-    return this.create<RequestMessage>(`/admin/requests/${requestId}/messages/`, {
-      body,
-      artwork_refs: artworkRefs,
-    });
+  /** Admin: reply on a request's thread. `documentRefs` (D19) attaches
+   * documents by id — the backend SHARES each with the thread's collector
+   * (the G-DOC-1 path, collector-visible kinds only, else a 400) and answers
+   * the message with the enriched `document_refs: [{id, kind, title}]`. The
+   * key is only sent when something is attached. */
+  adminPostMessage(requestId: string, body: string, attach: MessageAttachments = {}) {
+    return this.create<RequestMessage>(
+      `/admin/requests/${requestId}/messages/`,
+      messagePayload(body, attach),
+    );
+  }
+  /** Admin: archive (default) or restore one thread message (G-CHAT-2). An
+   * admin-desk-only hide — the collector's thread never changes. */
+  adminArchiveMessage(messageId: string, archived = true) {
+    return this.create<RequestMessage>(`/admin/messages/${messageId}/archive/`, { archived });
   }
   /** Admin: mark every collector message on the thread seen. */
   adminMarkSeen(requestId: string) {
@@ -426,9 +485,11 @@ export class RecommendationService extends ResourceService {
     return this.create<PublishedRecommendation>(`/published/${id}/dismiss/`);
   }
 
-  /** The collector's own questionnaire. **404 until they have submitted one**
-   * — that is the documented answer, not an error, and the caller treats it as
-   * "not filled in yet" (see `QuestionnaireController.load`). */
+  /** The collector's own questionnaire. Always 200 on the current backend:
+   * `answered: false` (empty answers, null `submitted_at`) until they have sent
+   * one (G-P25-1) — read it through `isQuestionnaireAnswered`, never the status.
+   * An older backend answered that case with a 404; callers still treat any
+   * rejection as "not filled in yet" (see `QuestionnaireController.load`). */
   questionnaire() {
     return this.retrieve<CollectorQuestionnaire>('/questionnaire/');
   }
@@ -436,6 +497,12 @@ export class RecommendationService extends ResourceService {
    * rebuilds the collector's preference rows from them. */
   submitQuestionnaire(answers: QuestionnaireAnswer[]) {
     return this.create<CollectorQuestionnaire>('/questionnaire/', { answers });
+  }
+  /** The active owner-editable question set (G-P25-2). Always 200: an empty
+   * shape (`id: null`, `questions: []`) when none is active — the
+   * questionnaire then falls back to its built-in bank (`questions.ts`). */
+  questionSet() {
+    return this.retrieve<QuestionSet>('/question-set/');
   }
 }
 
@@ -459,6 +526,10 @@ export class AdminAccountsService extends ResourceService {
 
   collectors(query: CollectorAdminQuery = {}) {
     return this.list<CollectorAdmin>('/collectors/', query as RequestOptions['query']);
+  }
+  /** The Collectors desk strip (G-COL-1) — whole-roster counts. */
+  collectorsSummary() {
+    return this.retrieve<CollectorDeskSummary>('/collectors/summary/');
   }
   collector(id: string) {
     return this.retrieve<CollectorAdmin>(`/collectors/${id}/`);
@@ -495,6 +566,16 @@ export class AdminAccountsService extends ResourceService {
       `/collectors/${collectorId}/access-keys/`,
       expiresAt ? { expires_at: expiresAt } : {},
     );
+  }
+  /** The roster-wide key list (G-KEY-1), soonest-to-lapse first — the owner
+   * Access desk. Never carries a plaintext key. */
+  accessKeysRoster(query: AccessKeyRosterQuery = {}) {
+    return this.list<AccessKeyRoster>('/access-keys/', query as RequestOptions['query']);
+  }
+  /** The Access desk's KPI tiles (G-KEY-1), counted with the roster's own
+   * expiry rule so tiles and filters agree. */
+  accessKeysSummary() {
+    return this.retrieve<AccessKeyDeskSummary>('/access-keys/summary/');
   }
   revokeAccessKey(keyId: string) {
     return this.create<AccessKeyAdmin>(`/access-keys/${keyId}/revoke/`);
@@ -703,10 +784,9 @@ export class CatalogAdminService extends ResourceService {
     );
   }
 
-  /** The admin artists roster — the backend list takes NO filters (G-CAT-3:
-   * no search/ordering/works count), only pagination; the desk fetches a page
-   * and searches client-side. */
-  artists(query: { page?: number; per_page?: number } = {}) {
+  /** The admin artists roster — server `search` and `ordering` and a
+   * list-only `works_count` per row (G-CAT-3). */
+  artists(query: ArtistAdminQuery = {}) {
     return this.list<ArtistAdmin>('/artists/', query as RequestOptions['query']);
   }
   createArtist(body: Partial<ArtistAdmin>) {
@@ -771,12 +851,12 @@ export class SalesAdminService extends ResourceService {
   /** `responsible` is required by the serializer — a standard admin (who
    * cannot list team users, that endpoint is owner-only) records the deal
    * under their own principal id. */
-  createSale(body: Partial<SaleAdmin>) {
+  createSale(body: SaleCreateInput) {
     return this.create<SaleAdmin>('/sales/', body);
   }
   /** Draft-only (R7) — the service refuses once confirmed; the desk disables
    * the form first. */
-  updateSale(id: string, body: Partial<SaleAdmin> & { expected_version: number }) {
+  updateSale(id: string, body: SalePatch) {
     return this.client.send<SaleAdmin>('PATCH', `${this.basePath}/sales/${id}/`, { body });
   }
   /** The linear chain draft→confirmed→invoiced→paid→delivered→completed→
@@ -794,6 +874,58 @@ export class SalesAdminService extends ResourceService {
     return this.create<SaleAdmin>(`/sales/${id}/delivery-status/`, {
       delivery_status: deliveryStatus,
     });
+  }
+  /** The header counts (G-SALE-1) — ledger-wide, no filter. */
+  summary() {
+    return this.retrieve<SaleDeskSummary>('/sales/summary/');
+  }
+  /** Set (a `YYYY-MM-DD` date) or clear (`null`) the follow-up (G-SALE-5).
+   * The key is required, so a clear sends `null` explicitly. No lock, and it
+   * works after confirm — operational, not a commercial term. */
+  followUp(id: string, date: string | null) {
+    return this.create<SaleAdmin>(`/sales/${id}/follow-up/`, { follow_up_at: date });
+  }
+  /** The deal's internal notes, paginated, newest first (G-SALE-5). */
+  notes(id: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<SaleNote>(`/sales/${id}/notes/`, query);
+  }
+  /** Append a note — there is no edit or delete (append-only). */
+  addNote(id: string, body: string) {
+    return this.create<SaleNote>(`/sales/${id}/notes/`, { body });
+  }
+  /** Soft delete — the backend keeps the row (`is_deleted`), audit-logged.
+   * Bound because the old deal card has "Delete deal" (`darz-studio.html:12664`). */
+  deleteSale(id: string) {
+    return this.remove(`/sales/${id}/`);
+  }
+}
+
+/** `GET /api/documents/` — the signed-in collector's own documents (G-DOC-1):
+ * the invoices, certificates and provenance Darz has shared with them.
+ * Collector-only, read-only, paginated, newest-shared first. Kept apart from
+ * `DocumentsAdminService` on purpose — a different principal, a different
+ * serializer (no `fields`, no lifecycle), and no write of any kind. */
+export class DocumentsService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/documents');
+  }
+
+  mine(query: { page?: number; per_page?: number } = {}) {
+    return this.list<CollectorDocument>('/', query);
+  }
+}
+
+/** `GET /api/documents/public/{kind}/` — genuinely public content (the legal
+ * briefs: `legal_terms` and its siblings), `AllowAny`. Only ever the latest
+ * **confirmed, public-visibility** document of that kind; a kind with nothing
+ * published answers 404, which callers treat as "use the fallback". */
+export class PublicDocumentsService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/documents/public');
+  }
+
+  byKind(kind: string) {
+    return this.retrieve<PublicDocument>(`/${encodeURIComponent(kind)}/`);
   }
 }
 
@@ -867,6 +999,26 @@ export class DocumentsAdminService extends ResourceService {
   archiveDocument(id: string) {
     return this.create<DocumentAdmin>(`/documents/${id}/archive/`);
   }
+  /** G-DOC-2 — the document's audit trail, newest first (C-15: flat actor). */
+  activity(id: string, query: { page?: number; per_page?: number } = {}) {
+    return this.list<DocumentActivity>(
+      `/documents/${id}/activity/`,
+      query as RequestOptions['query'],
+    );
+  }
+  /** G-DOC-1 — issue the document to a collector (it appears in their
+   * `GET /api/documents/`). Collector-visible kinds only; anything else is a
+   * 400. Not owner-locked server-side (`share_with_collector` has no guard). */
+  shareDocument(id: string, collector: string) {
+    return this.create<DocumentAdmin>(`/documents/${id}/share/`, { collector });
+  }
+  /** Revoke the share: clears `shared_at`, keeps `collector` on record. */
+  unshareDocument(id: string) {
+    return this.client.send<DocumentAdmin>(
+      'DELETE',
+      `${this.basePath}/documents/${id}/share/`,
+    );
+  }
   versions(id: string, query: { page?: number; per_page?: number } = {}) {
     return this.list<DocumentVersionAdmin>(
       `/documents/${id}/versions/`,
@@ -885,7 +1037,11 @@ export class GalleryAdminService extends ResourceService {
     super(client, '/gallery/admin');
   }
 
-  links(query: { source_type?: string; page?: number; per_page?: number } = {}) {
+  /** `search` is server-side (G-PORT-15): a case-insensitive substring over
+   * name / contact_name / contact_email (`views.py::admin_link_list_create`). */
+  links(
+    query: { source_type?: string; search?: string; page?: number; per_page?: number } = {},
+  ) {
     return this.list<GalleryLinkAdmin>('/links/', query as RequestOptions['query']);
   }
   link(id: string) {
@@ -911,6 +1067,15 @@ export class GalleryAdminService extends ResourceService {
   }
   disableLink(id: string) {
     return this.create<GalleryLinkAdmin>(`/links/${id}/disable/`);
+  }
+  /** G-PORT-13 — a fresh token+PIN for the SAME link (works, shows and
+   * thread stay); the old pair stops working. Shown once, like an issue.
+   * Credentials only — the link's status is untouched, so a disabled or
+   * expired link stays that way (`views.py::admin_link_reissue`). */
+  reissueLink(id: string) {
+    return this.create<{ link: GalleryLinkAdmin; token: string; pin: string }>(
+      `/links/${id}/reissue/`,
+    );
   }
   setLinkFeatures(
     id: string,
@@ -968,16 +1133,25 @@ export class GalleryAdminService extends ResourceService {
     return this.create<GalleryUpdateAdmin>(`/updates/${id}/reject/`, { note });
   }
 
-  /** The pricelists this partner sent through the portal. The serializer
-   * carries `title`/`notes`/`created_at` only — the stored file itself is
-   * NOT served to the desk (`GalleryPricelist.object_key` is not in
-   * `GalleryPricelistSerializer`), so the desk can say one arrived and when,
-   * and cannot open it. Recorded as G-PORT-14. */
+  /** The pricelists this partner sent through the portal — each with its
+   * `status`, a presigned `file_url` for an upload (G-PORT-14) and the
+   * structured `lines` of one built in-portal (P3b). */
   linkPricelists(linkId: string, query: { page?: number; per_page?: number } = {}) {
     return this.list<GalleryPricelistAdmin>(
       `/links/${linkId}/pricelists/`,
       query as RequestOptions['query'],
     );
+  }
+
+  /** P3a — accepting one SUPERSEDES the link's previously accepted list
+   * server-side with no transition guard (C-21): re-read the link's
+   * pricelists after every call rather than patching one row locally. */
+  setPricelistStatus(id: string, status: GalleryPricelistStatus) {
+    return this.create<GalleryPricelistAdmin>(`/pricelists/${id}/status/`, { status });
+  }
+  /** The advisory soft cap (never a block, `GalleryPricelistService.cap_status`). */
+  pricelistCap(linkId: string) {
+    return this.retrieve<GalleryPricelistCap>(`/links/${linkId}/pricelists/cap/`);
   }
 
   /** The link's Q&A thread — the admin side of the portal's Messages tab.
@@ -990,6 +1164,31 @@ export class GalleryAdminService extends ResourceService {
   }
   sendLinkMessage(linkId: string, body: string) {
     return this.create<PortalMessage>(`/links/${linkId}/messages/`, { body });
+  }
+
+  // --- The editable Exhibition Services menu (G-PORT-12b) -----------------
+  // The table the portal's `exhibitions/catalogue/` reads (active rows only)
+  // and the desk composes from. `key` is fixed once created.
+
+  exhibitionCatalogue(query: PageQuery = {}) {
+    return this.list<ExhibitionCatalogItem>(
+      '/exhibition-catalogue/',
+      query as RequestOptions['query'],
+    );
+  }
+  createExhibitionCatalogueItem(body: ExhibitionCatalogInput) {
+    return this.create<ExhibitionCatalogItem>('/exhibition-catalogue/', body);
+  }
+  /** Locked — a stale `expected_version` is a 409 (`enforce_version`). */
+  updateExhibitionCatalogueItem(id: string, body: ExhibitionCatalogPatch) {
+    return this.client.send<ExhibitionCatalogItem>(
+      'PATCH',
+      `${this.basePath}/exhibition-catalogue/${id}/`,
+      { body },
+    );
+  }
+  deleteExhibitionCatalogueItem(id: string) {
+    return this.remove(`/exhibition-catalogue/${id}/`);
   }
 
   // --- Exhibition Services (Phase 12-A, the desk half) ----------------------
@@ -1076,20 +1275,42 @@ export class AuctionsAdminService extends ResourceService {
     super(client, '/auctions/admin');
   }
 
-  auctions(query: { page?: number; per_page?: number } = {}) {
+  /** The working list hides archived auctions unless `archived` is sent
+   * (G-AUC-4); `archived: true` is the old desk's Archived view. */
+  auctions(query: AuctionQuery = {}) {
     return this.list<Auction>('/auctions/', query as RequestOptions['query']);
   }
   auction(id: string) {
     return this.retrieve<Auction>(`/auctions/${id}/`);
   }
-  createAuction(body: {
-    title: string;
-    description?: string;
-    currency: string;
-    starts_at: string;
-    ends_at: string;
-  }) {
+  /** `terms`/`terms_required` ride the create too (G-AUC-1). */
+  createAuction(body: AuctionCreateBody) {
     return this.create<Auction>('/auctions/', body);
+  }
+  /** Edit title/description/currency/window/terms (G-AUC-1). Draft or
+   * scheduled only — anything else is a 400 whose `code` is
+   * `INTERNAL_ERROR` (C-11), so callers branch on the status, not the code.
+   * `expected_version` is mandatory (C-6); a stale one is a 409. */
+  updateAuction(id: string, body: AuctionPatch) {
+    return this.client.send<Auction>('PATCH', `${this.basePath}/auctions/${id}/`, { body });
+  }
+  /** Archive (default) or restore (`restore: true` → `{archived:false}`) —
+   * the old card's Archive / ↩ Restore (`darz-studio.html:31814`, `:31813`). */
+  archiveAuction(id: string, restore = false) {
+    return this.create<Auction>(`/auctions/${id}/archive/`, { archived: !restore });
+  }
+  /** The uploaded poster (old "↑ Upload poster", `:32064`) — multipart,
+   * field `file`; replacing deletes the previous object server-side. */
+  uploadCover(id: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.client.send<Auction>('POST', `${this.basePath}/auctions/${id}/cover-image/`, {
+      body: form,
+    });
+  }
+  /** "Remove uploaded poster" (`:32065`). */
+  removeCover(id: string) {
+    return this.client.send<Auction>('DELETE', `${this.basePath}/auctions/${id}/cover-image/`);
   }
   /** The old panel's `×` on an auction card, titled "Delete auction
    * permanently" (`:31815`, confirm "Delete this auction?"). **Built
@@ -1138,6 +1359,12 @@ export class AuctionsAdminService extends ResourceService {
     soft_close_sec?: number;
   }) {
     return this.create<LotAdmin>(`/auctions/${body.auction}/lots/`, body);
+  }
+  /** Edit a SCHEDULED lot (G-AUC-2) — the old modal's per-lot Est. low /
+   * Est. high / Opening bid / Reserve row (`:32019-32024`). Locked (C-6); a
+   * non-scheduled lot is a 400 (C-11). */
+  updateLot(lotId: string, body: LotPatch) {
+    return this.client.send<LotAdmin>('PATCH', `${this.basePath}/lots/${lotId}/`, { body });
   }
   /** scheduled → live; the artwork transitions to Reserved server-side. */
   /** One lot as the desk sees it — the admin tier, which carries the reserve
@@ -1198,6 +1425,11 @@ export class AuctionsAdminService extends ResourceService {
   }
   rejectRegistration(id: string) {
     return this.create<BidderRegistrationAdmin>(`/registrations/${id}/reject/`);
+  }
+  /** The old ↺ Reset (`:31887`, G-AUC-3): a REJECTED registration goes back
+   * to pending; any other status is a 400 (C-11). */
+  resetRegistration(id: string) {
+    return this.create<BidderRegistrationAdmin>(`/registrations/${id}/reset/`);
   }
 }
 
@@ -1451,8 +1683,9 @@ export class OptionsService extends ResourceService {
   }
 }
 
-/** Auth — delegates the token lifecycle to `AuthSession`, adds the one
- * authenticated auth endpoint that isn't part of it (`membership/redeem/`). */
+/** Auth — delegates the token lifecycle to `AuthSession`, and adds the
+ * collector's own authenticated account endpoints that aren't part of it:
+ * the profile edit, the membership read and the redeem. */
 export class AuthService extends ResourceService {
   private readonly session: AuthSession;
 
@@ -1472,6 +1705,25 @@ export class AuthService extends ResourceService {
   }
   me(): Promise<Me> {
     return this.session.loadMe();
+  }
+  /**
+   * The collector's own profile edit (`PATCH /auth/me/`, G-B1) — only
+   * `full_name` · `phone` · `city` · `preferred_language` (`MeUpdate`). The
+   * response is the whole updated `Me`, and it replaces the session's cached
+   * one, so the header, Settings and Profile all read the edit at once.
+   * A 400 is a `ValidationError` whose `fields` name the rejected field; a
+   * team principal gets a 403.
+   */
+  async updateMe(body: MeUpdate): Promise<Me> {
+    const me = await this.client.send<Me>('PATCH', '/auth/me/', { body });
+    this.session.adoptMe(me);
+    return me;
+  }
+  /** The collector's membership summary (G-MEMB-3/6/7) — what the Settings
+   * row's pill and the sheet's "Active membership" block read. Collector-only
+   * (a team token 403s). */
+  myMembership() {
+    return this.retrieve<MyMembership>('/my-membership/');
   }
   /** **Unbound — waiting on its screen, not dead.** Membership redeem is a
    * backend-ready collector item that v0.1 hid (`docs/TASKLIST.md`, "What
@@ -1541,6 +1793,12 @@ export class ProjectsAdminService extends ResourceService {
       stage,
       expected_version: expectedVersion,
     });
+  }
+  /** G-PROJ-9 — the per-currency money roll-up (the old desk's
+   * `projMoneyCalc`, server-side) plus the converted total when the project
+   * carries a manual rate. Decimals come back as strings (C-22). */
+  totals(id: string) {
+    return this.retrieve<ProjectTotals>(`/projects/${id}/totals/`);
   }
   dashboard() {
     return this.retrieve<ProjectDashboard>('/projects/dashboard/');
@@ -1676,7 +1934,9 @@ export class GalleryPortalService {
     return `/gallery/portal/${encodeURIComponent(token)}`;
   }
 
-  /** The one big read — link + assigned works (+funnel) + pricelists + messages. */
+  /** The one big read — link + assigned works (+image, +funnel) + pricelists
+   * + messages + the source's own updates + cover (C-8). Raw: the session
+   * normalises the embedded arrays (`normalisePortalState`). */
   state(token: string, pin: string) {
     return this.client.send<PortalState>('GET', `${this.base(token)}/`, { query: { pin } });
   }
@@ -1688,6 +1948,29 @@ export class GalleryPortalService {
    * for the reviewer (`GalleryUpdateService.approve`). */
   submitUpdate(token: string, pin: string, body: PortalUpdateSubmit) {
     return this.client.send<PortalUpdateRow>('POST', `${this.base(token)}/updates/`, {
+      body: { pin, ...body },
+    });
+  }
+
+  /** G-PORT-1 — a replacement image for an ASSIGNED work, multipart with the
+   * PIN as a form part (C-9: the schema documents `?pin=` here, which 401s —
+   * `_portal_pin` reads the body on every non-GET). Lands as a pending
+   * `image` update; nothing touches the live work until Darz follows through. */
+  replaceImage(token: string, pin: string, artworkId: string, file: File) {
+    const form = new FormData();
+    form.append('pin', pin);
+    form.append('file', file);
+    return this.client.send<PortalUpdate>(
+      'POST',
+      `${this.base(token)}/artworks/${encodeURIComponent(artworkId)}/image/`,
+      { body: form },
+    );
+  }
+
+  /** P3b — a structured pricelist built in-portal (≥1 line, each an artwork
+   * or a title). JSON body with `pin` inside it (C-9), never `?pin=`. */
+  buildPricelist(token: string, pin: string, body: PortalPricelistBuild) {
+    return this.client.send<PortalPricelist>('POST', `${this.base(token)}/pricelists/build/`, {
       body: { pin, ...body },
     });
   }

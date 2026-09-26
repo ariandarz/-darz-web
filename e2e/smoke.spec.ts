@@ -82,7 +82,9 @@ test('a desk renders its empty state against an empty backend', async ({ page })
   await page.fill('input[name="password"]', 'anything');
   await page.locator('form button[type="submit"]').click();
   await page.waitForURL('**/admin');
-  await page.goto('/admin/artworks');
+  // The stub now serves Database rows (V1 Phase 4), so the empty state is
+  // reached through a filter it answers with nothing.
+  await page.goto('/admin/artworks?source_type=other');
   await expect(page.getByRole('heading', { name: 'Artworks Database' })).toBeVisible();
   await expect(page.getByText('No artworks match these filters.')).toBeVisible();
   // and the owner-only desk gate does not crash a typed URL

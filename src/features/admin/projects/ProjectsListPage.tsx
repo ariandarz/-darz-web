@@ -29,22 +29,24 @@
  *    category/status/archived). The old sort by last-updated (:13641) has
  *    no ordering key on the API (`created|name` only), so the server's
  *    default order stands there.
- *  - two stated absences under the toolbar (never a silent drop): the
- *    server search (`filters.py:6`) reads name / no / client_name / venue,
- *    not the city, contact or category the old haystack (:13638) also
- *    matched — the old placeholder (:13656) is kept verbatim and the note
- *    says what it does not cover (G-PROJ-1); and `status` follows the stage
- *    (`STAGE_STATUS_MAP`, `models.py:221-237`, G-PROJ-2), so four of the
- *    `projects.status` choices the old select could set by hand (:13645,
- *    :13781) — Negotiation, Scheduled, Completed, Cancelled — never match.
- *    The choices themselves stay server-fed (no hardcoded label list).
- *  - QUICK MODE (`?quick=active|delayed|approval|deliverables|unpaid`): the
- *    API has no quick filter (G-PROJ-1), so the page walks every
- *    non-archived project once (`archived: false, per_page: 100`,
- *    `has_next` followed) and filters client-side — `matchesQuick` plus the
- *    old category / status / search rules (:13636-13638), sorted by
- *    `updated_at` like :13641. The pager is hidden there; the whole match
- *    set is shown. A quick filter only ever selects ACTIVE projects
+ *  - one stated absence under the toolbar (never a silent drop): the server
+ *    search (`filters.py:6`) reads name / no / client_name / venue, not the
+ *    city, contact or category the old haystack (:13638) also matched — the
+ *    old placeholder (:13656) is kept verbatim and the note says what it
+ *    does not cover. The Status choices are `projects.status` (no hardcoded
+ *    label list); a status is settable on the record again (G-PROJ-2), so
+ *    every choice can match.
+ *  - QUICK MODE (`?quick=active|delayed|approval|deliverables|unpaid`, the
+ *    dashboard cards' links): four of the five are the server's `?quick=`
+ *    (G-PROJ-1, `serverQuick` — `approval` goes out as `awaiting_approval`),
+ *    the SAME predicates the dashboard counts with, so a card's number and
+ *    its list agree. They ride the normal server list (paged, the server's
+ *    search and order — the old sort by last-updated, :13641, has no
+ *    ordering key). "Deliverables ≤7d" has no server filter: that one still
+ *    walks every non-archived project once (`archived: false, per_page:
+ *    100`) and filters client-side — `matchesQuick` plus the old category /
+ *    status / search rules (:13636-13638), sorted by `updated_at` like
+ *    :13641, unpaged. A quick filter only ever selects ACTIVE projects
  *    (:13631-13635), so switching Archived on drops it (the old list kept
  *    the chip and showed an empty list — a dead end, not ported).
  *  - the old 170 ms search debounce (:13675) is not ported: the kit's
@@ -82,6 +84,7 @@ import {
   nextDelText,
   projFlag,
   projMoney,
+  serverQuick,
   stageLabel,
   todayIso,
   walkProjects,
@@ -132,11 +135,13 @@ function readView(params: URLSearchParams): ListView {
 }
 
 function toQuery(v: ListView): ProjectQuery {
+  const quick = v.quick ? serverQuick(v.quick) : null;
   return {
     search: v.search,
     category: v.category,
     status: v.status,
     archived: v.archived,
+    ...(quick ? { quick } : {}),
     page: v.page,
   };
 }
@@ -147,6 +152,7 @@ function sameQuery(a: ProjectQuery, b: ProjectQuery): boolean {
     (a.category ?? '') === (b.category ?? '') &&
     (a.status ?? '') === (b.status ?? '') &&
     !!a.archived === !!b.archived &&
+    (a.quick ?? '') === (b.quick ?? '') &&
     (a.page ?? 1) === (b.page ?? 1)
   );
 }
@@ -181,6 +187,8 @@ export function ProjectsListPage() {
 
   const view = useMemo(() => readView(params), [params]);
   const quick = view.quick;
+  // the one quick filter the server does not apply (G-PROJ-1) — read whole
+  const walkMode = quick !== null && serverQuick(quick) === null;
 
   // the normal (server-paginated) list — its query follows the URL
   const [controller] = useState(
@@ -192,12 +200,12 @@ export function ProjectsListPage() {
     if (!sameQuery(state.query, urlQuery)) controller.follow(urlQuery);
   }, [controller, state.query, urlQuery]);
 
-  // quick mode — one walk of the active set per visit, filtered client-side
+  // "Deliverables ≤7d" — one walk of the active set per visit, filtered client-side
   const [walk, setWalk] = useState<{ rows: ProjectAdmin[] | null; error: string | null }>({
     rows: null,
     error: null,
   });
-  const needWalk = quick !== null && walk.rows === null && walk.error === null;
+  const needWalk = walkMode && walk.rows === null && walk.error === null;
   useEffect(() => {
     if (!needWalk) return;
     let alive = true;
@@ -216,7 +224,7 @@ export function ProjectsListPage() {
   }, [needWalk, projectsAdmin]);
 
   const quickRows = useMemo(() => {
-    if (!quick || !walk.rows) return null;
+    if (!walkMode || !walk.rows) return null;
     const q = (view.search ?? '').toLowerCase();
     return walk.rows
       .filter((p) => matchesQuick(p, quick, today))
@@ -224,7 +232,7 @@ export function ProjectsListPage() {
       .filter((p) => !view.status || (p.status ?? '') === view.status) // :13637
       .filter((p) => !q || hay(p).includes(q)) // :13638
       .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)); // :13641
-  }, [quick, walk.rows, view.search, view.category, view.status, today]);
+  }, [walkMode, quick, walk.rows, view.search, view.category, view.status, today]);
 
   // the sub's "{active} active · {total} total" (:13653) — two counts
   const [counts, setCounts] = useState<{ active: number; total: number } | null>(null);
@@ -263,8 +271,8 @@ export function ProjectsListPage() {
   clearQuick.delete('page');
   const clearQuickSearch = clearQuick.toString();
 
-  const rows = quick ? (quickRows ?? []) : state.results;
-  const status = quick
+  const rows = walkMode ? (quickRows ?? []) : state.results;
+  const status = walkMode
     ? walk.error
       ? 'error'
       : quickRows
@@ -272,7 +280,7 @@ export function ProjectsListPage() {
         : 'loading'
     : state.status;
   const body = resolveDeskView(status, rows.length);
-  const banner = deskBanner(status, quick ? walk.error : state.error);
+  const banner = deskBanner(status, walkMode ? walk.error : state.error);
 
   return (
     <DeskPage
@@ -345,19 +353,17 @@ export function ProjectsListPage() {
           </p>
         )}
 
-        {/* stated absences — the server search (`ProjectFilterSet`, filters.py:6)
+        {/* stated absence — the server search (`ProjectFilterSet`, filters.py:6)
             covers name/no/client_name/venue, while the old haystack (:13638) also
-            read city, contact and category (quick mode still applies the old
-            haystack client-side, so that sentence goes only with the server
-            list); `status` follows the stage (`STAGE_STATUS_MAP`, models.py:221-
-            237), so four choices the old select could set by hand (:13645) never
-            match a project here */}
-        <p className="dzp-mut" role="note">
-          {!quick &&
-            'Search matches the name, number, client name and venue on this API — not the city or contact yet (G-PROJ-1). '}
-          Status follows the stage (G-PROJ-2): Negotiation, Scheduled, Completed and Cancelled
-          are never set, so those filters match nothing.
-        </p>
+            read city, contact and category (the deliverables walk still applies
+            the old haystack client-side, so the sentence goes only with the
+            server list) */}
+        {!walkMode && (
+          <p className="dzp-mut" role="note">
+            Search matches the name, number, client name and venue on this API — not the city
+            or contact.
+          </p>
+        )}
 
         {banner && <DeskBanner>{banner}</DeskBanner>}
         {body === 'loading' && <p className="dz-state">Loading…</p>}
@@ -379,7 +385,7 @@ export function ProjectsListPage() {
           </div>
         )}
 
-        {!quick && state.pagination && (
+        {!walkMode && state.pagination && (
           <Pager
             pagination={state.pagination}
             onPage={(page) => update({ page: String(page) })}

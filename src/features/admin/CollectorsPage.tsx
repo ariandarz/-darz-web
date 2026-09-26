@@ -15,26 +15,27 @@
  * login history, remove — lives on the detail (`/admin/collectors/:id`), the
  * modern-mechanics form of the old `colDetail(id)` workspace.
  *
- * **The overview strip is back** (G-4, approved 2026-09-21) — with three of
- * the old four tiles, from three `per_page: 1` counts rather than a new
- * endpoint. `collectorTiles.ts` carries which two of the old tiles could not
- * be rebuilt and why; the short version is that **Active 30d** and **Engaged**
- * need a last-activity rollup per collector that no list row and no aggregate
- * endpoint provides, so the third tile is **Active** — access rather than
- * behaviour — and says so rather than borrowing the old tile's name.
+ * **The overview strip** is the old four — Collectors · VIP · Active 30d ·
+ * Engaged (`:32630`) — from `GET …/collectors/summary/` (G-COL-1); see
+ * `collectorTiles.ts`.
  *
- * **Still not ported, flagged (G-COL-2, `docs/ADMIN_ARCHITECTURE.md` §2):**
- * the "Recently active" / "Most purchases" sorts (`:32626-32630`) — they rank
- * by the same activity/purchase rollups; `ordering` serves name and created
- * only.
+ * **Sorts (G-COL-2):** the old list (`:32633`) — "Recently active" (the old
+ * default, `-activity`), "Name A–Z", "Tier", "Most purchases" (`-purchases`) —
+ * on the server's `ordering`. The desk OPENS on Recently active, as the old
+ * one did. "Tier" has no server ordering and is not offered; "Newest first"
+ * (the unset option), "Oldest first" and "Name Z–A" are this desk's earlier
+ * additions, kept. The rows gain the old card's two rollups (`:32649`,
+ * `:32654`): Purchases (`purchase_count`) and "Last active <date>" / "No
+ * activity yet" (`last_activity_at`). Both are list-only (C-16) — this desk
+ * never writes a row back, edits live on the detail.
  *
  * **"Notify collectors" (`:32614`) is missing and blocked, not overlooked.**
- * The old button is "Web Push with preset messages + recipient choice" — and
- * push is the one collector feature this app cannot ship at all: no endpoint
- * publishes the VAPID public key (**G-P13-1**, re-checked 2026-09-18), so
- * there is nothing to subscribe a browser with. A button that opened a
- * composer which could never send is worse than its absence; this note is the
- * absence, stated. The heading is "Collectors" rather than the old
+ * The old button is "Web Push with preset messages + recipient choice". The
+ * VAPID public key IS served now (G-P13-1 closed), so a browser could
+ * subscribe — but there is no admin endpoint that SENDS a push, so a composer
+ * here could never deliver. A button that opened a composer which could never
+ * send is worse than its absence; this note is the absence, stated. The
+ * heading is "Collectors" rather than the old
  * "Collectors · CRM" for the same reason the nav says Collectors: "CRM" named
  * a desk group in the old panel that this one reaches by tabs.
  */
@@ -42,11 +43,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
-import type { Choice, CollectorAdmin, CollectorAdminQuery } from '../../api/types';
+import type {
+  Choice,
+  CollectorAdmin,
+  CollectorAdminQuery,
+  CollectorDeskSummary,
+} from '../../api/types';
 import { useListController } from '../shared/useListController';
 import { CollectorForm } from './CollectorForm';
 import { CollectorsController } from './CollectorsController';
-import { EMPTY_COUNTS, collectorTiles, type CollectorCounts } from './collectorTiles';
+import { collectorTiles, lastActiveLine } from './collectorTiles';
 import {
   DeskAction,
   DeskList,
@@ -57,10 +63,13 @@ import {
 } from './kit';
 import './admin.css';
 
-const SORTS = [
-  { value: '-created', label: 'Newest first' },
-  { value: 'created', label: 'Oldest first' },
+/** `:32633`'s sort list on the server's tokens, then this desk's earlier
+ * additions. The unset option is the server default, "Newest first". */
+const SORTS: Array<{ value: NonNullable<CollectorAdminQuery['ordering']>; label: string }> = [
+  { value: '-activity', label: 'Recently active' },
   { value: 'name', label: 'Name A–Z' },
+  { value: '-purchases', label: 'Most purchases' },
+  { value: 'created', label: 'Oldest first' },
   { value: '-name', label: 'Name Z–A' },
 ];
 
@@ -71,28 +80,19 @@ export function CollectorsPage() {
   const [creating, setCreating] = useState(false);
 
   const { state, setQuery, setPage } = useListController<CollectorAdmin, CollectorAdminQuery>(
-    () => new CollectorsController(adminAccounts),
+    // The old desk opened on "Recently active" (`COLF.sort||'recent'`, :32633).
+    () => new CollectorsController(adminAccounts, { ordering: '-activity' }),
   );
 
-  /* Three counts, read once. Deliberately NOT re-read when the desk's filters
-     change: the old strip was computed from the full roster so the totals stay
-     true whatever is filtered below (`:32632`). `per_page: 1` because only
-     `pagination.total_count` is wanted — the row itself is discarded. */
-  const [counts, setCounts] = useState<CollectorCounts>(EMPTY_COUNTS);
+  /* The strip's four counts (G-COL-1), read once — deliberately not re-read
+     when the filters change: the old strip counts the full roster (:32626). */
+  const [summary, setSummary] = useState<CollectorDeskSummary | null>(null);
   useEffect(() => {
     let alive = true;
-    const count = (query: CollectorAdminQuery) =>
-      adminAccounts
-        .collectors({ ...query, per_page: 1 })
-        .then((page) => page.pagination.total_count)
-        .catch(() => null);
-    void Promise.all([
-      count({}),
-      count({ tier: 'vip' }),
-      count({ access_status: 'active' }),
-    ]).then(([total, vip, active]) => {
-      if (alive) setCounts({ total, vip, active });
-    });
+    adminAccounts.collectorsSummary().then(
+      (s) => alive && setSummary(s),
+      () => alive && setSummary(null),
+    );
     return () => {
       alive = false;
     };
@@ -140,6 +140,19 @@ export function CollectorsPage() {
       key: 'access',
       header: 'Access',
       cell: (c) => label(statuses, c.access_status ?? '') || '—',
+    },
+    {
+      // :32654 — the old card's Purchases count
+      key: 'purchases',
+      header: 'Purchases',
+      cell: (c) => (c.purchase_count == null ? '—' : c.purchase_count),
+    },
+    {
+      // :32649 — "Last active <date>" / "No activity yet"
+      key: 'last',
+      header: 'Last active',
+      className: 'ad-when',
+      cell: (c) => lastActiveLine(c.last_activity_at).replace(/^Last active /, ''),
     },
     {
       key: 'created',
@@ -196,7 +209,7 @@ export function CollectorsPage() {
             onChange={(ordering) =>
               setQuery({ ordering: ordering as CollectorAdminQuery['ordering'] })
             }
-            choices={SORTS.slice(1)}
+            choices={SORTS}
           />
         </>
       }
@@ -211,16 +224,13 @@ export function CollectorsPage() {
       }
       strip={
         <>
-          {/* `:32634`'s overview strip. The tiles read the whole roster, not the
+          {/* `:32630`'s overview strip. The tiles read the whole roster, not the
           filtered page — see `collectorTiles.ts`. */}
           <div className="ad-tiles ad-tiles-sales">
-            {collectorTiles(counts).map((t) => (
+            {collectorTiles(summary).map((t) => (
               <div key={t.key} className="ad-tile">
                 <span className="ad-tile-v">{t.value}</span>
-                <span className="ad-tile-l">
-                  {t.label}
-                  {t.note ? ` · ${t.note}` : ''}
-                </span>
+                <span className="ad-tile-l">{t.label}</span>
               </div>
             ))}
           </div>

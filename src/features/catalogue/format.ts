@@ -3,7 +3,8 @@
  * Kept out of the components so they stay easy to unit test.
  */
 import { asArray } from '../../api/shapes';
-import type { Artwork } from '../../api/types';
+import type { OptionsMap } from '../../api/services';
+import type { Artwork, Choice } from '../../api/types';
 
 /** Tabular, exact — never rounded for drama (VOICE_AND_COPY.md). */
 export function formatMoney(amount: string | number): string {
@@ -30,17 +31,27 @@ export function primaryImage(
   return images.find((img) => img.is_primary)?.image_url ?? images[0]?.image_url ?? null;
 }
 
-const AVAILABILITY_LABEL: Record<string, string> = {
-  available: 'Available',
-  on_hold: 'On hold',
-  reserved: 'Reserved',
-  sold: 'Sold',
-  archived: 'Archived',
-  withdrawn: 'Withdrawn',
-};
-
-export function availabilityLabel(status: string): string {
-  return AVAILABILITY_LABEL[status] ?? status;
+/**
+ * The collector-facing availability word, read from `/api/options/`
+ * (`catalog.availability_status`, the same source the admin desks use). The
+ * six served labels are the words the hardcoded map here used to carry
+ * (Available · On hold · Reserved · Sold · Archived · Withdrawn), so V1 Phase
+ * 10 dropped the map; until the options arrive (or if they fail) the raw
+ * value is humanised, which spells the same six words.
+ */
+export function availabilityLabel(
+  status: string | null | undefined,
+  options?: OptionsMap | null,
+): string {
+  // A row without the field (a partial nested artwork) renders no word — the
+  // old map's `undefined` did the same.
+  if (!status) return '';
+  const served = asArray<Choice>(options?.['catalog.availability_status']).find(
+    (c) => c.value === status,
+  )?.label;
+  if (served) return served;
+  const words = status.replace(/_/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /** `.d-status` modifier class — anything not literally available/reserved

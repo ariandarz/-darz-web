@@ -17,7 +17,12 @@
  *    per-work funnel-stage override (blank = derive live).
  *
  * The token/PIN are not here — shown once at issue, never retrievable
- * (the serializer's contract). Re-issuing means a new partner link.
+ * (the serializer's contract). "Regenerate" (the old passport's button and
+ * confirm, `darz-studio.html:28165`, `:38605-38614`) re-issues them for THIS
+ * record (G-PORT-13): works, shows and thread stay, the old pair stops
+ * working, and the new pair shows once in the same panel an issue uses. It
+ * does not touch the status — the old regenerate re-activated the link; the
+ * backend leaves a disabled/expired link as it is, and the confirm says so.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -30,6 +35,7 @@ import type {
   GalleryLinkArtwork,
 } from '../../api/types';
 import { ConfirmDialog, DeskBanner, DeskPage, Picker, type PickItem } from './kit';
+import { IssuedCredentials, type IssuedPair } from './SourceCredentials';
 import { ExhibitionsSection, MessagesSection } from './SourceExhibitions';
 import { DocumentsSection, PricelistsSection } from './SourceDocuments';
 import './admin.css';
@@ -46,6 +52,8 @@ export function SourceDetailPage() {
   // the shows, loaded once by the Exhibition Services section and reused by
   // the documents section rather than fetched twice
   const [shows, setShows] = useState<ExhibitionAdmin[] | null>(null);
+  const [reissueAsk, setReissueAsk] = useState(false);
+  const [reissued, setReissued] = useState<IssuedPair | null>(null);
 
   const types = choices(options, 'gallery.source_type');
   const stages = choices(options, 'gallery.funnel_stage');
@@ -68,6 +76,27 @@ export function SourceDetailPage() {
       setLink(await fn());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'That did not go through.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reissue = async () => {
+    if (!link || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const out = await galleryAdmin.reissueLink(link.id);
+      setLink(out.link);
+      setReissued({
+        id: out.link.id,
+        name: out.link.name,
+        token: out.token,
+        pin: out.pin,
+        contactName: out.link.contact_name ?? '',
+      });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not create a new link.');
     } finally {
       setBusy(false);
     }
@@ -147,19 +176,38 @@ export function SourceDetailPage() {
             )}
           </div>
         </div>
-        {/* Found live 2026-09-19: if a partner loses their link there is no
-            way back — the backend has no re-issue and no PATCH on a link
-            (`apps/gallery/urls.py`: GET + DELETE only), and issuing a new
-            partner would leave their works, shows and thread behind on the
-            old record. Say so here rather than letting an admin hunt for a
-            button that does not exist. Recorded as G-PORT-13. */}
-        <p className="ad-dsec-foot">
-          Lost the link? It cannot be re-sent or reset from here — there is no re-issue in the
-          backend yet (G-PORT-13). Until there is, the only safe move is to send the partner a
-          fresh pair from a new record and move their works across; disabling this one closes
-          the old door.
-        </p>
+        <div className="ad-rowacts" style={{ marginTop: 10 }}>
+          <button
+            type="button"
+            className="ad-rowbtn"
+            disabled={busy}
+            onClick={() => setReissueAsk(true)}
+          >
+            Regenerate
+          </button>
+          <span className="ad-cellsub">
+            A new link and PIN for this partner — their works, shows and messages stay.
+          </span>
+        </div>
+        {reissued && <IssuedCredentials issued={reissued} onDone={() => setReissued(null)} />}
       </section>
+
+      {reissueAsk && (
+        <ConfirmDialog
+          message={
+            link.status === 'active'
+              ? 'Replace the current link with a new secure link? The old link stops working immediately.'
+              : `Replace the current link with a new secure link? The old link stops working immediately. The portal stays ${link.status} — enable it too before sending the new link.`
+          }
+          okLabel="Replace link"
+          danger
+          onCancel={() => setReissueAsk(false)}
+          onConfirm={() => {
+            setReissueAsk(false);
+            void reissue();
+          }}
+        />
+      )}
 
       {/* ---- the funnel switches (Phase 12) ---- */}
       <section className="ad-dsec">
@@ -287,7 +335,9 @@ function WorksSection({ linkId, stages }: { linkId: string; stages: Choice[] }) 
   const title = (row: GalleryLinkArtwork) => {
     const snap = (row.snapshot as Record<string, unknown>) ?? {};
     const t = typeof snap.title === 'string' ? snap.title : String(row.artwork).slice(0, 8);
-    const a = typeof snap.artist_name === 'string' ? snap.artist_name : '';
+    // the snapshot's key is `artist` (`GalleryLinkArtworkService.assign`) —
+    // this read `artist_name`, which the snapshot never had
+    const a = typeof snap.artist === 'string' ? snap.artist : '';
     return { t, a };
   };
 

@@ -13,12 +13,13 @@
  * Deliberately not ported, with the reason (see docs/ADMIN_ARCHITECTURE.md §2):
  *  - `.dzsel` (v885 custom dropdown): a JS-placed fixed-position panel; the
  *    same file's own `.statussel` native select serves the control.
- *  - `.rimg` (v1146 replace-image dropzone): updates carry no binary path in
- *    the new backend (G-PORT-1) — the "image needs updating" check remains.
  *  - `.sigpad` (v1187 canvas pad): the sign endpoint takes a name only
  *    (G-PORT-7).
- *  - `.askbar`/`.pickbar`/`.awc-pick` (§90 asks, §79 removal): no serving
- *    endpoints (G-PORT-5/6).
+ *  - `.askbar`/`.chip--ask` (§90 Darz → gallery asks): no backend; the
+ *    backend's `ask` kind runs the other way (gallery → Darz, G-PORT-4).
+ *  - `.pickbar`/`.awc-pick` (§79 multi-select removal): the single-work
+ *    "Remove from portal" is ported (a `withdraw` request, G-PORT-6); the
+ *    Select mode is not (flagged).
  */
 
 /* ── tokens (gallery-update.html:13-29) ── */
@@ -471,9 +472,14 @@
 /* ── dashboard KPIs (:81-86) ── */
 .dash {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin: 18px 0;
+}
+@media (max-width: 600px) {
+  .dash {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .dash .kpi {
   background: var(--card);
@@ -660,6 +666,13 @@
   position: relative;
   border-radius: 10px;
   overflow: hidden;
+  /* the work's image, contained on the mat (:127) */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-origin: content-box;
+  padding: 6px;
+  box-sizing: border-box;
 }
 .awc-img .noimg {
   position: absolute;
@@ -2008,4 +2021,410 @@
   .awc-title {
     font-size: 14px;
   }
+}
+
+/* ── V1 Phase 5 — the portal's P1/P3/P4 surfaces ─────────────────────────── */
+
+/* the header cover (:411-413) */
+.top-cover {
+  margin: 14px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.top-cover img {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--headfieldbd);
+}
+.top-cover-cap {
+  font-size: 12.5px;
+  color: var(--headmut);
+  line-height: 1.4;
+}
+
+/* v1146 · Replace-image — a compact Darz upload dropzone; shows the FULL
+   image (contain, never cropped) on a subtle mat (:282-298) */
+.rimg {
+  position: relative;
+  width: 100%;
+  height: 112px;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--inset);
+  border: 1px solid var(--hair);
+  transition:
+    border-color 0.14s,
+    background 0.14s;
+}
+.rimg.empty {
+  border-style: dashed;
+  border-color: var(--hair-2);
+}
+.rimg.empty:hover {
+  border-color: var(--ink-3);
+  background: var(--field);
+}
+.rimg:hover .rimg-pill {
+  background: rgba(0, 0, 0, 0.76);
+}
+.rimg-prev {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.rimg-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-align: center;
+  padding: 12px;
+  color: var(--ink-3);
+}
+.rimg-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  color: var(--ink-2);
+  flex: 0 0 auto;
+}
+.rimg-t {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.rimg-h {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+.rimg-pill {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: 20px;
+  padding: 6px 12px;
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.rimg-pill svg,
+.rimg-badge svg {
+  flex: 0 0 auto;
+}
+.rimg-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(31, 157, 87, 0.94);
+  border-radius: 20px;
+  padding: 4px 9px 4px 7px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.rimg-x {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s;
+}
+.rimg-x:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* §79 — the one destructive-LOOKING action; it is a request, not a delete
+   (:464-468) */
+.gp-root .btn--danger {
+  border-color: #b0243a;
+  color: #b0243a;
+}
+.gp-root .btn--danger:hover {
+  background: #b0243a;
+  color: #fff;
+}
+.awc-rm {
+  margin-left: auto;
+}
+
+/* the ask box inside a card's panel — the Messages box (:1077), not sticky
+   and on the card's own ground rather than the page's */
+.fld .msg-box {
+  position: static;
+  background: transparent;
+  padding: 0;
+}
+
+/* pricelist rows: the file link and the server statuses (:347-355, :351) */
+.pl-dl {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pl-dl:hover {
+  text-decoration: underline;
+}
+/* accepted reads as the old "formatted" green; superseded as the old
+   "rejected" — no longer the list Darz uses */
+.pl-status.accepted {
+  color: #0f7a43;
+  border-color: #bfe6cf;
+  background: #f1fbf6;
+}
+.pl-status.superseded {
+  color: #9b1c34;
+  border-color: #eccdd4;
+  background: #fdf2f4;
+}
+.gp-root.dark .pl-status.accepted {
+  color: #7fe3ad;
+  border-color: #244a36;
+  background: #16241c;
+}
+.gp-root.dark .pl-status.superseded {
+  color: #f0a5b4;
+  border-color: #4d2630;
+  background: #2a1820;
+}
+.pl-err {
+  font-size: 12px;
+  color: var(--red);
+  line-height: 1.45;
+  margin: 2px 0 8px;
+}
+
+/* the History tab (collaboration-agreement.js PANEL_CSS, :323-353) */
+.hs-list {
+  display: flex;
+  flex-direction: column;
+}
+.hs-item {
+  border-top: 1px solid var(--hair);
+}
+.hs-item:first-child {
+  border-top: 0;
+}
+.hs-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 22px 12px 0;
+  cursor: pointer;
+  position: relative;
+}
+.hs-item:first-child .hs-row {
+  padding-top: 2px;
+}
+.hs-row:hover .hs-t {
+  text-decoration: underline;
+  text-decoration-thickness: 0.5px;
+  text-underline-offset: 2px;
+}
+.hs-chev {
+  position: absolute;
+  right: 2px;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-right: 1.6px solid var(--ink-3);
+  border-bottom: 1.6px solid var(--ink-3);
+  transform: rotate(45deg);
+  transition: transform 0.16s ease;
+}
+.hs-item.open .hs-chev {
+  transform: rotate(225deg);
+}
+.hs-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.hs-k {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hs-t {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.hs-w {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+.hs-n {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-style: italic;
+  line-height: 1.5;
+  margin-top: 4px;
+  padding-left: 9px;
+  border-left: 2px solid var(--hair);
+}
+.hs-side {
+  flex: 0 0 auto;
+  text-align: right;
+  max-width: 44%;
+}
+.hs-when {
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.hs-st {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--hair);
+  background: var(--inset);
+  color: var(--ink-3);
+}
+.hs-st.approved {
+  color: #1f6f4a;
+  border-color: #cfe6da;
+  background: #f1f8f4;
+}
+.hs-st.rejected {
+  color: #9a3b3b;
+  border-color: #e8cccc;
+  background: #fbf2f2;
+}
+.gp-root.dark .hs-st.approved {
+  color: #7fd0a5;
+  border-color: #28402f;
+  background: #17241c;
+}
+.gp-root.dark .hs-st.rejected {
+  color: #e39c9c;
+  border-color: #432929;
+  background: #261a1a;
+}
+.hs-draw {
+  display: none;
+  padding: 2px 0 14px;
+}
+.hs-item.open .hs-draw {
+  display: block;
+}
+.hs-din {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--inset);
+  padding: 11px 13px;
+}
+.hs-dr {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 7px 0;
+  border-top: 1px solid var(--hair);
+}
+.hs-dr:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.hs-dk {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding-top: 2px;
+}
+.hs-dv {
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.hs-next {
+  margin-top: 9px;
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.55;
+}
+@media (max-width: 560px) {
+  .hs-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .hs-side {
+    text-align: left;
+    max-width: 100%;
+  }
+  .hs-dr {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .hs-dv {
+    text-align: left;
+  }
+}
+/* the card heading's seam (:421) — the History head uses it */
+.exh-seam {
+  width: 34px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  margin: 9px 0 12px;
 }
