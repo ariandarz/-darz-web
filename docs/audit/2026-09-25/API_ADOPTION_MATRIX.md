@@ -84,14 +84,14 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | GET | /api/catalog/artworks/selections/ | `CatalogService.artworkSelections` | `catalogue/CatalogueController.ts`, `catalogue/useCuratedCount.ts` | Integrated | Phase 1: `selection_name` read for the chip label (G-P24-1). |
 | GET | /api/catalog/artworks/{id}/ | `CatalogService.artwork` | `catalogue/ArtworkCache.ts`, `catalogue/ArtworkDetailPage.tsx` | Integrated |  |
 | GET | /api/catalog/legacy-lookup/ | none | — | Not bound | Legacy id → UUID (`?legacy_id`) — no binding. |
-| GET | /api/catalog/selections/ | none | — | Not bound | Collector's named curated selections + change signal — no binding (FE uses `/catalog/artworks/selections/`). |
-| POST | /api/catalog/selections/{id}/seen/ | none | — | Not bound | Mark selection seen — no binding. |
+| GET | /api/catalog/selections/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P24-2 (Q-5, V1 Phase 9a), V1 Phase 9a. Collector's named curated selections + change signal — no binding (FE uses `/catalog/artworks/selections/`). |
+| POST | /api/catalog/selections/{id}/seen/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P24-2, V1 Phase 9a. Mark selection seen — no binding. |
 
 ## crm
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| GET | /api/crm/activity/ | none | — | Not bound | Collector's own activity list — no binding (POST is bound). |
+| GET | /api/crm/activity/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P5-12, V1 Phase 9a. Collector's own activity list — no binding (POST is bound). |
 | POST | /api/crm/activity/ | `CrmService.logActivity` | `activity/ActivityLogger.ts` | Integrated |  |
 | GET | /api/crm/admin/activity/ | `CrmService.adminActivity` | `admin/ActivityFeedController.ts` | Integrated | All schema filters sent-capable. |
 | POST | /api/crm/admin/messages/{id}/archive/ | `CrmService.adminArchiveMessage` | `admin/AdminThreadController.ts`, `admin/AdminThreadPage.tsx` | Integrated | Phase 6: Archive/Restore per bubble; sends `{archived}` both ways (G-CHAT-2). |
@@ -106,13 +106,13 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | PATCH | /api/crm/admin/selections/{id}/ | `CrmService.updateSelection` | `admin/ClubPage.tsx` | Integrated |  |
 | DELETE | /api/crm/admin/selections/{id}/ | `CrmService.deleteSelection` | `admin/ClubPage.tsx` | Integrated |  |
 | GET | /api/crm/requests/ | `CrmService.requests` | `conversations/ConversationsController.ts` | Integrated | `?archived` unsent (CollectorRequestQuery lacks it). |
-| POST | /api/crm/requests/ | `CrmService.createRequest` | `conversations/ConversationsController.ts`, `requests/RequestController.ts` | Integrated |  |
+| POST | /api/crm/requests/ | `CrmService.createRequest` | `conversations/ConversationsController.ts`, `requests/RequestController.ts` | Integrated | V1 Phase 9a (G-P5-11): an artist enquiry sends `artist`. |
 | GET | /api/crm/requests/{id}/ | `CrmService.request` | `conversations/ConversationsController.ts` | Integrated |  |
-| POST | /api/crm/requests/{id}/archive/ | none | — | Not bound | Collector archive request — no binding. |
+| POST | /api/crm/requests/{id}/archive/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P5-4, V1 Phase 9a. Collector archive request — no binding. |
 | GET | /api/crm/requests/{id}/messages/ | `CrmService.messages` | `conversations/ThreadController.ts` | Integrated |  |
 | POST | /api/crm/requests/{id}/messages/ | `CrmService.postMessage` | `conversations/ThreadController.ts` | Integrated | Phase 6: `document_refs` is team-only (the backend 400s a collector's), so the collector end correctly never sends it; the enriched refs are READ and drawn as chips (`chat/DocChips.tsx`). |
 | POST | /api/crm/requests/{id}/messages/mark-seen/ | `CrmService.markSeen` | `conversations/ThreadController.ts` | Integrated |  |
-| POST | /api/crm/requests/{id}/transition/ | none | — | Not bound | Collector-side transition — no binding. |
+| POST | /api/crm/requests/{id}/transition/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P5-5, V1 Phase 9a. Collector-side transition — no binding. |
 | GET | /api/crm/saved/ | `CrmService.saved` | `saved/SavedListController.ts` | Integrated | All schema filters in SavedArtworkQuery. |
 | POST | /api/crm/saved/ | `CrmService.save` | `saved/SavedController.ts` | Integrated |  |
 | DELETE | /api/crm/saved/{artwork_id}/ | `CrmService.unsave` | `saved/SavedController.ts` | Integrated |  |
@@ -337,19 +337,19 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | POST | /api/recommendations/admin/collectors/{collector_pk}/recommendations/generate/ | none | — | Not bound | Recommendations admin — no FE binding. |
 | GET | /api/recommendations/admin/feature-settings/ | none | — | Not bound | Recommendations admin — no FE binding. |
 | POST | /api/recommendations/admin/feature-settings/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/admin/question-sets/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/question-sets/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| GET | /api/recommendations/admin/question-sets/{id}/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| PATCH | /api/recommendations/admin/question-sets/{id}/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| DELETE | /api/recommendations/admin/question-sets/{id}/ | none | — | Not bound | Recommendations admin — no FE binding. |
-| POST | /api/recommendations/admin/question-sets/{id}/activate/ | none | — | Not bound | Recommendations admin — no FE binding. |
+| GET | /api/recommendations/admin/question-sets/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| POST | /api/recommendations/admin/question-sets/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| GET | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| PATCH | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| DELETE | /api/recommendations/admin/question-sets/{id}/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
+| POST | /api/recommendations/admin/question-sets/{id}/activate/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P25-2(b), the admin question-set editor desk; V1 Phase 9a. |
 | PATCH | /api/recommendations/admin/recommendations/{id}/ | none | — | Not bound | Recommendations admin — no FE binding. |
 | DELETE | /api/recommendations/admin/recommendations/{id}/ | none | — | Not bound | Recommendations admin — no FE binding. |
 | POST | /api/recommendations/admin/tags/{id}/approve/ | none | — | Not bound | Recommendations admin — no FE binding. |
 | POST | /api/recommendations/admin/tags/{id}/lock/ | none | — | Not bound | Recommendations admin — no FE binding. |
 | GET | /api/recommendations/published/ | `RecommendationService.published` | bound-unused | Bound, no UI | `published()` has no caller (TD-6, whole surface unbuilt). |
 | POST | /api/recommendations/published/{id}/dismiss/ | `RecommendationService.dismiss` | bound-unused | Bound, no UI | `dismiss()` has no caller. |
-| GET | /api/recommendations/question-set/ | none | — | Not bound | Active question set — no binding; questionnaire questions are defined client-side. |
+| GET | /api/recommendations/question-set/ | `RecommendationService.questionSet` | `questionnaire/QuestionnaireController.ts` | Integrated | V1 Phase 9a (G-P25-2(a)): the questionnaire runs on the served set; the empty shape (`id: null`) or a failed read falls back to the built-in bank (`questions.ts`). |
 | GET | /api/recommendations/questionnaire/ | `RecommendationService.questionnaire` | `profile/ProfilePage.tsx`, `questionnaire/QuestionnaireController.ts` | Integrated |  |
 | POST | /api/recommendations/questionnaire/ | `RecommendationService.submitQuestionnaire` | `questionnaire/QuestionnaireController.ts` | Integrated |  |
 
@@ -357,9 +357,9 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 
 | Method | Path | FE binding | UI caller(s) | Status | Unsent params / notes |
 |---|---|---|---|---|---|
-| POST | /api/notifications/push/subscribe/ | none | — | Not bound | Web-push subscribe — no binding, no service worker in FE. |
-| POST | /api/notifications/push/unsubscribe/ | none | — | Not bound | Web-push unsubscribe — no binding. |
-| GET | /api/notifications/vapid-public-key/ | none | — | Not bound | VAPID key for web-push — no binding. |
+| POST | /api/notifications/push/subscribe/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P13-1, V1 Phase 9a. Web-push subscribe — no binding, no service worker in FE. |
+| POST | /api/notifications/push/unsubscribe/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P13-1, V1 Phase 9a. Web-push unsubscribe — no binding. |
+| GET | /api/notifications/vapid-public-key/ | none | — | Excluded | Excluded (owner-deferred, API ready) — G-P13-1, V1 Phase 9a. VAPID key for web-push — no binding. |
 
 ## marketing
 
@@ -420,14 +420,22 @@ exhibitions list), so a second read would only duplicate it. `GET exhibition-cat
 DELETE, crm message `archive/`) and both Partial thread POSTs to Integrated, and sent `?include_archived`
 on the admin thread. V1 Phase 7 (2026-09-26) moved `GET …/projects/{id}/totals/` to Integrated. V1 Phase 8
 (2026-09-26) moved two Not bound (`GET /api/auth/admin/access-keys/` and its `summary/`) to Integrated — the
-owner Access desk. Status cells elsewhere are the 2026-09-25 baseline unless a row says otherwise.
+owner Access desk. V1 Phase 9a (2026-09-26) moved `GET /api/recommendations/question-set/` to Integrated
+(G-P25-2(a)) and marked fourteen Not bound operations **Excluded (owner-deferred, API ready)** — the owner's
+Q-5 answer built only G-P5-11 and G-P25-2(a): G-P24-2 (`catalog/selections/` + `seen/`), G-P25-2(b) (the six
+admin `question-sets` operations), G-P5-4 (`requests/{id}/archive/`), G-P5-5 (`requests/{id}/transition/`),
+G-P5-12 (`GET crm/activity/`) and G-P13-1 (push subscribe/unsubscribe, `vapid-public-key`). G-CLUB-3 (the Club
+"Auction access" section) and G-P5-9 (counter-offer display) are owner-deferred too, but have no unbound
+operation of their own (the invite-only endpoints and the `counter_*` fields are already read). Status cells
+elsewhere are the 2026-09-25 baseline unless a row says otherwise.
 
 | Status | Count |
 |---|---|
-| Integrated | 260 |
+| Integrated | 261 |
 | Partial | 0 |
 | Bound, no UI | 9 |
-| Not bound | 53 |
+| Not bound | 38 |
+| Excluded (owner-deferred, API ready) | 14 |
 | Backend-only | 1 |
 | **Total** | **323** |
 
@@ -455,12 +463,7 @@ owner Access desk. Status cells elsewhere are the 2026-09-25 baseline unless a r
 - `GET /api/catalog/admin/artists/{id}/`
 - `GET /api/catalog/artworks/change-stamp/`
 - `GET /api/catalog/legacy-lookup/`
-- `GET /api/catalog/selections/`
-- `POST /api/catalog/selections/{id}/seen/`
-- `GET /api/crm/activity/`
 - `GET /api/crm/admin/selections/{id}/`
-- `POST /api/crm/requests/{id}/archive/`
-- `POST /api/crm/requests/{id}/transition/`
 - `GET /api/gallery/admin/exhibition-catalogue/{id}/`
 - `DELETE /api/gallery/admin/links/{id}/`
 - `GET /api/gallery/portal/{token}/exhibitions/{event_id}/`
@@ -475,9 +478,6 @@ owner Access desk. Status cells elsewhere are the 2026-09-25 baseline unless a r
 - `GET /api/marketing/admin/campaigns/{id}/`
 - `PATCH /api/marketing/admin/campaigns/{id}/`
 - `DELETE /api/marketing/admin/campaigns/{id}/`
-- `POST /api/notifications/push/subscribe/`
-- `POST /api/notifications/push/unsubscribe/`
-- `GET /api/notifications/vapid-public-key/`
 - `GET /api/recommendations/admin/artworks/{artwork_pk}/tags/`
 - `POST /api/recommendations/admin/artworks/{artwork_pk}/tags/ai/`
 - `POST /api/recommendations/admin/artworks/{artwork_pk}/tags/auto/`
@@ -491,17 +491,27 @@ owner Access desk. Status cells elsewhere are the 2026-09-25 baseline unless a r
 - `POST /api/recommendations/admin/collectors/{collector_pk}/recommendations/generate/`
 - `GET /api/recommendations/admin/feature-settings/`
 - `POST /api/recommendations/admin/feature-settings/`
-- `GET /api/recommendations/admin/question-sets/`
-- `POST /api/recommendations/admin/question-sets/`
-- `GET /api/recommendations/admin/question-sets/{id}/`
-- `PATCH /api/recommendations/admin/question-sets/{id}/`
-- `DELETE /api/recommendations/admin/question-sets/{id}/`
-- `POST /api/recommendations/admin/question-sets/{id}/activate/`
 - `PATCH /api/recommendations/admin/recommendations/{id}/`
 - `DELETE /api/recommendations/admin/recommendations/{id}/`
 - `POST /api/recommendations/admin/tags/{id}/approve/`
 - `POST /api/recommendations/admin/tags/{id}/lock/`
-- `GET /api/recommendations/question-set/`
+
+### Excluded (owner-deferred, API ready)
+
+- `GET /api/catalog/selections/` — G-P24-2
+- `POST /api/catalog/selections/{id}/seen/` — G-P24-2
+- `GET /api/crm/activity/` — G-P5-12
+- `POST /api/crm/requests/{id}/archive/` — G-P5-4
+- `POST /api/crm/requests/{id}/transition/` — G-P5-5
+- `POST /api/notifications/push/subscribe/` — G-P13-1
+- `POST /api/notifications/push/unsubscribe/` — G-P13-1
+- `GET /api/notifications/vapid-public-key/` — G-P13-1
+- `GET /api/recommendations/admin/question-sets/` — G-P25-2(b)
+- `POST /api/recommendations/admin/question-sets/` — G-P25-2(b)
+- `GET /api/recommendations/admin/question-sets/{id}/` — G-P25-2(b)
+- `PATCH /api/recommendations/admin/question-sets/{id}/` — G-P25-2(b)
+- `DELETE /api/recommendations/admin/question-sets/{id}/` — G-P25-2(b)
+- `POST /api/recommendations/admin/question-sets/{id}/activate/` — G-P25-2(b)
 
 ### Backend-only
 

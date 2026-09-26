@@ -39,14 +39,13 @@ import {
   type QuestionnaireSnapshot,
 } from './QuestionnaireController';
 import { labelForLanguage } from '../profile/account';
-import { COMM_LANGS, liveIntro } from './questions';
+import { COMM_LANGS, type QuestionnaireIntro } from './questions';
 import './questionnaire.css';
 
 export function QuestionnairePage() {
   const { recommendations, auth, session } = useApi();
   const navigate = useNavigate();
   const [controller] = useState(() => new QuestionnaireController(recommendations, auth));
-  const [intro] = useState(liveIntro);
 
   useEffect(() => {
     // pre-fill from the account, as `startQ` did from the collector (:10015)
@@ -87,7 +86,7 @@ export function QuestionnairePage() {
 
   switch (state.stage) {
     case 'intro':
-      return <Intro intro={intro} onBegin={() => controller.begin()} onExit={exit} />;
+      return <Intro intro={state.intro} onBegin={() => controller.begin()} onExit={exit} />;
     case 'step':
       return <Step controller={controller} state={state} onBack={back} />;
     case 'review':
@@ -104,7 +103,7 @@ function Intro({
   onBegin,
   onExit,
 }: {
-  intro: ReturnType<typeof liveIntro>;
+  intro: QuestionnaireIntro;
   onBegin: () => void;
   onExit: () => void;
 }) {

@@ -13,6 +13,15 @@
  * belongs to `bank[n-1]`. That is the key a saved draft is written under, and
  * why `QVER` exists — see `questions.ts`.
  *
+ * ## Where the questions come from (G-P25-2(a))
+ *
+ * `load()` reads the owner's active set (`GET …/question-set/`) alongside the
+ * collector's saved answers, and runs on it when it has questions. When the
+ * server has no active set (its empty shape) or the read fails, the built-in /
+ * theme bank is used instead — the screen never goes empty. The draft version
+ * follows the bank actually in use (`ResolvedBank.version`), so a draft saved
+ * against a different set of questions is discarded, not mis-attached.
+ *
  * ## What the backend takes, and what it does not
  *
  * `POST /api/recommendations/questionnaire/` accepts exactly `{answers: [{q, a}]}`
@@ -50,7 +59,13 @@ import type { RecommendationService } from '../../api/services';
 import type { MeUpdate } from '../../api/types';
 import { languageFromLabel } from '../profile/account';
 import { Observable } from '../shared/Observable';
-import { QVER, liveBank, type Question } from './questions';
+import {
+  fallbackBank,
+  servedBank,
+  type Question,
+  type QuestionnaireIntro,
+  type ResolvedBank,
+} from './questions';
 
 /** Which screen the flow is on — `qintro` / `qform` / `qreview` / `qDone`. */
 /** Whether a `GET …/questionnaire/` read means "already sent". The backend now
@@ -78,6 +93,11 @@ export interface QuestionnaireSnapshot {
   /** 0 = the contact step; 1…bank.length index the bank one-based. */
   step: number;
   bank: Question[];
+  /** The intro screen's copy — the served set's title/intro over the
+   * built-in wording (see `questions.ts`). */
+  intro: QuestionnaireIntro;
+  /** Whether the bank is the owner's served set or the built-in fallback. */
+  source: ResolvedBank['source'];
   contact: Contact;
   /** Multi-select answers, per step. A free-text step stores `[text]`. */
   answers: Record<number, string[]>;
@@ -111,7 +131,7 @@ export function contactPatch(contact: Contact): MeUpdate {
 }
 
 interface Draft {
-  qver?: number;
+  qver?: number | string;
   email?: string;
   phone?: string;
   lang?: string;
@@ -143,15 +163,20 @@ const CONTACT_LABELS: ReadonlyArray<readonly [keyof Contact, string]> = [
 export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
   private readonly api: RecommendationService;
   private readonly account: AccountWriter | null;
+  /** The draft version of the bank in use — see `ResolvedBank.version`. */
+  private version: number | string;
 
   constructor(api: RecommendationService, account: AccountWriter | null = null) {
+    // Read ONCE, here and in `load()`, not per render — `startQ` (:10016) does
+    // the same, so a theme save mid-questionnaire cannot renumber the steps
+    // under the collector.
+    const initial = fallbackBank();
     super({
       stage: 'intro',
       step: 0,
-      // Read ONCE, here, not per render — `startQ` (:10016) does the same, so
-      // a theme save mid-questionnaire cannot renumber the steps under the
-      // collector.
-      bank: liveBank(),
+      bank: initial.bank,
+      intro: initial.intro,
+      source: initial.source,
       contact: { email: '', phone: '', lang: '' },
       answers: {},
       extras: {},
@@ -162,6 +187,17 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
     });
     this.api = api;
     this.account = account;
+    this.version = initial.version;
+  }
+
+  /** The served set when it has questions, the built-in bank otherwise —
+   * including when the read fails. Never throws. */
+  private async resolveBank(): Promise<ResolvedBank> {
+    try {
+      return servedBank(await this.api.questionSet()) ?? fallbackBank();
+    } catch {
+      return fallbackBank();
+    }
   }
 
   /**
@@ -179,9 +215,20 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
    * starting fresh.
    */
   async load(prefill: Partial<Contact> = {}): Promise<void> {
+    // Both reads go out together; the bank must be known before the draft is
+    // judged, because the draft's version is compared with the bank's.
+    const savedRead = this.api.questionnaire();
+    // An unobserved rejection while the set is awaited would be reported as
+    // unhandled; it is handled below, at the `await`.
+    savedRead.catch(() => undefined);
+    const resolved = await this.resolveBank();
+    this.version = resolved.version;
     const draft = readDraft();
-    const fresh = draft.qver !== QVER;
+    const fresh = draft.qver !== resolved.version;
     this.patch({
+      bank: resolved.bank,
+      intro: resolved.intro,
+      source: resolved.source,
       contact: {
         email: draft.email || prefill.email || '',
         phone: draft.phone || prefill.phone || '',
@@ -192,7 +239,7 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
     });
 
     try {
-      const saved = await this.api.questionnaire();
+      const saved = await savedRead;
       if (!isQuestionnaireAnswered(saved)) {
         this.patch({ submitted: false, status: 'idle', stage: 'intro' });
         return;
@@ -215,8 +262,9 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
     }
   }
 
-  /** Map the server's flat `{q, a}` list back onto the current bank by
-   * question text — the one join key that survives the bank being reordered.
+  /** Map the server's flat `{q, a}` list back onto the current bank — the
+   * served set's prompts when one is in use — by question text, the one join
+   * key that survives the bank being reordered.
    * A question that is no longer in the bank is simply not shown, which is
    * what `QVER` already promises. */
   private adoptServerAnswers(rows: ReadonlyArray<{ q?: unknown; a?: unknown }>): void {
@@ -428,7 +476,7 @@ export class QuestionnaireController extends Observable<QuestionnaireSnapshot> {
       localStorage.setItem(
         DRAFT_KEY,
         JSON.stringify({
-          qver: QVER,
+          qver: this.version,
           email: contact.email,
           phone: contact.phone,
           lang: contact.lang,

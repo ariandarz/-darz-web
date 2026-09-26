@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-26 — V1 Phase 9a: owner extras per Q-5 (G-P5-11, G-P25-2(a))
+
+- Artist enquiry sends `artist`; the questionnaire runs on `GET /recommendations/question-set/` (built-in bank kept as the empty/failed fallback, draft versioned by the served questions). Deferred, API ready: G-P24-2 · G-P25-2(b) · G-P5-4/5/12 · G-P13-1 · G-CLUB-3 · G-P5-9.
+- Matrix: question-set → Integrated, 14 owner-deferred → Excluded (261/0/9/38/14/1). **832 unit · 155 E2E**. Details: `V1_IMPLEMENTATION_PLAN.md` §3j.
+
 ## 2026-09-26 — V1 Phase 8: owner Access desk (G-KEY-1)
 
 - `/admin/access`, owner-only (Q-1): the old stat row (4 of 5 from `summary/`), the "keys need a decision" review banner, search / computed status / "Expiring ≤ 7d", roster table (C-17 status, activity tallies, name → collector), extend + revoke with the old toast/confirm. New C-25 (extend never revives a lazily-expired key).
