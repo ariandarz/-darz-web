@@ -13,12 +13,12 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 
 | | |
 | --- | --- |
-| Branches | `main` and `development`; `development` is the working line. All V1 phase PRs (#102–#112) are merged into `development`. Open: **#113** (release to `main`) and **#114** (docs). `development` is ahead of `main` until the owner says "release development to main". |
+| Branches | `main` and `development`; `development` is the working line. **V1 released to `main` on 2026-09-27** (#113); the two are level at `960d571`. |
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API, 323 operations. Fix PRs **#71–#77** open (drafts, unmerged). |
 | API adoption | 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). |
 | Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
-| Live | https://darz-web.vercel.app — auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
+| Live | https://darz-web.vercel.app — serves V1 since 2026-09-27; auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
 owner decisions, backend defects and post-V1 features — see § 3.
