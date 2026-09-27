@@ -144,6 +144,16 @@ export class AuthSession extends HttpClient {
     return me;
   }
 
+  /** Replace the cached `me` with one the server just returned — the answer to
+   * a `PATCH /auth/me/` (`AuthService.updateMe`) is the whole updated principal,
+   * so every screen reading the session sees the edit without a second read.
+   * Ignored when signed out: a late response must not resurrect a session. */
+  adoptMe(me: Me): void {
+    if (!this.isAuthenticated) return;
+    this.user = me;
+    this.emit();
+  }
+
   /** Call once on app start: if a refresh token survived a reload, mint an
    * access token and hydrate `me`. Silent on failure (just stays logged out). */
   async resume(): Promise<Me | null> {

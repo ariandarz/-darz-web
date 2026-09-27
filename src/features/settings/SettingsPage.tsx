@@ -2,34 +2,40 @@
  * SettingsPage — `/settings`. Port of `settingsView()` (app.html:9827-9939),
  * reduced to what v0.1 has a real backend or a real device setting for:
  *
- *   ✓ Profile row (:9892-9895) → /profile
+ *   ✓ Profile row (:9920-9922) → /profile — "view & edit profile" again now
+ *     that Account edits through `PATCH /api/auth/me/` (G-B1)
  *   ✓ DISPLAY › Appearance — Paper / Black, the app's own theme engine
  *     (`ThemeController`; the old app's moon toggle + `appMode`). Shown here
  *     because this port has no header toggle. Currency / Language rows stay
  *     hidden as in the old default (`showCurrencySetting` / `showLangSetting`
  *     = Hidden, :9916-9920).
- *   ✓ ACCOUNT › Edit profile → /profile; Privacy & data (:9922-9923)
- *   ✓ LEGAL › Terms & Conditions · Privacy Policy (:9927-9929). "Auction
- *     Terms" is behind `features.auctions`.
+ *   ✓ ACCOUNT › Edit profile → Profile › Account, the editable card
+ *     (:9949); Privacy & data (:9950)
+ *   ✓ LEGAL › Terms & Conditions · Privacy Policy (:9954-9956). "Auction
+ *     Terms" is behind `features.auctions`. See `useLegalLinks` for where
+ *     each link points.
  *   ✓ About (:9931-9933), LEAVE THE ROOM + "Powered by Darz" + build (:9936)
  *   ✗ NOTIFICATIONS (:9901-9915) — the toggles were device-local preferences
  *     with no backend, and push is wired to auctions only (Phase 13): hidden
  *     behind `features.push`, not deleted.
- *   ✓ Membership (:9923-9927) — the row, opening the access-tier sheet
- *     (`MembershipSheet`). Behind `features.membership`. Built 2026-09-22
- *     against Phase 13's `POST /api/auth/membership/redeem/`. Its ACTIVE /
- *     EXPIRED pill and plan sub-line are NOT built — see the sheet's header
- *     (G-MEMB-6, G-MEMB-3) for what the backend cannot answer.
+ *   ✓ Membership (:9923-9927) — the row, its plan sub-line and its ACTIVE /
+ *     EXPIRED pill from `GET /api/auth/my-membership/` (G-MEMB-3/6/7),
+ *     opening the access-tier sheet (`MembershipSheet`). Behind
+ *     `features.membership`.
  *   ✗ "Get the app" (PWA install) — no service worker in this build yet.
  */
 import { useState, useSyncExternalStore } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useApi, useSession } from '../../api/hooks';
+import { useApi, useOptions, useSession } from '../../api/hooks';
+import type { Choice } from '../../api/types';
 import { themeController } from '../../design';
 import '../catalogue/catalogue.css';
 import { MembershipSheet } from '../membership/MembershipSheet';
+import { membershipState, membershipSubline } from '../membership/membership';
 import '../membership/membership.css';
+import { useMyMembership } from '../membership/useMyMembership';
 import { features } from '../shell/features';
+import { useLegalLinks } from './useLegalLinks';
 import './settings.css';
 
 const ic = {
@@ -132,6 +138,14 @@ export function SettingsPage() {
     void auth.logout().finally(() => navigate('/login', { replace: true }));
 
   const [membershipOpen, setMembershipOpen] = useState(false);
+  const { membership, reload: reloadMembership } = useMyMembership(features.membership);
+  const options = useOptions();
+  const memb = membershipState(membership);
+  const tierLabel = (tier: string) =>
+    ((options?.['accounts.collector_tier'] as Choice[] | undefined) ?? []).find(
+      (c) => c.value === tier,
+    )?.label ?? tier;
+  const legal = useLegalLinks(features.auctions);
 
   return (
     <div className="dz-page">
@@ -147,22 +161,17 @@ export function SettingsPage() {
               {name}
             </span>
             <span className="m" style={{ display: 'block' }}>
-              {sub} · view profile
+              {sub} · view &amp; edit profile
             </span>
           </span>
           <span className="st-chev">›</span>
         </Link>
       </div>
 
-      {/* Membership (`:9923-9927`) — the row and the sheet it opens.
-          The old row also carries a green ACTIVE / red EXPIRED pill and a
-          sub-line naming the plan and its end date. **None of those are
-          built**, and not for want of trying: nothing in this backend answers
-          whether a collector has redeemed a code, and `me.tier` is the CRM
-          segmentation every collector already has, so lighting the pill from
-          it would mark everyone a member. See `MembershipSheet`'s header,
-          G-MEMB-6 / G-MEMB-3. The row keeps the old default sub-line, which
-          is exactly what the old app shows a non-member. */}
+      {/* Membership (`:9923-9927`) — the row, its sub-line and its pill, from
+          `GET /api/auth/my-membership/`. While the read is in flight (or if it
+          fails) the row shows the old default sub-line and no pill, which is
+          exactly what the old app shows a non-member. */}
       {features.membership && (
         <div className="st-card">
           <button
@@ -170,10 +179,16 @@ export function SettingsPage() {
             className="st-row top click"
             onClick={() => setMembershipOpen(true)}
           >
-            <div>
+            {/* flex:1 — the old row's text block (:9925), so the pill sits by
+                the chevron rather than mid-row */}
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div className="t">Membership</div>
-              <div className="s">View plans and your access to the private room</div>
+              <div className="s">
+                {membershipSubline(memb, memb.kind === 'none' ? '' : tierLabel(memb.tier))}
+              </div>
             </div>
+            {memb.kind === 'active' && <span className="mb-pill on">ACTIVE</span>}
+            {memb.kind === 'ended' && <span className="mb-pill off">EXPIRED</span>}
             <span className="st-chev">›</span>
           </button>
         </div>
@@ -251,24 +266,14 @@ export function SettingsPage() {
           <span className="ic">{ic.legal}</span>
           <span className="lb">LEGAL</span>
         </div>
-        <a
-          className="st-row top click"
-          href="https://darzmarket.art/terms"
-          target="_blank"
-          rel="noopener"
-        >
+        <a className="st-row top click" href={legal.terms} target="_blank" rel="noopener">
           <div>
             <div className="t">Terms &amp; Conditions</div>
             <div className="s">How we work together</div>
           </div>
           <span className="st-chev">›</span>
         </a>
-        <a
-          className="st-row top click"
-          href="https://darzmarket.art/privacy"
-          target="_blank"
-          rel="noopener"
-        >
+        <a className="st-row top click" href={legal.privacy} target="_blank" rel="noopener">
           <div>
             <div className="t">Privacy Policy</div>
             <div className="s">Your data, kept close</div>
@@ -276,12 +281,7 @@ export function SettingsPage() {
           <span className="st-chev">›</span>
         </a>
         {features.auctions && (
-          <a
-            className="st-row top click"
-            href="https://darzmarket.art/auction-terms"
-            target="_blank"
-            rel="noopener"
-          >
+          <a className="st-row top click" href={legal.auction} target="_blank" rel="noopener">
             <div>
               <div className="t">Auction Terms</div>
               <div className="s">How bidding works</div>
@@ -312,7 +312,12 @@ export function SettingsPage() {
         <div className="st-ver">v0.1</div>
       </div>
 
-      <MembershipSheet open={membershipOpen} onClose={() => setMembershipOpen(false)} />
+      <MembershipSheet
+        open={membershipOpen}
+        onClose={() => setMembershipOpen(false)}
+        membership={membership}
+        onRedeemed={reloadMembership}
+      />
     </div>
   );
 }

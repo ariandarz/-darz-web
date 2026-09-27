@@ -16,13 +16,22 @@
  *  - the working copy (`_projDraft`) is React state; Save sends ONE `PATCH`
  *    with every editable field + `expected_version` and adopts the response
  *    (the old `projPut(_projDraft)` wrote the record to localStorage);
- *  - a stage move is `POST …/stage/` alone — the old seeding of the stage
- *    sub-state (:13709-13714: start date, checklist, doneTs) has no API
- *    (G-PROJ-3); unsaved edits are saved FIRST because the move adopts the
- *    server's record; the scope gate reads the draft's category, i.e. what
- *    that save writes;
- *  - Status is read-only text ("derived from the stage") — not writable on
- *    the API (G-PROJ-2), so the old `<select>` at :13781 is gone;
+ *  - a stage move is two writes: ONE locked PATCH carrying the draft plus
+ *    the old seeding of the stage sub-state (`moveStages`, :13706-13714:
+ *    start date, the template's checklist, doneTs on every earlier stage —
+ *    G-PROJ-3), then `POST …/stage/` with the version that PATCH returned;
+ *    the scope gate reads the draft's category, i.e. what that save writes;
+ *  - Status is the old Overview `<select>` (:13781) over `projects.status`,
+ *    saved with the rest (G-PROJ-2). The backend re-stamps it on the next
+ *    stage move (`STAGE_STATUS_MAP`) exactly as the old `setStage` did
+ *    (:13716), so nothing extra is said on screen;
+ *  - Money (owner only) gains the manual FX block (G-PROJ-9) — deal currency,
+ *    rate "1 source = N target", convert-to, rate date — with the labels of
+ *    the old private deal's "Currency & conversion" bar (:23404-23413; the old
+ *    project Money section had none, flagged); and the Totals rows are the
+ *    server's `GET …/totals/` (the backend's port of `projMoneyCalc`, :13298)
+ *    rendered from decimal strings, plus the converted total when a rate is
+ *    set, instead of a client-side float sum of the draft;
  *  - attachments are server files (`…/attachments/`), not localStorage
  *    slots (:13889-13891): the heading drops "(kept on this device)", Open
  *    is the file's URL, ✕ deletes on the server at once (the old removed
@@ -71,10 +80,13 @@ import type {
   Choice,
   PartnerOrgAdmin,
   ProjectAdmin,
+  ChecklistTemplateAdmin,
   ProjectAttachmentAdmin,
   ProjectCategory,
   ProjectPatch,
   ProjectStage,
+  ProjectStatus,
+  ProjectTotals,
 } from '../../../api/types';
 import { asAdminRole } from '../adminNav';
 import { ConfirmDialog, ConflictBanner, DeskBanner, DeskPage } from '../kit';
@@ -89,21 +101,30 @@ import {
   asLinks,
   asMoney,
   asStringList,
+  checklistFor,
   choiceLabel,
   choices,
+  currencyLabel,
   defaultCurrency,
+  fmtDecimal,
+  fmtRate,
+  fxDraftFrom,
+  fxPatch,
   lanesToRoles,
-  moneyCalc,
+  moveStages,
   parseList,
   projFlag,
-  projMoney,
   scopeGate,
   stageLabel,
   stageState,
   todayIso,
   uid,
   walkPages,
+  totalsRow,
+  totalsRows,
+  UNKNOWN_CURRENCY,
   type Deliverable,
+  type FxDraft,
   type InvoiceStatus,
   type LinkRow,
   type MoneyAmount,
@@ -125,6 +146,13 @@ const WARN = { color: 'var(--dzp-attn)', marginBottom: 6 } as const; // :13831 (
 const GAP12 = { marginTop: 12 } as const; // :13793, :13807-13808, :13815-13816
 const GAP8 = { marginTop: 8 } as const; // :13806
 const DEL_ROW = { padding: '14px 2px' } as const; // :13867
+// :23411 — the "(optional)" beside "Exchange rate" on the old deal bar
+const OPTIONAL = {
+  color: 'var(--ink3)',
+  fontWeight: 400,
+  textTransform: 'none',
+  letterSpacing: 0,
+} as const;
 const FOOT_RIGHT = { display: 'flex', gap: 8, marginLeft: 'auto' } as const; // :13761
 const POINTER = { cursor: 'pointer' } as const; // :13767
 // the in-flight guard is a bare <fieldset> — no box of its own
@@ -157,6 +185,10 @@ interface Draft {
   results: string;
   report: string;
   internal_notes: string;
+  /** G-PROJ-2 — the Overview select (:13781) */
+  status: string;
+  /** G-PROJ-9 — the manual FX fields (owner / money gate) */
+  fx: FxDraft;
 }
 
 function draftFrom(p: ProjectAdmin, currency: string): Draft {
@@ -184,6 +216,8 @@ function draftFrom(p: ProjectAdmin, currency: string): Draft {
     results: p.results ?? '',
     report: p.report ?? '',
     internal_notes: p.internal_notes ?? '',
+    status: p.status ?? '',
+    fx: fxDraftFrom(p),
   };
 }
 
@@ -229,9 +263,11 @@ function patchFrom(
   if (orgIds.length !== linked.length || orgIds.some((id) => !linked.includes(id)))
     body.partner_org_ids = orgIds;
   if (d.category) body.category = d.category as ProjectCategory;
+  if (d.status) body.status = d.status as ProjectStatus;
   if (canMoney) {
     body.money = d.money;
     body.internal_notes = d.internal_notes;
+    Object.assign(body, fxPatch(d.fx));
   }
   return body;
 }
@@ -279,6 +315,14 @@ function ProjectRecord({ id }: { id: string }) {
   // fall back to the record's own `partner_orgs` mirror for names
   const [partners, setPartners] = useState<PartnerOrgAdmin[] | null>(null);
   const [attachments, setAttachments] = useState<ProjectAttachmentAdmin[] | null>(null);
+  // the checklist templates a stage move seeds from (`projChecklistFor`,
+  // :13321); null until read — a failed read seeds no checklist, as the old
+  // move did when no template existed
+  const [templates, setTemplates] = useState<ChecklistTemplateAdmin[] | null>(null);
+  // `GET …/totals/` for the version on screen (owner only — the money gate)
+  const [totals, setTotals] = useState<{ key: string; data: ProjectTotals | null } | null>(
+    null,
+  );
   const [draft, setDraft] = useState<Draft | null>(null);
   const [draftKey, setDraftKey] = useState('');
   const [gen, setGen] = useState(0);
@@ -306,7 +350,8 @@ function ProjectRecord({ id }: { id: string }) {
         },
         (err: unknown) => setError(errorText(err, 'Could not load the project.')),
       ),
-    [projectsAdmin, id],
+    // the (stable) setters are listed for the React Compiler's memo check
+    [projectsAdmin, id, setError, setConflict, setProject],
   );
   useEffect(() => {
     void load();
@@ -318,7 +363,7 @@ function ProjectRecord({ id }: { id: string }) {
         (rows) => setAttachments(rows),
         (err: unknown) => setError(errorText(err, 'Could not load the attachments.')),
       ),
-    [projectsAdmin, id],
+    [projectsAdmin, id, setError, setAttachments],
   );
   useEffect(() => {
     void loadAttachments();
@@ -337,6 +382,32 @@ function ProjectRecord({ id }: { id: string }) {
       alive = false;
     };
   }, [projectsAdmin]);
+
+  useEffect(() => {
+    let alive = true;
+    walkPages((page) => projectsAdmin.checklists({ page, per_page: 100 })).then(
+      (rows) => alive && setTemplates(rows),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [projectsAdmin]);
+
+  // the totals follow the saved record: re-read whenever a new version is
+  // adopted (save / archive / stage move / reload)
+  const totalsKey = project && canMoney ? `${project.id}:${project.version}` : '';
+  useEffect(() => {
+    if (!totalsKey) return;
+    let alive = true;
+    projectsAdmin.totals(id).then(
+      (data) => alive && setTotals({ key: totalsKey, data }),
+      () => alive && setTotals({ key: totalsKey, data: null }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [projectsAdmin, id, totalsKey]);
 
   // The working copy is rebuilt from the record each time a fresh version is
   // adopted (save / stage move / archive / reload) — a render-time derived
@@ -408,9 +479,10 @@ function ProjectRecord({ id }: { id: string }) {
       navigate('/admin/projects/list', { state: { note: 'Project deleted' } });
     });
 
-  // :13706-13719 — the rail click. The gate first (:13707-13708); then the
-  // move alone (no sub-state seeding — G-PROJ-3), saving unsaved edits first
-  // because the move adopts the server's record.
+  // :13706-13719 — the rail click. The gate first (:13707-13708); then ONE
+  // locked PATCH with the draft and the seeded sub-state (:13709-13714), then
+  // the move itself with the version that PATCH returned (the move re-stamps
+  // `status` from the stage, :13716 — a hand-set status lasts until then).
   const moveStage = (target: string) => {
     if (!project || !draft || busy || target === project.stage) return;
     const g = scopeGate(
@@ -424,8 +496,14 @@ function ProjectRecord({ id }: { id: string }) {
     }
     setGate(null);
     void act(async () => {
-      let version = project.version;
-      if (dirty) version = (await saveDraft(draft)).version;
+      const seeded = moveStages(
+        project.stages,
+        stages,
+        target,
+        checklistFor(templates ?? [], target),
+        todayIso(),
+      );
+      const { version } = await saveDraft(draft, { stages: seeded });
       const next = await projectsAdmin.setStage(id, target as ProjectStage, version);
       setProject(next);
       setNote('Stage → ' + stageLabel(stages, target)); // :13718
@@ -498,7 +576,7 @@ function ProjectRecord({ id }: { id: string }) {
   const unkeyed = draft.lanes.filter((l) => !l.orgId).length;
   const dupOrgs = draft.lanes.length - unkeyed - Object.keys(lanesToRoles(draft.lanes)).length;
   const m = draft.money;
-  const mc = moneyCalc({ money: m }, defCur); // :13800
+  const shownTotals = totals && totals.key === totalsKey ? totals : null;
   const doneBy = me?.display_name || me?.name || me?.email || 'admin'; // :13884 wrote 'admin'
 
   return (
@@ -647,11 +725,25 @@ function ProjectRecord({ id }: { id: string }) {
                 </select>
               </label>
               <label>
-                {/* :13781 was a <select>; `status` is not writable (G-PROJ-2), so
-                  the label wraps an <output> — the derived value, not a field */}
+                {/* :13781 — writable since G-PROJ-2; the choices are
+                  `projects.status` (the old `PROJ_STATUSES`, :13240). The next
+                  stage move re-stamps it server-side, as the old one did. */}
                 <span className="fl">Status</span>
-                <output>{choiceLabel(statuses, project.status) || '—'}</output>
-                <span className="dzp-mut">derived from the stage</span>
+                <select
+                  value={draft.status}
+                  onChange={(e) => patch({ status: e.target.value })}
+                >
+                  {!statuses.some((c) => c.value === draft.status) && (
+                    <option value={draft.status}>
+                      {choiceLabel(statuses, draft.status) || draft.status || '—'}
+                    </option>
+                  )}
+                  {statuses.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 <span className="fl">Venue / show</span>
@@ -918,7 +1010,12 @@ function ProjectRecord({ id }: { id: string }) {
           {/* :13798-13809 · :13863 — owner only */}
           {canMoney && (
             <Section id="money" label="Money" open={isOpen('money', false)} onToggle={toggle}>
-              <div className="dzp-form">
+              <FxBlock
+                fx={draft.fx}
+                currencies={currencies}
+                onChange={(fx) => patch({ fx })}
+              />
+              <div className="dzp-form" style={GAP12}>
                 <MoneyField
                   label="Internal cost"
                   value={m.internalCost}
@@ -1044,27 +1141,12 @@ function ProjectRecord({ id }: { id: string }) {
                 </div>
               </div>
               <div style={GAP12}>
-                {/* :13801 */}
+                {/* :13801, :13807 — the rows are the server's buckets now */}
                 <div className="dzp-fl">Totals (grouped by currency — never converted)</div>
-                {mc.currencies.length ? (
-                  mc.currencies.map((c) => {
-                    const b = mc.byCur[c];
-                    return (
-                      <div className="dzp-mrow" key={c}>
-                        <span>{c}</span>
-                        <b>
-                          Client {projMoney(b.client, c)} · Fee {projMoney(b.fee, c)} · Cost{' '}
-                          {projMoney(b.internal + b.external, c)}
-                          {b.paid || b.due
-                            ? ` · Paid ${projMoney(b.paid, c)} / Due ${projMoney(b.due, c)}`
-                            : ''}
-                        </b>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="dzp-mut">No amounts recorded yet.</div>
-                )}
+                <TotalsPanel
+                  totals={shownTotals ? shownTotals.data : undefined}
+                  dirty={dirty}
+                />
               </div>
             </Section>
           )}
@@ -1318,6 +1400,158 @@ function CurrencyOptions({ currencies, current }: { currencies: Choice[]; curren
           {c.value}
         </option>
       ))}
+    </>
+  );
+}
+
+/** The "Currency & conversion" block (G-PROJ-9). The old project Money
+ * section had no FX at all (:13798-13809); the labels, the "(optional)" and
+ * the "1 {cur} = ?" placeholder are the old private deal's bar (:23404-23413),
+ * the one place the old panel recorded a deal-level rate. Differences: the
+ * deal currency may be blank ("— none —", the column is nullable), and the
+ * target keeps a code outside the choices (the backend takes any 3
+ * characters, C-22). The fields save with the rest of the record. */
+function FxBlock({
+  fx,
+  currencies,
+  onChange,
+}: {
+  fx: FxDraft;
+  currencies: Choice[];
+  onChange: (fx: FxDraft) => void;
+}) {
+  const set = (p: Partial<FxDraft>) => onChange({ ...fx, ...p });
+  const codes = (current: string) => (
+    <>
+      <option value="">— none —</option>
+      {current && !currencies.some((c) => c.value === current) && (
+        <option value={current}>{current}</option>
+      )}
+      {currencies.map((c) => (
+        <option key={c.value} value={c.value}>
+          {c.value}
+        </option>
+      ))}
+    </>
+  );
+  return (
+    <>
+      <div className="dzp-fl">Currency &amp; conversion</div>
+      <div className="dzp-form">
+        <label>
+          <span className="fl">Deal currency</span>
+          <select
+            value={fx.deal_currency}
+            onChange={(e) => set({ deal_currency: e.target.value })}
+          >
+            {codes(fx.deal_currency)}
+          </select>
+        </label>
+        <label>
+          <span className="fl">
+            Exchange rate <span style={OPTIONAL}>(optional)</span>
+          </span>
+          <input
+            value={fx.deal_fx_rate}
+            inputMode="decimal"
+            placeholder={`1 ${fx.deal_currency || '…'} = ?`}
+            onChange={(e) => set({ deal_fx_rate: e.target.value })}
+          />
+        </label>
+        <label>
+          <span className="fl">Convert to</span>
+          <select
+            value={fx.deal_fx_target_currency}
+            onChange={(e) => set({ deal_fx_target_currency: e.target.value })}
+          >
+            {codes(fx.deal_fx_target_currency)}
+          </select>
+        </label>
+        <label>
+          <span className="fl">Rate date</span>
+          <input
+            type="date"
+            value={fx.deal_fx_rate_date}
+            onChange={(e) => set({ deal_fx_rate_date: e.target.value })}
+          />
+        </label>
+      </div>
+    </>
+  );
+}
+
+/** One `.dzp-mrow` (:13800): "Client · Fee · Cost[ · Paid / Due]". */
+function TotalsLine({ row }: { row: ReturnType<typeof totalsRow> }) {
+  const c = row.cur === UNKNOWN_CURRENCY ? '' : row.cur;
+  return (
+    <div className="dzp-mrow">
+      <span>{row.label}</span>
+      <b>
+        Client {fmtDecimal(row.client, c)} · Fee {fmtDecimal(row.fee, c)} · Cost{' '}
+        {fmtDecimal(row.cost, c)}
+        {row.showPaid
+          ? ` · Paid ${fmtDecimal(row.paid, c)} / Due ${fmtDecimal(row.due, c)}`
+          : ''}
+      </b>
+    </div>
+  );
+}
+
+/**
+ * The Totals rows from `GET …/totals/` (G-PROJ-9, C-22): one row per served
+ * currency bucket in the old row's words (:13800), the backend's `"unknown"`
+ * bucket as "No currency" (new wording, flagged), every amount a decimal
+ * string grouped for display (`fmtDecimal`, no float maths). Under them, the
+ * converted total only when `fx` is served — its target row, then "1 source =
+ * rate target (date)" and the currencies the rate cannot convert; with no
+ * rate, the old private deal's hint (:23345). The rows follow the SAVED
+ * record, so an unsaved edit says so (new wording, flagged). When the deal
+ * currency and the target are the same the backend adds that bucket twice
+ * (`services.py:388-392`), so no converted row is shown then (flagged).
+ */
+function TotalsPanel({
+  totals,
+  dirty,
+}: {
+  /** undefined = loading; null = the read failed */
+  totals: ProjectTotals | null | undefined;
+  dirty: boolean;
+}) {
+  if (totals === undefined) return <div className="dzp-mut">Loading…</div>;
+  if (totals === null) return <div className="dzp-mut">Could not load the totals.</div>;
+  const rows = totalsRows(totals);
+  const fx = totals.fx;
+  const same = !!fx && fx.source_currency === fx.target_currency;
+  const unconvertible = fx ? (fx.unconvertible_currencies ?? []).map(currencyLabel) : [];
+  return (
+    <>
+      {rows.length ? (
+        rows.map((r) => <TotalsLine key={r.cur} row={r} />)
+      ) : (
+        <div className="dzp-mut">No amounts recorded yet.</div>
+      )}
+      {fx && !same && (
+        <div style={GAP8}>
+          <div className="dzp-fl">Converted total</div>
+          <TotalsLine row={totalsRow(fx.target_currency, fx.converted)} />
+          <div className="dzp-mut">
+            1 {fx.source_currency} = {fmtRate(fx.rate)} {fx.target_currency}
+            {fx.rate_date ? ` (${fx.rate_date})` : ''}
+            {unconvertible.length ? ` · Not converted: ${unconvertible.join(', ')}` : ''}
+          </div>
+        </div>
+      )}
+      {fx && same && (
+        <div className="dzp-mut">
+          Deal currency and Convert to are the same — nothing to convert.
+        </div>
+      )}
+      {!fx && rows.length > 0 && (
+        <div className="dzp-mut">
+          Enter an exchange rate above to see the amount in another currency (e.g. Toman).
+        </div>
+      )}
+      {dirty && <div className="dzp-mut">Totals show the last save.</div>}
     </>
   );
 }

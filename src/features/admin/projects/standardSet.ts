@@ -958,13 +958,14 @@ export function planChecklists(
  * which ones, and the desk says how many). `internal_cost` is `'0'` on every
  * line for the same reason — Darz has no internal cost recorded for these.
  *
- * What does NOT go on the wire: `about`, `flow`, `time` and `need`.
- * `ProjectServiceCatalogItem` has no description field (G-PROJ-8), so only
- * the NAME of a service reaches the catalogue.
+ * `about` goes on the wire as the row's `description` (G-PROJ-8 added the
+ * column). What does NOT: `flow`, `time` and `need` — the catalogue has no
+ * field for how a service runs.
  */
 export function serviceInput(s: StandardService, currency: string): ServiceCatalogItemInput {
   return {
     name: s.name,
+    description: s.about,
     category: s.category,
     unit: s.unit,
     internal_cost: String(s.internalCost),

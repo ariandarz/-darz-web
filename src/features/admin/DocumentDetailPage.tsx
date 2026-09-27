@@ -6,13 +6,27 @@
  * (title · ref · visibility · the freeform `fields` JSON); **Confirm needs
  * an uploaded PDF first** and locks the record; **Sign** follows
  * confirmation; **Archive** shelves it. `owner_lock` limits the guarded
- * moves to the owner — the server enforces it, the desk shows it.
+ * moves to the owner — the server enforces it (`services.py:17-19`) and,
+ * since Phase 6, so does the desk: for a standard admin every guarded control
+ * (Save · Upload · Confirm · Sign · Archive, and the draft inputs) is disabled
+ * with the reason on screen (`ownerLockReason`, `documentRules.ts`). The owner
+ * is unaffected. Share is not guarded server-side, so it is not guarded here.
  *
- * Sharing (the owner's ask, D19 / G-DOC-1): there is no way to attach a
- * document to a collector thread yet, so the desk offers the direct
- * `pdf_url` — **Copy link** — which is a signed, expiring URL for a private
- * document and a stable one for a public document. The public kinds also
- * serve at `GET /api/documents/public/{kind}/` once confirmed.
+ * **Share with collector (G-DOC-1).** The old panel's pill toggle, "Sharing" /
+ * "Not shared" (`DZSales._docSectionHTML`, `darz-studio.html:12906`), and its
+ * line "only shared documents appear in their Market App" (`:12912`), over
+ * `POST/DELETE …/{id}/share/`. The old share lived on a deal, whose collector
+ * was known; a document here may not have one yet, so a collector is picked
+ * with the kit `Picker` (the Sales desk's collector search). Only the
+ * collector-visible kinds offer it (`COLLECTOR_VISIBLE_KINDS`); the backend
+ * 400s any other. A shared document lands in the collector's Profile ›
+ * "Your documents" (Phase 1). A document can also reach a collector from the
+ * chat composer (D19 `document_refs` — attach = share), and **Copy link**
+ * still hands over the direct `pdf_url` (signed and expiring for a private
+ * document, stable for a public one; public kinds also serve at
+ * `GET /api/documents/public/{kind}/` once confirmed).
+ *
+ * **History (G-DOC-2)** is `DocumentHistory`, the per-document trail.
  *
  * The `fields` editor is the Import batch page's JSON-editor pattern: the
  * shape depends on `kind` and the model keeps it freeform, so a validated
@@ -41,8 +55,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useSession } from '../../api/hooks';
 import type { DocumentAdmin, DocumentVersionAdmin } from '../../api/types';
 import { asAdminRole } from './adminNav';
+import { DocumentHistory } from './DocumentHistory';
 import { DocPill } from './DocumentsPage';
-import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
+import {
+  COLLECTOR_VISIBLE_KINDS,
+  isCollectorVisibleKind,
+  ownerLockReason,
+} from './documentRules';
+import { ConfirmDialog, DeskBanner, DeskPage, Picker, type PickItem } from './kit';
 import './admin.css';
 
 export function DocumentDetailPage() {
@@ -50,7 +70,8 @@ export function DocumentDetailPage() {
   const { documentsAdmin } = useApi();
   const navigate = useNavigate();
   const { me } = useSession();
-  const isOwner = asAdminRole(me?.role) === 'owner';
+  const role = asAdminRole(me?.role);
+  const isOwner = role === 'owner';
 
   const [doc, setDoc] = useState<DocumentAdmin | null>(null);
   const [versions, setVersions] = useState<DocumentVersionAdmin[]>([]);
@@ -65,13 +86,17 @@ export function DocumentDetailPage() {
   const [visibility, setVisibility] = useState('private');
   const [fieldsText, setFieldsText] = useState('{}');
 
-  const adopt = useCallback((d: DocumentAdmin) => {
-    setDoc(d);
-    setTitle(d.title);
-    setRef(d.ref ?? '');
-    setVisibility((d.visibility as string) ?? 'private');
-    setFieldsText(JSON.stringify(d.fields ?? {}, null, 2));
-  }, []);
+  const adopt = useCallback(
+    (d: DocumentAdmin) => {
+      setDoc(d);
+      setTitle(d.title);
+      setRef(d.ref ?? '');
+      setVisibility((d.visibility as string) ?? 'private');
+      setFieldsText(JSON.stringify(d.fields ?? {}, null, 2));
+      // the setters are stable; listed because the compiler asks for them
+    },
+    [setDoc, setTitle, setRef, setVisibility, setFieldsText],
+  );
 
   const loadVersions = useCallback(() => {
     if (!id) return;
@@ -166,6 +191,9 @@ export function DocumentDetailPage() {
   }
 
   const draft = doc.status === 'draft';
+  // services.py:17-19 — the guarded moves, for a standard admin on a locked doc
+  const lock = ownerLockReason(doc, role);
+  const locked = !!lock;
 
   return (
     <DeskPage
@@ -195,6 +223,11 @@ export function DocumentDetailPage() {
           </span>
         </div>
         <div className="ad-card ad-reach">
+          {lock && (
+            <p className="ad-lockline" role="note">
+              {lock}
+            </p>
+          )}
           <div className="ad-reachrow">
             {doc.pdf_url ? (
               <>
@@ -213,13 +246,18 @@ export function DocumentDetailPage() {
             ) : (
               <span className="ad-cellsub">No PDF yet — upload the rendered document.</span>
             )}
-            <label className="ad-rowbtn" style={{ cursor: busy ? 'default' : 'pointer' }}>
+            <label
+              className={`ad-rowbtn${locked ? ' is-disabled' : ''}`}
+              style={{ cursor: busy || locked ? 'default' : 'pointer' }}
+              title={lock ?? undefined}
+              aria-disabled={locked || undefined}
+            >
               Upload PDF…
               <input
                 type="file"
                 accept="application/pdf"
                 style={{ display: 'none' }}
-                disabled={busy}
+                disabled={busy || locked}
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) void act(() => documentsAdmin.uploadPdf(id!, f));
@@ -233,8 +271,8 @@ export function DocumentDetailPage() {
               <button
                 type="button"
                 className="ad-action"
-                disabled={busy || !doc.pdf_url}
-                title={doc.pdf_url ? undefined : 'Upload a PDF before confirming.'}
+                disabled={busy || locked || !doc.pdf_url}
+                title={lock ?? (doc.pdf_url ? undefined : 'Upload a PDF before confirming.')}
                 onClick={() => setConfirming(true)}
               >
                 Confirm — lock this document
@@ -244,7 +282,8 @@ export function DocumentDetailPage() {
               <button
                 type="button"
                 className="ad-action"
-                disabled={busy}
+                disabled={busy || locked}
+                title={lock ?? undefined}
                 onClick={() => void act(() => documentsAdmin.signDocument(id!))}
               >
                 Sign
@@ -254,7 +293,8 @@ export function DocumentDetailPage() {
               <button
                 type="button"
                 className="ad-ghostbtn"
-                disabled={busy}
+                disabled={busy || locked}
+                title={lock ?? undefined}
                 onClick={() => void act(() => documentsAdmin.archiveDocument(id!))}
               >
                 Archive
@@ -299,7 +339,7 @@ export function DocumentDetailPage() {
               <span className="ad-filter-l">Title</span>
               <input
                 value={title}
-                disabled={!draft || busy}
+                disabled={!draft || busy || locked}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </label>
@@ -307,7 +347,7 @@ export function DocumentDetailPage() {
               <span className="ad-filter-l">Reference</span>
               <input
                 value={ref}
-                disabled={!draft || busy}
+                disabled={!draft || busy || locked}
                 onChange={(e) => setRef(e.target.value)}
               />
             </label>
@@ -319,7 +359,7 @@ export function DocumentDetailPage() {
               <span className="ad-filter-l">Visibility</span>
               <select
                 value={visibility}
-                disabled={!draft || busy}
+                disabled={!draft || busy || locked}
                 onChange={(e) => setVisibility(e.target.value)}
               >
                 <option value="private">Private</option>
@@ -339,7 +379,7 @@ export function DocumentDetailPage() {
               className="ad-pastebox"
               rows={8}
               value={fieldsText}
-              disabled={!draft || busy}
+              disabled={!draft || busy || locked}
               onChange={(e) => setFieldsText(e.target.value)}
             />
           </label>
@@ -348,7 +388,8 @@ export function DocumentDetailPage() {
               <button
                 type="button"
                 className="ad-action"
-                disabled={busy}
+                disabled={busy || locked}
+                title={lock ?? undefined}
                 onClick={() => void saveDraft()}
               >
                 Save draft
@@ -357,6 +398,9 @@ export function DocumentDetailPage() {
           )}
         </div>
       </section>
+
+      {/* ---- share with the collector (G-DOC-1) ---- */}
+      <ShareSection doc={doc} busy={busy} act={act} />
 
       {/* ---- versions ---- */}
       <section className="ad-dsec">
@@ -379,6 +423,9 @@ export function DocumentDetailPage() {
           </div>
         )}
       </section>
+
+      {/* ---- history (G-DOC-2) ---- */}
+      <DocumentHistory docs={documentsAdmin} id={doc.id} version={doc.version} />
 
       {confirming && (
         <ConfirmDialog
@@ -409,5 +456,114 @@ export function DocumentDetailPage() {
         />
       )}
     </DeskPage>
+  );
+}
+
+/**
+ * "Share with collector" — see the header. The pill is the old toggle's own
+ * two words (`:12906`); the controls under it are Share (a collector picked)
+ * or Stop sharing. The collector's name is read once for a document that
+ * already has one, so a shared row says who holds it.
+ */
+function ShareSection({
+  doc,
+  busy,
+  act,
+}: {
+  doc: DocumentAdmin;
+  busy: boolean;
+  act: (fn: () => Promise<DocumentAdmin>) => Promise<void>;
+}) {
+  const { documentsAdmin, adminAccounts } = useApi();
+  const [who, setWho] = useState<PickItem[]>([]);
+  const shared = !!doc.shared_at;
+  const visible = isCollectorVisibleKind(doc.kind);
+
+  // the document's own collector (a previous share, or an attach from chat)
+  useEffect(() => {
+    if (!doc.collector) return;
+    let alive = true;
+    adminAccounts.collector(doc.collector).then(
+      (c) => alive && setWho([{ id: c.id, label: c.display_name || 'Collector' }]),
+      () => alive && setWho([{ id: doc.collector!, label: 'Collector' }]),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [adminAccounts, doc.collector]);
+
+  const picked = who[0] ?? null;
+
+  return (
+    <section className="ad-dsec" aria-label="Share with collector">
+      <div className="ad-dsec-h">
+        {/* :6608 — the old share dialog's heading */}
+        <h2 className="ad-dsec-t">Share with collector</h2>
+        {/* :12912 */}
+        <span className="ad-dsec-n">only shared documents appear in their Market App</span>
+      </div>
+      <div className="ad-card ad-reach">
+        {!visible ? (
+          /* no old copy — the backend's allow-list (models.py:39-42), flagged */
+          <span className="ad-cellsub">
+            A “{doc.kind}” document never reaches a collector. Only these kinds can be shared:{' '}
+            {COLLECTOR_VISIBLE_KINDS.join(', ').replace(/_/g, ' ')}.
+          </span>
+        ) : (
+          <>
+            <div className="ad-reachrow">
+              <span className={`ad-stpill is-${shared ? 'ok' : 'neut'}`}>
+                {shared ? 'Sharing' : 'Not shared'}
+              </span>
+              {shared && (
+                <span className="ad-cellsub">
+                  with {picked?.label ?? 'the collector'} · since{' '}
+                  {new Date(doc.shared_at!).toLocaleDateString('en-GB')}
+                </span>
+              )}
+            </div>
+            {shared ? (
+              <div className="ad-reachrow">
+                <button
+                  type="button"
+                  className="ad-ghostbtn"
+                  disabled={busy}
+                  onClick={() => void act(() => documentsAdmin.unshareDocument(doc.id))}
+                >
+                  Stop sharing
+                </button>
+              </div>
+            ) : (
+              <>
+                <Picker
+                  label="Collector"
+                  placeholder="Search collectors — name, email, phone…"
+                  picked={who}
+                  onChange={setWho}
+                  single
+                  search={async (q) => {
+                    const page = await adminAccounts.collectors({ search: q, per_page: 8 });
+                    return page.results.map((c) => ({ id: c.id, label: c.display_name }));
+                  }}
+                />
+                <div className="ad-reachrow">
+                  <button
+                    type="button"
+                    className="ad-action"
+                    disabled={busy || !picked}
+                    title={picked ? undefined : 'Pick the collector first.'}
+                    onClick={() =>
+                      picked && void act(() => documentsAdmin.shareDocument(doc.id, picked.id))
+                    }
+                  >
+                    Share with collector
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </section>
   );
 }

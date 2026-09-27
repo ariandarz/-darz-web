@@ -91,6 +91,11 @@ const ExhibitionComposePage = lazy(() =>
     default: m.ExhibitionComposePage,
   })),
 );
+const ExhibitionCatalogPage = lazy(() =>
+  import('./features/admin/ExhibitionCatalogPage').then((m) => ({
+    default: m.ExhibitionCatalogPage,
+  })),
+);
 const ExhibitionServicesPage = lazy(() =>
   import('./features/admin/exhibitions/ExhibitionServicesPage').then((m) => ({
     default: m.ExhibitionServicesPage,
@@ -112,6 +117,9 @@ const ArtworkEditorPage = lazy(() =>
 );
 const ArtworksPage = lazy(() =>
   import('./features/admin/ArtworksPage').then((m) => ({ default: m.ArtworksPage })),
+);
+const AccessDeskPage = lazy(() =>
+  import('./features/admin/AccessDeskPage').then((m) => ({ default: m.AccessDeskPage })),
 );
 const AccessRequestsPage = lazy(() =>
   import('./features/admin/AccessRequestsPage').then((m) => ({
@@ -499,6 +507,8 @@ export function AppRoutes() {
             an invoice. `/admin/issue/:eventId` arrives with the show chosen,
             which is how every "issue a document" link into it is built. */}
         <Route path="/admin/exhibition-services" element={<ExhibitionServicesPage />} />
+        {/* the portal's Exhibition Services menu (G-PORT-12b) */}
+        <Route path="/admin/exhibition-catalogue" element={<ExhibitionCatalogPage />} />
         <Route path="/admin/issue" element={<IssueDocumentPage />} />
         <Route path="/admin/issue/:eventId" element={<IssueDocumentPage />} />
         <Route path="/admin/sales" element={<SalesPage />} />
@@ -585,6 +595,17 @@ export function AppRoutes() {
         {/* owner-only (`OWNER_ONLY` has `system`): the nav hides the tab from a
             standard admin and RequireOwner answers a typed URL with the old
             panel's own refusal card (:33116) rather than a redirect. */}
+        {/* V1 Phase 8 — the owner Access desk (G-KEY-1). Owner-only by Q-1
+            (the old `OWNER_ONLY` has `access`, :11797); the refusal card's
+            heading is the old one, "Access" (:33025). */}
+        <Route
+          path="/admin/access"
+          element={
+            <RequireOwner title="Access">
+              <AccessDeskPage />
+            </RequireOwner>
+          }
+        />
         <Route
           path="/admin/access-requests"
           element={

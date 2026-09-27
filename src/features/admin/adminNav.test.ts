@@ -16,7 +16,6 @@ import {
   findTab,
   firstVisiblePath,
   foldedGroups,
-  isPathAllowed,
   isTabAllowed,
   topRowGroups,
   visibleGroups,
@@ -142,7 +141,7 @@ describe('visibleGroups', () => {
   });
 });
 
-describe('findTab / isPathAllowed', () => {
+describe('findTab', () => {
   it('finds the one built desk in its real group', () => {
     const hit = findTab('/admin/requests');
     expect(hit?.group.key).toBe('collectors');
@@ -157,13 +156,10 @@ describe('findTab / isPathAllowed', () => {
     expect(findTab('/admin/nope')).toBeNull();
   });
 
-  it('refuses a path with no tab, so the caller redirects', () => {
-    expect(isPathAllowed('/admin/nope', 'owner')).toBe(false);
-  });
-
   it('lets both roles reach a tab that is not owner-only', () => {
-    expect(isPathAllowed('/admin/requests', 'owner')).toBe(true);
-    expect(isPathAllowed('/admin/requests', 'standard_admin')).toBe(true);
+    const hit = findTab('/admin/requests');
+    expect(hit && isTabAllowed(hit.tab, 'owner')).toBe(true);
+    expect(hit && isTabAllowed(hit.tab, 'standard_admin')).toBe(true);
   });
 });
 
@@ -172,7 +168,8 @@ describe('firstVisiblePath — the old panel’s clamp, :11815', () => {
     for (const role of ['owner', 'standard_admin'] as const) {
       const path = firstVisiblePath(role);
       expect(path).not.toBeNull();
-      expect(isPathAllowed(path!, role)).toBe(true);
+      const tab = allTabs().find((t) => t.path === path);
+      expect(tab && isTabAllowed(tab, role)).toBe(true);
     }
   });
 });
@@ -273,8 +270,9 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
     // 53 + the two Exhibition Services tabs the owner asked for on
     // 2026-09-19 (the library, and the one-page issue flow), + the
     // Documents group's Create tab, which is that same issue flow's second
-    // entry point (2026-09-22 — see `adminNav.ts` and the test below).
-    expect(allTabs().length).toBe(58);
+    // entry point (2026-09-22 — see `adminNav.ts` and the test below),
+    // + the portal's Exhibition Services menu (V1 Phase 5, G-PORT-12b).
+    expect(allTabs().length).toBe(59);
   });
 
   it('counts what is actually built, so progress cannot be overstated', () => {
@@ -288,6 +286,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'galleries',
       'sources',
       'exhservices',
+      'exhcatalogue',
       'issue',
       'market',
       'design',
@@ -302,6 +301,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'activity',
       'club',
       'marketSales',
+      'auctionSales',
       'projDash',
       'projList',
       'projPipeline',
@@ -311,6 +311,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'projReports',
       'design',
       'health',
+      'access',
       'team',
       'accounting',
       'settings',

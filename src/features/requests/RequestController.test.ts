@@ -332,6 +332,8 @@ describe('RequestController — Phase 5 step 1: every kind files correctly', () 
     expect(calls[1]).toEqual({
       kind: 'information',
       artwork: null,
+      // G-P5-11: the real artist id rides in the create body.
+      artist: 'ar1',
       detail: { message: 'Please let me know about available works by Monir Farmanfarmaian.' },
       client_req_id: expect.any(String),
     });

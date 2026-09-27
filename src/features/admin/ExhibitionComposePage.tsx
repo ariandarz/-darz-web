@@ -19,6 +19,13 @@
  *
  * `compose` REPLACES all lines server-side, so the editor always writes the
  * whole package — there is no per-line PATCH to drift against.
+ *
+ * V1 Phase 5: the services menu is the editable Exhibition Services table
+ * (`/gallery/admin/exhibition-catalogue/`, G-PORT-12b) — the same rows the
+ * portal's menu reads — as the old desk composed from the gallery's own
+ * `exhServices` list (`darz-studio.html:27844-27862`). It replaces the
+ * name-join onto the Projects price list (`priceList.ts`, deleted). Each line
+ * carries a `quantity` (G-PORT-16); its price stays the LINE amount.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -26,10 +33,11 @@ import { useApi, useOptions } from '../../api/hooks';
 import type {
   DocumentAdmin,
   ExhibitionAdmin,
+  ExhibitionCatalogItem,
   GalleryLinkAdmin,
   PortalCatalogueEntry,
-  ServiceCatalogItemAdmin,
 } from '../../api/types';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 import { ConfirmDialog, DeskBanner, DeskPage } from './kit';
 import {
   draftFromCatalogue,
@@ -39,13 +47,12 @@ import {
   toLineInputs,
   type LineDraft,
 } from './exhibitionForm';
-import { asCatalogueEntries, priceExhibitionServices, priceListSummary } from './priceList';
 import { choices, choiceLabel, fmtDate } from '../portal/portalForm';
 import './admin.css';
 
 export function ExhibitionComposePage() {
   const { id: linkId = '', eventId = '' } = useParams();
-  const { galleryAdmin, projectsAdmin } = useApi();
+  const { galleryAdmin } = useApi();
   const options = useOptions();
   const navigate = useNavigate();
 
@@ -99,57 +106,38 @@ export function ExhibitionComposePage() {
     void load();
   }, [load]);
 
-  // The services menu the desk offers. The portal's own catalogue endpoint
-  // (prices + descriptions) is token+PIN-gated and has no admin twin
-  // (G-PORT-12), so the desk builds the menu itself:
-  //   · the KEYS stay `gallery.exhibition_service` from /api/options/ —
-  //     the wire values the portal and the backend agree on;
-  //   · the PRICES come from the service catalogue an admin can edit
-  //     (`/projects/admin/service-catalog/`, D21), joined by name.
-  // Before this the desk seeded every line blank and Darz retyped a number
-  // the gallery had already been shown — see `priceList.ts` for why that is
-  // the one thing here worth being careful about.
-  const [listRows, setListRows] = useState<ServiceCatalogItemAdmin[] | null>(null);
+  // The services menu — the editable table the portal reads (G-PORT-12b).
+  // Active rows only, in their position order: a deactivated service is
+  // not offered for a new line (a composed line keeps its own copy).
+  const [catRows, setCatRows] = useState<ExhibitionCatalogItem[] | null>(null);
   useEffect(() => {
-    projectsAdmin.services({ per_page: 100 }).then(
-      (page) => setListRows(page.results),
-      () => setListRows([]), // a price list is an improvement, never a gate
+    walkPages((page) =>
+      galleryAdmin.exhibitionCatalogue({ page, per_page: MAX_PER_PAGE }),
+    ).then(
+      setCatRows,
+      () => setCatRows([]), // the menu is a convenience, never a gate
     );
-  }, [projectsAdmin]);
+  }, [galleryAdmin]);
 
-  const priced = useMemo(
-    () => (listRows === null ? null : priceExhibitionServices(listRows, currency)),
-    [listRows, currency],
+  const catalogue: PortalCatalogueEntry[] = useMemo(
+    () =>
+      (catRows ?? [])
+        .filter((r) => r.is_active !== false)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .map((r) => ({
+          key: r.key,
+          title: r.title,
+          description: r.description ?? '',
+          default_price: r.default_price ?? null,
+        })),
+    [catRows],
   );
 
-  // Derived, not stored: the menu is a pure function of the served keys and
-  // the price list, and storing it would only add a render and a way to go
-  // stale. The served keys are the truth about what may be SENT — a service
-  // the price list knows but /api/options/ no longer serves is not offered,
-  // because the backend would reject the key. The list only decorates.
-  const catalogue: PortalCatalogueEntry[] = useMemo(() => {
-    const known = new Map((priced ?? []).map((p) => [p.key, p]));
-    return asCatalogueEntries(
-      choices(options, 'gallery.exhibition_service').map(
-        (c) =>
-          known.get(c.value) ?? {
-            key: c.value,
-            title: c.label,
-            description: '',
-            price: null,
-            origin: 'missing' as const,
-          },
-      ),
-    );
-  }, [options, priced]);
-
-  // Seed the editor from the event and the priced menu. Both arrive on their
-  // own schedule — the event from one request, the price list from another,
-  // the service keys from /api/options/ — and the currency the list is read
-  // in only exists once the event has loaded. So this re-seeds whenever a
-  // BETTER menu arrives (signature below), not merely when one appears, and
-  // stops the moment the admin has typed. Getting this wrong showed up live
-  // as a package that opened blank when the price list won the race.
+  // Seed the editor from the event and the menu. Both arrive on their own
+  // schedule, so this re-seeds whenever a BETTER menu arrives (signature
+  // below), not merely when one appears, and stops the moment the admin has
+  // typed. Getting this wrong showed up live as a package that opened blank
+  // when the menu won the race.
   const menuKey = useMemo(
     () => catalogue.map((c) => `${c.key}:${c.default_price ?? ''}`).join('|'),
     [catalogue],
@@ -157,11 +145,11 @@ export function ExhibitionComposePage() {
   const seedKey = ev ? `${ev.id}:${ev.version}:${menuKey}` : null;
   const seededFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!ev || seedKey === null || priced === null) return; // the list has not answered yet
+    if (!ev || seedKey === null || catRows === null) return; // the menu has not answered yet
     if (seededFor.current === seedKey || edited.current) return;
     seededFor.current = seedKey;
     setLinesState(seedLines(ev, catalogue));
-  }, [ev, seedKey, priced, catalogue]);
+  }, [ev, seedKey, catRows, catalogue]);
 
   // A different event — or the same one saved, which bumps its version — is a
   // clean slate: after `compose` the server's own lines ARE the truth, so the
@@ -294,21 +282,17 @@ export function ExhibitionComposePage() {
           <span className="ad-dsec-n">Darz prices; a declined line never counts</span>
         </div>
 
-        {/* Where the numbers came from. Said out loud because the join is by
-            NAME — rename a row in the catalogue and its price stops arriving
-            here, which would otherwise look like the desk losing it. */}
-        {priced && priceListSummary(priced, currency) && (
-          <p className="ad-pricelist-note">
-            {priceListSummary(priced, currency)}{' '}
-            <button
-              type="button"
-              className="ad-ghostbtn"
-              onClick={() => navigate('/admin/projects/packages?catalogue=1')}
-            >
-              Open the service catalogue →
-            </button>
-          </p>
-        )}
+        <p className="ad-pricelist-note">
+          Services and default prices come from the Exhibition Services menu — the same list
+          the gallery ticks from in its portal.{' '}
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            onClick={() => navigate('/admin/exhibition-catalogue')}
+          >
+            Edit the menu →
+          </button>
+        </p>
 
         <div className="ad-card">
           {lines.map((l, i) => (
@@ -330,6 +314,14 @@ export function ExhibitionComposePage() {
                 />
               </div>
               <div className="ad-exhline-side">
+                <input
+                  className="ad-exhline-qty"
+                  aria-label="Quantity"
+                  inputMode="numeric"
+                  title="How many — the price is the line's amount"
+                  value={l.quantity}
+                  onChange={(e) => setLines(patchLine(lines, i, { quantity: e.target.value }))}
+                />
                 <input
                   className="ad-exhline-price"
                   aria-label="Price"
@@ -401,6 +393,7 @@ export function ExhibitionComposePage() {
                     service_key: '',
                     title: 'Custom service',
                     description: '',
+                    quantity: '1',
                     price: '',
                     currency,
                     status: 'proposed',

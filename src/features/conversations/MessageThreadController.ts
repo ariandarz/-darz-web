@@ -16,7 +16,7 @@
  * (`darz-studio.html:40546-40547`) — one thread store, two writers, exactly as
  * here.
  */
-import type { Paginated, RequestMessage } from '../../api/types';
+import type { MessageAttachments, Paginated, RequestMessage } from '../../api/types';
 import { Observable } from '../shared/Observable';
 
 const POLL_MS = 30_000;
@@ -65,8 +65,9 @@ export abstract class MessageThreadController extends Observable<ThreadSnapshot>
     page: number,
     perPage: number,
   ): Promise<Paginated<RequestMessage>>;
-  /** Post this end's message. */
-  protected abstract post(body: string): Promise<RequestMessage>;
+  /** Post this end's message. `attach` is what the composer attached (the
+   * team's documents, D19); an end that attaches nothing ignores it. */
+  protected abstract post(body: string, attach: MessageAttachments): Promise<RequestMessage>;
   /** Tell the server every unseen message from the other side is now seen. */
   protected abstract markSeenRemote(): Promise<unknown>;
   /** True for a message from the other side this end has not seen. */
@@ -112,12 +113,12 @@ export abstract class MessageThreadController extends Observable<ThreadSnapshot>
   }
 
   /** Send one message. Resolves true once the server holds it. */
-  async send(body: string): Promise<boolean> {
+  async send(body: string, attach: MessageAttachments = {}): Promise<boolean> {
     const text = body.trim();
     if (!text || this.getSnapshot().sending) return false;
     this.patch({ sending: true, sendError: null });
     try {
-      const row = await this.post(text);
+      const row = await this.post(text, attach);
       const rest = this.getSnapshot().messages.filter((m) => m.id !== row.id);
       this.patch({ messages: [...rest, row], status: 'ready' });
       return true;

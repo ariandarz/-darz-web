@@ -1,15 +1,13 @@
 /**
  * ArtworksController — the Artworks Database roster
  * (`GET /api/catalog/admin/artworks/`, backend Phase 7). Query params are the
- * server's own `ArtworkFilterSet` — shared with the collector catalogue:
- * `search` (artist name / title / medium / dimensions), exact `artist` (id) /
- * `availability_status` / `currency` / `price_type`, `medium` icontains,
- * `ordering` year|-year|artist|-artist|price|-price (no token = newest
- * published first), and — admin-only, since G-2 landed 2026-09-21 — `year`,
- * `source`, `published` and `has_images` from `ArtworkAdminFilterSet`. The
- * four the old desk had and this one still does not (completeness, size
- * ranges, duplicate images, Gallery Portal) are named on the panel itself,
- * not dropped silently.
+ * server's own `ArtworkAdminFilterSet`: `search` (artist name / title / medium
+ * / dimensions), exact `artist` (id) / `availability_status` / `currency` /
+ * `price_type`, `medium` icontains, `ordering` year|-year|artist|-artist|
+ * price|-price (no token = newest first), and the admin-only `year`, `source`,
+ * `published`, `has_images` (G-2), `gallery_portal`, `complete`,
+ * `duplicate_images`, `size` (Phase 5b), `source_type` (G-HEALTH-2) and
+ * `created_after` (G-HEALTH-4). The facets call takes the same query.
  */
 import type { CatalogAdminService } from '../../api/services';
 import type { ArtworkAdmin, ArtworkAdminQuery, Paginated } from '../../api/types';

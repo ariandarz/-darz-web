@@ -23,10 +23,19 @@ import type {
   Choice,
   PortalCatalogueEntry,
   PortalExhibition,
+  PortalMessage,
+  PortalPricelist,
+  PortalPricelistBuild,
+  PortalPricelistLine,
+  PortalPricelistLineInput,
   PortalSnapshot,
+  PortalState,
+  PortalUpdate,
   PortalWork,
 } from '../../api/types';
 import type { OptionsMap } from '../../api/services';
+import { HttpError } from '../../api/errors';
+import { asArray } from '../../api/shapes';
 
 /* ── formatting (gallery-update.html:663, :666) ─────────────────────────── */
 
@@ -83,6 +92,9 @@ export interface PortalDraft {
   offerActions?: string[];
   offerFloor?: string;
   offerCurrency?: string;
+  /** A replacement photo attached to this card (G-PORT-1) — it goes to its
+   * own multipart endpoint on Send update, as a pending `image` update. */
+  imageFile?: File;
 }
 
 export function statusChanged(draft: PortalDraft, original: string): boolean {
@@ -379,7 +391,7 @@ export function exhibitionTotals(
   for (const key of selection) {
     const entry = byKey.get(key);
     if (!entry || entry.default_price === null) unpriced++;
-    else sub += entry.default_price;
+    else sub += num(entry.default_price);
   }
   return { sub, disc, tot: Math.max(0, sub - disc), count: selection.length, unpriced };
 }
@@ -486,4 +498,268 @@ export const SRC_LABELS: Record<
 
 export function srcLabels(sourceType: string | undefined) {
   return SRC_LABELS[sourceType ?? 'gallery'] ?? SRC_LABELS.gallery;
+}
+
+/* ── the state read, normalised (C-8) ───────────────────────────────────── */
+
+/**
+ * `portal_state` is hand-typed (`views.py:95-114`); the schema declares it as a
+ * bare `GalleryLink`, so nothing checks the embedded lists at build time. Every
+ * one of them goes through `asArray` here, once, so a missing or malformed list
+ * renders as empty instead of blanking the portal (HANDOFF §6).
+ */
+export function normalisePortalState(raw: unknown): PortalState {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<PortalState> &
+    Record<string, unknown>;
+  const works = asArray<PortalWork>(r.assigned_artworks).map((w) => ({
+    ...w,
+    snapshot: (w.snapshot && typeof w.snapshot === 'object'
+      ? w.snapshot
+      : {}) as PortalSnapshot,
+    image_url: typeof w.image_url === 'string' && w.image_url ? w.image_url : null,
+  }));
+  return {
+    ...(r as PortalState),
+    assigned_artworks: works,
+    pricelists: asArray<PortalPricelist>(r.pricelists).map((p) => ({
+      ...p,
+      lines: asArray<PortalPricelistLine>(p.lines),
+    })),
+    messages: asArray<PortalMessage>(r.messages),
+    updates: asArray<PortalUpdate>(r.updates),
+    cover: typeof r.cover === 'string' && r.cover ? r.cover : null,
+  };
+}
+
+/** The header's cover (G-PORT-9) with the old caption "artist — title"
+ * (`renderCover`, gallery-update.html:852-856). The server names only the
+ * URL — it is the first assigned work WITH an image — so the caption is read
+ * off that same work. */
+export function coverOf(data: Pick<PortalState, 'cover' | 'assigned_artworks'>): {
+  url: string;
+  caption: string;
+} | null {
+  if (!data.cover) return null;
+  const w = data.assigned_artworks.find((a) => a.image_url === data.cover);
+  const s = w?.snapshot ?? {};
+  const caption = [s.artist || '', s.title ? ` — ${s.title}` : ''].join('').trim();
+  return { url: data.cover, caption };
+}
+
+/* ── the server's own updates: Sent pills, Pending review, History (G-PORT-2) ─ */
+
+/** artwork id → the newest PENDING update's stamp — the old `setPending`
+ * (gallery-update.html:929), now read off `updates[]` instead of a separate
+ * pending list. */
+export function pendingStamps(updates: readonly PortalUpdate[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const u of updates) {
+    if (u.status !== 'pending' || !u.artwork) continue;
+    if (!out[u.artwork] || String(u.created_at) > String(out[u.artwork]))
+      out[u.artwork] = u.created_at;
+  }
+  return out;
+}
+
+/** The old dashboard's fourth tile, "Pending review" (`renderDash`, :1140) —
+ * every pending submission the portal has sent, per-work or not. */
+export function pendingCount(updates: readonly PortalUpdate[]): number {
+  return updates.filter((u) => u.status === 'pending').length;
+}
+
+/** Newest first — the History tab's order (collaboration-agreement.js:468). */
+export function historyRows(updates: readonly PortalUpdate[]): PortalUpdate[] {
+  return [...updates].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+}
+
+const payloadOf = (u: Pick<PortalUpdate, 'payload'>) =>
+  (u.payload && typeof u.payload === 'object' ? u.payload : {}) as Record<string, unknown>;
+
+/** Which work an entry is about — old `histTitle` (gallery-update.html:2130-2135). */
+export function historyTitle(u: PortalUpdate, works: readonly PortalWork[]): string {
+  const w = u.artwork ? works.find((x) => x.artwork === u.artwork) : undefined;
+  if (w) return `${w.snapshot.artist || '—'} — ${w.snapshot.title || 'Untitled'}`;
+  const p = payloadOf(u);
+  const t = [p.artist, p.title].filter((v) => typeof v === 'string' && v).join(' — ');
+  return t || (u.artwork ? 'A work no longer in your portal' : 'This portal');
+}
+
+/**
+ * The one line that says what a submission asked for — old `historyWhat`
+ * (collaboration-agreement.js:254-267) on the new payload keys. The kind's
+ * own word comes from `gallery.update_kind` (options), never a local map.
+ */
+export function historyWhat(u: PortalUpdate, options: OptionsMap | null): string {
+  const p = payloadOf(u);
+  if (u.kind === 'availability' || u.kind === 'status') {
+    const to = typeof p.availability_status === 'string' ? p.availability_status : '';
+    return to
+      ? `Reported as ${choiceLabel(options, 'catalog.availability_status', to)}`
+      : 'Confirmed as current';
+  }
+  if (u.kind === 'price') {
+    const amt = p.price_amount;
+    return amt !== undefined && amt !== null && String(amt) !== ''
+      ? `New price ${fmtThousands(String(amt))}${p.currency ? ` ${String(p.currency)}` : ''}`
+      : 'Price updated';
+  }
+  return choiceLabel(options, 'gallery.update_kind', u.kind);
+}
+
+/** What the source wrote — the note, or an ask's question. */
+export function historyNote(u: PortalUpdate): string {
+  const p = payloadOf(u);
+  const v = u.kind === 'ask' ? p.question : p.note;
+  return typeof v === 'string' ? v.trim() : '';
+}
+
+/** Kinds whose approval writes to the artwork (`GalleryUpdateService.approve`);
+ * approving any other kind records Darz's decision only. */
+const APPLIED_KINDS = ['availability', 'price', 'correction'];
+
+/**
+ * What a state MEANS, in the gallery's words — old `HISTORY_STATE_NOTE`
+ * (collaboration-agreement.js:235-242). `approved` keeps the old "stands in
+ * the Darz catalogue" only for the kinds approval really applies; for the
+ * rest it is the old `handled` sentence, which is what approval now is.
+ */
+export function historyStateNote(u: Pick<PortalUpdate, 'kind' | 'status'>): string {
+  if (u.status === 'pending')
+    return 'Darz has this and will review it. Nothing more is needed from you.';
+  if (u.status === 'rejected')
+    return 'Darz did not adopt this change. Message Darz if it should be revisited.';
+  if (u.status === 'approved')
+    return APPLIED_KINDS.includes(u.kind)
+      ? 'Darz accepted this and it now stands in the Darz catalogue.'
+      : 'Darz has dealt with this.';
+  return '';
+}
+
+/* ── per-work ask / withdraw / replacement image (G-PORT-4 / 6 / 1) ─────── */
+
+/** An `ask`: a question about ONE assigned work (`GalleryUpdate.KIND_ASK`).
+ * The desk renders `question`; artist/title ride for the reviewer, the same
+ * context `buildUpdatePayload` sends. */
+export function buildAskPayload(
+  work: { snapshot: PortalSnapshot },
+  question: string,
+  staff: string,
+): Record<string, unknown> {
+  const s = work.snapshot || {};
+  const payload: Record<string, unknown> = {
+    artist: s.artist || '',
+    title: s.title || '',
+    question: question.trim(),
+  };
+  if (staff) payload.staff = staff;
+  return payload;
+}
+
+/** A `withdraw`: the old §79 "Remove from portal" (gallery-update.html:
+ * 1209-1224), now a REQUEST — approving it unassigns the work
+ * (`GalleryUpdateService.approve`, G-PORT-6). */
+export function buildWithdrawPayload(
+  work: { snapshot: PortalSnapshot },
+  staff: string,
+): Record<string, unknown> {
+  const s = work.snapshot || {};
+  const payload: Record<string, unknown> = {
+    artist: s.artist || '',
+    title: s.title || '',
+    fromStatus: s.availability_status || 'available',
+  };
+  if (staff) payload.staff = staff;
+  return payload;
+}
+
+/** The same ceiling as a pricelist file (the old page's own 6 MB, :1059). */
+export const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+
+/**
+ * Why a picked replacement photo cannot go, or `null` when it can. The old
+ * input took `image/*` and downscaled in a canvas (`downscale`, :1474); here
+ * the file goes as picked, so the size is guarded instead. The size line is
+ * the old new-work refusal (:1447); the type line has no old source (the old
+ * `accept` filter was the only guard) — flagged.
+ */
+export function imageFileProblem(file: Pick<File, 'size' | 'type'>): string | null {
+  if (!/^image\//.test(file.type || ''))
+    return 'That file is not an image — choose a JPG or PNG.';
+  if (file.size > MAX_UPLOAD_BYTES) return 'That image is too large — use a smaller file.';
+  return null;
+}
+
+/* ── the pricelist builder (P3b; old `buildOpen`/`buildSubmit`, :1111-1128) ─ */
+
+export interface BuilderLine {
+  /** an assigned work's artwork id, or '' for a work typed by title */
+  artwork: string;
+  title: string;
+  price: string;
+  currency: string;
+  /** a `catalog.availability_status` value (Q-7), or '' */
+  availability: string;
+  note: string;
+}
+
+/** The old `blankItem()` (:1111) on the new line shape. */
+export function blankBuilderLine(currency = 'USD'): BuilderLine {
+  return { artwork: '', title: '', price: '', currency, availability: '', note: '' };
+}
+
+/**
+ * The wire body — or the old refusal. As the old `buildSubmit` (:1121), a row
+ * with neither a work nor a title is skipped, and nothing left means "Add at
+ * least one work." (the server's `allow_empty=False`).
+ */
+export function buildPricelistBody(
+  lines: readonly BuilderLine[],
+): { ok: true; body: PortalPricelistBuild; index: number[] } | { ok: false; error: string } {
+  const index: number[] = [];
+  const out: PortalPricelistLineInput[] = [];
+  lines.forEach((l, i) => {
+    if (!l.artwork && !l.title.trim()) return;
+    index.push(i);
+    const price = cleanAmount(l.price);
+    out.push({
+      artwork: l.artwork || null,
+      work_title: l.title.trim(),
+      price: price === '' ? null : price,
+      currency: l.currency || '',
+      availability: l.availability || '',
+      note: l.note.trim(),
+    });
+  });
+  if (!out.length) return { ok: false, error: 'Add at least one work.' };
+  return { ok: true, body: { lines: out }, index };
+}
+
+/**
+ * Per-line messages from a 400 — `details.lines` is DRF's list of per-line
+ * error objects (`[{}, {"non_field_errors": [...]}]`), which the flat
+ * `ValidationError.fields` cannot carry, so it is read off the raw body.
+ * `index` maps a sent line back to the row on screen (skipped blanks shift it).
+ */
+export function builderLineErrors(
+  err: unknown,
+  index: readonly number[],
+): Record<number, string> {
+  const body = err instanceof HttpError ? err.body : null;
+  const details = (body as { error?: { details?: { lines?: unknown } } } | null)?.error
+    ?.details;
+  const out: Record<number, string> = {};
+  asArray<unknown>(details?.lines).forEach((entry, i) => {
+    if (!entry || typeof entry !== 'object') return;
+    const msgs = Object.values(entry as Record<string, unknown>).flatMap((v) =>
+      Array.isArray(v) ? v.map(String) : [String(v)],
+    );
+    if (msgs.length) out[index[i] ?? i] = msgs.join(' ');
+  });
+  return out;
+}
+
+/** Pricelist `status` has no `/api/options/` entry (C-14): the raw value,
+ * capitalised, until the backend registers one. */
+export function pricelistStatusLabel(options: OptionsMap | null, status: string): string {
+  return choiceLabel(options, 'gallery.pricelist_status', status || 'submitted');
 }

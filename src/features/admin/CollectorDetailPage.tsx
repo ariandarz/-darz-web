@@ -35,7 +35,7 @@ import type {
   CollectorLoginEvent,
 } from '../../api/types';
 import { CollectorForm } from './CollectorForm';
-import { expiryParts } from './expiry';
+import { ExpiryCell } from './ExpiryCell';
 import { ConfirmDialog, DataTable, DeskBanner, ShownOnceSecret, type Column } from './kit';
 import './admin.css';
 
@@ -325,18 +325,6 @@ function KeysSection({ collectorId }: { collectorId: string }) {
         />
       )}
     </section>
-  );
-}
-
-function ExpiryCell({ expiresAt }: { expiresAt: string | null }) {
-  const { label, tone } = expiryParts(expiresAt);
-  return (
-    <>
-      <span className={`ad-exp is-${tone}`}>{label}</span>
-      {expiresAt && (
-        <span className="ad-cellsub">{new Date(expiresAt).toLocaleDateString('en-GB')}</span>
-      )}
-    </>
   );
 }
 

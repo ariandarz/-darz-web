@@ -3,7 +3,9 @@
  * app.html chrome over the OOP `CatalogueController` (via `useCatalogue`):
  *
  *   1. `.hero` — "CURATED COLLECTION / The Collection / Contemporary Iranian
- *      works, available through darzmarket.art." (owner copy, THEME_DEFAULT);
+ *      works, available through darzmarket.art." — owner copy, read from
+ *      `/api/app-theme/` (`heroEyebrow` / `heroTitle` / `heroIntro`, `showHero`)
+ *      with THEME_DEFAULT (app.html:2845) as the fallback (`marketHero()`);
  *   2. `.toolbar` — view segment · search · Recently added · All currencies;
  *   3. `.count` — "39 WORKS";
  *   4. the two-column `.grid` of `ArtworkCard`s (4–7 columns on desktop), or
@@ -23,6 +25,7 @@ import { ArtworkCard } from './ArtworkCard';
 import { browseSet } from './BrowseSet';
 import { CatalogueToolbar, type CurrencyOption } from './CatalogueToolbar';
 import { formatMoney, primaryImage } from './format';
+import { marketHero } from './marketHero';
 import { Pager } from './Pager';
 import { useCatalogue } from './useCatalogue';
 import { viewPreference } from './ViewPreference';
@@ -58,17 +61,20 @@ export function CataloguePage() {
     if (state.results.length) browseSet.publish(state.results.map((w) => w.id));
   }, [state.results]);
 
+  const hero = marketHero();
   const loading = state.status === 'loading' && state.results.length === 0;
   const empty =
     state.status !== 'loading' && state.status !== 'error' && state.results.length === 0;
 
   return (
     <div className="dz-page">
-      <div className="hero">
-        <p className="eyebrow">Curated Collection</p>
-        <h1>The Collection</h1>
-        <p>Contemporary Iranian works, available through darzmarket.art.</p>
-      </div>
+      {hero.show && (
+        <div className="hero">
+          {hero.eyebrow && <p className="eyebrow">{hero.eyebrow}</p>}
+          {hero.title && <h1>{hero.title}</h1>}
+          {hero.intro && <p>{hero.intro}</p>}
+        </div>
+      )}
 
       <CatalogueToolbar
         query={state.query}

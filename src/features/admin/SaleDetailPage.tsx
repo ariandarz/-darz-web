@@ -1,31 +1,52 @@
 /**
- * SaleDetailPage — `/admin/sales/:id`, the old expanded deal row
- * (`DZSales._detail`, `darz-studio.html:12608`) as a page.
+ * SaleDetailPage — `/admin/sales/:id`, the old expanded deal row / Deal Card
+ * (`DZSales._detail`, `darz-studio.html:12599`) as a page.
  *
  * Ported content:
  *  - the stage rail as actions: the current status pill plus only the LEGAL
  *    next moves (the ported `SALE_TRANSITIONS` chain; the old free stage
  *    <select> could claim any stage — this backend's machine cannot);
- *  - the meta block (`:12615`): deal id · source request · collector ·
- *    currency;
- *  - the money fields (`:12627`, the v1129 Discount Manager's facts): agreed
- *    price · discount · fees/tax · commission — **editable in draft only**,
- *    the R7 lock, said on the card once locked;
- *  - Payment / Delivery setters (`:12633-12634`) on their real endpoints.
+ *  - the meta block (`:12604-12612`): deal id · source request · **source**
+ *    (`<span>Source</span>`, `:12607`; the label falls back to the raw value,
+ *    C-14) · collector · currency; plus the **lot** of an auction sale, linked
+ *    to its auction's page (the old deal carried `lotId`, `:12327`, but the
+ *    card printed none — an addition, flagged);
+ *  - the money fields (`:12616-12621`, the v1129 Discount Manager's facts):
+ *    agreed price · discount · fees/tax · commission — **editable in draft
+ *    only**, the R7 lock, said on the card once locked;
+ *  - Payment / Delivery setters (`:12622-12623`) on their real endpoints;
+ *  - **Follow-up with the collector** (`:12625-12633`, G-SALE-5): the
+ *    "Follow-up with collector: <date> — due" / "No follow-up set." line, the
+ *    "Remind me in" 3 days · 1 week · 2 weeks presets (`setFollow`, `:12733`,
+ *    with its "Follow-up set for <date>" toast), the date field and Clear. The
+ *    "due" flag is the server's `follow_up_overdue`;
+ *  - **Notes** (`:12634`, `:12653-12657`, G-SALE-5): newest first, each with
+ *    its "YYYY-MM-DD HH:MM · <author>" stamp, "No notes yet.", the textarea
+ *    with its old placeholder and "Add note" (`addNote`, `:12734`, toast "Note
+ *    added"). Append-only — the old card had no note edit/delete either;
+ *  - **Delete deal** (`:12664`) behind the old confirm's wording (`:12770`).
  *
- * The old follow-up reminders, notes, templates and the per-deal thread have
- * no home on `Sale` (G-SALE-5) — the conversation lives on the collector's
- * request thread.
+ * Not ported: the per-deal message box and templates (the conversation lives
+ * on the collector's request thread), the Documents section, and the
+ * "Confirm deal completed → / Sent to Accounting" hand-off (no such stage).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
-import type { OptionsMap } from '../../api/services';
-import type { Choice, SaleAdmin } from '../../api/types';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
+import type { SaleAdmin, SaleNote } from '../../api/types';
 import { SalePill } from './SalesPage';
-import { saleTermsLocked, saleTransitionTargets } from './saleForm';
+import {
+  choices,
+  followUpIn,
+  label,
+  noteStamp,
+  saleTermsLocked,
+  saleTransitionTargets,
+} from './saleForm';
 import { useSaleRefs } from './useSaleRefs';
 import {
+  ConfirmDialog,
   ConflictBanner,
   DeskBanner,
   DeskPage,
@@ -51,6 +72,8 @@ export function SaleDetailPage() {
   const statuses = choices(options, 'sales.status');
   const payments = choices(options, 'sales.payment_status');
   const deliveries = choices(options, 'sales.delivery_status');
+  const sources = choices(options, 'sales.source'); // C-14: absent → raw value
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(() => {
     if (!id) return;
@@ -89,7 +112,25 @@ export function SaleDetailPage() {
   }
 
   const art = refs.artwork(sale.artwork);
+  const lot = refs.lot(sale.lot);
   const locked = saleTermsLocked(sale);
+  // Back to the tab the deal belongs to (the old desk's `SALES.src`).
+  const back = sale.source === 'auction' ? '/admin/sales?source=auction' : '/admin/sales';
+
+  const remove = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await salesAdmin.deleteSale(sale.id);
+      navigate(back);
+    } catch (err: unknown) {
+      setDeleting(false);
+      setError(err instanceof Error ? err.message : 'Could not delete the deal.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <DeskPage
@@ -97,11 +138,7 @@ export function SaleDetailPage() {
       action={<SalePill status={sale.status} label={label(statuses, sale.status)} />}
       subtitle={
         <>
-          <button
-            type="button"
-            className="ad-ghostbtn"
-            onClick={() => navigate('/admin/sales')}
-          >
+          <button type="button" className="ad-ghostbtn" onClick={() => navigate(back)}>
             ← All deals
           </button>
         </>
@@ -172,7 +209,7 @@ export function SaleDetailPage() {
         </div>
       </section>
 
-      {/* ---- the meta block (:12615) ---- */}
+      {/* ---- the meta block (:12604) ---- */}
       <section className="ad-dsec">
         <div className="ad-dsec-h">
           <h2 className="ad-dsec-t">Deal</h2>
@@ -186,20 +223,34 @@ export function SaleDetailPage() {
             <button
               type="button"
               className="ad-rowbtn"
-              onClick={() => navigate(`/admin/artworks/${sale.artwork}`)}
+              onClick={() => navigate(`/admin/artworks/${sale.artwork.id}`)}
             >
               Open
             </button>
           </Row>
-          <Row k="Collector" v={refs.collector(sale.collector) ?? '…'}>
+          <Row k="Collector" v={refs.collector(sale.collector)}>
             <button
               type="button"
               className="ad-rowbtn"
-              onClick={() => navigate(`/admin/collectors/${sale.collector}`)}
+              onClick={() => navigate(`/admin/collectors/${sale.collector.id}`)}
             >
               Open
             </button>
           </Row>
+          <Row k="Source" v={label(sources, sale.source)} />
+          {sale.lot && (
+            <Row k="Lot" v={lot ? `Lot ${lot.number}` : '…'}>
+              {lot && (
+                <button
+                  type="button"
+                  className="ad-rowbtn"
+                  onClick={() => navigate(`/admin/auctions/${lot.auction}`)}
+                >
+                  Open
+                </button>
+              )}
+            </Row>
+          )}
           <Row k="Responsible" v={refs.responsible(sale.responsible) ?? '—'} />
           {sale.source_request && <Row k="From request" v={sale.source_request} />}
           <Row k="Seller source" v={sale.seller_source || '—'} />
@@ -217,6 +268,30 @@ export function SaleDetailPage() {
 
       {/* ---- the commercial snapshot (draft-only, R7) ---- */}
       <TermsCard sale={sale} locked={locked} onSaved={setSale} onReload={load} onSaid={say} />
+
+      <FollowUpCard sale={sale} onSaved={setSale} onSaid={say} />
+      <NotesCard saleId={sale.id} onSaid={say} />
+
+      <div className="ad-form-a">
+        <button
+          type="button"
+          className="ad-rowbtn is-danger"
+          disabled={busy}
+          onClick={() => setDeleting(true)}
+        >
+          Delete deal
+        </button>
+      </div>
+      {deleting && (
+        <ConfirmDialog
+          message="Delete this deal? The collector’s request/activity is not affected."
+          okLabel="Delete"
+          danger
+          busy={busy}
+          onCancel={() => setDeleting(false)}
+          onConfirm={() => void remove()}
+        />
+      )}
       <DeskToast message={message} />
     </DeskPage>
   );
@@ -362,10 +437,202 @@ function TermsCard({
   );
 }
 
-function choices(options: OptionsMap | null, key: string): Choice[] {
-  return (options?.[key] as Choice[] | undefined) ?? [];
+/** Follow-up with the collector (`:12625-12633`). No lock, and editable after
+ * confirm (operational, not a commercial term). A refusal is a 400 with the
+ * server's message, shown on the card. */
+function FollowUpCard({
+  sale,
+  onSaved,
+  onSaid,
+}: {
+  sale: SaleAdmin;
+  onSaved: (s: SaleAdmin) => void;
+  onSaid: (message: string) => void;
+}) {
+  const { salesAdmin } = useApi();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /** `said` only for the presets — the old date field and Clear wrote
+   * silently (`setField`, `:12726`); `setFollow` toasted (`:12733`). */
+  const set = async (date: string | null, said?: string) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onSaved(await salesAdmin.followUp(sale.id, date));
+      if (said) onSaid(said);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not set the follow-up.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const preset = (days: number) => {
+    const date = followUpIn(days);
+    void set(date, `Follow-up set for ${date}`);
+  };
+
+  return (
+    <section className="ad-dsec">
+      <div className="ad-dsec-h">
+        <h2 className="ad-dsec-t">Follow-up with the collector</h2>
+      </div>
+      <div className="ad-card ad-reach">
+        <p className="ad-salefubar">
+          {sale.follow_up_at ? (
+            <>
+              Follow-up with collector: <b>{sale.follow_up_at}</b>
+              {sale.follow_up_overdue ? ' — due' : ''}
+            </>
+          ) : (
+            'No follow-up set.'
+          )}
+        </p>
+        <div className="ad-reachrow">
+          <span className="ad-cellsub">Remind me in</span>
+          <button
+            type="button"
+            className="ad-rowbtn"
+            disabled={busy}
+            onClick={() => preset(3)}
+          >
+            3 days
+          </button>
+          <button
+            type="button"
+            className="ad-rowbtn"
+            disabled={busy}
+            onClick={() => preset(7)}
+          >
+            1 week
+          </button>
+          <button
+            type="button"
+            className="ad-rowbtn"
+            disabled={busy}
+            onClick={() => preset(14)}
+          >
+            2 weeks
+          </button>
+          <span className="ad-field">
+            <input
+              type="date"
+              aria-label="Follow-up date"
+              value={sale.follow_up_at ?? ''}
+              disabled={busy}
+              onChange={(e) => void set(e.target.value || null)}
+            />
+          </span>
+          {sale.follow_up_at && (
+            <button
+              type="button"
+              className="ad-rowbtn"
+              disabled={busy}
+              onClick={() => void set(null)}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        {error && (
+          <p className="dz-state err" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    </section>
+  );
 }
 
-function label(list: Choice[], value: string): string {
-  return list.find((c) => c.value === value)?.label ?? value;
+/** The deal's internal notes (`:12653-12657`). The whole thread is read (it is
+ * paginated, newest first); a new note is put at the top from the POST's own
+ * answer, so it appears without a reload. */
+function NotesCard({ saleId, onSaid }: { saleId: string; onSaid: (message: string) => void }) {
+  const { salesAdmin } = useApi();
+  const [notes, setNotes] = useState<SaleNote[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    walkPages((page) => salesAdmin.notes(saleId, { page, per_page: MAX_PER_PAGE })).then(
+      (rows) => alive && setNotes(rows),
+      (err: unknown) =>
+        alive &&
+        setLoadError(err instanceof Error ? err.message : 'Could not load the notes.'),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [salesAdmin, saleId]);
+
+  const add = async () => {
+    const body = draft.trim();
+    if (!body || busy) return; // the old `if(!t)return`
+    setBusy(true);
+    setError(null);
+    try {
+      const note = await salesAdmin.addNote(saleId, body);
+      setNotes((prev) => [note, ...(prev ?? [])]);
+      setDraft('');
+      onSaid('Note added');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not add the note.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="ad-dsec ad-salenotes">
+      <div className="ad-dsec-h">
+        <h2 className="ad-dsec-t">Notes</h2>
+      </div>
+      <div className="ad-card ad-form">
+        {loadError ? (
+          <p className="dz-state err">{loadError}</p>
+        ) : notes === null ? (
+          <p className="dz-state">Loading…</p>
+        ) : notes.length === 0 ? (
+          <p className="ad-cellsub">No notes yet.</p>
+        ) : (
+          notes.map((n) => (
+            <div key={n.id} className="ad-salenote">
+              <span className="ad-salenote-m">
+                {noteStamp(n.created_at)} · {n.author_name || 'admin'}
+              </span>
+              {n.body}
+            </div>
+          ))
+        )}
+        <span className="ad-field">
+          <textarea
+            aria-label="Add a note"
+            placeholder="Add a follow-up / negotiation / internal note…"
+            value={draft}
+            disabled={busy}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        </span>
+        {error && (
+          <p className="dz-state err" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="ad-form-a">
+          <button
+            type="button"
+            className="ad-ghostbtn"
+            disabled={busy}
+            onClick={() => void add()}
+          >
+            Add note
+          </button>
+        </div>
+      </div>
+    </section>
+  );
 }

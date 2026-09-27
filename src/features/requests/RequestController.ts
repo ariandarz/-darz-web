@@ -154,6 +154,10 @@ export interface RequestSnapshot {
  * confirmation shows for it. */
 interface Subject {
   artworkId: string | null;
+  /** The artist an enquiry is about (G-P5-11) — sent as the request's
+   * nullable `artist` FK so Darz sees a real link, not just a name in the
+   * message. Absent for every artwork-bound action. */
+  artistId?: string;
   work: string;
 }
 
@@ -266,15 +270,15 @@ export class RequestController extends Observable<RequestSnapshot> {
   }
 
   /** app.html:11033-11044 — "Enquire about works by <artist>": one
-   * `information` request with no artwork. The backend keeps only `message`
-   * on an information request, so the artist rides in the message text
-   * (docs/PHASE_5_API_GAPS.md G-P5-11). */
+   * `information` request with no artwork. The artist goes out as the
+   * request's `artist` id (G-P5-11, adopted in V1 Phase 9a) AND stays named in
+   * the message text, which is the old app's own wording — no visible change. */
   enquireAboutArtist(artist: ArtistSubject): Promise<boolean> {
     const copy = CONFIRM_COPY.artist;
     return this.file(
       RequestController.artistKey(artist.id),
       'artist',
-      { artworkId: null, work: artist.display_name },
+      { artworkId: null, artistId: artist.id, work: artist.display_name },
       { message: `Please let me know about available works by ${artist.display_name}.` },
       { title: copy.title, message: copy.message.replace('{artist}', artist.display_name) },
     );
@@ -302,6 +306,7 @@ export class RequestController extends Observable<RequestSnapshot> {
       const { row, replayed } = await this.crm.createRequest({
         kind: ACTION_KIND[verb],
         artwork: subject.artworkId,
+        ...(subject.artistId ? { artist: subject.artistId } : {}),
         ...(detail ? { detail } : {}),
         client_req_id: this.clientRequestId(key),
       });

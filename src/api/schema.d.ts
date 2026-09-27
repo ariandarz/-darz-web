@@ -533,7 +533,11 @@ export interface paths {
         delete: operations["auctions_admin_auctions_destroy"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update a draft/scheduled auction
+         * @description Requires expected_version (optimistic lock). Allowed only while the auction is draft or scheduled; status/invite-only/archive/cover have their own endpoints.
+         */
+        patch: operations["auctions_admin_auctions_partial_update"];
         trace?: never;
     };
     "/api/auctions/admin/auctions/{id}/archive/": {
@@ -2428,6 +2432,26 @@ export interface paths {
         patch: operations["documents_admin_documents_partial_update"];
         trace?: never;
     };
+    "/api/documents/admin/documents/{id}/activity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A document's activity feed (G-DOC-2)
+         * @description The audit trail for one document (created / updated / confirmed / signed / shared / archived …), newest first — for the History tab.
+         */
+        get: operations["documents_admin_documents_activity_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/admin/documents/{id}/archive/": {
         parameters: {
             query?: never;
@@ -2558,6 +2582,46 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/admin/exhibition-catalogue/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List exhibition service catalogue items (admin) */
+        get: operations["gallery_admin_exhibition_catalogue_list"];
+        put?: never;
+        /** Add an exhibition service catalogue item */
+        post: operations["gallery_admin_exhibition_catalogue_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/admin/exhibition-catalogue/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one catalogue item (admin) */
+        get: operations["gallery_admin_exhibition_catalogue_retrieve"];
+        put?: never;
+        post?: never;
+        /** Soft-delete a catalogue item (admin) */
+        delete: operations["gallery_admin_exhibition_catalogue_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a catalogue item (admin)
+         * @description Requires expected_version (optimistic lock). key is immutable.
+         */
+        patch: operations["gallery_admin_exhibition_catalogue_partial_update"];
         trace?: never;
     };
     "/api/gallery/admin/exhibitions/": {
@@ -2827,6 +2891,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/gallery/admin/links/{link_pk}/pricelists/cap/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A link's pricelist soft-cap snapshot (G-PORT-3)
+         * @description Advisory only — how many pricelists the link has vs the soft cap. Never blocks an upload.
+         */
+        get: operations["gallery_admin_links_pricelists_cap_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gallery/admin/links/{id}/": {
         parameters: {
             query?: never;
@@ -2916,6 +3000,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/gallery/admin/pricelists/{id}/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a pricelist's status (G-PORT-3)
+         * @description submitted → accepted (the current one; supersedes any prior accepted) → superseded.
+         */
+        post: operations["gallery_admin_pricelists_status_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gallery/admin/updates/": {
         parameters: {
             query?: never;
@@ -2984,6 +3088,26 @@ export interface paths {
         get: operations["gallery_portal_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/portal/{token}/artworks/{artwork_pk}/image/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a replacement image for an assigned work (G-PORT-1)
+         * @description token+PIN gates this. The image is stored and queued as a pending KIND_IMAGE update — nothing touches the live artwork until an admin follows through (D1).
+         */
+        post: operations["gallery_portal_artworks_image_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3106,6 +3230,26 @@ export interface paths {
         put?: never;
         /** Upload a pricelist */
         post: operations["gallery_portal_pricelists_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/portal/{token}/pricelists/build/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build a structured pricelist in-portal (G-PORT-3…6)
+         * @description An alternative to uploading a file: the source enters priced line items directly. Lands as a submitted pricelist, same review flow.
+         */
+        post: operations["gallery_portal_pricelists_build_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3509,6 +3653,26 @@ export interface paths {
          * @description Also auto-derives the matching status label (Project.STAGE_STATUS_MAP) — the old panel's own pipeline-drag rule.
          */
         post: operations["projects_admin_projects_stage_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{id}/totals/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Project money totals (G-PROJ-9)
+         * @description Exact per-currency subtotals (internal / external / fee / client / paid / due) from Project.money, plus a single converted grand total when the project carries a manual FX rate (deal_fx_rate + deal_fx_target_currency) — using that stored rate only. Currencies that are neither the source nor the target are listed under fx.unconvertible_currencies.
+         */
+        get: operations["projects_admin_projects_totals_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4084,6 +4248,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sales/admin/sales/{id}/follow-up/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set / clear the deal follow-up date (G-SALE-5)
+         * @description Operational, not a commercial term — editable any time, even after the sale is confirmed. Send null to clear.
+         */
+        post: operations["sales_admin_sales_follow_up_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sales/admin/sales/{id}/notes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a deal's internal notes (G-SALE-5) */
+        get: operations["sales_admin_sales_notes_retrieve"];
+        put?: never;
+        /** Add an internal note to a deal */
+        post: operations["sales_admin_sales_notes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sales/admin/sales/{id}/payment-status/": {
         parameters: {
             query?: never;
@@ -4118,6 +4320,26 @@ export interface paths {
          * @description Guarded state machine — see apps.sales.lifecycle.TRANSITIONS. `lost` is reachable from any non-terminal status.
          */
         post: operations["sales_admin_sales_transition_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sales/admin/sales/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales desk KPI summary (admin)
+         * @description Header tiles for the Sales desk (G-SALE-1): total plus per-status, per-payment-status, per-delivery-status and per-source counts over every non-deleted sale.
+         */
+        get: operations["sales_admin_sales_summary"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4842,6 +5064,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminAuctionUpdateResponse: {
+            data: components["schemas"]["Auction"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminAuditLogListResponse: {
             data: components["schemas"]["AdminAuditLogListResponseData"];
             /** @default true */
@@ -5196,6 +5426,26 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminDocumentActivityResponse: {
+            data: components["schemas"]["AdminDocumentActivityResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminDocumentActivityResponseData: {
+            pagination: components["schemas"]["AdminDocumentActivityResponsePagination"];
+            results: components["schemas"]["DocumentActivity"][];
+        };
+        AdminDocumentActivityResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
         AdminDocumentArchiveResponse: {
             data: components["schemas"]["Document"];
             /** @default true */
@@ -5307,6 +5557,50 @@ export interface components {
             total_count: number;
             has_next: boolean;
             has_previous: boolean;
+        };
+        AdminExhibitionCatalogueCreateResponse: {
+            data: components["schemas"]["ExhibitionServiceCatalogItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminExhibitionCatalogueDetailResponse: {
+            data: components["schemas"]["ExhibitionServiceCatalogItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminExhibitionCatalogueListResponse: {
+            data: components["schemas"]["AdminExhibitionCatalogueListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminExhibitionCatalogueListResponseData: {
+            pagination: components["schemas"]["AdminExhibitionCatalogueListResponsePagination"];
+            results: components["schemas"]["ExhibitionServiceCatalogItem"][];
+        };
+        AdminExhibitionCatalogueListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminExhibitionCatalogueUpdateResponse: {
+            data: components["schemas"]["ExhibitionServiceCatalogItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         AdminExhibitionComposeResponse: {
             data: components["schemas"]["ExhibitionEvent"];
@@ -5702,6 +5996,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminLinkPricelistCapResponse: {
+            data: components["schemas"]["GalleryPricelistCap"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminLinkPricelistListResponse: {
             data: components["schemas"]["AdminLinkPricelistListResponseData"];
             /** @default true */
@@ -5932,6 +6234,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminPricelistStatusResponse: {
+            data: components["schemas"]["GalleryPricelist"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminProjectAttachmentListResponse: {
             data: components["schemas"]["AdminProjectAttachmentListResponseData"];
             /** @default true */
@@ -6016,6 +6326,14 @@ export interface components {
         };
         AdminProjectStageResponse: {
             data: components["schemas"]["Project"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectTotalsResponse: {
+            data: components["schemas"]["ProjectMoneyTotals"];
             /** @default true */
             success: boolean;
             message: string;
@@ -6182,6 +6500,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminSaleFollowUpResponse: {
+            data: components["schemas"]["SaleAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminSaleListResponse: {
             data: components["schemas"]["AdminSaleListResponseData"];
             /** @default true */
@@ -6202,8 +6528,44 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        AdminSaleNoteCreateResponse: {
+            data: components["schemas"]["SaleNote"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminSaleNoteListResponse: {
+            data: components["schemas"]["AdminSaleNoteListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminSaleNoteListResponseData: {
+            pagination: components["schemas"]["AdminSaleNoteListResponsePagination"];
+            results: components["schemas"]["SaleNote"][];
+        };
+        AdminSaleNoteListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
         AdminSalePaymentStatusResponse: {
             data: components["schemas"]["SaleAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminSaleSummaryResponse: {
+            data: components["schemas"]["SaleDeskSummary"];
             /** @default true */
             success: boolean;
             message: string;
@@ -7036,6 +7398,10 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /** @default  */
+            terms: string;
+            /** @default true */
+            terms_required: boolean;
         };
         AuctionDetailResponse: {
             data: components["schemas"]["Auction"];
@@ -7792,6 +8158,18 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        /** @description One audit-log entry on a document (G-DOC-2) — read-only History row. */
+        DocumentActivity: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly action: string;
+            readonly changes: unknown;
+            /** Format: date-time */
+            readonly at: string;
+            /** Format: uuid */
+            readonly actor: string | null;
+            readonly actor_name: string | null;
+        };
         DocumentCreate: {
             kind: string;
             /** @default  */
@@ -7958,6 +8336,25 @@ export interface components {
         ExhibitionPublish: {
             published: boolean;
         };
+        /** @description G-PORT-12b — the editable exhibition service menu (admin desk). */
+        ExhibitionServiceCatalogItem: {
+            /** Format: uuid */
+            readonly id: string;
+            key: string;
+            title: string;
+            description?: string;
+            /** Format: decimal */
+            default_price?: string | null;
+            position?: number;
+            /** Active */
+            is_active?: boolean;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         ExhibitionServiceLine: {
             /** Format: uuid */
             readonly id: string;
@@ -8076,6 +8473,15 @@ export interface components {
          */
         FunnelStatusEnum: "listed" | "viewed" | "saved" | "requested" | "offer_received" | "on_hold" | "reserved" | "sold" | "withdrawn";
         /**
+         * @description G-PORT-1 — a source's replacement image for an assigned work. FileField
+         *     (not ImageField) to match the codebase's upload serializers, which don't
+         *     depend on Pillow; the object is stored and reviewed before it's ever applied.
+         */
+        GalleryImageReplacementUpload: {
+            /** Format: uri */
+            file: string;
+        };
+        /**
          * @description Never includes token/pin_hash — the plaintext token+PIN are shown to
          *     the admin exactly once, at issue time, via GalleryLinkIssueResponseSerializer.
          */
@@ -8122,6 +8528,8 @@ export interface components {
             /** Format: uuid */
             readonly artwork: string;
             readonly snapshot: unknown;
+            /** Format: uri */
+            readonly image_url: string | null;
             /**
              * Funnel status override
              * @description Darz-set override for the portal's derived stage. Blank = derive from catalogue status then the strongest live collector signal.
@@ -8218,8 +8626,42 @@ export interface components {
             readonly object_key: string;
             /** Format: uri */
             readonly file_url: string | null;
+            readonly status: components["schemas"]["Status2ffEnum"];
+            readonly lines: components["schemas"]["GalleryPricelistLine"][];
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /** @description G-PORT-3…6 (P3b) — build a structured pricelist in-portal (no file). */
+        GalleryPricelistBuilder: {
+            /** @default  */
+            title: string;
+            /** @default  */
+            notes: string;
+            lines: components["schemas"]["_GalleryPricelistLineInput"][];
+        };
+        /** @description G-PORT-3 — the soft-cap snapshot for a link's pricelists (advisory). */
+        GalleryPricelistCap: {
+            count: number;
+            cap: number;
+            over_cap: boolean;
+        };
+        /** @description G-PORT-3…6 (P3b) — one structured builder line, read shape. */
+        GalleryPricelistLine: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly artwork: string | null;
+            readonly work_title: string;
+            /** Format: decimal */
+            readonly price: string | null;
+            readonly currency: string;
+            readonly availability: string;
+            readonly note: string;
+            readonly position: number;
+        };
+        /** @description G-PORT-3 — admin sets a submitted pricelist's status. */
+        GalleryPricelistStatus: {
+            status: components["schemas"]["Status2ffEnum"];
         };
         GalleryPricelistUpload: {
             /** Format: uri */
@@ -8258,9 +8700,11 @@ export interface components {
          *     * `exhibition` - Exhibition
          *     * `invoice_request` - Invoice request
          *     * `invoice_signed` - Invoice signed
+         *     * `ask` - Ask about a work
+         *     * `withdraw` - Withdraw a work
          * @enum {string}
          */
-        GalleryUpdateKindEnum: "availability" | "status" | "price" | "correction" | "image" | "note" | "new" | "exhibition" | "invoice_request" | "invoice_signed";
+        GalleryUpdateKindEnum: "availability" | "status" | "price" | "correction" | "image" | "note" | "new" | "exhibition" | "invoice_request" | "invoice_signed" | "ask" | "withdraw";
         GalleryUpdateReview: {
             /** @default  */
             note: string;
@@ -9174,6 +9618,24 @@ export interface components {
             readonly updated_at?: string;
             expected_version?: number;
         };
+        /**
+         * @description G-AUC-1 — edit an auction's listing/window/terms. Allowed only while the
+         *     auction is draft or scheduled (see AuctionService.update); status, invite-
+         *     only, archive and cover change through their own dedicated actions. All
+         *     fields optional (partial edit); expected_version guards the write.
+         */
+        PatchedAuctionUpdate: {
+            title?: string;
+            description?: string;
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            ends_at?: string;
+            terms?: string;
+            terms_required?: boolean;
+            expected_version?: number;
+        };
         PatchedChecklistTemplateUpdate: {
             /** Format: uuid */
             readonly id?: string;
@@ -9256,6 +9718,26 @@ export interface components {
             note?: string;
             gallery_note?: string;
             project?: string;
+        };
+        /** @description G-PORT-12b — the editable exhibition service menu (admin desk). */
+        PatchedExhibitionServiceCatalogItemUpdate: {
+            /** Format: uuid */
+            readonly id?: string;
+            readonly key?: string;
+            title?: string;
+            description?: string;
+            /** Format: decimal */
+            default_price?: string | null;
+            position?: number;
+            /** Active */
+            is_active?: boolean;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+            expected_version?: number;
         };
         PatchedLedgerEntryUpdate: {
             entry_type?: components["schemas"]["EntryTypeEnum"];
@@ -9564,6 +10046,18 @@ export interface components {
             report?: string;
             internal_notes?: string;
             archived?: boolean;
+            deal_currency?: components["schemas"]["CurrencyEnum"] | components["schemas"]["BlankEnum"];
+            deal_fx_target_currency?: string;
+            /** Format: decimal */
+            deal_fx_rate?: string | null;
+            /** Format: date */
+            deal_fx_rate_date?: string | null;
+            status?: components["schemas"]["Status2c3Enum"];
+            /**
+             * Stage sub-state
+             * @description {stage_key: {owner, start, due, deps, files, checklist, intApproved, cliApproved, notes, doneTs}}
+             */
+            stages?: unknown;
             expected_version?: number;
         };
         /**
@@ -9598,23 +10092,23 @@ export interface components {
             /** Format: date-time */
             readonly updated_at?: string;
         };
-        /** @description Commercial-terms edit input — draft-only, enforced in the service (R7). */
+        /**
+         * @description Commercial-terms edit input — draft-only, enforced in the service (R7).
+         *     Based on the create input (plain-id FKs) rather than the nested-output
+         *     SaleAdminSerializer, so the write shape is unchanged.
+         */
         PatchedSaleUpdate: {
-            /** Format: uuid */
-            readonly id?: string;
             /** Format: uuid */
             artwork?: string;
             /** Format: uuid */
             collector?: string;
             /**
              * Format: uuid
-             * @description The confirmed PurchaseIntent this sale was created from, if any.
+             * @description Must be a confirmed PurchaseIntent, if provided.
              */
             source_request?: string | null;
             seller_source?: string;
             source?: components["schemas"]["SaleSourceEnum"];
-            /** Format: uuid */
-            readonly lot?: string | null;
             /** Format: decimal */
             agreed_price?: string;
             currency?: components["schemas"]["CurrencyEnum"];
@@ -9627,25 +10121,15 @@ export interface components {
              * Format: decimal
              */
             fees_tax?: string | null;
-            readonly payment_status?: components["schemas"]["PaymentStatusEnum"];
-            readonly delivery_status?: components["schemas"]["DeliveryStatusEnum"];
             /** Format: uuid */
-            responsible?: string | null;
-            readonly status?: components["schemas"]["SaleStatusEnum"];
-            /** Format: date-time */
-            readonly confirmed_at?: string | null;
-            /** @description Optimistic-lock counter; bumped on every save. */
-            readonly version?: number;
-            /** Format: date-time */
-            readonly created_at?: string;
-            /** Format: date-time */
-            readonly updated_at?: string;
+            responsible?: string;
             expected_version?: number;
         };
         PatchedServiceCatalogItemUpdate: {
             /** Format: uuid */
             readonly id?: string;
             name?: string;
+            description?: string;
             category?: components["schemas"]["ProjectServiceCategoryEnum"];
             unit?: string;
             /** Format: decimal */
@@ -9772,6 +10256,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        PortalImageReplacementResponse: {
+            data: components["schemas"]["PortalUpdate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         PortalMessageListResponse: {
             data: components["schemas"]["PortalMessageListResponseData"];
             /** @default true */
@@ -9800,6 +10292,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        PortalPricelistBuildResponse: {
+            data: components["schemas"]["GalleryPricelist"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         PortalPricelistUploadResponse: {
             data: components["schemas"]["GalleryPricelist"];
             /** @default true */
@@ -9815,6 +10315,23 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /**
+         * @description G-PORT-2 — the source's own submitted updates, for the portal's
+         *     "Update sent" pills / Pending-review KPI / History tab. Trimmed of admin-only
+         *     reviewer identity; keeps the review_note the source is allowed to see.
+         */
+        PortalUpdate: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["GalleryUpdateKindEnum"];
+            /** Format: uuid */
+            readonly artwork: string | null;
+            readonly payload: unknown;
+            readonly status: components["schemas"]["BidderRegistrationStatusEnum"];
+            readonly review_note: string;
+            /** Format: date-time */
+            readonly created_at: string;
         };
         PortalUpdateSubmitResponse: {
             data: components["schemas"]["GalleryUpdate"];
@@ -10130,7 +10647,13 @@ export interface components {
             suppliers?: unknown;
             /** @description internalCost/externalCost/fee/clientPrice (each {amount, currency}), payments[], invoiceStatus. */
             money?: unknown;
-            status?: components["schemas"]["ProjectStatusEnum"];
+            deal_currency?: components["schemas"]["CurrencyEnum"] | components["schemas"]["BlankEnum"];
+            deal_fx_target_currency?: string;
+            /** Format: decimal */
+            deal_fx_rate?: string | null;
+            /** Format: date */
+            deal_fx_rate_date?: string | null;
+            status?: components["schemas"]["Status2c3Enum"];
             stage?: components["schemas"]["StageEnum"];
             /**
              * Stage sub-state
@@ -10226,6 +10749,16 @@ export interface components {
             }[];
         };
         /**
+         * @description G-PROJ-9 — exact per-currency subtotals, plus a converted grand total
+         *     when the project carries a manual FX rate (else `fx` is null).
+         */
+        ProjectMoneyTotals: {
+            by_currency: {
+                [key: string]: components["schemas"]["_ProjectMoneyBucket"];
+            };
+            fx: components["schemas"]["_ProjectMoneyFx"] | null;
+        };
+        /**
          * @description * `media` - Media
          *     * `production` - Production
          *     * `curatorial` - Curatorial
@@ -10237,30 +10770,6 @@ export interface components {
             stage: components["schemas"]["StageEnum"];
             expected_version: number;
         };
-        /**
-         * @description * `New Lead` - New Lead
-         *     * `Under Review` - Under Review
-         *     * `Qualified` - Qualified
-         *     * `Proposal in Preparation` - Proposal in Preparation
-         *     * `Proposal Sent` - Proposal Sent
-         *     * `Negotiation` - Negotiation
-         *     * `Approved` - Approved
-         *     * `Awaiting Contract` - Awaiting Contract
-         *     * `Awaiting Deposit` - Awaiting Deposit
-         *     * `In Research` - In Research
-         *     * `In Production` - In Production
-         *     * `Internal Review` - Internal Review
-         *     * `Client Review` - Client Review
-         *     * `Scheduled` - Scheduled
-         *     * `Published` - Published
-         *     * `Reporting` - Reporting
-         *     * `Awaiting Final Payment` - Awaiting Final Payment
-         *     * `Completed` - Completed
-         *     * `Archived` - Archived
-         *     * `Cancelled` - Cancelled
-         * @enum {string}
-         */
-        ProjectStatusEnum: "New Lead" | "Under Review" | "Qualified" | "Proposal in Preparation" | "Proposal Sent" | "Negotiation" | "Approved" | "Awaiting Contract" | "Awaiting Deposit" | "In Research" | "In Production" | "Internal Review" | "Client Review" | "Scheduled" | "Published" | "Reporting" | "Awaiting Final Payment" | "Completed" | "Archived" | "Cancelled";
         PublicDocumentResponse: {
             data: components["schemas"]["Document"];
             /** @default true */
@@ -10861,41 +11370,49 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "owner" | "standard_admin";
+        /**
+         * @description Read/output shape. G-SALE-3: artwork/collector/responsible are the nested
+         *     `{id, …}` objects the desk needs, not bare uuids (input still takes plain
+         *     ids — see SaleCreateSerializer / SaleUpdateSerializer).
+         */
         SaleAdmin: {
             /** Format: uuid */
             readonly id: string;
-            /** Format: uuid */
-            artwork: string;
-            /** Format: uuid */
-            collector: string;
+            readonly artwork: components["schemas"]["_SaleArtworkBrief"];
+            readonly collector: components["schemas"]["_SaleCollectorBrief"];
             /**
              * Format: uuid
              * @description The confirmed PurchaseIntent this sale was created from, if any.
              */
-            source_request?: string | null;
-            seller_source?: string;
-            source?: components["schemas"]["SaleSourceEnum"];
+            readonly source_request: string | null;
+            readonly seller_source: string;
+            readonly source: components["schemas"]["SaleSourceEnum"];
             /** Format: uuid */
             readonly lot: string | null;
             /** Format: decimal */
-            agreed_price: string;
-            currency: components["schemas"]["CurrencyEnum"];
+            readonly agreed_price: string;
+            readonly currency: components["schemas"]["CurrencyEnum"];
             /** Format: decimal */
-            commission_amount: string;
+            readonly commission_amount: string;
             /** Format: decimal */
-            discount_amount?: string | null;
+            readonly discount_amount: string | null;
             /**
              * Fees / tax
              * Format: decimal
              */
-            fees_tax?: string | null;
+            readonly fees_tax: string | null;
             readonly payment_status: components["schemas"]["PaymentStatusEnum"];
             readonly delivery_status: components["schemas"]["DeliveryStatusEnum"];
-            /** Format: uuid */
-            responsible?: string | null;
+            readonly responsible: components["schemas"]["_SaleResponsibleBrief"] | null;
             readonly status: components["schemas"]["SaleStatusEnum"];
             /** Format: date-time */
             readonly confirmed_at: string | null;
+            /**
+             * Follow-up date
+             * Format: date
+             */
+            readonly follow_up_at: string | null;
+            readonly follow_up_overdue: boolean;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -10932,6 +11449,48 @@ export interface components {
         };
         SaleDeliveryStatus: {
             delivery_status: components["schemas"]["DeliveryStatusEnum"];
+        };
+        /**
+         * @description KPI tiles for the Sales desk header (G-SALE-1). Counts over every
+         *     non-deleted sale, so the desk can lead with per-status/payment/delivery
+         *     totals instead of counting the current page client-side.
+         */
+        SaleDeskSummary: {
+            total: number;
+            by_status: {
+                [key: string]: number;
+            };
+            by_payment_status: {
+                [key: string]: number;
+            };
+            by_delivery_status: {
+                [key: string]: number;
+            };
+            by_source: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * @description Set/clear the deal's follow-up date (G-SALE-5). Null clears it. Editable
+         *     any time — a follow-up is operational, not a locked commercial term.
+         */
+        SaleFollowUp: {
+            /** Format: date */
+            follow_up_at: string | null;
+        };
+        /** @description Read shape for an internal deal note (G-SALE-5). */
+        SaleNote: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly body: string;
+            /** Format: uuid */
+            readonly author: string | null;
+            readonly author_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        SaleNoteCreate: {
+            body: string;
         };
         SalePaymentStatus: {
             payment_status: components["schemas"]["PaymentStatusEnum"];
@@ -11008,6 +11567,7 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             name: string;
+            description?: string;
             category?: components["schemas"]["ProjectServiceCategoryEnum"];
             unit?: string;
             /** Format: decimal */
@@ -11089,6 +11649,37 @@ export interface components {
          * @enum {string}
          */
         StageEnum: "lead" | "qualification" | "brief" | "proposal" | "scopeApproval" | "contract" | "deposit" | "research" | "planning" | "production" | "internalReview" | "clientReview" | "finalApproval" | "publication" | "reporting" | "finalPayment" | "archive";
+        /**
+         * @description * `New Lead` - New Lead
+         *     * `Under Review` - Under Review
+         *     * `Qualified` - Qualified
+         *     * `Proposal in Preparation` - Proposal in Preparation
+         *     * `Proposal Sent` - Proposal Sent
+         *     * `Negotiation` - Negotiation
+         *     * `Approved` - Approved
+         *     * `Awaiting Contract` - Awaiting Contract
+         *     * `Awaiting Deposit` - Awaiting Deposit
+         *     * `In Research` - In Research
+         *     * `In Production` - In Production
+         *     * `Internal Review` - Internal Review
+         *     * `Client Review` - Client Review
+         *     * `Scheduled` - Scheduled
+         *     * `Published` - Published
+         *     * `Reporting` - Reporting
+         *     * `Awaiting Final Payment` - Awaiting Final Payment
+         *     * `Completed` - Completed
+         *     * `Archived` - Archived
+         *     * `Cancelled` - Cancelled
+         * @enum {string}
+         */
+        Status2c3Enum: "New Lead" | "Under Review" | "Qualified" | "Proposal in Preparation" | "Proposal Sent" | "Negotiation" | "Approved" | "Awaiting Contract" | "Awaiting Deposit" | "In Research" | "In Production" | "Internal Review" | "Client Review" | "Scheduled" | "Published" | "Reporting" | "Awaiting Final Payment" | "Completed" | "Archived" | "Cancelled";
+        /**
+         * @description * `submitted` - Submitted
+         *     * `accepted` - Accepted
+         *     * `superseded` - Superseded
+         * @enum {string}
+         */
+        Status2ffEnum: "submitted" | "accepted" | "superseded";
         /**
          * @description * `style` - style
          *     * `subject` - subject
@@ -11237,6 +11828,20 @@ export interface components {
             id: string;
             display_name: string;
         };
+        _GalleryPricelistLineInput: {
+            /** Format: uuid */
+            artwork?: string | null;
+            /** @default  */
+            work_title: string;
+            /** Format: decimal */
+            price?: string | null;
+            /** @default  */
+            currency: string;
+            /** @default  */
+            availability: string;
+            /** @default  */
+            note: string;
+        };
         _HealthData: {
             status: string;
             service: string;
@@ -11250,6 +11855,31 @@ export interface components {
             /** Format: uuid */
             id: string;
             display_name: string;
+        };
+        /** @description Per-currency money subtotals (G-PROJ-9). Decimals render as strings. */
+        _ProjectMoneyBucket: {
+            /** Format: decimal */
+            internal: string;
+            /** Format: decimal */
+            external: string;
+            /** Format: decimal */
+            fee: string;
+            /** Format: decimal */
+            client: string;
+            /** Format: decimal */
+            paid: string;
+            /** Format: decimal */
+            due: string;
+        };
+        _ProjectMoneyFx: {
+            source_currency: string;
+            target_currency: string;
+            /** Format: decimal */
+            rate: string;
+            /** Format: date */
+            rate_date: string | null;
+            converted: components["schemas"]["_ProjectMoneyBucket"];
+            unconvertible_currencies: string[];
         };
         _ProjectPartnerOrg: {
             /** Format: uuid */
@@ -11289,6 +11919,22 @@ export interface components {
             artist: components["schemas"]["_RequestAdminArtist"] | null;
             /** Format: uri */
             readonly image: string | null;
+        };
+        /** @description Nested artwork shape on a sale row (G-SALE-3) — no more bare uuid. */
+        _SaleArtworkBrief: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+        };
+        _SaleCollectorBrief: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+        };
+        _SaleResponsibleBrief: {
+            /** Format: uuid */
+            id: string;
+            name: string;
         };
         /**
          * @description Matches this project's established nested-actor shape (e.g.
@@ -12474,6 +13120,57 @@ export interface operations {
                 content?: never;
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    auctions_admin_auctions_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAuctionUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAuctionUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedAuctionUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuctionUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16802,6 +17499,27 @@ export interface operations {
             };
         };
     };
+    documents_admin_documents_activity_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDocumentActivityResponse"];
+                };
+            };
+        };
+    };
     documents_admin_documents_archive_create: {
         parameters: {
             query?: never;
@@ -17060,6 +17778,166 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_exhibition_catalogue_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExhibitionCatalogueListResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_exhibition_catalogue_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExhibitionServiceCatalogItem"];
+                "application/x-www-form-urlencoded": components["schemas"]["ExhibitionServiceCatalogItem"];
+                "multipart/form-data": components["schemas"]["ExhibitionServiceCatalogItem"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExhibitionCatalogueCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_exhibition_catalogue_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExhibitionCatalogueDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_exhibition_catalogue_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_exhibition_catalogue_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedExhibitionServiceCatalogItemUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedExhibitionServiceCatalogItemUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedExhibitionServiceCatalogItemUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExhibitionCatalogueUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17786,6 +18664,35 @@ export interface operations {
             };
         };
     };
+    gallery_admin_links_pricelists_cap_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLinkPricelistCapResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     gallery_admin_links_retrieve: {
         parameters: {
             query?: never;
@@ -17973,6 +18880,49 @@ export interface operations {
             };
         };
     };
+    gallery_admin_pricelists_status_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalleryPricelistStatus"];
+                "application/x-www-form-urlencoded": components["schemas"]["GalleryPricelistStatus"];
+                "multipart/form-data": components["schemas"]["GalleryPricelistStatus"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPricelistStatusResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     gallery_admin_updates_retrieve: {
         parameters: {
             query?: {
@@ -18105,6 +19055,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PortalStateResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_portal_artworks_image_create: {
+        parameters: {
+            query?: {
+                /** @description The link's PIN. */
+                pin?: string;
+            };
+            header?: never;
+            path: {
+                artwork_pk: string;
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalleryImageReplacementUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["GalleryImageReplacementUpload"];
+                "multipart/form-data": components["schemas"]["GalleryImageReplacementUpload"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalImageReplacementResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             401: {
@@ -18576,6 +19581,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PortalPricelistUploadResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_portal_pricelists_build_create: {
+        parameters: {
+            query?: {
+                /** @description The link's PIN. */
+                pin?: string;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalleryPricelistBuilder"];
+                "application/x-www-form-urlencoded": components["schemas"]["GalleryPricelistBuilder"];
+                "multipart/form-data": components["schemas"]["GalleryPricelistBuilder"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPricelistBuildResponse"];
                 };
             };
             400: {
@@ -19591,6 +20650,10 @@ export interface operations {
                 category?: string;
                 /** @description created | -created | name | -name (default: -created). */
                 ordering?: string;
+                /** @description Projects linked to a partner org id (client or listed partner). */
+                partner?: string;
+                /** @description Dashboard card: active | delayed | awaiting_approval | unpaid. */
+                quick?: string;
                 /** @description Match on name/no/client_name/venue. */
                 search?: string;
                 /** @description Filter by exact stage. */
@@ -19797,6 +20860,35 @@ export interface operations {
                 };
             };
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_totals_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectTotalsResponse"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20862,6 +21954,14 @@ export interface operations {
     sales_admin_sales_list: {
         parameters: {
             query?: {
+                /** @description Filter by exact delivery_status. */
+                delivery_status?: string;
+                /** @description created | -created | price | -price (default: -created). */
+                ordering?: string;
+                /** @description Filter by exact payment_status. */
+                payment_status?: string;
+                /** @description Case-insensitive match on artwork title / collector name / seller source. */
+                search?: string;
                 /** @description Filter by sale origin: market | auction (G-SALE-4 — the Auction Sales tab). */
                 source?: string;
                 /** @description Filter by exact status. */
@@ -21067,6 +22167,105 @@ export interface operations {
             };
         };
     };
+    sales_admin_sales_follow_up_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleFollowUp"];
+                "application/x-www-form-urlencoded": components["schemas"]["SaleFollowUp"];
+                "multipart/form-data": components["schemas"]["SaleFollowUp"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSaleFollowUpResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sales_admin_sales_notes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSaleNoteListResponse"];
+                };
+            };
+        };
+    };
+    sales_admin_sales_notes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaleNoteCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["SaleNoteCreate"];
+                "multipart/form-data": components["schemas"]["SaleNoteCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSaleNoteCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     sales_admin_sales_payment_status_create: {
         parameters: {
             query?: never;
@@ -21149,6 +22348,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sales_admin_sales_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSaleSummaryResponse"];
                 };
             };
         };

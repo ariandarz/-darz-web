@@ -45,10 +45,9 @@
  *    Packages desk — so the EMPTY panel says where they come from and links
  *    there. The action itself lives in that one place; no button here.
  *
- * Stated absence (G-PROJ-3): a template is kept here but never applied to a
- * project's stage — the old `setStage` seeded the stage checklist from the
- * matching template (:13712), and the stage sub-state is not writable on
- * this API. The note sits under the panel header.
+ * A template here is what a stage move seeds the stage's checklist from
+ * (`projChecklistFor` / `setStage`, :13321 / :13709): the record and the board
+ * both write it through `moveStages` since `stages` became writable (G-PROJ-3).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -92,7 +91,6 @@ const PANEL_HEAD = {
 } as const; // :15466
 const PANEL_LABEL = { margin: 0 } as const; // :15466 — the label had no margin there
 const CHK_NAME = { flex: 1, fontSize: 12, color: 'var(--ink)' } as const; // :15459
-const NOTE = { margin: '0 0 10px' } as const;
 const EMPTY_NEXT = { marginTop: 6 } as const; // the empty panel's second line
 const EDITOR = { borderTop: '1px solid var(--hair)', padding: '12px 0 14px' } as const;
 const ITEMS = { minHeight: 120 } as const; // :15475
@@ -385,12 +383,6 @@ export function ProjectsReportsPage() {
               ＋ Template
             </button>
           </div>
-          {/* stated absence — G-PROJ-3: the old `setStage` applied the
-              matching template to the stage's checklist (:13712) */}
-          <p className="dzp-mut" role="note" style={NOTE}>
-            Templates are kept here; applying one to a project’s stage waits on the API (the
-            stage sub-state isn’t writable yet, G-PROJ-3).
-          </p>
 
           {editor && (
             <ChecklistEditor

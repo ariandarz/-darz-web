@@ -67,8 +67,12 @@ export function ActionButtons({ artwork }: { artwork: Artwork }) {
       ? 'buy'
       : null // the gallery hasn't enabled purchase on this work — no primary
     : 'price';
-  const secondary: ActionVerb[] = (['hold', 'visit', 'offer'] as ActionVerb[]).filter((verb) =>
-    isAllowed(artwork, verb),
+  // Q-6 (owner accepted the recommendation, V1_CONTRACT_ISSUES.md): an offer
+  // on a work with no currency is a 400 carrying the backend's raw message, so
+  // "Make an offer" is not shown for such a work. The old app had no such
+  // case — every priced work there carried its currency.
+  const secondary: ActionVerb[] = (['hold', 'visit', 'offer'] as ActionVerb[]).filter(
+    (verb) => isAllowed(artwork, verb) && (verb !== 'offer' || Boolean(artwork.currency)),
   );
 
   const isBusy = (verb: ActionVerb) => pending.has(RequestController.actKey(artwork.id, verb));

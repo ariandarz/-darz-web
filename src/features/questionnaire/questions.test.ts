@@ -7,7 +7,15 @@
  * built-in one rather than handing the collector a blank questionnaire.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { INTRO_DEFAULT, QB_DEFAULT, liveBank, liveIntro } from './questions';
+import {
+  INTRO_DEFAULT,
+  QB_DEFAULT,
+  QVER,
+  liveBank,
+  liveIntro,
+  servedBank,
+  servedVersion,
+} from './questions';
 import { __resetOwnerSettings, applyOwnerSettings } from '../shell/ownerSettings';
 
 beforeEach(() => __resetOwnerSettings());
@@ -110,5 +118,57 @@ describe('liveIntro', () => {
       applyOwnerSettings({ qbIntro });
       expect(liveIntro()).toEqual(INTRO_DEFAULT);
     }
+  });
+});
+
+describe('servedBank (G-P25-2(a))', () => {
+  it('is null for the empty "no active set" shape and for junk', () => {
+    expect(
+      servedBank({ id: null, title: '', intro: '', is_active: false, questions: [] }),
+    ).toBeNull();
+    expect(servedBank(null)).toBeNull();
+    expect(servedBank({ questions: 'nope' as never })).toBeNull();
+  });
+
+  it('reads option labels, falls back to the value, and skips blank options', () => {
+    const r = servedBank({
+      questions: [
+        {
+          id: 'a',
+          prompt: 'Pick',
+          question_type: 'single_choice',
+          options: [{ value: 'v1', label: 'One' }, { value: 'v2', label: '' }, {}, 'Three'],
+          order: 0,
+        },
+      ],
+    } as never);
+    expect(r?.bank[0].opts).toEqual(['One', 'v2', 'Three']);
+  });
+
+  it('turns a single_choice with no usable options into a free-text step', () => {
+    const r = servedBank({
+      questions: [
+        { id: 'a', prompt: 'Pick', question_type: 'single_choice', options: null, order: 0 },
+      ],
+    } as never);
+    expect(r?.bank[0]).toEqual({ sec: '', hint: 'Optional', q: 'Pick', opts: [] });
+  });
+
+  it('keeps the owner-theme intro fields the set does not carry', () => {
+    applyOwnerSettings({ qbIntro: { button: 'Start' } });
+    const r = servedBank({
+      title: '',
+      intro: '',
+      questions: [{ id: 'a', prompt: 'Q', question_type: 'text', options: [], order: 0 }],
+    } as never);
+    expect(r?.intro).toEqual({ ...INTRO_DEFAULT, button: 'Start' });
+  });
+
+  it('versions by what each step asks — never equal to the numeric QVER', () => {
+    const q = { sec: '', hint: 'Choose one', q: 'A', opts: ['x', 'y'] };
+    expect(servedVersion([q])).toBe(servedVersion([{ ...q }]));
+    expect(servedVersion([q])).not.toBe(servedVersion([{ ...q, opts: ['x', 'z'] }]));
+    expect(servedVersion([q])).not.toBe(servedVersion([{ ...q, q: 'B' }]));
+    expect(servedVersion([q])).not.toBe(QVER);
   });
 });

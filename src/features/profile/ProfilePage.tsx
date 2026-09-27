@@ -15,9 +15,14 @@
  *              works and "Requests & activity" with filter chips
  *              (`profMarketHTML`, :9704). Buy / Offers chips only appear
  *              when such requests exist (as the old app did).
- *   Account  — account details, access key, "Leave the Room"
- *              (`profAccountHTML`, :9738). Read-only: the backend has no
- *              profile-update endpoint yet (flagged in docs/V0_1_SCOPE.md).
+ *   Account  — the editable account details (`AccountForm`, saved through
+ *              `PATCH /api/auth/me/`), the access key, "Your documents"
+ *              (`Documents`, `GET /api/documents/`), Continue with Darz,
+ *              "Leave the Room" — `profAccountHTML` (:9765-9797), in its order.
+ *
+ * Overview waits for its numbers: until the conversations and the saved list
+ * have answered, the tiles would read "0" for a collector who has works and
+ * requests, so the shared `.dz-state` loading line stands in for them.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -28,11 +33,14 @@ import '../catalogue/catalogue.css';
 import { ConversationRow } from '../conversations/ConversationRow';
 import { useConversations } from '../conversations/useConversations';
 import { Button, Sheet } from '../../components';
+import { AccountForm } from './AccountForm';
 import { Acquisitions } from './Acquisitions';
+import { Documents } from './Documents';
 import { SavedListController } from '../saved/SavedListController';
 import { useSaved } from '../saved/useSaved';
 import { useListController } from '../shared/useListController';
 import { features } from '../shell/features';
+import { isQuestionnaireAnswered } from '../questionnaire/QuestionnaireController';
 import '../questionnaire/questionnaire.css';
 import './profile.css';
 
@@ -122,7 +130,6 @@ export function ProfilePage() {
             onSignOut={() => {
               void auth.logout().finally(() => navigate('/login', { replace: true }));
             }}
-            accessStatus={me?.access_status ?? null}
             sessionPrincipal={session.principal}
           />
         )}
@@ -137,7 +144,7 @@ export function ProfilePage() {
 /* ---- Overview (profOverviewHTML, app.html:9527-9608) ---------------------- */
 function Overview({ go }: { go: (a: Anchor) => void }) {
   const navigate = useNavigate();
-  const { controller } = useConversations();
+  const { controller, status } = useConversations();
   const saved = useSavedList();
   const acts = controller.activity();
   const unseen = controller.unreadTotal();
@@ -148,6 +155,13 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
     .sort(byNewest)
     .slice(0, 3);
   const sv = saved.state.pagination?.total_count ?? saved.state.results.length;
+  // Loading until both reads have answered (an error ends the wait too — the
+  // page's own error line covers the conversations, and a saved list that
+  // failed simply counts what it has).
+  const loading =
+    status === 'idle' ||
+    status === 'loading' ||
+    (saved.state.status === 'loading' && saved.state.pagination === null);
 
   return (
     <>
@@ -169,39 +183,43 @@ function Overview({ go }: { go: (a: Anchor) => void }) {
           <span className="pchev">›</span>
         </button>
       )}
-      <div className="ov">
-        <div className="ov-tiles">
-          <button type="button" className="ov-tile" onClick={() => go('market')}>
-            <span className="n">{sv}</span>
-            <span className="l">Saved</span>
-            <span className="s">{sv ? 'Works you’re keeping' : 'Tap a heart to save'}</span>
-            <span className="chev">›</span>
-          </button>
-          {features.profileAuctions && (
-            <button type="button" className="ov-tile" onClick={() => go('auctions')}>
-              <span className="n">0</span>
-              <span className="l">Auctions</span>
-              <span className="s">Not yet joined</span>
+      {loading ? (
+        <p className="dz-state">Loading…</p>
+      ) : (
+        <div className="ov">
+          <div className="ov-tiles">
+            <button type="button" className="ov-tile" onClick={() => go('market')}>
+              <span className="n">{sv}</span>
+              <span className="l">Saved</span>
+              <span className="s">{sv ? 'Works you’re keeping' : 'Tap a heart to save'}</span>
               <span className="chev">›</span>
             </button>
-          )}
-          <button type="button" className="ov-tile" onClick={() => go('market')}>
-            <span className="n">{acts.length}</span>
-            <span className="l">Activity</span>
-            <span className="s">
-              {acts.length ? 'Requests & enquiries' : 'No requests yet'}
-            </span>
-            <span className="chev">›</span>
-          </button>
-          <button type="button" className="ov-tile" onClick={() => navigate('/chat')}>
-            <span className="n">{unseen || controller.conversations().length}</span>
-            <span className="l">Messages</span>
-            <span className="s">{unseen ? `${unseen} new from Darz` : 'Talk to Darz'}</span>
-            <span className="chev">›</span>
-          </button>
+            {features.profileAuctions && (
+              <button type="button" className="ov-tile" onClick={() => go('auctions')}>
+                <span className="n">0</span>
+                <span className="l">Auctions</span>
+                <span className="s">Not yet joined</span>
+                <span className="chev">›</span>
+              </button>
+            )}
+            <button type="button" className="ov-tile" onClick={() => go('market')}>
+              <span className="n">{acts.length}</span>
+              <span className="l">Activity</span>
+              <span className="s">
+                {acts.length ? 'Requests & enquiries' : 'No requests yet'}
+              </span>
+              <span className="chev">›</span>
+            </button>
+            <button type="button" className="ov-tile" onClick={() => navigate('/chat')}>
+              <span className="n">{unseen || controller.conversations().length}</span>
+              <span className="l">Messages</span>
+              <span className="s">{unseen ? `${unseen} new from Darz` : 'Talk to Darz'}</span>
+              <span className="chev">›</span>
+            </button>
+          </div>
         </div>
-      </div>
-      {recent.length > 0 && (
+      )}
+      {!loading && recent.length > 0 && (
         <>
           <div className="ov-grp">
             <span className="t">Recent activity</span>
@@ -233,10 +251,11 @@ function GetToKnowYou() {
 
   useEffect(() => {
     let alive = true;
-    // 404 is the documented "never submitted" answer, so a rejection here is
-    // simply `false` — see `RecommendationService.questionnaire`.
+    // A never-submitted collector reads 200 `answered: false` (G-P25-1), so the
+    // flag decides, not the status; a rejection (an older backend's 404, or a
+    // failed read) is simply `false`.
     recommendations.questionnaire().then(
-      () => alive && setSent(true),
+      (saved) => alive && setSent(isQuestionnaireAnswered(saved)),
       () => alive && setSent(false),
     );
     return () => {
@@ -426,33 +445,20 @@ function ClearActivitySheet({
   );
 }
 
-/* ---- Account (profAccountHTML, app.html:9738-9772) ------------------------ */
+/* ---- Account (profAccountHTML, app.html:9765-9797) ------------------------ */
 function Account({
   onSignOut,
-  accessStatus,
   sessionPrincipal,
 }: {
   onSignOut: () => void;
-  accessStatus: string | null;
   sessionPrincipal: string | null;
 }) {
   const { me } = useSession();
   return (
     <>
-      <div className="pf-grp">Account details</div>
-      <div className="pf-card">
-        <span className="pf-lab">Name</span>
-        <span className="pf-val">{me?.display_name || me?.name || '—'}</span>
-        <span className="pf-lab">Membership</span>
-        <span className="pf-val">
-          {me?.tier ? me.tier.charAt(0).toUpperCase() + me.tier.slice(1) : '—'}
-          {accessStatus ? ` · ${accessStatus}` : ''}
-        </span>
-        <div className="pf-note">
-          To change your name or contact details, write to Darz in Chat — the details are
-          updated for you.
-        </div>
-      </div>
+      {/* keyed on the principal, so the form re-seeds once `me` arrives on a
+          cold load, and never while the collector is typing */}
+      <AccountForm key={me?.id ?? 'pending'} />
 
       <div className="pf-grp">Access key</div>
       <div className="pf-card">
@@ -465,6 +471,9 @@ function Account({
           ever need a new one.
         </div>
       </div>
+
+      {/* :9793 — invoices, certificates & provenance; hidden when none */}
+      <Documents />
 
       <div className="dz-cbx-wrap">
         <div className="dz-cbx-lab">Continue with Darz</div>

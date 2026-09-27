@@ -13,6 +13,8 @@ import {
   CatalogAdminService,
   SalesAdminService,
   DocumentsAdminService,
+  DocumentsService,
+  PublicDocumentsService,
   GalleryAdminService,
   ProjectsAdminService,
   AuctionsAdminService,
@@ -71,6 +73,10 @@ export class DarzApi {
   readonly catalogAdmin: CatalogAdminService;
   readonly salesAdmin: SalesAdminService;
   readonly documentsAdmin: DocumentsAdminService;
+  /** The collector's own shared documents (G-DOC-1). */
+  readonly documents: DocumentsService;
+  /** The public legal briefs (`/documents/public/{kind}/`). */
+  readonly publicDocuments: PublicDocumentsService;
   readonly galleryAdmin: GalleryAdminService;
   readonly projectsAdmin: ProjectsAdminService;
   readonly auctionsAdmin: AuctionsAdminService;
@@ -94,6 +100,8 @@ export class DarzApi {
     this.catalogAdmin = new CatalogAdminService(this.client);
     this.salesAdmin = new SalesAdminService(this.client);
     this.documentsAdmin = new DocumentsAdminService(this.client);
+    this.documents = new DocumentsService(this.client);
+    this.publicDocuments = new PublicDocumentsService(this.client);
     this.galleryAdmin = new GalleryAdminService(this.client);
     this.projectsAdmin = new ProjectsAdminService(this.client);
     this.auctionsAdmin = new AuctionsAdminService(this.client);

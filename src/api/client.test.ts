@@ -238,3 +238,65 @@ describe('401 -> refresh -> retry', () => {
     expect(session.getSnapshot().isAuthenticated).toBe(false); // session cleared
   });
 });
+
+/** Phase 1 — the collector's own account endpoints. */
+describe('AuthService account endpoints', () => {
+  it('updateMe PATCHes /auth/me/ with only the body given, and adopts the answer', async () => {
+    fetchMock
+      .mockResolvedValueOnce(ok({ access: 'a1', refresh: 'r1' }))
+      .mockResolvedValueOnce(ok({ principal: 'collector', id: 'c1', display_name: 'Jane' }))
+      .mockResolvedValueOnce(
+        ok({ principal: 'collector', id: 'c1', display_name: 'Jane', city: 'Isfahan' }),
+      );
+    const { session, auth } = makeApi();
+    await auth.loginCollector('KEY');
+
+    const me = await auth.updateMe({ city: 'Isfahan' });
+
+    const [url, init] = fetchMock.mock.calls[2] as [string, RequestInit];
+    expect(url).toBe('http://api.test/api/auth/me/');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(String(init.body))).toEqual({ city: 'Isfahan' });
+    expect(headersOf(fetchMock.mock.calls[2]).get('Authorization')).toBe('Bearer a1');
+    expect(me.city).toBe('Isfahan');
+    expect(session.getSnapshot().me?.city).toBe('Isfahan');
+  });
+
+  it('a rejected field surfaces as a ValidationError naming it, and keeps the session', async () => {
+    fetchMock
+      .mockResolvedValueOnce(ok({ access: 'a1', refresh: 'r1' }))
+      .mockResolvedValueOnce(ok({ principal: 'collector', id: 'c1', city: 'Tehran' }))
+      .mockResolvedValueOnce(
+        fail(400, 'VALIDATION_ERROR', 'Bad.', {
+          preferred_language: ['"de" is not a valid choice.'],
+        }),
+      );
+    const { session, auth } = makeApi();
+    await auth.loginCollector('KEY');
+    await auth.updateMe({ preferred_language: 'de' as never }).then(
+      () => expect.unreachable(),
+      (err) => {
+        expect(err).toBeInstanceOf(ValidationError);
+        expect((err as ValidationError).fields.preferred_language[0]).toMatch(/not a valid/);
+      },
+    );
+    expect(session.getSnapshot().me?.city).toBe('Tehran');
+  });
+
+  it('myMembership reads /auth/my-membership/', async () => {
+    fetchMock.mockResolvedValueOnce(ok({ tier: 'vip', status: 'active', active_until: null }));
+    const { auth } = makeApi();
+    await expect(auth.myMembership()).resolves.toEqual({
+      tier: 'vip',
+      status: 'active',
+      active_until: null,
+    });
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api.test/api/auth/my-membership/');
+  });
+
+  it('a late profile answer never resurrects a signed-out session', () => {
+    const { session } = makeApi();
+    session.adoptMe({ principal: 'collector', id: 'c1' });
+    expect(session.getSnapshot().me).toBeNull();
+  });
+});

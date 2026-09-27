@@ -80,10 +80,29 @@
   color: #b8b8b4;
 }
 
-.mb-active-note {
-  font-size: 11px;
-  color: #8a8a86;
-  margin-top: 8px;
+/* ---- the "Membership ended" block (:10320-10323) --------------------- */
+
+.mb-ended {
+  background: rgb(225 29 72 / 8%);
+  border: 1px solid rgb(225 29 72 / 28%);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-top: 14px;
+  text-align: center;
+}
+
+.mb-ended-lab {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e11d48;
+}
+
+.mb-ended-p {
+  font-size: 13.5px;
+  color: var(--ink2);
+  margin-top: 5px;
   line-height: 1.5;
 }
 
@@ -345,6 +364,22 @@ html.dz-bw .mb-redeem {
   max-width: 330px;
 }
 
-/* The Settings row's green ACTIVE / red EXPIRED pills (`:9926`) have no rule
-   here because they have no state to render — see `MembershipSheet`'s header
-   (G-MEMB-6 / G-MEMB-3). */
+/* The Settings row's green ACTIVE / red EXPIRED pills (`:9926`), from
+   `GET /api/auth/my-membership/` (G-MEMB-3/6/7). */
+.mb-pill {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 20px;
+  padding: 5px 10px;
+  margin-right: 2px;
+}
+.mb-pill.on {
+  color: #1f9d57;
+  background: rgb(31 157 87 / 10%);
+}
+.mb-pill.off {
+  color: #e11d48;
+  background: rgb(225 29 72 / 10%);
+}

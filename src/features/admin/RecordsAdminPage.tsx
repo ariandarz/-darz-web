@@ -28,10 +28,14 @@
  *    `artist` query param, reached by the Artists desk's record-count link,
  *    which is itself deferred with the counts (G-CAT-3). Not a second
  *    control on this desk.
- *  - **All auction houses** — not built: `house` is free text on the record
- *    and there is no facet endpoint over it, so the select has no options to
- *    offer (the Database desk's four filters got one in #66; this one did
- *    not). Backend gap **G-REC-1**.
+ *  - **All auction houses** — **built in V1 Phase 3** over `?house=`
+ *    (G-REC-1, an exact match). The old control was a searchable multi-select
+ *    (`recHouseMS`, `:20303-20312`); the API takes one house, so it is a
+ *    single select with the old "All auction houses" label. Its options are
+ *    the old rule — the standard houses plus any house in the data
+ *    (`recordHouses.ts`) — and the data half is read by walking the records
+ *    list once, because the backend has no house facet endpoint (backend
+ *    candidate: a distinct-houses facet).
  *  - **Sort** — not built, and not invented. The old options are
  *    `Most recent · Most records · Artist A–Z · Artist Z–A` (`:20324`) — a
  *    set for a desk that GROUPS BY ARTIST, which this one does not. The API
@@ -42,9 +46,10 @@
  *    a rule nothing enforces.
  *  - **List / Cards** — table only, the same call as Collectors (**G-4**).
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 import type { OptionsMap } from '../../api/services';
 import type { AuctionRecord, AuctionRecordQuery, Choice, Paginated } from '../../api/types';
 import { ListController } from '../shared/ListController';
@@ -61,6 +66,7 @@ import {
   ToggleFilter,
   type Column,
 } from './kit';
+import { houseOptions, REC_KNOWN_HOUSES } from './recordHouses';
 import './admin.css';
 
 class RecordsController extends ListController<AuctionRecord, AuctionRecordQuery> {
@@ -90,6 +96,27 @@ export function RecordsAdminPage() {
     AuctionRecord,
     AuctionRecordQuery
   >(() => new RecordsController(auctionsAdmin));
+
+  // The house list: standard houses at once, the stored ones once the walk
+  // lands (no facet endpoint — see the header).
+  const [houses, setHouses] = useState<string[]>(() => houseOptions([]));
+  useEffect(() => {
+    let alive = true;
+    walkPages((page) => auctionsAdmin.records({ page, per_page: MAX_PER_PAGE })).then(
+      (all) =>
+        alive &&
+        setHouses(
+          houseOptions(
+            all.map((r) => r.house),
+            REC_KNOWN_HOUSES,
+          ),
+        ),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [auctionsAdmin]);
 
   const [removing, setRemoving] = useState<AuctionRecord | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -199,6 +226,14 @@ export function RecordsAdminPage() {
             value={state.query.section}
             onChange={(section) => setQuery({ section })}
             choices={SECTIONS}
+          />
+          {/* the old "All auction houses" (`:20305`) — `?house=` (G-REC-1) */}
+          <SelectFilter
+            label="House"
+            anyLabel="All auction houses"
+            value={state.query.house}
+            onChange={(house) => setQuery({ house })}
+            choices={houses.map((h) => ({ value: h, label: h }))}
           />
           <SelectFilter
             label="Status"

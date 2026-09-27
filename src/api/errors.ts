@@ -54,7 +54,9 @@ export class UnauthorizedError extends HttpError {
   }
 }
 
-/** 400 with per-field validation messages (`{field: [msg, ...]}`). */
+/** 400 with per-field validation messages (`{field: [msg, ...]}`) — the backend's
+ * `error.details`. Non-field lists ride here too: the publish gate (G-CAT-8) sends
+ * `details.missing` (e.g. `["size","image"]`) → `fields.missing`. */
 export class ValidationError extends HttpError {
   readonly fields: Record<string, string[]>;
 

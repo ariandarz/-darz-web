@@ -1,39 +1,48 @@
-/** The overview strip's one rule that matters: an unknown count and a count
- * of zero are different facts, and the tile must not conflate them. */
+/** The overview strip reads the G-COL-1 summary, label for label with the old
+ * `ovItems` — and an unknown count and a count of zero stay different facts. */
 import { describe, expect, it } from 'vitest';
-import { EMPTY_COUNTS, collectorTiles } from './collectorTiles';
+import { collectorTiles, lastActiveLine } from './collectorTiles';
 
 describe('collectorTiles', () => {
-  it('renders the three tiles this backend can answer', () => {
-    const tiles = collectorTiles({ total: 128, vip: 9, active: 96 });
+  it('is the old four tiles, equal to the summary', () => {
+    const tiles = collectorTiles({ collectors: 128, vip: 9, active_30d: 41, engaged: 77 });
     expect(tiles.map((t) => [t.label, t.value])).toEqual([
       ['Collectors', '128'],
       ['VIP', '9'],
-      ['Active', '96'],
+      ['Active 30d', '41'],
+      ['Engaged', '77'],
     ]);
   });
 
-  it('shows an em dash for a count that has not arrived or failed', () => {
-    expect(collectorTiles(EMPTY_COUNTS).map((t) => t.value)).toEqual(['—', '—', '—']);
+  it('shows an em dash on every tile while the summary is pending or failed', () => {
+    expect(collectorTiles(null).map((t) => t.value)).toEqual(['—', '—', '—', '—']);
   });
 
   it('a real zero is shown as zero, not as unknown', () => {
-    const tiles = collectorTiles({ total: 0, vip: 0, active: 0 });
-    expect(tiles.map((t) => t.value)).toEqual(['0', '0', '0']);
+    const tiles = collectorTiles({ collectors: 0, vip: 0, active_30d: 0, engaged: 0 });
+    expect(tiles.map((t) => t.value)).toEqual(['0', '0', '0', '0']);
   });
 
-  it('a partial load shows what it knows and dashes the rest', () => {
-    const tiles = collectorTiles({ total: 40, vip: null, active: 12 });
-    expect(tiles.map((t) => t.value)).toEqual(['40', '—', '12']);
+  it('a field that is not a number is dashed, not trusted', () => {
+    const bad = { collectors: 5, vip: 'x', active_30d: null, engaged: 2 } as never;
+    expect(collectorTiles(bad).map((t) => t.value)).toEqual(['5', '—', '—', '2']);
   });
 
   it('groups thousands, so a large roster stays readable', () => {
-    expect(collectorTiles({ total: 12345, vip: null, active: null })[0].value).toBe('12,345');
+    expect(
+      collectorTiles({ collectors: 12345, vip: 0, active_30d: 0, engaged: 0 })[0].value,
+    ).toBe('12,345');
+  });
+});
+
+describe('lastActiveLine', () => {
+  it('is the old card line: "Last active <d Mon yyyy>"', () => {
+    expect(lastActiveLine('2026-03-12T10:00:00Z')).toBe('Last active 12 Mar 2026');
   });
 
-  it('the Active tile carries its caveat — it is access, not the old "Active 30d"', () => {
-    expect(collectorTiles(EMPTY_COUNTS).find((t) => t.key === 'active')?.note).toBe(
-      'access is open',
-    );
+  it('says "No activity yet" for a collector with no rollup (or a null on detail, C-16)', () => {
+    expect(lastActiveLine(null)).toBe('No activity yet');
+    expect(lastActiveLine(undefined)).toBe('No activity yet');
+    expect(lastActiveLine('not a date')).toBe('No activity yet');
   });
 });

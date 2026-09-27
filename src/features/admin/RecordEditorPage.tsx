@@ -16,6 +16,7 @@ import type { OptionsMap } from '../../api/services';
 import type { ArtistAdmin, AuctionRecord, Choice } from '../../api/types';
 import { ConflictBanner, DeskBanner, DeskPage, isConflict } from './kit';
 import './admin.css';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 
 type Draft = Record<string, string>;
 
@@ -71,8 +72,8 @@ export function RecordEditorPage() {
 
   useEffect(() => {
     let alive = true;
-    catalogAdmin.artists({ per_page: 500 }).then(
-      (page) => alive && setArtists(page.results),
+    walkPages((page) => catalogAdmin.artists({ page, per_page: MAX_PER_PAGE })).then(
+      (all) => alive && setArtists(all),
       () => undefined,
     );
     return () => {

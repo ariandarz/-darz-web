@@ -16,11 +16,11 @@
  *
  * What changed for the new backend: the old tallies were computed client-
  * side over `projLoad()`; here the server counts (`dashboard_summary`,
- * `services.py:233-270`) and the page renders them. Two of those counts —
- * Delayed and Awaiting approval — read the per-stage sub-state (`stages`:
- * due dates, approval flags), which the API does not accept on any write
- * yet (G-PROJ-3), so they stay at 0; the page says so under the cards
- * instead of hiding them. The "no projects at all" check is one extra
+ * `services.py:233-270`) and the page renders them — Delayed and Awaiting
+ * approval included: they read the per-stage sub-state (`stages`), which a
+ * stage move now writes (G-PROJ-3, `moveStages`). Each card opens the list on
+ * the same server predicate (`?quick=`, G-PROJ-1), so a card's number and its
+ * list agree. The "no projects at all" check is one extra
  * `projects({per_page: 1})` for its `total_count`, because the summary
  * counts only active projects.
  */
@@ -113,14 +113,6 @@ export function ProjectsDashboardPage() {
               )}
             </Link>
           </div>
-
-          {/* stated absence — G-PROJ-3: the per-stage sub-state these two
-              counts read is not writable on this API yet */}
-          <p className="dzp-mut" role="note">
-            Delayed and Awaiting approval read each stage’s due date and approval flags — the
-            stage sub-state this API does not accept yet (G-PROJ-3) — so they stay at 0 for
-            now.
-          </p>
 
           {/* :13619 — only when there is no project at all, archived included */}
           {total === 0 && (

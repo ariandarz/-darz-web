@@ -371,14 +371,17 @@ function ShowDetail({
             const line = lineByKey.get(key);
             const on = composed ? !!line && line.status !== 'declined' : sel.includes(key);
             const locked = !canEdit || (!!line && line.status !== 'proposed');
-            const title = line?.title || entry?.title || key;
+            // G-PORT-16 — "3 × …" when Darz composed more than one (the
+            // document builder's own quantity wording)
+            const qty = line && line.quantity > 1 ? `${line.quantity} × ` : '';
+            const title = qty + (line?.title || entry?.title || key);
             const desc = line?.description || entry?.description || '';
             const priceLabel = line
               ? line.price !== null && line.price !== ''
                 ? exhibitionMoney(line.currency || ev.currency, Number(line.price))
                 : 'Pricing to be announced'
               : entry && entry.default_price !== null
-                ? exhibitionMoney(ev.currency || 'TMN', entry.default_price)
+                ? exhibitionMoney(ev.currency || 'TMN', Number(entry.default_price))
                 : 'Pricing to be announced';
             const hasPrice = line
               ? line.price !== null && line.price !== ''

@@ -15,37 +15,24 @@
  * collectors can never see them). Items are capped at 50 per check
  * server-side; the count is the true total.
  *
- * **Compared against `19-data-health` / `-full`, 2026-09-22.** The claim
- * above is about the old desk's SYSTEM CHECKS section, and it holds. What it
- * does not cover — and what the capture makes obvious — is the panel ABOVE
- * that section:
- *
- *  - **"Data Health & Counts"**, twelve tiles in three bands (Storage &
- *    visibility · Where artworks come from · Quality & lifecycle). Four of
- *    them ARE this architecture's (Active artworks in cloud · Synced
- *    artworks · Sync issues · Admin database artworks "on this device") and
- *    correctly gone. **The other eight are not**: Market App artworks,
- *    Gallery- / Dealer- / Artist-Sourced, Incomplete records, Duplicate
- *    artworks, Deleted (permanent), Recently added, Archived / unavailable —
- *    every one a count over the catalogue this backend holds. They are
- *    absent with no reason recorded anywhere, which is the gap. Building
- *    them is not a polish pass (it is eight counts, most needing their own
- *    read — the Sales desk's `per_page=1` trick ×8, or one aggregate
- *    endpoint), so it goes to the owner as **G-HEALTH-1**, with the backend
- *    half noted: `GET /catalog/admin/data-health/` already computes two of
- *    the eight and could carry the rest for one call instead of eight.
- *  - **"Repair & maintenance"** (owner-only, five buttons) and **"Recovery"**
- *    (this device's daily backups) are correctly absent — every one of them
- *    repairs or restores the client-local snapshot.
- *  - **"Reading the live cloud…"** — same, the sync banner.
+ * **The panel ABOVE the checks** is the old "Data Health & Counts" grid —
+ * nine catalogue boxes in its three bands, each count from this backend
+ * (`healthCounts.ts` has the table; V1 Phase 4 built the five that waited on
+ * G-HEALTH-2/3/4). Compared against `19-data-health-full`. Still correctly
+ * absent: the four device-sync boxes, "Repair & maintenance" and "Recovery"
+ * (every one of them repairs or restores the client-local snapshot), and the
+ * "Reading the live cloud…" sync banner.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import type { ArtworkAdminQuery, DataHealthReport } from '../../api/types';
+import { recentlyAddedSince } from './artworkQuery';
 import {
-  ARCHIVED_STATUSES,
   EMPTY_HEALTH_COUNTS,
-  healthTiles,
+  SOURCED,
+  healthBands,
+  healthCountQueries,
   type HealthCounts,
 } from './healthCounts';
 import { DeskAction, DeskBanner, DeskPage } from './kit';
@@ -65,11 +52,11 @@ export function DataHealthPage() {
   }, [catalogAdmin]);
   useEffect(load, [load]);
 
-  /* The counts panel above the checks (G-HEALTH-1 — `healthCounts.ts` says
-     which four of the old eight these are and why the other four are not
-     here). One `per_page: 1` read for Market App and three for the archival
-     statuses; the other two tiles come out of the report the desk already
-     loads. */
+  /* The counts panel above the checks (`healthCounts.ts`): `per_page: 1`
+     list reads for Market App, the three sourced kinds, Recently Added and the
+     three archival statuses; the other three tiles come out of the report.
+     `since` is fixed once, so the Recently Added count and its link agree. */
+  const [since] = useState(() => recentlyAddedSince(new Date()));
   const [counts, setCounts] = useState<HealthCounts>(EMPTY_HEALTH_COUNTS);
   useEffect(() => {
     let alive = true;
@@ -78,10 +65,13 @@ export function DataHealthPage() {
         .artworks({ ...query, per_page: 1 })
         .then((page) => page.pagination.total_count)
         .catch(() => null);
+    const q = healthCountQueries(since);
     void Promise.all([
-      count({ published: true }),
-      ...ARCHIVED_STATUSES.map((availability_status) => count({ availability_status })),
-    ]).then(([published, ...archivedParts]) => {
+      count(q.published),
+      count(q.recent),
+      Promise.all(SOURCED.map((src) => count(q.sourced[src.key]))),
+      Promise.all(q.archived.map(count)),
+    ]).then(([published, recent, sourcedParts, archivedParts]) => {
       if (!alive) return;
       // One failed status read makes the whole archived total unknowable —
       // reporting the other two as "Archived" would be a number that is
@@ -89,12 +79,13 @@ export function DataHealthPage() {
       const archived = archivedParts.some((n) => n === null)
         ? null
         : archivedParts.reduce((a, b) => (a ?? 0) + (b ?? 0), 0);
-      setCounts({ published, archived });
+      const [gallery, dealer, artist] = sourcedParts;
+      setCounts({ published, recent, archived, sourced: { gallery, dealer, artist } });
     });
     return () => {
       alive = false;
     };
-  }, [catalogAdmin]);
+  }, [catalogAdmin, since]);
 
   return (
     <DeskPage
@@ -118,25 +109,15 @@ export function DataHealthPage() {
         </>
       }
       strip={
-        /* `:26316`'s "Data Health & Counts" grid, four of its twelve boxes —
-           see `healthCounts.ts`. The old panel puts this panel ABOVE the
-           system checks, which is what the `strip` slot is.
-
-           Its own grid, NOT the `.ad-tiles-sales` strip every other desk
-           uses: the old panel gives this panel `.dz-ovgrid` / `.dz-ovbox`
-           (`:9427-9433`), a wider auto-fill cell with a three-line box, and
-           reusing the six-column stat row would be a different component
-           wearing this one's data. */
+        /* `:26316`'s "Data Health & Counts" grid — see `healthCounts.ts`. The
+           old panel puts it ABOVE the system checks, which is what the
+           `strip` slot is. Its own grid, NOT the `.ad-tiles-sales` strip other
+           desks use: the old panel gives it `.dz-ovgrid` / `.dz-ovbox`
+           (`:9427-9448`), a wider auto-fill cell with a three-line box and the
+           band headings (`.dz-ovsec`) spanning the grid. */
         <div className="ad-ovgrid">
-          {healthTiles(counts, report).map((t) => (
-            <div key={t.key} className={`ad-ovbox${t.tone === 'warn' ? ' is-warn' : ''}`}>
-              <span className="ad-ovbox-num">{t.value}</span>
-              <span className="ad-ovbox-title">{t.title}</span>
-              {/* The old box's one-line explanation (`dz-ovbox-exp`) — the
-                  half that tells an admin what the number MEANS, which is the
-                  whole reason that panel exists (`:26279`). */}
-              <span className="ad-ovbox-exp">{t.exp}</span>
-            </div>
+          {healthBands(counts, report, since).map((band) => (
+            <HealthBandView key={band.title} title={band.title} tiles={band.tiles} />
           ))}
         </div>
       }
@@ -227,5 +208,43 @@ function Check({
         </div>
       )}
     </section>
+  );
+}
+
+function HealthBandView({
+  title,
+  tiles,
+}: {
+  title: string;
+  tiles: ReturnType<typeof healthBands>[number]['tiles'];
+}) {
+  return (
+    <>
+      <div className="ad-ovsec">{title}</div>
+      {tiles.map((t) => {
+        const cls = `ad-ovbox${t.tone === 'warn' ? ' is-warn' : ''}`;
+        const body = (
+          <>
+            <span className="ad-ovbox-num">{t.value}</span>
+            <span className="ad-ovbox-title">{t.title}</span>
+            {/* The old box's one-line explanation (`dz-ovbox-exp`) — the half
+                that tells an admin what the number MEANS (`:26279`). */}
+            <span className="ad-ovbox-exp">{t.exp}</span>
+          </>
+        );
+        return t.to ? (
+          <Link key={t.key} to={t.to} className={cls}>
+            {body}
+            <span className="ad-ovbox-go" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        ) : (
+          <div key={t.key} className={cls}>
+            {body}
+          </div>
+        );
+      })}
+    </>
   );
 }

@@ -24,12 +24,33 @@
  *
  * Mode/status/assignee/Clear from the old pane are not ported — no backend;
  * see `AdminChatPage`'s header for the full list.
+ *
+ * **Phase 6 — two additions over the old pane.**
+ *  - **Archive / restore one message (G-CHAT-2).** The old pane put its
+ *    per-bubble actions in a quiet text row under the timestamp ("Edit" ·
+ *    "Delete" on Darz's own bubbles, `_chatBubble` `:40341`); Archive/Restore
+ *    sits in the same row, on every bubble — the archive is the desk's own
+ *    hide and never touches the collector's thread. An archived bubble, shown,
+ *    says so beside its time the way an edited one did (" · edited",
+ *    `:40342`). The "Include archived" switch re-reads the thread with
+ *    `?include_archived=true`. The old equivalent was the panel-wide renewal
+ *    cutoff (`chatArchiveNow`, `:40258`: "Messages are hidden from the active
+ *    chat (not deleted …)"), so the per-message control and the switch's
+ *    label have no old copy (flagged).
+ *  - **Attach a document (D19 `document_refs`).** The old composer had no
+ *    attach — the owner's workaround was to copy a document's link into the
+ *    message. `DocumentAttach` picks one of this collector's documents (or an
+ *    unissued one) of a collector-visible kind; sending it SHARES it with the
+ *    collector (backend: attach = share). Its label and copy are new
+ *    (flagged); the chip it leaves on the bubble reads kind · title and opens
+ *    the document's page.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
-import type { AdminRequest, RequestMessage } from '../../api/types';
+import type { AdminRequest, DocumentAdmin, RequestMessage } from '../../api/types';
 import { AdminThreadController } from './AdminThreadController';
+import { DocumentAttach } from './DocumentAttach';
 import { DeskBanner } from './kit';
 import './admin.css';
 
@@ -42,6 +63,9 @@ export function AdminThreadPage() {
   const [controller] = useState(() => new AdminThreadController(crm, id));
   const [sentAt, setSentAt] = useState(0);
   const [draft, setDraft] = useState('');
+  const [attached, setAttached] = useState<DocumentAdmin | null>(null);
+  const [archiving, setArchiving] = useState<string | null>(null);
+  const [withArchived, setWithArchived] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -61,10 +85,19 @@ export function AdminThreadPage() {
   const context = fromList ? contextLine(fromList) : null;
 
   const send = async () => {
-    if (await controller.send(draft)) {
+    const attach = attached ? { documentRefs: [attached.id] } : {};
+    if (await controller.send(draft, attach)) {
       setDraft('');
+      setAttached(null);
       setSentAt(Date.now());
     }
+  };
+
+  const archive = async (m: RequestMessage) => {
+    if (archiving) return;
+    setArchiving(m.id);
+    await controller.archive(m.id, !m.archived);
+    setArchiving(null);
   };
 
   return (
@@ -78,12 +111,23 @@ export function AdminThreadPage() {
           <div className="ad-thread-name">{name}</div>
           {context && <div className="ad-thread-sub">{context}</div>}
         </div>
+        <label className="ad-actck ad-thread-arch">
+          <input
+            type="checkbox"
+            checked={withArchived}
+            onChange={(e) => {
+              setWithArchived(e.target.checked);
+              void controller.setIncludeArchived(e.target.checked);
+            }}
+          />
+          Include archived
+        </label>
       </div>
 
       {snap.status === 'loading' && snap.messages.length === 0 && (
         <p className="dz-state">Loading…</p>
       )}
-      {snap.status === 'error' && <DeskBanner>{snap.error}</DeskBanner>}
+      {snap.error && <DeskBanner>{snap.error}</DeskBanner>}
 
       {snap.status === 'ready' && (
         <div className="ad-card ad-bubbles">
@@ -95,12 +139,24 @@ export function AdminThreadPage() {
               Write below to start the conversation.
             </p>
           ) : (
-            snap.messages.map((m) => <Bubble key={m.id} m={m} />)
+            snap.messages.map((m) => (
+              <Bubble
+                key={m.id}
+                m={m}
+                busy={archiving === m.id}
+                onArchive={() => void archive(m)}
+              />
+            ))
           )}
           <div ref={endRef} />
         </div>
       )}
 
+      <DocumentAttach
+        collectorId={fromList?.collector?.id ?? null}
+        picked={attached}
+        onPick={setAttached}
+      />
       <div className="ad-composer">
         <textarea
           className="ad-composer-in"
@@ -138,10 +194,31 @@ export function AdminThreadPage() {
   );
 }
 
-function Bubble({ m }: { m: RequestMessage }) {
+function Bubble({
+  m,
+  busy,
+  onArchive,
+}: {
+  m: RequestMessage;
+  busy: boolean;
+  onArchive: () => void;
+}) {
+  const docs = m.document_refs ?? [];
   return (
-    <div className={`ad-bub${m.sender === 'team' ? ' is-team' : ''}`}>
+    <div
+      className={`ad-bub${m.sender === 'team' ? ' is-team' : ''}${m.archived ? ' is-archived' : ''}`}
+    >
       <div className="ad-bub-b">{m.body}</div>
+      {docs.length > 0 && (
+        <div className="ad-bub-docs">
+          {docs.map((d) => (
+            <Link key={d.id} to={`/admin/documents/${d.id}`} className="ad-docchip">
+              <span className="ad-docchip-k">{d.kind.replace(/_/g, ' ')}</span>
+              <span className="ad-docchip-t">{d.title || 'Untitled'}</span>
+            </Link>
+          ))}
+        </div>
+      )}
       <div className="ad-bub-t">
         {new Date(m.created_at).toLocaleString('en-GB', {
           day: 'numeric',
@@ -150,6 +227,11 @@ function Bubble({ m }: { m: RequestMessage }) {
           minute: '2-digit',
           hour12: false,
         })}
+        {m.archived ? ' · archived' : ''}
+        {/* the old bubble's quiet action row (:40341) */}
+        <button type="button" className="ad-bub-act" disabled={busy} onClick={onArchive}>
+          {m.archived ? 'Restore' : 'Archive'}
+        </button>
       </div>
     </div>
   );

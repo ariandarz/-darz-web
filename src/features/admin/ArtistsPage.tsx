@@ -3,9 +3,15 @@
  * `darz-studio.html:33522`) over backend Phase 7's admin artists CRUD.
  *
  * Ported content:
- *  - the title, the search ("Search artists…", `:33591`), the A–Z /
- *    recently-updated sorts (`:33594`, the two whose facts exist here);
- *  - the roster line "Showing n of m artists" (`:33604`);
+ *  - the title, the search ("Search artists…", `:33583`) — now the server's
+ *    `search` (G-CAT-3) — and the sort select (`:33587`) cut to the orderings
+ *    the API serves: "Sort: Most works" (the old default, `works`) and
+ *    "Sort: Name A–Z" (`name`);
+ *  - the table's **Works** column (`:33599`/`:33571`) from the row's
+ *    `works_count` — every non-deleted work, the old `r.works`;
+ *  - the roster line "Showing n of m artists" (`:33596`): n is the search's
+ *    match count, m the whole roster's (one `per_page: 1` read), as the old
+ *    line counted the filtered rows against every artist;
  *  - the INLINE intro edit — the old one-line bio input on every row, "Type
  *    a one-line intro — saves instantly" (`:33576`) — here a real PATCH
  *    with the optimistic lock;
@@ -14,11 +20,17 @@
  *    auction records are a later phase, and here artists are also created
  *    by hand (the roster is a real table, not a derivation).
  *
- * **Not ported, stated** (the old desk derived these from client-local
- * stores that have no server counterpart yet):
- *  - works / in-app counts per artist and the works-based scopes+sorts —
- *    the admin roster carries no aggregates (G-CAT-3, which also means no
- *    server search: this desk searches client-side over the fetched page);
+ * **Paged by the kit** (`ArtistsController` + `DeskList`): the roster is read
+ * a page at a time with the kit's pager, not walked whole (C-5).
+ *
+ * **"Sort: Recently updated" (`:33587`) became "Sort: Recently added"** —
+ * the API orders by `created`, not by update time, and a client-side sort of
+ * one page would order that page only. Flagged for the owner.
+ *
+ * **Not ported, stated** (no server counterpart yet):
+ *  - the "In app" count and the scope select (Has works · Has auction records
+ *    · … · In the Market App, `:33585`) and the record-based sorts — the
+ *    roster carries `works_count` only;
  *  - auction-record counts and links (`recCell`) — the auctions phase's;
  *  - the profile status lane (draft/published/hidden/archived), highlights
  *    and achievements (`:33559`) — no backend fields (G-ART-1); the model
@@ -30,68 +42,71 @@
  *    avatar, name, three counts, Open / Profile — with Table as the
  *    alternative; this desk is the table only. It is the same shape the
  *    Collectors desk has, where the owner ruled **G-4**: keep the table.
- *    Recorded here rather than built, because the card face is mostly the
- *    three counts above, which have no server aggregate (G-CAT-3) — a card
- *    here would be a name and two zeroes.
+ *    Recorded here rather than built: the card face is three counts, and
+ *    only one of them (`works_count`, the Works column since V1 Phase 4)
+ *    has a server aggregate — a card would be a name, a count and two
+ *    blanks.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
-import type { ArtistAdmin } from '../../api/types';
+import type { ArtistAdmin, ArtistAdminQuery } from '../../api/types';
+import { useListController } from '../shared/useListController';
+import { ArtistsController } from './ArtistsController';
 import {
   ConfirmDialog,
   ConflictBanner,
   DeskAction,
   DeskBanner,
+  DeskList,
   DeskPage,
   DeskSave,
   DeskToast,
-  DataTable,
+  SearchFilter,
+  SelectFilter,
   isConflict,
   useDeskToast,
   type Column,
 } from './kit';
 import './admin.css';
 
-const SORTS = [
-  { value: 'az', label: 'Name A–Z' },
-  { value: 'updated', label: 'Recently updated' },
-] as const;
+/** `:33587`'s sort list, cut to what `ArtistAdminFilterSet` orders by. The
+ * default ("Most works") is the select's "any" option — see the controller. */
+const SORTS: Array<{ value: NonNullable<ArtistAdminQuery['ordering']>; label: string }> = [
+  { value: 'name', label: 'Sort: Name A–Z' },
+  { value: '-created', label: 'Sort: Recently added' },
+];
 
 export function ArtistsPage() {
   const { catalogAdmin } = useApi();
-  const [artists, setArtists] = useState<ArtistAdmin[] | null>(null);
-  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState('');
-  const [sort, setSort] = useState<'az' | 'updated'>('az');
   const [editing, setEditing] = useState<ArtistAdmin | null | 'new'>(null);
   const [removing, setRemoving] = useState<ArtistAdmin | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const { say, message } = useDeskToast();
 
-  const load = useCallback(() => {
-    catalogAdmin.artists({ per_page: 500 }).then(
-      (page) => {
-        setArtists(page.results);
-        setTotal(page.pagination.total_count);
-      },
-      (err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Could not load the roster.'),
+  const { state, setQuery, setPage, reload } = useListController<
+    ArtistAdmin,
+    ArtistAdminQuery
+  >(() => new ArtistsController(catalogAdmin));
+
+  /* "of m" — the whole roster, whatever the search. One `per_page: 1` read,
+     re-read when a write may have changed it. `null` until known. */
+  const [total, setTotal] = useState<number | null>(null);
+  const loadTotal = useCallback(() => {
+    catalogAdmin.artists({ per_page: 1 }).then(
+      (page) => setTotal(page.pagination.total_count),
+      () => setTotal(null),
     );
   }, [catalogAdmin]);
-  useEffect(load, [load]);
+  useEffect(loadTotal, [loadTotal]);
 
-  const rows = useMemo(() => {
-    let list = artists ?? [];
-    const term = q.trim().toLowerCase();
-    if (term) list = list.filter((a) => a.display_name.toLowerCase().includes(term));
-    return [...list].sort((a, b) =>
-      sort === 'updated'
-        ? b.updated_at.localeCompare(a.updated_at) ||
-          a.display_name.localeCompare(b.display_name)
-        : a.display_name.localeCompare(b.display_name),
-    );
-  }, [artists, q, sort]);
+  /** After a write: re-read the page (never merge a write's response into a
+   * row — `works_count` is null on it, C-16) and the roster total. */
+  const load = () => {
+    void reload();
+    loadTotal();
+  };
+  const shown = state.pagination?.total_count ?? state.results.length;
 
   /** :33576 — the inline intro. Saved on commit (Enter/blur) with the lock;
    * a version conflict reloads the roster so the row shows the newer truth. */
@@ -146,6 +161,13 @@ export function ArtistsPage() {
           )}
         </>
       ),
+    },
+    {
+      // :33571 — the old table's Works cell, the row's `works_count` (list-only,
+      // C-16; `—` if a row ever arrives without it).
+      key: 'works',
+      header: 'Works',
+      cell: (a) => (a.works_count == null ? '—' : a.works_count.toLocaleString('en-US')),
     },
     {
       key: 'bio',
@@ -219,29 +241,25 @@ export function ArtistsPage() {
       action={<DeskAction onClick={() => setEditing('new')}>＋ New artist</DeskAction>}
       toolbar={
         <>
-          <label className="ad-filter">
-            <span className="ad-filter-l">Search</span>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search artists…"
-            />
-          </label>
-          <label className="ad-filter">
-            <span className="ad-filter-l">Sort</span>
-            <select value={sort} onChange={(e) => setSort(e.target.value as 'az' | 'updated')}>
-              {SORTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <SearchFilter
+            label="Search"
+            value={state.query.search}
+            onChange={(search) => setQuery({ search })}
+            placeholder="Search artists…"
+          />
+          <SelectFilter
+            label="Sort"
+            anyLabel="Sort: Most works"
+            value={state.query.ordering === 'works' ? undefined : state.query.ordering}
+            onChange={(ordering) =>
+              setQuery({ ordering: (ordering ?? 'works') as ArtistAdminQuery['ordering'] })
+            }
+            choices={SORTS}
+          />
         </>
       }
     >
       {error && <DeskBanner>{error}</DeskBanner>}
-      {!artists && !error && <p className="dz-state">Loading…</p>}
 
       {editing && (
         <ArtistForm
@@ -255,23 +273,28 @@ export function ArtistsPage() {
         />
       )}
 
-      {artists && (
-        <>
-          {/* :33604 */}
-          <p className="ad-cellsub">
-            Showing {rows.length} of {total} artist{total === 1 ? '' : 's'}
-          </p>
-          {rows.length ? (
-            <DataTable label="Artists" rows={rows} columns={columns} rowKey={(a) => a.id} />
-          ) : (
-            <p className="dz-state">
-              {total
-                ? 'No artists match.'
-                : 'No artists yet — artists appear here automatically as artworks are added.'}
-            </p>
-          )}
-        </>
+      {state.pagination && (
+        /* :33596 — n matches of m artists */
+        <p className="ad-cellsub">
+          Showing {shown} of {total ?? '…'} artist{total === 1 ? '' : 's'}
+        </p>
       )}
+      <DeskList
+        label="Artists"
+        status={state.status}
+        error={state.error}
+        rows={state.results}
+        pagination={state.pagination}
+        onPage={setPage}
+        columns={columns}
+        rowKey={(a) => a.id}
+        busyKey={busyId}
+        empty={
+          state.query.search || total
+            ? 'No artists match.'
+            : 'No artists yet — artists appear here automatically as artworks are added.'
+        }
+      />
 
       {removing && (
         <ConfirmDialog

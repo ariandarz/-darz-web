@@ -4,12 +4,17 @@
  * houses, grouped by artist, with a search over artist / title / house.
  *
  * Why client-side: the backend (`GET /api/auctions/records/`) filters by
- * `?artist=<uuid>` and `?search=`, but has no house filter and no per-artist
- * aggregate (see docs/PHASE_8_API_GAPS.md) — and DEC-13 makes the collector
+ * `?artist=<uuid>` and `?search=` (and, since G-REC-1, an exact `?house=`),
+ * but has no multi-house filter and no per-artist aggregate — and DEC-13
+ * makes the collector
  * surface "search an artist, see that artist's complete history", which the
  * old app also computed in the browser (`recordsView`, app.html:5004-5025;
  * `artistView`, :5341-5381). The archive is bounded (≤ 2,000 rows, 100 per
  * page) and read fresh on every load — nothing is persisted.
+ *
+ * **No "All auction houses" select here (V1 Phase 3, decided):** the old
+ * collector app had one, but hid it on the Artist sub-tab (`app.html:5082`,
+ * `sub!=='artist'`) — and the Artist view is the only one this page ports.
  */
 import type { AuctionService } from '../../api/services';
 import type { AuctionRecord } from '../../api/types';

@@ -25,6 +25,8 @@ import { workLine } from '../requests/RequestController';
 import '../catalogue/catalogue.css';
 import '../requests/requests.css'; // `.actsh-btn`
 import './chat.css';
+import { DocChips } from './DocChips';
+import { useSharedDocuments } from './useSharedDocuments';
 import { RequestDetail } from './RequestDetail';
 
 function stamp(iso: string): string {
@@ -49,6 +51,10 @@ export function ThreadPage() {
     if (id) void conversations.open(id);
   }, [conversations, id]);
   const thread = useThread(id!);
+  // D19 — documents Darz attached; their links come from "Your documents"
+  const sharedDocs = useSharedDocuments(
+    thread.messages.some((m) => (m.document_refs ?? []).length > 0),
+  );
   // The row nests the work's id/title/artist/image (G-P5-2); the request card
   // also shows year and medium, so the full artwork still comes from the cache.
   const lookup = useArtworks([request?.artwork?.id]);
@@ -181,6 +187,7 @@ export function ThreadPage() {
               <div className="who">{m.sender === 'collector' ? 'You' : 'Darz'}</div>
               {m.body}
               <div className="tm">{stamp(m.created_at)}</div>
+              <DocChips refs={m.document_refs ?? []} shared={sharedDocs} />
             </div>
           ))}
           {thread.status === 'ready' && bubbles.length === 0 && isConversation && (

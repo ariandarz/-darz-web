@@ -1,0 +1,135 @@
+/* =============================================================================
+   The owner Access desk (V1 Phase 8, G-KEY-1) — `accessView()`,
+   `darz-studio.html:33024-33113`. Only what the kit does not already carry:
+   the stat numbers' colours, the review banner, the name link and the tally
+   cells. Mapped onto tokens so one rule set holds in Paper and Black.
+   ========================================================================== */
+
+/* `stat(n, l, c)` (:21518) colours the NUMBER only — Active Collectors green,
+   Expiring ≤ 7d amber when non-zero, grey otherwise, Logins today grey (:33111). */
+.ad-tile-v.is-ok {
+  color: var(--status-avail);
+}
+.ad-tile-v.is-soon {
+  color: var(--status-res);
+}
+.ad-tile-v.is-muted {
+  color: var(--ink3);
+}
+
+/* the review banner (:33050-33058): amber card, amber heading, a hairline
+   between rows. Its light values are the old inline ones; in Black the old
+   `.acc-charcoal .ad-card` override turned it charcoal (:19705), kept here. */
+.ad-accattn {
+  border: 1px solid #f3d9a6;
+  background: #fff9ec;
+  border-radius: 13px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.ad-accattn-h {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #8a5a00;
+}
+.ad-accattn-h span {
+  font-size: 15px;
+}
+.ad-accattn-sub {
+  font-size: 11.5px;
+  color: #9a7a3a;
+  margin: 3px 0 10px;
+}
+.ad-accattn-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px solid #f3e6c8;
+}
+.ad-accattn-who {
+  min-width: 170px;
+  color: var(--ink);
+}
+.ad-accattn-when {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--status-res);
+}
+.ad-accattn-when.is-expired {
+  color: var(--danger);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ad-accattn {
+    background: var(--card);
+    border-color: var(--hair);
+  }
+  :root:not([data-theme='light']) .ad-accattn-h {
+    color: var(--status-res);
+  }
+  :root:not([data-theme='light']) .ad-accattn-sub {
+    color: var(--ink3);
+  }
+  :root:not([data-theme='light']) .ad-accattn-row {
+    border-top-color: var(--hair);
+  }
+}
+:root[data-theme='dark'] .ad-accattn {
+  background: var(--card);
+  border-color: var(--hair);
+}
+:root[data-theme='dark'] .ad-accattn-h {
+  color: var(--status-res);
+}
+:root[data-theme='dark'] .ad-accattn-sub {
+  color: var(--ink3);
+}
+:root[data-theme='dark'] .ad-accattn-row {
+  border-top-color: var(--hair);
+}
+
+/* the Name cell — bold, as the old row (:33071); a link to the collector */
+.ad-accname {
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ad-accname:hover {
+  text-decoration: underline;
+}
+
+/* the tally columns (:33079-33084): centred, a non-zero count bold, a zero
+   faint (`n()`, :33069 — `#EBEBEB`, i.e. the hairline colour) */
+.ad-tbl .ad-accnum {
+  text-align: center;
+}
+.ad-accnum b {
+  color: var(--ink);
+}
+.ad-acczero {
+  color: var(--hair);
+}
+/* in Black the old charcoal sheet lifted it to #55555d (:19719) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ad-acczero {
+    color: #55555d;
+  }
+}
+:root[data-theme='dark'] .ad-acczero {
+  color: #55555d;
+}
+.ad-tbl td.ad-accacts {
+  text-align: right;
+  white-space: nowrap;
+}
+/* the old actions cell never wraps (`white-space:nowrap`, :33085) — the table
+   scrolls sideways instead, so a narrow screen keeps one-line rows */
+.ad-accacts .ad-keyacts {
+  flex-wrap: nowrap;
+}

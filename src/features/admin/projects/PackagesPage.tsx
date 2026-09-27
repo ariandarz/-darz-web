@@ -65,7 +65,8 @@
  *    owner ruled them out; only the checklists stayed. The card says on the
  *    spot what does not come across: the Toman prices and what a workspace
  *    without TMN gets instead, no internal costs, no "on request" (an
- *    unpriced line is written as 0), no descriptions (G-PROJ-8), and the
+ *    unpriced line is written as 0), descriptions only (G-PROJ-8 — no
+ *    flow / timing / needs), and the
  *    pairs the owner ruled are one service, and any row a merge superseded
  *    that this workspace still holds;
  *  - `Lib.toast` lines are inline status notes; `dzConfirm` is
@@ -1251,11 +1252,11 @@ function StandardSetCard({ onCancel, onDone }: { onCancel: () => void; onDone: (
         line is written at 0 and the calculator’s margin reads against a nil cost until you
         enter one.
       </p>
-      {/* G-PROJ-8 — the fields the backend has nowhere to put */}
+      {/* G-PROJ-8 — the description now has a column; the rest still does not */}
       <p className="dzp-mut" role="note">
-        Only the names carry over. A service line here is a name, a category, a unit and a
-        price — what each service actually is, how it runs, its timing and what Darz needs from
-        the gallery stay in the source menus.
+        The names and descriptions carry over. How each service runs, its timing and what Darz
+        needs from the gallery stay in the source menus — a service line here has no field for
+        them.
       </p>
       {/* Four pairs named one service twice. The owner ruled on 2026-09-19
           that each pair IS one service, so each is a single line here — said

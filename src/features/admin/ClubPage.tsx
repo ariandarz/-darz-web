@@ -6,9 +6,9 @@
  * Ported card anatomy (`selCard`, `:33743-33759`): the **PRIVATE** badge, the
  * "{n} works" count, the selection's name, the invited-collector badges with
  * the old empty wording ("no collectors yet"), the note, the created date, and
- * Edit / Delete. The old card's cover image does not port — the nested
- * selection serializer carries `{id, title}` only, no image (recorded as
- * G-CLUB-1) — so the cover is the old fallback gradient, always.
+ * Edit / Delete, and the cover (`:33740-33741`): the FIRST work's image
+ * (`works[0]`), else the old fallback gradient. Since G-CLUB-1 each nested
+ * artwork carries `thumb`, so the cover is `artworks[0].thumb`.
  *
  * The editor is the old "New private selection" shape — name · note · pick
  * works · pick collectors — with search-backed pickers instead of the old
@@ -38,17 +38,21 @@
  *    loads, and the collector roster's count. "Private auctions" is left out
  *    because there is nothing to count, not because it costs a read — see
  *    `clubTiles.ts` and G-CLUB-3 below.
- *  - **The "Auction access" section is absent, and blocked** — not
- *    overlooked. The old desk lists every auction with Public / "Make
- *    private…" and explains the badge (`:33779`). Invitation-only auctions
- *    have no counterpart here: `auctions.auction_status` carries
- *    draft/scheduled/live/closed/cancelled and the model has no invited-keys
- *    relation, so there is nothing for the control to set. Backend gap
- *    **G-CLUB-3**. It is the same absence the Auctions desk's sub-line works
- *    around by not promising invitation-only.
+ *  - **The "Auction access" section and the "Private auctions" tile are not
+ *    here yet — Phase 9, not a backend gap.** The old desk lists every auction
+ *    with Public / "Make private…" and explains the badge (`:33779`), and
+ *    counts auctions with private keys (`:33774`). Invite-only auctions DO
+ *    exist now (G-CLUB-3 closed: `invite_only` + invited collectors) and are
+ *    already wired on the auction's own page (`AuctionAdminDetailPage`,
+ *    `…/invite-only/`). Rebuilding the Club's copy of that control is an
+ *    owner-gated Phase 9 item (Q-5), so this desk does not duplicate it.
+ *
+ * **Whole list:** selections are walked page by page (`walkPages`) — the list
+ * used to stop at one `per_page: 100` read with no pager (C-5's shape).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../../api/hooks';
+import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 import type { CollectorSelection } from '../../api/types';
 import { clubTiles, type ClubCounts } from './clubTiles';
 import {
@@ -75,8 +79,8 @@ export function ClubPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
-    crm.adminSelections({ per_page: 100 }).then(
-      (page) => setSelections(page.results),
+    walkPages((page) => crm.adminSelections({ page, per_page: MAX_PER_PAGE })).then(
+      (all) => setSelections(all),
       (err: unknown) => setError(err instanceof Error ? err.message : 'Could not load.'),
     );
   }, [crm]);
@@ -168,9 +172,16 @@ export function ClubPage() {
       <div className="ad-clubgrid">
         {(selections ?? []).map((sel) => (
           <div key={sel.id} className="ad-clubcard">
-            {/* :33747 — no image in the serializer (G-CLUB-1), so always the
-                old fallback gradient */}
-            <div className="ad-clubtop">
+            {/* :33740-33741 — the first work's image, else the old gradient
+                (the CSS default); `thumb` since G-CLUB-1 */}
+            <div
+              className="ad-clubtop"
+              style={
+                sel.artworks[0]?.thumb
+                  ? { backgroundImage: `url("${sel.artworks[0].thumb}")` }
+                  : undefined
+              }
+            >
               <span className="ad-clubbadge">PRIVATE</span>
               <span className="ad-clubcnt">
                 {sel.artworks.length} work{sel.artworks.length === 1 ? '' : 's'}
@@ -319,12 +330,11 @@ function SelectionEditor({
         onChange={setWorks}
         search={async (q) => {
           const page = await catalogAdmin.artworks({ search: q, per_page: 8 });
-          // the admin row has no artist object (G-CAT-1) — the raw name is
-          // the label's best available prefix
-          return page.results.map((a) => ({
-            id: a.id,
-            label: a.artist_name_raw ? `${a.artist_name_raw} — ${a.title}` : a.title,
-          }));
+          // the row's resolved artist name (G-CAT-1), else the raw legacy one
+          return page.results.map((a) => {
+            const artist = a.artist_name || a.artist_name_raw;
+            return { id: a.id, label: artist ? `${artist} — ${a.title}` : a.title };
+          });
         }}
       />
       <Picker

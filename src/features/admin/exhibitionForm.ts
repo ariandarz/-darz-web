@@ -25,6 +25,9 @@ export interface LineDraft {
   service_key: string;
   title: string;
   description: string;
+  /** G-PORT-16 — how many; `price` stays the LINE amount (the backend
+   * multiplies nothing: `ExhibitionServiceLine.price` is what the line costs) */
+  quantity: string;
   price: string;
   currency: string;
   status: 'proposed' | 'confirmed' | 'declined' | 'delivered';
@@ -36,6 +39,7 @@ function draftFromLine(l: PortalServiceLine): LineDraft {
     service_key: l.service_key,
     title: l.title,
     description: l.description,
+    quantity: String(l.quantity ?? 1),
     price: l.price === null || l.price === '' ? '' : fmtThousands(l.price),
     currency: l.currency || '',
     status: l.status,
@@ -48,7 +52,11 @@ export function draftFromCatalogue(entry: PortalCatalogueEntry, currency: string
     service_key: entry.key,
     title: entry.title,
     description: entry.description,
-    price: entry.default_price === null ? '' : fmtThousands(entry.default_price),
+    quantity: '1',
+    price:
+      entry.default_price === null || entry.default_price === ''
+        ? ''
+        : fmtThousands(Math.round(Number(entry.default_price))),
     currency,
     status: 'proposed',
     admin_note: '',
@@ -76,6 +84,7 @@ export function seedLines(
           service_key: key,
           title: key,
           description: '',
+          quantity: '1',
           price: '',
           currency: cur,
           status: 'proposed' as const,
@@ -86,11 +95,18 @@ export function seedLines(
 
 const cleanAmount = (v: string) => v.replace(/[,\s ٬]/g, '');
 
+/** A whole number ≥ 1 — the serializer's `min_value=1` — or 1. */
+export function lineQuantity(v: string): number {
+  const n = Math.floor(Number(cleanAmount(v)));
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
 export function toLineInputs(drafts: LineDraft[]): ExhibitionLineInput[] {
   return drafts.map((d, position) => ({
     service_key: d.service_key || d.title.toLowerCase().replace(/\s+/g, '_').slice(0, 60),
     title: d.title,
     description: d.description,
+    quantity: lineQuantity(d.quantity),
     price: d.price.trim() === '' ? null : cleanAmount(d.price),
     currency: d.currency,
     status: d.status,
@@ -146,7 +162,22 @@ export function describeUpdate(u: Pick<GalleryUpdateAdmin, 'kind' | 'payload'>):
   const rows: ReviewRow[] = [];
   const has = (v: unknown) => v !== undefined && v !== null && String(v).trim() !== '';
 
-  if (u.kind === 'new') {
+  if (u.kind === 'ask') {
+    // G-PORT-4 — a question about one work; the answer goes back through the
+    // review note (shown in the partner's History) or the thread
+    if (has(p.artist) || has(p.title))
+      rows.push({ label: 'Work', to: [s(p.artist), s(p.title)].filter(Boolean).join(' — ') });
+    rows.push({ label: 'Question', to: has(p.question) ? s(p.question) : '—' });
+  } else if (u.kind === 'withdraw') {
+    // G-PORT-6 — approving unassigns the work from this portal
+    if (has(p.artist) || has(p.title))
+      rows.push({ label: 'Work', to: [s(p.artist), s(p.title)].filter(Boolean).join(' — ') });
+    rows.push({ label: 'Asks', to: 'remove this work from their portal' });
+  } else if (u.kind === 'image' && has(p.image_key)) {
+    // G-PORT-1 — a replacement photo is stored, but the desk gets no URL for
+    // it (C-12): say it arrived, and where it lives, rather than show nothing
+    rows.push({ label: 'Image', to: 'Image submitted — open via Darz storage' });
+  } else if (u.kind === 'new') {
     for (const [key, label] of [
       ['artist', 'Artist'],
       ['title', 'Title'],
