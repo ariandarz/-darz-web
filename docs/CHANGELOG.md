@@ -5,6 +5,16 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-27 — Owner TODO list refreshed
+
+- `NOTES-FOR-ARIAN.md` rewritten as a short, ordered TODO:
+  1. merge backend #71–#77;
+  2. set `NUM_PROXIES`;
+  3. give the API URL;
+  4. release #113;
+  5. review #114.
+- `TASKLIST.md` and `HANDOFF.md` state updated to match. Docs only.
+
 ## 2026-09-26 — Backend fix PRs linked (C-6…C-25)
 
 - Opened draft fix PRs on `darz-backend-api` #71–#77, one per fix; none merged (backend owner merges). They cover every open-backend contract row except the notes C-16/C-21.
