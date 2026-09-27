@@ -676,18 +676,6 @@ export function findTab(path: string): { group: AdminGroup; tab: AdminTab } | nu
   return null;
 }
 
-/** Whether this role may open this route. The two group-less tabs count —
- * `findTab` deliberately does not know them, because it also decides the
- * sub-row and neither opens one (`:11832`) — and a path with no tab at all (an
- * unbuilt desk) answers `false` so the caller redirects. */
-export function isPathAllowed(path: string, role: AdminRole): boolean {
-  for (const t of [ADMIN_HOME, ADMIN_CHAT]) {
-    if (t.path !== null && t.path === path) return isTabAllowed(t, role);
-  }
-  const hit = findTab(path);
-  return hit !== null && isTabAllowed(hit.tab, role);
-}
-
 /**
  * Where `/admin` lands. The old panel clamps the same way when the current page
  * is not in the allowed set: `if(!set[page])page=set.dashboard?'dashboard':'database';`

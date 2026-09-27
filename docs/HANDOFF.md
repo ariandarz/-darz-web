@@ -64,8 +64,9 @@ work in this order:
    - add the C-12 image preview;
    - add a portal 429 message;
    - read the new option labels.
-3. **Small FE follow-ups:** the portal "Save draft" (the one Bound-no-UI operation), `isPathAllowed`
-   cleanup, the post-V1 candidates in the matrix.
+3. **Small FE follow-ups:** the portal "Save draft" (the one Bound-no-UI operation — blocked on backend
+   C-26, the PATCH drops `gallery_selected`), the post-V1 candidates in the matrix. `isPathAllowed` was
+   removed 2026-09-27.
 4. **Post-V1 features with no backend:** Logistics, Library, Insights & Stories, the Social suite — owner-
    scoped, `TASKLIST.md` § D.
 

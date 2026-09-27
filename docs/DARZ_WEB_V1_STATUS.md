@@ -124,7 +124,7 @@ Status words: **Complete** (built and bound, nothing V1 left) · **Partial** (V1
 
 | Section | Purpose | Screens | Implemented | APIs used | Actions | Roles | V1 status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, Sent pills + Pending review, History, pricelist upload **and builder** with status, messages, exhibition services (create, pick services, send, sign documents by name) | `gallery/portal/{token}/…` (11 of 15 operations integrated; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign | token + PIN | Partial — the old "Save draft" of a services selection (portal exhibition PATCH) is not built; referral, drawn signature, offer engine, formatted pricelist download have no backend |
+| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, Sent pills + Pending review, History, pricelist upload **and builder** with status, messages, exhibition services (create, pick services, send, sign documents by name) | `gallery/portal/{token}/…` (11 of 15 operations integrated; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign | token + PIN | Partial — the old "Save draft" of a services selection is not built (the portal exhibition PATCH cannot carry `gallery_selected`, C-26); referral, drawn signature, offer engine, formatted pricelist download have no backend |
 
 ### Admin panel
 
@@ -162,7 +162,7 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 | `accounting/admin/*` | Accounting | 23 of 24 | Complete | deal attachments list embedded in the deal |
 | `sales/admin/*` | Sales | 12 of 12 | Complete | |
 | `documents/*` | Profile documents, Documents desk, legal links | 15 of 15 | Complete | |
-| `gallery/portal/*` | Portal | 11 of 15 integrated, 1 bound-no-UI | Partial | 3 state-embedded reads not needed; "Save draft" missing |
+| `gallery/portal/*` | Portal | 11 of 15 integrated, 1 bound-no-UI | Partial | 3 state-embedded reads not needed; "Save draft" blocked on backend (C-26) |
 | `gallery/admin/*` | Sources, Exhibitions, Service checklist | 33 of 37 | Complete | exhibition DELETE excluded (no old delete); exhibition PATCH, link DELETE, catalogue-item read not needed |
 | `projects/admin/*` | Projects | 29 of 32 | Complete | 3 single reads not needed |
 | `recommendations/*` collector | Questionnaire | 3 of 5 | Complete | `published/` + `dismiss/` excluded (G-6) |
@@ -208,7 +208,9 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 
 ### Frontend / UI gaps
 - **Portal "Save draft"** of a ticked services selection (gallery-update.html:1551 `exhSaveDraft`) — not built;
-  the one Bound-no-UI operation (`PATCH gallery/portal/{token}/exhibitions/{event_id}/`).
+  the one Bound-no-UI operation (`PATCH gallery/portal/{token}/exhibitions/{event_id}/`). **Blocked on the
+  backend (C-26, 2026-09-27):** the PATCH serializer takes only the show fields, so `gallery_selected` is
+  dropped and a "Draft saved." would be untrue.
 - **Old-copy labels kept on purpose** (the served label differs from the old words): collector lot words
   (scheduled → "Upcoming", cancelled → "Withdrawn"), record results ("Sold" only with a price, "Final price
   pending", "Estimate only"), the time-derived auction state. **Request-kind wording** (Chat, Profile,
@@ -261,7 +263,8 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
   Strategy, Automations, Languages, Library, Document Builder, Proposal builder).
 
 ### Technical debt
-- `adminNav.isPathAllowed` is still unused (the route guards are `RequireTeam` / `RequireOwner`).
+- ~~`adminNav.isPathAllowed` unused~~ — removed 2026-09-27 (the route guards are `RequireTeam` /
+  `RequireOwner`; every owner-only tab with a route is `RequireOwner`-wrapped).
 - Hand types that the backend schema should own (`HoldDetail`, `PortalState`).
 - Unused bindings kept to mirror the served routes (listed above).
 - `schema.d.ts` must be regenerated whenever the backend moves past `df0421f`.
@@ -282,7 +285,7 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 | Questionnaire | Complete | Complete | Complete | served set + fallback bank |
 | Auctions (collector) | Complete | Complete | Complete | WebSocket blocked in prod by C-19; polling fallback |
 | Login | Complete | Complete | Complete | |
-| Gallery portal | Partial | Complete | Partial | "Save draft" missing (bound, no UI); C-13 before go-live |
+| Gallery portal | Partial | Complete | Partial | "Save draft" missing (bound, no UI; blocked on backend C-26); C-13 before go-live |
 | Admin Dashboard / Requests / Chat | Complete | Complete | Complete | |
 | Admin Catalogue / Data Health / Published / Import | Complete | Complete | Complete | |
 | Admin Collectors / Club | Partial | Complete | Partial | Club "Auction access" owner-deferred |
@@ -312,6 +315,6 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
   a push-send endpoint), the source-freshness loop (G-CAT-9), PDF/image import intake (D15), the settlement
   calculator, theme editors (D17), the proposal builder.
 - **Gallery portal:** referral / Introduce (G-PORT-5), drawn signature (G-PORT-7), offer floor / auto-decline
-  engine (G-PORT-8), formatted pricelist download (P3c), the "Save draft" of a services selection.
+  engine (G-PORT-8), formatted pricelist download (P3c), the "Save draft" of a services selection (backend C-26).
 - **Small post-V1 candidates:** legacy-id deep-link redirect (`catalog/legacy-lookup/`), a background
   catalogue poller on `change-stamp/`, the Refine filters on the Database desk.

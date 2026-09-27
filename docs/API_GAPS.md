@@ -205,7 +205,7 @@ schema path). FE-side fixed: C-1…C-5 (Phase 0).
 - **No V1 backend *feature* gaps remain** (backend `development` @ `df0421f`, through PR #70). There are
   no 🔵 rows. There **are** backend *defects*: see `V1_CONTRACT_ISSUES.md` § B (C-6…C-25 still open).
 - **Frontend adoption is complete for V1** (Phases 0–10). The one Bound-no-UI operation (portal
-  exhibition PATCH — the old "Save draft") and the per-screen gaps are listed in `DARZ_WEB_V1_STATUS.md`
+  exhibition PATCH — the old "Save draft", blocked on backend C-26) and the per-screen gaps are listed in `DARZ_WEB_V1_STATUS.md`
   § Remaining gaps.
 - **Owner-deferred, API ready** (Q-4/Q-5): G-P24-2, G-P25-2(b), G-P5-4, G-P5-5, G-P5-12, G-P13-1, G-CLUB-3
   club section, G-P5-9.

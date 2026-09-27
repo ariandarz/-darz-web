@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-27 — `isPathAllowed` removed; portal "Save draft" found blocked (C-26)
+
+- Removed the unused `adminNav.isPathAllowed` (guards are `RequireTeam`/`RequireOwner`); its tests now use `findTab`/`isTabAllowed`.
+- Portal "Save draft" not built: the exhibition PATCH drops `gallery_selected` (new C-26); docs updated.
+
 ## 2026-09-27 — Owner TODO list refreshed
 
 - `NOTES-FOR-ARIAN.md` rewritten as a short, ordered TODO:

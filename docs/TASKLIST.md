@@ -72,8 +72,9 @@ structure — trace every decision to the approved package + `app.html`.
 - [ ] Still notes, with no PR: C-16 (list-only rollups), C-21 (no pricelist status guard).
 
 ### C · Frontend follow-ups (post-V1, small)
-- [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation).
-- [ ] Remove or wire `adminNav.isPathAllowed` (unused).
+- [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation). **Blocked on the
+      backend (C-26):** the portal exhibition PATCH does not accept `gallery_selected`; build once it does.
+- [x] Remove or wire `adminNav.isPathAllowed` (unused) — removed 2026-09-27.
 - [ ] Post-V1 candidates recorded in the matrix: legacy-id deep-link redirect, a `change-stamp` poller, the
       Database Refine filters (G7), FE-R1…R4 Records extras.
 

@@ -273,7 +273,7 @@ Method: every FE binding parsed from `src/api/services.ts` (base path + relative
 | POST | /api/gallery/portal/{token}/exhibitions/ | `GalleryPortalService.createExhibition` | `portal/PortalExhibitions.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | GET | /api/gallery/portal/{token}/exhibitions/catalogue/ | `GalleryPortalService.exhibitionCatalogue` | `portal/PortalSession.ts` | Integrated | Called by PortalSession.loadExhibitions. |
 | GET | /api/gallery/portal/{token}/exhibitions/{event_id}/ | none | — | Not needed (embedded in portal state) | The portal exhibitions list carries every show in full. |
-| PATCH | /api/gallery/portal/{token}/exhibitions/{event_id}/ | `GalleryPortalService.updateExhibition` | bound-unused (`portal/PortalSession.ts` wrapper only) | Bound, no UI | FE gap: the old portal's "Save draft" of a ticked selection (gallery-update.html:1551 `exhSaveDraft`) is not built — "Send to Darz" writes the selection with the submit. `PortalSession.updateExhibition` exists, no component calls it. |
+| PATCH | /api/gallery/portal/{token}/exhibitions/{event_id}/ | `GalleryPortalService.updateExhibition` | bound-unused (`portal/PortalSession.ts` wrapper only) | Bound, no UI | **Blocked on the backend (C-26), 2026-09-27.** The old portal's "Save draft" (gallery-update.html:1551 `exhSaveDraft`) persists the ticked `gallery_selected`, but `ExhibitionEventUpdateSerializer` (gallery/serializers.py:303-310) accepts only the show fields, so DRF drops `gallery_selected` and the draft would toast "Draft saved." while saving nothing. Not built until the PATCH takes the selection. `PortalSession.updateExhibition` exists, no component calls it. |
 | POST | /api/gallery/portal/{token}/exhibitions/{event_id}/documents/{document_id}/sign/ | `GalleryPortalService.signExhibitionDocument` | `portal/PortalExhibitions.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | POST | /api/gallery/portal/{token}/exhibitions/{event_id}/submit/ | `GalleryPortalService.submitExhibition` | `portal/PortalExhibitions.tsx`, `portal/PortalSession.ts` | Integrated |  |
 | GET | /api/gallery/portal/{token}/messages/ | none | — | Not needed (embedded in portal state) | The thread arrives inside `GET portal/{token}/`. |
@@ -414,7 +414,7 @@ by receiver type by hand. Result: every one of the 261 **Integrated** rows has a
 Integrated row was wrong. What changed in Phase 10 is the vocabulary of the other 62 rows — every one now
 carries a final status and a one-line reason, and **no "Not bound" row remains**:
 
-- 9 **Bound, no UI** → 1 kept (portal exhibition PATCH — a real FE gap, the old "Save draft"), 5 **Not
+- 9 **Bound, no UI** → 1 kept (portal exhibition PATCH — the old "Save draft", blocked on backend C-26), 5 **Not
   needed** (three single reads, deal attachments embedded in the deal, the admin exhibition PATCH that
   `compose/` supersedes), 1 **Excluded** (admin exhibition DELETE — no delete in the old panel), 2
   **Excluded (G-6)** (`recommendations/published/` + `dismiss/`).
@@ -443,7 +443,8 @@ Of the 31 "Excluded (not V1)": 28 G-6 owner-deferred (Intelligence 17 · Marketi
 ### Bound, no UI (1)
 
 - `PATCH /api/gallery/portal/{token}/exhibitions/{event_id}/` — the old portal's "Save draft" of a ticked
-  services selection (gallery-update.html:1551 `exhSaveDraft`) is not built; "Send to Darz" writes the
+  services selection (gallery-update.html:1551 `exhSaveDraft`) is not built: the PATCH does not accept
+  `gallery_selected` (C-26, found 2026-09-27), so it cannot save a selection. "Send to Darz" writes the
   selection with the submit.
 
 ### Not needed (15)

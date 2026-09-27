@@ -30,7 +30,7 @@ bound" row remains** — each non-integrated operation carries a final status an
 | accounting | 24 | 23 | – | – | – | 1 | deal attachments list: embedded in the deal read |
 | sales | 12 | 12 | – | – | – | – | |
 | documents | 15 | 15 | – | – | – | – | |
-| gallery | 52 | 44 | 1 | – | 1 | 6 | portal exhibition PATCH = the unbuilt old "Save draft"; admin exhibition DELETE excluded (no old delete); 3 portal reads embedded in state, catalogue item read, link DELETE (reissue covers it), admin exhibition PATCH (compose covers it): not needed |
+| gallery | 52 | 44 | 1 | – | 1 | 6 | portal exhibition PATCH = the unbuilt old "Save draft" (blocked: the PATCH drops `gallery_selected`, C-26); admin exhibition DELETE excluded (no old delete); 3 portal reads embedded in state, catalogue item read, link DELETE (reissue covers it), admin exhibition PATCH (compose covers it): not needed |
 | projects | 32 | 29 | – | – | – | 3 | single reads (bound, unused) |
 | recommendations | 28 | 3 | – | 6 | 19 | – | question-set editor = G-P25-2(b); Intelligence 17 + Curated-for-you 2 = G-6 (Q-8) |
 | notifications | 3 | – | – | 3 | – | – | G-P13-1 push |
