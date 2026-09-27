@@ -38,7 +38,7 @@ works around it as the row's "FE stance" says · **owner-open** = waits on Arian
 | C-23 | open-backend · fix PR [BE #71](https://github.com/ariandarz/darz-backend-api/pull/71) | Attaching a document in chat re-homes it; FE offers only this collector's or unissued documents. |
 | C-24 | open-backend · fix PR [BE #72](https://github.com/ariandarz/darz-backend-api/pull/72) | Awaiting approval counts every moved project; FE writes the old seeding verbatim and shows the server count. |
 | C-25 | open-backend · fix PR [BE #74](https://github.com/ariandarz/darz-backend-api/pull/74) | Extend does not reset a stored `expired` status; such a key reads Active yet is refused at sign-in. |
-| C-26 | open-backend (no PR) | Portal exhibition PATCH ignores `gallery_selected`, so the old "Save draft" of a services selection cannot be built; FE leaves it unbuilt. |
+| C-26 | open-backend · fix PR [BE #78](https://github.com/ariandarz/darz-backend-api/pull/78) | Portal exhibition PATCH ignores `gallery_selected`, so the old "Save draft" of a services selection cannot be built; FE leaves it unbuilt. |
 | Q-1 · Q-3 · Q-6 · Q-7 | resolved | Access owner-only · language editable · offer hidden without currency · pricelist availability from options. |
 | Q-5 | resolved in part · owner-open | G-P5-11 and G-P25-2(a) built (Phase 9a); G-P24-2, G-P25-2(b), G-P5-4, G-P5-5, G-P5-12, G-P13-1, G-CLUB-3 club section, G-P5-9 still owner-open. |
 | Q-2 | owner-open | Project money / internal notes hidden in the UI only. |
@@ -63,6 +63,7 @@ None of them changes behaviour this repo relies on. The FE work-arounds above st
 | [BE #75](https://github.com/ariandarz/darz-backend-api/pull/75) | C-6, C-11, C-10 | A missing lock gets 400 `VALIDATION_ERROR`; `Patched*` bodies require `expected_version`; a 4xx is never `INTERNAL_ERROR`; `details` is declared, and publish declares its 400. **The publish gate's list is `error.details.missing`.** |
 | [BE #76](https://github.com/ariandarz/darz-backend-api/pull/76) | C-13 (portal), C-12, C-8, C-9 | Per-IP portal read limit plus a per-link limit on failed PINs (429); upload type and size checks; builder artworks must be assigned to the link; admin `image_url` on image updates; `PortalState` and body `pin` in the schema. |
 | [BE #77](https://github.com/ariandarz/darz-backend-api/pull/77) | C-14, C-2, C-7, C-18, C-15 | 9 more choice sets in `/api/options/`; `ProjectStatusEnum` / `GalleryPricelistStatusEnum` pinned; hold `expires_at` read-only; start < end gets 400; archived auctions leave the collector list (detail still opens). |
+| [BE #78](https://github.com/ariandarz/darz-backend-api/pull/78) | C-26 | The portal exhibition PATCH accepts `gallery_selected` (de-duplicated, same editability guard), so the portal can "Save draft" without submitting. |
 
 **Merge overlaps.** Only the top of the backend `docs/CHANGELOG.md` conflicts, so keep both entries. #74 and #76 both clear
 the throttle cache in tests; #76 and #77 add identical `ENUM_NAME_OVERRIDES` lines.

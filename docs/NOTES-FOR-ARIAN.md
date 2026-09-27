@@ -5,7 +5,7 @@ Nothing is merged without your word.
 
 ## TODO
 
-1. [ ] **Merge the backend fix PRs** on `darz-backend-api`: #71–#77. They are drafts, each with tests.
+1. [ ] **Merge the backend fix PRs** on `darz-backend-api`: #71–#78. They are drafts, each with tests.
    Merge the security ones, **#74** (login rate limit) and **#76** (gallery portal PIN, uploads), before any real
    portal link goes out. Only the top of the backend `CHANGELOG.md` conflicts between them; keep both entries.
 2. [ ] **Set `NUM_PROXIES`** on the production backend. Behind one Caddy, set it to `1`. Until it's set,
@@ -18,7 +18,8 @@ Nothing is merged without your word.
    - regenerate the types;
    - show the admin image preview;
    - add a "too many attempts" message on the portal;
-   - use the new option labels.
+   - use the new option labels;
+   - build the portal "Save draft" (needs #78).
 
 ## Decisions waiting on you (no rush)
 
@@ -48,7 +49,7 @@ Nothing is merged without your word.
 | | |
 | --- | --- |
 | Web | V1 complete on `development`; **#113** (release) and **#114** (docs) are open |
-| Backend | fix PRs **#71–#77** are open drafts on `darz-backend-api` |
+| Backend | fix PRs **#71–#78** are open drafts on `darz-backend-api` |
 | Gate | 838 unit · 155 E2E · typecheck · lint · format · build, all green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |
 

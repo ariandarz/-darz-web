@@ -61,7 +61,8 @@ structure — trace every decision to the approved package + `app.html`.
   - #75 C-6/C-10/C-11
   - #76 C-13 portal + C-8/C-9/C-12
   - #77 C-2/C-7/C-14/C-15/C-18
-- [ ] **Owner merges #71–#77.** #74 and #76 (security) must merge before any real portal link is issued.
+  - #78 C-26 (portal Save draft), opened 2026-09-27
+- [ ] **Owner merges #71–#78.** #74 and #76 (security) must merge before any real portal link is issued.
 - [ ] **Set `NUM_PROXIES`** on the production backend. Every per-IP throttle depends on it.
 - [ ] After they merge, do the FE follow-up:
   - regenerate `schema.d.ts`;
@@ -73,7 +74,7 @@ structure — trace every decision to the approved package + `app.html`.
 
 ### C · Frontend follow-ups (post-V1, small)
 - [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation). **Blocked on the
-      backend (C-26):** the portal exhibition PATCH does not accept `gallery_selected`; build once it does.
+      backend (C-26):** the portal exhibition PATCH does not accept `gallery_selected`; build once backend #78 merges.
 - [x] Remove or wire `adminNav.isPathAllowed` (unused) — removed 2026-09-27.
 - [ ] Post-V1 candidates recorded in the matrix: legacy-id deep-link redirect, a `change-stamp` poller, the
       Database Refine filters (G7), FE-R1…R4 Records extras.
