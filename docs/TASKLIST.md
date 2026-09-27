@@ -1,6 +1,6 @@
 # Darz Market Web — Task List (single source of truth)
 
-**Last updated: 2026-09-26 (V1 Phase 10 — V1 complete).** This is the one place for *what is built and what is left*. It replaces
+**Last updated: 2026-09-27 (V1 complete; backend fix PRs #71–#77 open).** This is the one place for *what is built and what is left*. It replaces
 the long historical task log (that detail now lives in `CHANGELOG.md` and `docs/archive/`).
 
 - **Gap state** (which API gaps are fixed/pending) → **`API_GAPS.md`**.
@@ -21,10 +21,10 @@ structure — trace every decision to the approved package + `app.html`.
 
 | | |
 | --- | --- |
-| Branches | `main` and `development`; `development` is the working line. **All V1 phases (0–9a, PRs #102–#111) are merged into `development`**; Phase 10 is `v1/phase-10-final`. |
+| Branches | `main` and `development`; `development` is the working line. **All V1 phases (PRs #102–#112) are merged into `development`.** Open: **#113** release `development` → `main` (waits for "release development to main") · **#114** docs. |
 | V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
-| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API. Open defects: `V1_CONTRACT_ISSUES.md` § B (C-6…C-25). |
+| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API. Defects C-6…C-25 have draft fix PRs **#71–#77**, unmerged (`V1_CONTRACT_ISSUES.md` § "Backend fix PRs"). |
 | Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
 | Live site | https://darz-web.vercel.app — Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
@@ -41,7 +41,7 @@ structure — trace every decision to the approved package + `app.html`.
 ### A · Owner decisions (nothing below starts without one) — see `NOTES-FOR-ARIAN.md` and `V1_CONTRACT_ISSUES.md` § C
 - [ ] **Real `VITE_API_BASE_URL`** (Q-9) — `.env.production` is the deliberate `api.invalid` placeholder, so
       the live site has no sign-in/data. **The single biggest blocker to a working site.**
-- [ ] **Raise C-13 (security) with the backend before any real portal link is issued.**
+- [ ] **Merge backend #74 and #76 (C-13 security) before any real portal link is issued.**
 - [ ] **Q-5 remainder — owner-deferred, API ready:** G-P24-2 selection-ready notice · G-P25-2(b) question-set
       editor · G-P5-4 archive · G-P5-5 withdraw/cancel · G-P5-12 activity read-back · G-P13-1 push opt-in ·
       G-CLUB-3 Club "Auction access" section · G-P5-9 counter-offer display (**Q-4**: wording).
@@ -52,14 +52,30 @@ structure — trace every decision to the approved package + `app.html`.
 - [ ] **`/artists` has no menu entry** — as in the old app.
 - [ ] **G-6 (Q-8)** — Intelligence · Marketing Hub · Document Builder stay not V1 unless reversed.
 
-### B · Backend defects to raise on `darz-backend-api` → `V1_CONTRACT_ISSUES.md` § B
-- [ ] **C-13** security · **C-19** WSGI Dockerfile (no auction WebSockets) · **C-6** lock 500s · **C-23**
-      chat attach re-homes documents · **C-24** Awaiting-approval over-count · **C-25** extend does not
-      revive a lapsed key · C-7, C-8, C-9, C-10, C-11, C-12, C-14, C-16, C-18, C-21 (the FE works around each).
+### B · Backend defects → `V1_CONTRACT_ISSUES.md` § B and § "Backend fix PRs"
+- [x] Draft fix PRs opened on `darz-backend-api` (2026-09-26), one per group:
+  - #71 C-23
+  - #72 C-24
+  - #73 C-19
+  - #74 C-25 + C-13 login
+  - #75 C-6/C-10/C-11
+  - #76 C-13 portal + C-8/C-9/C-12
+  - #77 C-2/C-7/C-14/C-15/C-18
+  - #78 C-26 (portal Save draft), opened 2026-09-27
+- [ ] **Owner merges #71–#78.** #74 and #76 (security) must merge before any real portal link is issued.
+- [ ] **Set `NUM_PROXIES`** on the production backend. Every per-IP throttle depends on it.
+- [ ] After they merge, do the FE follow-up:
+  - regenerate `schema.d.ts`;
+  - retire `HoldDetail`/`PortalState` hand types;
+  - add the C-12 image preview;
+  - add a portal 429 message;
+  - read the new option labels.
+- [ ] Still notes, with no PR: C-16 (list-only rollups), C-21 (no pricelist status guard).
 
 ### C · Frontend follow-ups (post-V1, small)
-- [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation).
-- [ ] Remove or wire `adminNav.isPathAllowed` (unused).
+- [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation). **Blocked on the
+      backend (C-26):** the portal exhibition PATCH does not accept `gallery_selected`; build once backend #78 merges.
+- [x] Remove or wire `adminNav.isPathAllowed` (unused) — removed 2026-09-27.
 - [ ] Post-V1 candidates recorded in the matrix: legacy-id deep-link redirect, a `change-stamp` poller, the
       Database Refine filters (G7), FE-R1…R4 Records extras.
 

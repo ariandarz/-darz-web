@@ -1,6 +1,6 @@
 # Handoff — start here
 
-**Rewritten 2026-09-24; § 1 and § 3 updated 2026-09-26 for post-V1.** This is the two-minute version:
+**Rewritten 2026-09-24; § 1 and § 3 updated 2026-09-27 for post-V1.** Owner TODO: `NOTES-FOR-ARIAN.md`. This is the two-minute version:
 where things stand, what is genuinely next, and the traps that have already cost time.
 
 `docs/DARZ_WEB_V1_STATUS.md` is the completed-V1 picture; `docs/TASKLIST.md` is the single source of truth
@@ -13,9 +13,9 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 
 | | |
 | --- | --- |
-| Branches | `main` and `development`; `development` is the working line. All V1 phase PRs (#102–#111) are merged into `development`; Phase 10 is `v1/phase-10-final`. `development` is ahead of `main` until the owner says "release development to main". |
+| Branches | `main` and `development`; `development` is the working line. All V1 phase PRs (#102–#112) are merged into `development`. Open: **#113** (release to `main`) and **#114** (docs). `development` is ahead of `main` until the owner says "release development to main". |
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
-| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API, 323 operations. |
+| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API, 323 operations. Fix PRs **#71–#77** open (drafts, unmerged). |
 | API adoption | 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). |
 | Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
 | Live | https://darz-web.vercel.app — auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
@@ -54,12 +54,19 @@ work in this order:
      (`v1/phase-9x-<slug>` pattern, same gate/stub/render/docs rules).
    - **Q-2** project money UI-only · **Q-8** G-6 stays deferred · C-18 validation copy · request-kind wording ·
      i18n (G-I18N-1) · `/artists` menu entry.
-2. **Backend defects to raise** (`V1_CONTRACT_ISSUES.md` § B, final status column): **C-13 security** before
-   any real portal link, **C-19** WSGI (no auction WebSockets in prod), **C-6** lock 500s, **C-23** chat attach
-   re-homes documents, **C-24** Awaiting-approval over-count, **C-25** extend does not revive a lapsed key;
-   the rest have FE work-arounds in place.
-3. **Small FE follow-ups:** the portal "Save draft" (the one Bound-no-UI operation), `isPathAllowed`
-   cleanup, the post-V1 candidates in the matrix.
+2. **Backend defects: fix PRs are open, waiting on the backend owner.** On 2026-09-26 every open-backend row
+   except the notes C-16/C-21 got a draft fix PR on `darz-backend-api`, **#71–#77**. None is merged; the backend
+   owner merges them. The mapping, what each changes on the wire, the merge overlaps and the owner calls they
+   raise (**`NUM_PROXIES`** first) are in `V1_CONTRACT_ISSUES.md` § "Backend fix PRs". **C-13 security (#74,
+   #76) must merge before any real portal link is issued.** Once they merge, do the FE follow-up listed there:
+   - regenerate the schema;
+   - retire the `HoldDetail`/`PortalState` hand types;
+   - add the C-12 image preview;
+   - add a portal 429 message;
+   - read the new option labels.
+3. **Small FE follow-ups:** the portal "Save draft" (the one Bound-no-UI operation — blocked on backend
+   C-26, the PATCH drops `gallery_selected`), the post-V1 candidates in the matrix. `isPathAllowed` was
+   removed 2026-09-27.
 4. **Post-V1 features with no backend:** Logistics, Library, Insights & Stories, the Social suite — owner-
    scoped, `TASKLIST.md` § D.
 
