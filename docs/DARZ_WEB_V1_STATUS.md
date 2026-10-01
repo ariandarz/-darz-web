@@ -126,7 +126,7 @@ Status words: **Complete** (built and bound, nothing V1 left) · **Partial** (V1
 
 | Section | Purpose | Screens | Implemented | APIs used | Actions | Roles | V1 status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, Sent pills + Pending review, History, pricelist upload **and builder** with status, messages, exhibition services (create, pick services, send, sign documents by name) | `gallery/portal/{token}/…` (11 of 15 operations integrated; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign | token + PIN | Partial — the old "Save draft" of a services selection is not built (the portal exhibition PATCH cannot carry `gallery_selected`, C-26); referral, drawn signature, offer engine, formatted pricelist download have no backend |
+| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, Sent pills + Pending review, History, pricelist upload **and builder** with status, messages, exhibition services (create, pick services, send, sign documents by name) | `gallery/portal/{token}/…` (11 of 15 operations integrated; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign | token + PIN | Partial — the old "Save draft" of a services selection is not built (the portal exhibition PATCH cannot carry `gallery_selected`, C-26). Referral, drawn signature, portal actions/offer-floor, and formatted pricelist download **now have backends (shipped 2026-10-01)** — UI pending; see API_GAPS G-PORT-5/7/8/P3c + ADMIN_ARCHITECTURE |
 
 ### Admin panel
 
@@ -329,7 +329,8 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
   **Artists `records`/`top-price` sorts** (`?ordering=records|top-price`).
 - **Still open, not ruled V2:** i18n/RTL (G-I18N-1), PDF/image import
   intake (D15), the settlement calculator, theme editors (D17).
-- **Gallery portal:** referral / Introduce (G-PORT-5), drawn signature (G-PORT-7), offer floor / auto-decline
-  engine (G-PORT-8), formatted pricelist download (P3c), the "Save draft" of a services selection (backend C-26).
+- **Gallery portal — backend shipped 2026-10-01, UI pending:** referral / Introduce (G-PORT-5), drawn
+  signature (G-PORT-7), portal actions + offer floor (G-PORT-8), formatted pricelist download (P3c). See
+  API_GAPS.md G-PORT-5/7/8/P3c for endpoints. Still no backend: the "Save draft" of a services selection (C-26).
 - **Small post-V1 candidates:** legacy-id deep-link redirect (`catalog/legacy-lookup/`), a background
   catalogue poller on `change-stamp/`, the Refine filters on the Database desk.

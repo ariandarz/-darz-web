@@ -168,7 +168,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-PORT-14 | `object_key` + `file_url` on pricelists | ✅ Adopted (Phase 5): "Open file" on the desk and the portal row | 5 |
 | G-PORT-15 | `?search=` on admin links | ✅ Adopted (Phase 5): the partner search is a server query | 5 |
 | G-PORT-16 | `quantity` on exhibition service lines | ✅ Adopted (Phase 5): compose sends/shows it; Issue document splits the line amount back into qty × unit; portal prints "n ×" | 5 |
-| G-PORT-5/7/8, P3c | Referral tab, drawn signature, offer engine, formatted pricelist download | ⛔ **No backend**: not V1 | — |
+| G-PORT-5/7/8, P3c | Referral tab, drawn signature, portal actions/offer-floor, formatted pricelist download | ✅ Closed | **Backend shipped 2026-10-01.** **P3c:** `POST /gallery/admin/pricelists/{id}/rendered/` stores the client-rendered branded PDF → downloadable via `file_url`. **G-PORT-7:** portal sign endpoint takes an optional `signature_image` (base64 PNG, ≤2MB), stored as `signature_image_key` + served as `signature_image_url`, typed `signer_name` kept too. **G-PORT-5:** `PortalReferral` — portal `GET/POST /gallery/portal/{token}/referrals/` + admin `GET /gallery/admin/referrals/` (filter `?status=`/`?link=`) + `POST /gallery/admin/referrals/{id}/review/`. **G-PORT-8:** portal `POST /gallery/portal/{token}/artworks/{id}/actions/` proposes `allowed_actions`/`offer_floor` → approval queue → applied to the artwork; the crm offer-floor engine enforces it (no separate auto-decline object). **FE: build each surface.** |
 | G-PORT-10 | Pre-PIN name probe | ➖ Dropped by owner | — |
 
 ## Backend defects (raise on `darz-backend-api`) — final state

@@ -5,6 +5,15 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-01 — Backend shipped: G-PORT portal features (P3c, G-PORT-5/7/8)
+The larger gallery-portal backlog now has endpoints on `darz-backend-api` `development`: formatted
+pricelist download (P3c — `POST /gallery/admin/pricelists/{id}/rendered/`), drawn signatures (G-PORT-7 —
+optional `signature_image` base64 PNG on the portal sign endpoint → `signature_image_url`), the referral
+"Introduce" tab (G-PORT-5 — `PortalReferral`, portal submit/list + admin review desk), and portal-write
+of per-work `allowed_actions`/`offer_floor` (G-PORT-8 — `POST /gallery/portal/{token}/artworks/{id}/actions/`
+→ approval queue, enforced by the crm offer-floor engine). Reconciled API_GAPS / ADMIN_ARCHITECTURE /
+DARZ_WEB_V1_STATUS. All UI-pending.
+
 ## 2026-10-01 — Backend shipped: Projects Proposal/Invoice Builder, source-freshness (G-CAT-9), artist sorts
 Three backend seams closed on `darz-backend-api` `development`: Projects proposal **and** invoice documents
 (`/projects/admin/projects/{id}/documents/…`, FE composes `fields` + drives draft→confirmed→signed); the
