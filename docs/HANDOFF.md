@@ -15,9 +15,9 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 | --- | --- |
 | Branches | `main` and `development`; `development` is the working line. **V1 released to `main` on 2026-09-27** (#113); the two are level at `960d571`. |
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
-| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API, 323 operations. Fix PRs **#71–#77** open (drafts, unmerged). |
+| Backend | `darz-backend-api` `development` @ **`c2eb912`** — the V1 API (224 paths / 323 operations) **plus all eight defect fixes**: #71–#78 merged 2026-10-01 (1013 tests, schema 0/0). |
 | API adoption | 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). |
-| Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
+| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **837 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
 | Live | https://darz-web.vercel.app — serves V1 since 2026-09-27; auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
@@ -48,17 +48,17 @@ work in this order:
 1. **Owner decisions** (`V1_CONTRACT_ISSUES.md` § C, `NOTES-FOR-ARIAN.md`) — nothing below starts without one:
    - **Q-9 · real `VITE_API_BASE_URL`** — the live site is visual-only until it is set. The single biggest
      thing between the owner and a working site.
-   - **Q-5 remainder, API ready:** G-P24-2 selection-ready notice · G-P25-2(b) question-set editor · G-P5-4
-     archive · G-P5-5 withdraw/cancel · G-P5-12 activity read-back · G-P13-1 push · G-CLUB-3 Club "Auction
-     access" · G-P5-9 counter-offer (**Q-4** wording). Each is a small phase of its own
-     (`v1/phase-9x-<slug>` pattern, same gate/stub/render/docs rules).
+   - **Q-5 remainder, API ready — now fully planned:** G-P24-2 · G-P25-2(b) · G-P5-4 · G-P5-5 · G-P5-12 ·
+     G-P13-1 · G-CLUB-3 · G-P5-9. **Read `DEFERRED_FEATURES_PLAN.md`** — it costs each one, cites the
+     old-app source to port (five of the eight already have copy and markup), and lists the seven
+     decisions the owner still owes. Nothing is started; one branch/PR each (`post-v1/<slug>`).
    - **Q-2** project money UI-only · **Q-8** G-6 stays deferred · C-18 validation copy · request-kind wording ·
      i18n (G-I18N-1) · `/artists` menu entry.
-2. **Backend defects: fix PRs are open, waiting on the backend owner.** On 2026-09-26 every open-backend row
-   except the notes C-16/C-21 got a draft fix PR on `darz-backend-api`, **#71–#77**. None is merged; the backend
-   owner merges them. The mapping, what each changes on the wire, the merge overlaps and the owner calls they
-   raise (**`NUM_PROXIES`** first) are in `V1_CONTRACT_ISSUES.md` § "Backend fix PRs". **C-13 security (#74,
-   #76) must merge before any real portal link is issued.** Once they merge, do the FE follow-up listed there:
+2. **Backend defects: all fixed and merged.** PRs **#71–#78** went into `darz-backend-api` `development`
+   on **2026-10-01** (now **`c2eb912`**), each verified — 1013 tests, schema 0/0. C-13's security pair is in,
+   so a real portal link can be issued. `NUM_PROXIES` was **dropped by the owner as not needed now**. The
+   mapping of PR → wire change is still in `V1_CONTRACT_ISSUES.md` § "Backend fix PRs". **The FE follow-up
+   is now the next piece of work** (one PR, verified non-breaking):
    - regenerate the schema;
    - retire the `HoldDetail`/`PortalState` hand types;
    - add the C-12 image preview;
@@ -72,7 +72,7 @@ work in this order:
    owner ruled them **V2-or-later on 2026-10-01**: they have no backend, there is nothing to adopt, and they
    are **not** a backlog to clear. Do not implement, plan or re-raise them. Authority: `TASKLIST.md` § D.
 
-When the backend moves past `df0421f`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
+When the backend moves past `c2eb912`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
 `API_ADOPTION_MATRIX.md`; Phase 10's script approach is described in its Summary), and update the stub in the
 same PR.
 

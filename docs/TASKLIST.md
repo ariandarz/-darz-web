@@ -7,6 +7,8 @@ the long historical task log (that detail now lives in `CHANGELOG.md` and `docs/
 - **How to adopt the closed backend work** → **`API_GAPS_FRONTEND_ADOPTION.md`**.
 - **Backend's next tier of gaps** → **`../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md`**.
 - **Owner decisions in one place** → **`NOTES-FOR-ARIAN.md`**. **Start-here** → **`HANDOFF.md`**.
+- **The eight deferred features, costed and planned** → **`DEFERRED_FEATURES_PLAN.md`** (awaiting the
+  owner's pick; nothing started).
 
 > **Status legend:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked ·
 > `[V2]` **ruled V2-or-later by the owner — out of scope, do not implement or re-raise** (§ D).
@@ -25,8 +27,8 @@ structure — trace every decision to the approved package + `app.html`.
 | Branches | `main` and `development`, level at `960d571`. **V1 released to `main` on 2026-09-27** (#113, after #114). |
 | V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
-| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API. Defects C-6…C-25 have draft fix PRs **#71–#77**, unmerged (`V1_CONTRACT_ISSUES.md` § "Backend fix PRs"). |
-| Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
+| Backend | `darz-backend-api` `development` @ **`c2eb912`** — the V1 API **with every defect fix merged**: C-6…C-26 closed by PRs **#71–#78** (merged 2026-10-01; `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"). Still notes only: C-16, C-21. |
+| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **837 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
 | Live site | https://darz-web.vercel.app — serves V1 since 2026-09-27; Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
@@ -63,15 +65,23 @@ structure — trace every decision to the approved package + `app.html`.
   - #76 C-13 portal + C-8/C-9/C-12
   - #77 C-2/C-7/C-14/C-15/C-18
   - #78 C-26 (portal Save draft), opened 2026-09-27
-- [ ] **Owner merges #71–#78.** #74 and #76 (security) must merge before any real portal link is issued.
-- [ ] **Set `NUM_PROXIES`** on the production backend. Every per-IP throttle depends on it.
-- [ ] After they merge, do the FE follow-up:
+- [x] **#71–#78 all merged into `darz-backend-api` `development`** on 2026-10-01, in order, each verified
+      (full suite **1013 passed**, schema **0 warnings / 0 errors**, no missing migrations). Backend
+      `development` is now **`c2eb912`**. The C-13 security pair (#74, #76) is in, so the blocker on issuing
+      a real portal link is cleared.
+- [ ] **FE follow-up — now actionable** (one PR; verified non-breaking, see `DEFERRED_FEATURES_PLAN.md` § 3):
   - regenerate `schema.d.ts`;
   - retire `HoldDetail`/`PortalState` hand types;
   - add the C-12 image preview;
   - add a portal 429 message;
   - read the new option labels.
 - [ ] Still notes, with no PR: C-16 (list-only rollups), C-21 (no pricelist status guard).
+- **`NUM_PROXIES` — not now, deliberately.** Owner decision 2026-10-01: **over-engineering at this stage.**
+  It is a DRF setting that only matters once the production deployment's proxy topology is fixed, and it
+  changes nothing for the current visual-only site. **Do not raise it as an open task.** It will be
+  set/implemented later, based on actual production use, as part of the deploy work (§ D, Deploy Phase 14).
+  Background, if ever needed: unset, DRF's per-IP throttles key on a client-sent `X-Forwarded-For`; the
+  portal PIN limit is keyed on the link instead, so it is unaffected either way.
 
 ### C · Frontend follow-ups (post-V1, small)
 - [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation). **Blocked on the

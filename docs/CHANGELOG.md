@@ -5,6 +5,23 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-01 — Backend fix PRs #71–#78 merged; docs brought level
+All eight merged into `darz-backend-api` `development` (now `c2eb912`), in order, each verified: 1013 tests,
+schema 0/0, no missing migrations. Regenerating `schema.d.ts` against it is **non-breaking** (same 323
+operations, 0 new type errors, 837 unit tests pass) — not yet committed. Backend-state lines updated across
+HANDOFF / TASKLIST / NOTES / V1_STATUS / API_GAPS / API_GAPS_FRONTEND_ADOPTION / V1_CONTRACT_ISSUES.
+
+## 2026-10-01 — `NUM_PROXIES` dropped as an open task (owner)
+Owner decision: over-engineering at this stage, not needed now; to be set later if real production use calls
+for it, with the deploy work. Recorded as a closed decision in `TASKLIST.md` § B, `NOTES-FOR-ARIAN.md` and
+`V1_CONTRACT_ISSUES.md` so it stops appearing as a to-do.
+
+## 2026-10-01 — Implementation plan for the eight deferred features
+New `docs/DEFERRED_FEATURES_PLAN.md`: G-P24-2 · G-P5-9 · G-P5-12 · G-P13-1 · G-P5-5 · G-P5-4 · G-CLUB-3 ·
+G-P25-2(b), each with the old-app source to port (cited), the verified API, the frontend work, tests and the
+owner decision it needs. Findings: five of the eight already have old-app copy/markup; G-P5-9 and G-P5-5 have
+none; G-P5-4's backend model differs from the old app's; G-P13-1 has no push-send endpoint. Nothing started.
+
 ## 2026-10-01 — Logistics, Library, Insights & Stories, Social suite ruled V2 or later (owner)
 Owner decision: these four (plus Strategy / Automations / Languages / Analytics / Team Workspace / "Notify
 collectors") are **out of V1 and out of the post-V1 queue** — not to be implemented, planned or re-raised.

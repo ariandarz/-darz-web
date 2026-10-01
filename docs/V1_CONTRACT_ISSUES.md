@@ -2,6 +2,11 @@
 
 **Written 2026-09-25.** Measured against backend `darz-backend-api` `development` @ `df0421f` (PR #70), which this
 repo treats as the **final V1 API**, and `-darz-web` `development` @ `d987910` (PR #100).
+>
+> **Current state (2026-10-01):** the backend has moved on — `development` is **`c2eb912`**, with all eight
+> defect fixes (#71–#78) merged. The measurement below still holds for API *surface* (the same 224 paths /
+> 323 operations) but the response *shapes* changed; regenerate `src/api/schema.d.ts` before trusting one.
+
 
 This file lists every backend↔frontend contract problem found in the V1 re-baseline. It is written before any
 implementation, as the brief requires. `V1_IMPLEMENTATION_PLAN.md` refers to these IDs (`C-…`). The evidence
@@ -49,7 +54,7 @@ works around it as the row's "FE stance" says · **owner-open** = waits on Arian
 ### Backend fix PRs (2026-09-26)
 
 Every **open-backend** row except the two notes (C-16, C-21) now has a fix PR on `darz-backend-api`, opened
-against `development` @ `df0421f` and **left as drafts for the backend owner to review and merge**. Each fix came
+against `development` @ `df0421f`. **All eight were merged on 2026-10-01** (backend `development` is now `c2eb912`); what follows describes what each changed. Each fix came
 with tests. On each branch the full backend suite passes except the MinIO-only
 `test_public_url_is_freely_accessible_no_auth`, which also fails in the local environment on `development`.
 None of them changes behaviour this repo relies on. The FE work-arounds above stay in place until the PRs merge.
@@ -68,8 +73,15 @@ None of them changes behaviour this repo relies on. The FE work-arounds above st
 **Merge overlaps.** Only the top of the backend `docs/CHANGELOG.md` conflicts, so keep both entries. #74 and #76 both clear
 the throttle cache in tests; #76 and #77 add identical `ENUM_NAME_OVERRIDES` lines.
 
+**All eight merged 2026-10-01** into `darz-backend-api` `development` (now **`c2eb912`**), in PR order, each
+verified: full suite **1013 passed**, schema **0/0**, no missing migrations, `manage.py check` clean. The FE
+work-arounds below can now be retired — see the follow-up list at the end of this section.
+
 **Owner calls raised in those PRs (not changed):**
-- Set `NUM_PROXIES` for the real deployment. Until it is set, every per-IP throttle trusts a client-sent `X-Forwarded-For`.
+- ~~Set `NUM_PROXIES`~~ — **dropped by the owner, 2026-10-01: not needed now, over-engineering at this
+  stage.** It will be considered later based on real production use, with the deploy work. Do not re-raise
+  it as an open task. (For reference only: while unset, the per-IP throttles key on a client-sent
+  `X-Forwarded-For`; the portal PIN limit is keyed on the link, so it is unaffected.)
 - #76's per-link PIN limit means anyone holding a link can lock it for up to an hour.
 - The admin document share endpoint can still reassign a document to another collector.
 - Completed and cancelled projects still count in the Projects dashboard tiles.

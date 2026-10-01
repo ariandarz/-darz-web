@@ -23,7 +23,7 @@ is this branch). The site is still **visual-only in production** until the owner
 non-integrated operation carries a one-line reason in `docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`.
 
 **Final gate (Phase 10, run on this branch):** typecheck ✅ · oxlint **0** warnings/errors ✅ · prettier ✅ ·
-**838/838 unit tests** (76 files) ✅ · production build ✅ (`VITE_API_BASE_URL=https://api.invalid/api`) ·
+**837/837 unit tests** (76 files) ✅ · production build ✅ (`VITE_API_BASE_URL=https://api.invalid/api`) ·
 **155/155 Playwright E2E** (collector 40 · desks 105 · portal 6 · smoke 4) against `e2e/stub-server.mjs` ✅.
 
 What remains is not frontend V1 work: **backend defects** (C-6…C-25 in `V1_CONTRACT_ISSUES.md` — all
@@ -235,7 +235,10 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 
 ### Backend limitations (open on `darz-backend-api`, detail in `V1_CONTRACT_ISSUES.md` § B)
 
-**Update 2026-09-26:** each row below except C-16 and C-21 now has a draft fix PR on `darz-backend-api`, #71–#77. None of them is merged yet; they wait on the backend owner. See `V1_CONTRACT_ISSUES.md` § "Backend fix PRs" for which PR fixes which row. The FE work-arounds stay until the PRs merge.
+**Update 2026-10-01 — all fixed.** Every row below except the two notes (C-16, C-21) had a fix PR on
+`darz-backend-api` (#71–#78), and **all eight were merged on 2026-10-01**; backend `development` is now
+`c2eb912` (full suite 1013 passed, schema 0 warnings / 0 errors). The FE work-arounds recorded below can
+now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend fix PRs" and `TASKLIST.md` § B.
 
 - **C-6** PATCH without `expected_version` → 500 (not 400) on 18 endpoints; FE always sends it.
 - **C-7** no hold member in the request-detail union; FE hand-types `HoldDetail`.
@@ -269,7 +272,9 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
   `RequireOwner`; every owner-only tab with a route is `RequireOwner`-wrapped).
 - Hand types that the backend schema should own (`HoldDetail`, `PortalState`).
 - Unused bindings kept to mirror the served routes (listed above).
-- `schema.d.ts` must be regenerated whenever the backend moves past `df0421f`.
+- `schema.d.ts` must be regenerated whenever the backend moves past `c2eb912`. **It is currently behind:**
+  the committed copy is from 2026-09-25; regenerating against `c2eb912` was verified non-breaking on
+  2026-10-01 (same 323 operations, no new type errors, 837 unit tests pass) but has not been committed.
 - The E2E stub mirrors backend shapes by hand; it has to move in the same PR as any shape change.
 
 ### Future / post-V1

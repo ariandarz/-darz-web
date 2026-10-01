@@ -7,6 +7,11 @@ re-verified against the code in Phase 10: **261 Integrated · 1 Bound, no UI · 
 (owner-deferred, API ready) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only**. The completed-V1
 picture is **`DARZ_WEB_V1_STATUS.md`**; backend↔frontend contract problems still open are in
 **`V1_CONTRACT_ISSUES.md`** (`C-…` IDs).
+>
+> **Current state (2026-10-01):** the backend has moved on — `development` is **`c2eb912`**, with all eight
+> defect fixes (#71–#78) merged. The measurement below still holds for API *surface* (the same 224 paths /
+> 323 operations) but the response *shapes* changed; regenerate `src/api/schema.d.ts` before trusting one.
+
 
 Every gap row below carries its final FE state: **adopted** (with the phase), **deferred-owner** (owner
 question, API ready), **excluded** (not V1, with the reason) or **blocked** (with the reason). No backend
