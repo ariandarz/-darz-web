@@ -5,6 +5,11 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-09-27 — V1 released to `main`
+
+- On the owner's instructions, #114 was merged into `development`, then #113 released `development` → `main` (`960d571`). The production deploy is READY, and `development` was fast-forwarded to match `main`.
+- The live site serves V1 but stays visual-only until the real API URL is set.
+
 ## 2026-09-27 — `isPathAllowed` removed; portal "Save draft" found blocked (C-26)
 
 - Removed the unused `adminNav.isPathAllowed` (guards are `RequireTeam`/`RequireOwner`); its tests now use `findTab`/`isTabAllowed`.

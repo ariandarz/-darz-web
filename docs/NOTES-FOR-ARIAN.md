@@ -12,8 +12,8 @@ Nothing is merged without your word.
    anyone can get around the per-IP limits.
 3. [ ] **Give the real API URL** (`VITE_API_BASE_URL`). Until then the live site shows layout only, with no
    sign-in and no data. This is the biggest blocker.
-4. [ ] **Say "release development to main"** to merge **#113** and put V1 on the live site. CI is green.
-5. [ ] **Review #114**, the docs PR that links each backend PR to its issue.
+4. [x] ~~Release #113~~. **Done 2026-09-27:** V1 is on `main` (`960d571`) and deployed.
+5. [x] ~~Review #114~~. Merged 2026-09-27.
 6. [ ] After the backend PRs merge, ask for the **small web follow-up**:
    - regenerate the types;
    - show the admin image preview;
@@ -48,7 +48,7 @@ Nothing is merged without your word.
 
 | | |
 | --- | --- |
-| Web | V1 complete on `development`; **#113** (release) and **#114** (docs) are open |
+| Web | V1 **released**: `main` = `development` = `960d571` (2026-09-27) |
 | Backend | fix PRs **#71–#78** are open drafts on `darz-backend-api` |
 | Gate | 838 unit · 155 E2E · typecheck · lint · format · build, all green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |

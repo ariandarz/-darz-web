@@ -21,12 +21,12 @@ structure — trace every decision to the approved package + `app.html`.
 
 | | |
 | --- | --- |
-| Branches | `main` and `development`; `development` is the working line. **All V1 phases (PRs #102–#112) are merged into `development`.** Open: **#113** release `development` → `main` (waits for "release development to main") · **#114** docs. |
+| Branches | `main` and `development`, level at `960d571`. **V1 released to `main` on 2026-09-27** (#113, after #114). |
 | V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
 | Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API. Defects C-6…C-25 have draft fix PRs **#71–#77**, unmerged (`V1_CONTRACT_ISSUES.md` § "Backend fix PRs"). |
 | Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
-| Live site | https://darz-web.vercel.app — Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
+| Live site | https://darz-web.vercel.app — serves V1 since 2026-09-27; Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
 `DARZ_WEB_V1_STATUS.md` § Remaining gaps.
