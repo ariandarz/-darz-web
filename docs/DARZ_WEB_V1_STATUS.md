@@ -322,9 +322,13 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
   does), the Social suite, Strategy, Automations, Languages, Analytics,
   "Notify collectors" (needs a push-send endpoint).
 - **Ready to build (backend shipped, UI pending):** Team Workspace desk (G-TEAM-1) — backend `apps.workspace`
-  W1–W4 + `accounts.TeamLoginEvent` shipped 2026-10-01; build against `docs/WORKSPACE_API.md`.
-- **Still open, not ruled V2:** i18n/RTL (G-I18N-1), the source-freshness loop (G-CAT-9), PDF/image import
-  intake (D15), the settlement calculator, theme editors (D17), the proposal builder.
+  W1–W4 + `accounts.TeamLoginEvent` shipped 2026-10-01; build against `docs/WORKSPACE_API.md`. Plus
+  (all shipped 2026-10-01, see API_GAPS.md / ADMIN_ARCHITECTURE.md): the **Projects Proposal + Invoice
+  Builder** (`/projects/admin/projects/{id}/documents/…`), the **source-freshness loop (G-CAT-9)**
+  (`/catalog/admin/.../confirm-available|sources/confirm|freshness-summary|freshness-settings`), and the
+  **Artists `records`/`top-price` sorts** (`?ordering=records|top-price`).
+- **Still open, not ruled V2:** i18n/RTL (G-I18N-1), PDF/image import
+  intake (D15), the settlement calculator, theme editors (D17).
 - **Gallery portal:** referral / Introduce (G-PORT-5), drawn signature (G-PORT-7), offer floor / auto-decline
   engine (G-PORT-8), formatted pricelist download (P3c), the "Save draft" of a services selection (backend C-26).
 - **Small post-V1 candidates:** legacy-id deep-link redirect (`catalog/legacy-lookup/`), a background

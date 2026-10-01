@@ -5,6 +5,14 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-01 — Backend shipped: Projects Proposal/Invoice Builder, source-freshness (G-CAT-9), artist sorts
+Three backend seams closed on `darz-backend-api` `development`: Projects proposal **and** invoice documents
+(`/projects/admin/projects/{id}/documents/…`, FE composes `fields` + drives draft→confirmed→signed); the
+source-freshness loop G-CAT-9 (`/catalog/admin/.../confirm-available | sources/confirm | freshness-summary |
+freshness-settings`, admin `?freshness=`/`?needs_reconfirmation=`, owner hide-stale toggle); and the Artists
+`records`/`top-price` sorts (`?ordering=records|top-price`). Reconciled API_GAPS / ADMIN_ARCHITECTURE /
+DARZ_WEB_V1_STATUS. All three UI-pending.
+
 ## 2026-10-01 — Team Workspace backend shipped (G-TEAM-1); docs + build spec added
 Backend `apps.workspace` W1–W4 + `accounts.TeamLoginEvent` merged to `darz-backend-api` `development`:
 the old Team tab's suite (My workspace · Team workflow + time + performance · Contacts · pricelist-approvals)
