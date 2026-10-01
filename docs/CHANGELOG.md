@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-01 — Team Workspace backend shipped (G-TEAM-1); docs + build spec added
+Backend `apps.workspace` W1–W4 + `accounts.TeamLoginEvent` merged to `darz-backend-api` `development`:
+the old Team tab's suite (My workspace · Team workflow + time + performance · Contacts · pricelist-approvals)
+now has real endpoints under `/api/workspace/`. Added `docs/WORKSPACE_API.md` (frontend build spec); flipped
+G-TEAM-1 to ⚪ frontend-only across ADMIN_ARCHITECTURE / API_GAPS / TASKLIST / DARZ_WEB_V1_STATUS. UI pending.
+
 ## 2026-10-01 — Backend fix PRs #71–#78 merged; docs brought level
 All eight merged into `darz-backend-api` `development` (now `c2eb912`), in order, each verified: 1013 tests,
 schema 0/0, no missing migrations. Regenerating `schema.d.ts` against it is **non-breaking** (same 323

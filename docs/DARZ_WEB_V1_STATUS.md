@@ -319,8 +319,10 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
 - **V2 or later — settled by the owner 2026-10-01, out of scope, do not implement or re-raise**
   (authority: `TASKLIST.md` § D): Logistics & Payment (Phase 20), Library / saved items (Phase 21),
   Insights & Stories (Phase 22 — the nav tab stays hidden until a story can be published, as the old app
-  does), the Social suite, Strategy, Automations, Languages, Analytics, Team Workspace (G-TEAM-1),
+  does), the Social suite, Strategy, Automations, Languages, Analytics,
   "Notify collectors" (needs a push-send endpoint).
+- **Ready to build (backend shipped, UI pending):** Team Workspace desk (G-TEAM-1) — backend `apps.workspace`
+  W1–W4 + `accounts.TeamLoginEvent` shipped 2026-10-01; build against `docs/WORKSPACE_API.md`.
 - **Still open, not ruled V2:** i18n/RTL (G-I18N-1), the source-freshness loop (G-CAT-9), PDF/image import
   intake (D15), the settlement calculator, theme editors (D17), the proposal builder.
 - **Gallery portal:** referral / Introduce (G-PORT-5), drawn signature (G-PORT-7), offer floor / auto-decline

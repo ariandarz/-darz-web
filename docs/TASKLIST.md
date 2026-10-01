@@ -102,10 +102,18 @@ structure — trace every decision to the approved package + `app.html`.
 - [V2] **Library + pricelist formatting** (would need backend Phase 21; P3c formatted download).
 - [V2] **Insights & Stories** (would need backend Phase 22 — the nav tab stays hidden until a story can be
       published, exactly as the old app behaves; nothing to build).
-- [V2] **Social suite**, Strategy, Automations, Languages, Analytics, Team Workspace, "Notify collectors"
+- [V2] **Social suite**, Strategy, Automations, Languages, Analytics, "Notify collectors"
       (no push-send endpoint), portal referral / drawn signature / offer engine.
+      _(Team Workspace is no longer here — its backend shipped 2026-10-01; see the build task below.)_
 - [ ] **Deploy Phase 14** — Vercel auto-deploys `main`; the ArvanCloud `docker build` + deep-route `curl`
       have **not been run**. DNS/hosting cutover pends the real API URL and `darzmarket-api` Phase 18.
+
+### Ready to build (backend shipped, UI pending)
+- [ ] **Team Workspace desk (G-TEAM-1)** — grow `src/features/admin/TeamPage.tsx` from the logins desk into
+      the old three-tab Executive Workspace + approvals box, against **`docs/WORKSPACE_API.md`**:
+      My workspace (owner) · Team workflow + time + performance (admin) · Contacts (owner) ·
+      Pricelist-approvals box (admin, act via the gallery status endpoint). Owner tabs behind `RequireOwner`;
+      remove the "no backend" copy once wired. Backend: `apps.workspace` W1–W4 + `accounts.TeamLoginEvent`.
 
 ### Done in V1 (was open on 2026-09-24)
 - [x] Frontend adoption of every closed V1 and Group-B gap (Batches 1–8 → V1 Phases 0–9a).
