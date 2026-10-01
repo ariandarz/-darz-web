@@ -310,7 +310,7 @@ Everything below assumes the desk kit, which is done.
 | **7** | Galleries + Sources & Partners + Market Portal                                       | The gallery loop, including the no-login portal.                                                                                                                                                             |
 | **8** | Auctions admin · Intelligence · Data Health · Import                                 |                                                                                                                                                                                                              |
 | **9** | Projects (Phase 11c) ✅ 2026-09-19                                                   | Its own plan (`docs/archive/PHASE_11C_PLAN.md`) — ~2,300 lines of old source, eight sub-tabs; seven desks + the record with its stage rail and one-click proposal. Gaps G-PROJ-1…5.                                  |
-| —     | Social · Logistics · Analytics · Languages · Strategy · Automations                  | Blocked on the backend. UI-only work is possible for **Insights & Stories** if the owner wants it ahead of its API.                                                                                          |
+| —     | Social · Logistics · Analytics · Languages · Strategy · Automations                  | **V2 or later** — owner decision 2026-10-01: out of scope, do not implement or re-raise (`TASKLIST.md` § D). This includes **Insights & Stories**; do not build it ahead of its API.                          |
 
 ---
 
@@ -321,4 +321,4 @@ Everything below assumes the desk kit, which is done.
 | **D17** | `theme.*` key names for the owner-controlled flags and copy   | Take them from the old panel's own `app_theme` payload, so migrating the real production theme is a copy not a translation            |
 | **D18** | How the Document Studio renders a PDF                         | `@react-pdf/renderer` — real vector PDF, React templates, same tree for preview; confirm the ~0.5 MB against the current bundle first |
 | **D19 — ✅ resolved** | G-DOC-1 — attach a document to a collector's thread | **Shipped (PR #49):** `RequestMessage.document_refs` (team-only, attach = share). Send `document_refs: [id]` from the reply composer; share-by-link remains a fallback |
-| **D20** | Build Insights & Stories UI ahead of backend Phase 22?        | Only if you want it soon — otherwise it sits with the other backend-blocked desks                                                     |
+| **D20 — ✅ resolved** | Build Insights & Stories UI ahead of backend Phase 22? | **No.** Owner decision 2026-10-01: Insights & Stories is **V2 or later**, out of scope. Do not build it, and do not re-raise it (`TASKLIST.md` § D) |

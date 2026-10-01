@@ -26,9 +26,11 @@ non-integrated operation carries a one-line reason in `docs/audit/2026-09-25/API
 **838/838 unit tests** (76 files) ✅ · production build ✅ (`VITE_API_BASE_URL=https://api.invalid/api`) ·
 **155/155 Playwright E2E** (collector 40 · desks 105 · portal 6 · smoke 4) against `e2e/stub-server.mjs` ✅.
 
-What remains is not frontend V1 work: **backend defects** (C-6…C-25 in `V1_CONTRACT_ISSUES.md`, the
-security set C-13 first), **owner decisions** (Q-2, Q-4, the Q-5 remainder, Q-8, Q-9), and **post-V1
-features** with no backend (Logistics, Library, Insights & Stories, the Social suite, …).
+What remains is not frontend V1 work: **backend defects** (C-6…C-25 in `V1_CONTRACT_ISSUES.md` — all
+fixed and merged 2026-10-01) and **owner decisions** (Q-2, Q-4, the Q-5 remainder, Q-8, Q-9).
+
+Logistics, Library, Insights & Stories and the Social suite are **V2 or later** — the owner settled this on
+2026-10-01. They are out of scope, not a remaining gap; see `TASKLIST.md` § D and do not re-raise them.
 
 ## V1 architecture
 
@@ -300,7 +302,7 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 | Admin App Design | Complete | Complete | Complete | |
 | Question-set editor | Missing | Missing | Deferred post-V1 | owner-deferred G-P25-2(b) |
 | Intelligence / Marketing Hub / Document Builder | Missing | Missing | Deferred post-V1 | G-6 (Q-8) |
-| Logistics / Analytics / Social / Strategy / Automations / Languages / Library / Insights & Stories | Missing | Not applicable | Deferred post-V1 | no backend |
+| Logistics / Analytics / Social / Strategy / Automations / Languages / Library / Insights & Stories | Missing | Not applicable | **V2 or later** (owner, 2026-10-01 — out of scope, do not re-raise; `TASKLIST.md` § D) | no backend |
 
 ## Deferred / V2 candidates
 
@@ -309,11 +311,13 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
   (G-P13-1), the Club "Auction access" section (G-CLUB-3), counter-offer display (G-P5-9, needs wording — Q-4).
 - **G-6 (Q-8):** Intelligence (AI tagging, filters, recommendations, history, "Curated for you"), Marketing
   Hub, Document Builder / Studio (D18).
-- **No backend yet:** Logistics & Payment (Phase 20), Library / saved items (Phase 21), Insights & Stories
-  (Phase 22 — the nav tab stays hidden until a story can be published), i18n/RTL (G-I18N-1), the Social
-  suite, Strategy, Automations, Languages, Analytics, Team Workspace (G-TEAM-1), "Notify collectors" (needs
-  a push-send endpoint), the source-freshness loop (G-CAT-9), PDF/image import intake (D15), the settlement
-  calculator, theme editors (D17), the proposal builder.
+- **V2 or later — settled by the owner 2026-10-01, out of scope, do not implement or re-raise**
+  (authority: `TASKLIST.md` § D): Logistics & Payment (Phase 20), Library / saved items (Phase 21),
+  Insights & Stories (Phase 22 — the nav tab stays hidden until a story can be published, as the old app
+  does), the Social suite, Strategy, Automations, Languages, Analytics, Team Workspace (G-TEAM-1),
+  "Notify collectors" (needs a push-send endpoint).
+- **Still open, not ruled V2:** i18n/RTL (G-I18N-1), the source-freshness loop (G-CAT-9), PDF/image import
+  intake (D15), the settlement calculator, theme editors (D17), the proposal builder.
 - **Gallery portal:** referral / Introduce (G-PORT-5), drawn signature (G-PORT-7), offer floor / auto-decline
   engine (G-PORT-8), formatted pricelist download (P3c), the "Save draft" of a services selection (backend C-26).
 - **Small post-V1 candidates:** legacy-id deep-link redirect (`catalog/legacy-lookup/`), a background

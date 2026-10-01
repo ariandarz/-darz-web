@@ -67,8 +67,10 @@ work in this order:
 3. **Small FE follow-ups:** the portal "Save draft" (the one Bound-no-UI operation — blocked on backend
    C-26, the PATCH drops `gallery_selected`), the post-V1 candidates in the matrix. `isPathAllowed` was
    removed 2026-09-27.
-4. **Post-V1 features with no backend:** Logistics, Library, Insights & Stories, the Social suite — owner-
-   scoped, `TASKLIST.md` § D.
+4. **V2 or later — settled, do not work on these.** Logistics, Library, Insights & Stories, the Social
+   suite (and Strategy / Automations / Languages / Analytics / Team Workspace / "Notify collectors"). The
+   owner ruled them **V2-or-later on 2026-10-01**: they have no backend, there is nothing to adopt, and they
+   are **not** a backlog to clear. Do not implement, plan or re-raise them. Authority: `TASKLIST.md` § D.
 
 When the backend moves past `df0421f`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
 `API_ADOPTION_MATRIX.md`; Phase 10's script approach is described in its Summary), and update the stub in the

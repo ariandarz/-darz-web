@@ -200,7 +200,8 @@ Endpoints exist; each was a deliberate non-port or an open scope question. Ask t
 
 ## Not in this plan
 
-- **Backend-blocked:** Logistics (Phase 20), Library/pricelist (Phase 21), Insights & Stories (Phase 22).
+- **V2 or later (owner, 2026-10-01 — out of scope, do not implement or re-raise; `TASKLIST.md` § D):**
+  Logistics (Phase 20), Library/pricelist (Phase 21), Insights & Stories (Phase 22).
 - **Owner decisions outside the gap list:** real `VITE_API_BASE_URL`, i18n (G-I18N-1), `/artists`
   menu entry, G-6.
 - **Housekeeping at the end:** once Batch 7 lands, the "FE:" notes in `API_GAPS.md` should all be gone

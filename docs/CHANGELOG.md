@@ -5,6 +5,12 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-01 — Logistics, Library, Insights & Stories, Social suite ruled V2 or later (owner)
+Owner decision: these four (plus Strategy / Automations / Languages / Analytics / Team Workspace / "Notify
+collectors") are **out of V1 and out of the post-V1 queue** — not to be implemented, planned or re-raised.
+`TASKLIST.md` § D is the single authority (new `[V2]` status); HANDOFF, V1_STATUS, API_GAPS, API_ADOPTION_PLAN
+and ADMIN_ARCHITECTURE (D20 resolved "No") now point there instead of listing them as remaining work.
+
 ## 2026-09-27 — V1 released to `main`
 
 - On the owner's instructions, #114 was merged into `development`, then #113 released `development` → `main` (`960d571`). The production deploy is READY, and `development` was fast-forwarded to match `main`.

@@ -8,7 +8,8 @@ the long historical task log (that detail now lives in `CHANGELOG.md` and `docs/
 - **Backend's next tier of gaps** → **`../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md`**.
 - **Owner decisions in one place** → **`NOTES-FOR-ARIAN.md`**. **Start-here** → **`HANDOFF.md`**.
 
-> **Status legend:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked.
+> **Status legend:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked ·
+> `[V2]` **ruled V2-or-later by the owner — out of scope, do not implement or re-raise** (§ D).
 > When you finish a task: set `[x]`, add a 3-line `CHANGELOG.md` entry, update the API gap's row in
 > `API_GAPS.md`, and move focus. Merging needs an explicit per-request owner instruction (`CLAUDE.md`).
 
@@ -79,11 +80,19 @@ structure — trace every decision to the approved package + `app.html`.
 - [ ] Post-V1 candidates recorded in the matrix: legacy-id deep-link redirect, a `change-stamp` poller, the
       Database Refine filters (G7), FE-R1…R4 Records extras.
 
-### D · Deferred / backend-blocked features (owner-scoped)
-- [!] **Logistics & Payment desk** (backend Phase 20 — no `/api/logistics/` namespace).
-- [!] **Library + pricelist formatting** (backend Phase 21; P3c formatted download).
-- [!] **Insights & Stories** (backend Phase 22 — the nav tab stays hidden until a story can be published).
-- [!] Social suite, Strategy, Automations, Languages, Analytics, Team Workspace, "Notify collectors"
+### D · V2 or later — out of scope, settled (owner decision, 2026-10-01)
+
+> **These are NOT V1 and NOT post-V1 follow-ups. The owner has ruled them V2 or later.**
+> Do not implement them, do not plan them, and do not re-raise them as open work, gaps or
+> "remaining" items in any doc, audit or handoff. They have no backend, so there is nothing to
+> adopt. A row here is a closed scope decision, not a backlog entry — only the owner reopens one.
+> This block is the single authority; every other doc points here rather than restating it.
+
+- [V2] **Logistics & Payment desk** (would need backend Phase 20 — no `/api/logistics/` namespace).
+- [V2] **Library + pricelist formatting** (would need backend Phase 21; P3c formatted download).
+- [V2] **Insights & Stories** (would need backend Phase 22 — the nav tab stays hidden until a story can be
+      published, exactly as the old app behaves; nothing to build).
+- [V2] **Social suite**, Strategy, Automations, Languages, Analytics, Team Workspace, "Notify collectors"
       (no push-send endpoint), portal referral / drawn signature / offer engine.
 - [ ] **Deploy Phase 14** — Vercel auto-deploys `main`; the ArvanCloud `docker build` + deep-route `curl`
       have **not been run**. DNS/hosting cutover pends the real API URL and `darzmarket-api` Phase 18.

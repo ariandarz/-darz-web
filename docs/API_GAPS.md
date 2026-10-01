@@ -190,8 +190,8 @@ schema path). FE-side fixed: C-1…C-5 (Phase 0).
 | Item | State | Note |
 | --- | --- | --- |
 | G-6: Intelligence · Marketing Hub · Document Builder | ⛔ Deferred | API ready, no UI. Owner decision. |
-| Phase 20 Logistics | ⛔ Deferred | No `/api/logistics/` namespace. |
-| Phase 21 Library (saved-items library) | ⛔ Deferred | No library endpoints. **Per-link gallery pricelists are no longer a gap:** status lifecycle, soft cap and a structured builder shipped 2026-09-25 (P3a/P3b, see below). Only the formatted download (P3c) is still unbuilt. |
+| Phase 20 Logistics | 🚫 **V2 or later** | Owner decision 2026-10-01: out of scope, do not implement or re-raise (`TASKLIST.md` § D). No `/api/logistics/` namespace. |
+| Phase 21 Library (saved-items library) | 🚫 **V2 or later** | Owner decision 2026-10-01: out of scope, do not implement or re-raise (`TASKLIST.md` § D). No library endpoints. **Per-link gallery pricelists are no longer a gap:** status lifecycle, soft cap and a structured builder shipped 2026-09-25 (P3a/P3b, see below). Only the formatted download (P3c) is still unbuilt. |
 | Auction Sales | ✅ Done | Built V1 Phase 2 (2026-09-25): `/admin/sales?source=auction`, the Sales desk with a fixed `source=auction` scope; the auto-created drafts list there, each row's **Lot N** links to its auction page (lot resolved via `GET …/admin/lots/{id}/`). |
 | G7 "Refine" filter UI, FE-R1…R4 (Records desk/curation/import/sub-tabs) | ⚪ Frontend-only | Backend ready. FE: excluded from V1 — the old Database desk had no Refine control (`refine_*`, `price_min/max`, `tag` stay unsent); the admin Records desk shipped, curation/import beyond it are post-V1. |
 | Legacy-id lookup / catalogue change-stamp | ⚪ Frontend-only | FE final: **legacy lookup excluded** (not V1: no legacy-link redirect route in the approved app; post-V1 candidate if old Darz/Airtable links still circulate) · **change-stamp not needed** (the collector catalogue is server-paged, so there is no full-list walk to guard). |
@@ -209,8 +209,9 @@ schema path). FE-side fixed: C-1…C-5 (Phase 0).
   § Remaining gaps.
 - **Owner-deferred, API ready** (Q-4/Q-5): G-P24-2, G-P25-2(b), G-P5-4, G-P5-5, G-P5-12, G-P13-1, G-CLUB-3
   club section, G-P5-9.
-- **Deferred/unbuilt phases** (⛔ rows: G-6 Intelligence/Marketing/Document Builder, Logistics, Library,
-  Insights & Stories) → owner-scoped; `TASKLIST.md`.
+- **V2 or later** (⛔ rows: Logistics, Library, Insights & Stories, the Social suite) → **settled by the
+  owner on 2026-10-01: out of scope, do not implement or re-raise.** Authority: `TASKLIST.md` § D.
+  G-6 (Intelligence / Marketing / Document Builder) stays a separate owner call, Q-8.
 
 Rows marked "(verify)" carry an older doc's closed-claim that was not re-run against the schema — confirm
 when that area is next touched.
