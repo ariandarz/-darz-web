@@ -758,8 +758,9 @@ export function builderLineErrors(
   return out;
 }
 
-/** Pricelist `status` has no `/api/options/` entry (C-14): the raw value,
- * capitalised, until the backend registers one. */
+/** Pricelist `status` label from `/api/options/` `gallery.pricelist_status`
+ * (served; `rejected` since G-TEAM-2) — the raw value, capitalised, only while
+ * options are loading or lack the value. An empty status reads `submitted`. */
 export function pricelistStatusLabel(options: OptionsMap | null, status: string): string {
   return choiceLabel(options, 'gallery.pricelist_status', status || 'submitted');
 }

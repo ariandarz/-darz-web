@@ -2230,6 +2230,18 @@
   border-color: #4d2630;
   background: #2a1820;
 }
+/* rejected (G-TEAM-2) is the old status itself — `gallery-update.html:349`
+   and `:354`, verbatim */
+.pl-status.rejected {
+  color: #9b1c34;
+  border-color: #eccdd4;
+  background: #fdf2f4;
+}
+.gp-root.dark .pl-status.rejected {
+  color: #f0a5b4;
+  border-color: #4d2630;
+  background: #2a1820;
+}
 .pl-err {
   font-size: 12px;
   color: var(--red);

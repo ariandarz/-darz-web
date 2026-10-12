@@ -2273,7 +2273,7 @@ const galleryPatterns = [
     (path, body) => {
       const pl = GALLERY_PRICELISTS.find((p) => p.id === path.split('/')[5]);
       if (!pl) return notFound('No GalleryPricelist matches the given query.');
-      if (!['submitted', 'accepted', 'superseded'].includes(body?.status))
+      if (!['submitted', 'accepted', 'superseded', 'rejected'].includes(body?.status))
         return validation('Validation failed.', { status: ['Not a valid choice.'] });
       if (body.status === 'accepted')
         for (const p of GALLERY_PRICELISTS)

@@ -3,22 +3,36 @@
  * 19339-19341`) over the W4 inbox, which the page shell owns (it also drives
  * the Team tab's badge).
  *
- * Approve is the gallery endpoint the partner page already uses —
- * `setPricelistStatus(id, 'accepted')` — then the inbox is re-read. The old
- * toast is kept ("Pricelist approved — they can print now", `:37146`).
- *
- * **Reject is shown, disabled, with the reason** (owner decision 2026-10-12).
- * The old desk set `rejected`; a gallery pricelist here has only
- * `submitted · accepted · superseded` (`GalleryPricelist.STATUS_CHOICES`), so
- * there is nothing true for the button to send. Backend gap G-TEAM-2.
+ * Both buttons are the gallery endpoint the partner page already uses —
+ * `setPricelistStatus(id, …)` — then the inbox is re-read (the row leaves it,
+ * being no longer `submitted`). The old toasts are kept (`:37146-37147`):
+ *  - Approve → `accepted`, "Pricelist approved — they can print now";
+ *  - Reject → `rejected`, "Pricelist rejected". The backend gained that status
+ *    for this button (G-TEAM-2, `darz-backend-api#91`); unlike accepting, it
+ *    leaves the gallery's current accepted list alone. Until it did, Reject
+ *    was shown disabled with the reason.
  */
 import { useState } from 'react';
 import { useApi } from '../../../api/hooks';
-import type { PricelistApproval } from '../../../api/types';
+import type { GalleryPricelistStatus, PricelistApproval } from '../../../api/types';
 import { cx } from '../../../lib/cx';
 
-const REJECT_REASON =
-  'Not available yet — a gallery pricelist has no “rejected” state on the server (only submitted, accepted or superseded).';
+/** What each button sends, and the old desk's toast for it. */
+const ACTIONS: Record<
+  'approve' | 'reject',
+  { status: GalleryPricelistStatus; done: string; failed: string }
+> = {
+  approve: {
+    status: 'accepted',
+    done: 'Pricelist approved — they can print now',
+    failed: 'Could not approve the pricelist.',
+  },
+  reject: {
+    status: 'rejected',
+    done: 'Pricelist rejected',
+    failed: 'Could not reject the pricelist.',
+  },
+};
 
 export function PricelistApprovals({
   rows,
@@ -39,15 +53,16 @@ export function PricelistApprovals({
   const [actionError, setActionError] = useState<string | null>(null);
   const waiting = rows.length;
 
-  const approve = async (p: PricelistApproval) => {
+  const act = async (p: PricelistApproval, action: keyof typeof ACTIONS) => {
+    const { status, done, failed } = ACTIONS[action];
     setBusyId(p.id);
     setActionError(null);
     try {
-      await galleryAdmin.setPricelistStatus(p.id, 'accepted');
-      say('Pricelist approved — they can print now');
+      await galleryAdmin.setPricelistStatus(p.id, status);
+      say(done);
       onChanged();
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Could not approve the pricelist.');
+      setActionError(err instanceof Error ? err.message : failed);
     } finally {
       setBusyId(null);
     }
@@ -87,11 +102,16 @@ export function PricelistApprovals({
                   type="button"
                   className="ws-addbtn"
                   disabled={busyId === p.id}
-                  onClick={() => void approve(p)}
+                  onClick={() => void act(p, 'approve')}
                 >
                   Approve
                 </button>
-                <button type="button" className="ws-x" disabled title={REJECT_REASON}>
+                <button
+                  type="button"
+                  className="ws-x"
+                  disabled={busyId === p.id}
+                  onClick={() => void act(p, 'reject')}
+                >
                   Reject
                 </button>
               </div>

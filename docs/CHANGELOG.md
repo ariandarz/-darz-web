@@ -5,6 +5,10 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-12 — Pricelist Reject wired (G-TEAM-2)
+The approvals box's Reject now sends `rejected` through the gallery status route (toast "Pricelist rejected"); backend #91 (`bf2b9dc`) added the state.
+The partner desk gains "Mark rejected" and a rejected pill; labels read `gallery.pricelist_status` from `/api/options/`. Schema regenerated (backend `bf2b9dc`).
+
 ## 2026-10-12 — Team Workspace released to `main`
 On the owner's instructions, #116 was merged into `development`, then #117 released `development` → `main` (`723e0cf`).
 The production deploy is READY and `development` was fast-forwarded to match `main`; the live site stays visual-only until the real API URL is set.
