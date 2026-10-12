@@ -60,7 +60,8 @@ const DESKS: ReadonlyArray<readonly [route: string, heading: string]> = [
   ['/admin/data-health', 'Data Health'],
   ['/admin/import', 'Import artworks'],
   ['/admin/memberships', 'Memberships'],
-  ['/admin/team', 'Team'],
+  // G-TEAM-1: the owner lands on the workspace's first tab, its own heading
+  ['/admin/team', 'My workspace'],
   ['/admin/settings', 'Settings'],
   ['/admin/accounting', 'Accounting'],
   // The Accounting desk is FOUR desks on one route, switched by `?view=`

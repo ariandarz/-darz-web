@@ -32,6 +32,7 @@ import {
   GalleryAdminService,
   ProjectsAdminService,
   SalesAdminService,
+  WorkspaceService,
 } from './services';
 
 /** Captures the body of the one request the call makes. */
@@ -129,6 +130,22 @@ describe('the lock reaches the wire as `expected_version`', () => {
           deal_fx_rate: '700000',
           expected_version: 7,
         }),
+    ],
+    // G-TEAM-1 (Team Workspace): every PATCH and the item toggle are locked.
+    [
+      'updateItem',
+      (c) => new WorkspaceService(c).updateItem(ID, { title: 'T', expected_version: 7 }),
+    ],
+    ['toggleItem', (c) => new WorkspaceService(c).toggleItem(ID, true, 7)],
+    [
+      'updateTeamTask',
+      (c) =>
+        new WorkspaceService(c).updateTeamTask(ID, { status: 'done', expected_version: 7 }),
+    ],
+    [
+      'updateContact',
+      (c) =>
+        new WorkspaceService(c).updateContact(ID, { priority: 'high', expected_version: 7 }),
     ],
   ];
 

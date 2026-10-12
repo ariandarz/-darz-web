@@ -87,7 +87,7 @@ test('a desk renders its empty state against an empty backend', async ({ page })
   await page.goto('/admin/artworks?source_type=other');
   await expect(page.getByRole('heading', { name: 'Artworks Database' })).toBeVisible();
   await expect(page.getByText('No artworks match these filters.')).toBeVisible();
-  // and the owner-only desk gate does not crash a typed URL
+  // and the Team desk (G-TEAM-1) opens on the owner's own tab
   await page.goto('/admin/team');
-  await expect(page.getByRole('heading', { name: 'Team' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'My workspace' })).toBeVisible();
 });

@@ -526,14 +526,9 @@ export function AppRoutes() {
             </RequireOwner>
           }
         />
-        <Route
-          path="/admin/team"
-          element={
-            <RequireOwner title="Team">
-              <TeamPage />
-            </RequireOwner>
-          }
-        />
+        {/* Not wrapped: Team workflow + approvals are open to a standard admin
+            (G-TEAM-1); TeamPage gates its owner-only tabs with RequireOwner. */}
+        <Route path="/admin/team" element={<TeamPage />} />
         <Route
           path="/admin/settings"
           element={

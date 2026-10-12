@@ -214,6 +214,38 @@ const OPTIONS = {
     { value: 'expired', label: 'Expired' },
   ],
   'accounts.team_role': [{ value: 'owner', label: 'Owner' }],
+  // G-TEAM-1 — the Team Workspace's four vocabularies (`apps/workspace/apps.py`),
+  // labels as the backend serves them.
+  'workspace.item_kind': [
+    { value: 'task', label: 'Task' },
+    { value: 'followup', label: 'Follow-up' },
+    { value: 'call', label: 'Call' },
+    { value: 'meeting', label: 'Meeting' },
+    { value: 'reminder', label: 'Reminder' },
+    { value: 'idea', label: 'Idea' },
+    { value: 'note', label: 'Note' },
+    { value: 'opportunity', label: 'Opportunity' },
+  ],
+  'workspace.item_category': [
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'waiting', label: 'Waiting' },
+    { value: 'followup', label: 'Follow Up' },
+    { value: 'ideas', label: 'Ideas' },
+    { value: 'personal', label: 'Personal' },
+    { value: 'darz', label: 'Darz' },
+    { value: 'koocheh', label: 'Koocheh' },
+    { value: 'team', label: 'Team' },
+  ],
+  'workspace.team_task_status': [
+    { value: 'todo', label: 'To do' },
+    { value: 'doing', label: 'In progress' },
+    { value: 'done', label: 'Done' },
+  ],
+  'workspace.contact_priority': [
+    { value: 'high', label: 'High' },
+    { value: 'med', label: 'Medium' },
+    { value: 'low', label: 'Low' },
+  ],
   // The real three sales vocabularies (`apps/sales/models.py`). No
   // `sales.source`: the backend does not register one (C-14), so the desk's
   // source labels fall back to the raw value — the stub must not hide that.
@@ -2969,6 +3001,402 @@ const phase7Patterns = [
   ],
 ];
 
+/* ── G-TEAM-1: the Team Workspace (`/api/workspace/`) ──────────────────────
+ * Stateful like the desks above: writes change the rows, every PATCH and the
+ * item toggle are locked (stale `expected_version` → 409), time is an append
+ * (`log-time/` adds to `minutes_logged`), and contacts come back in the
+ * server's order (high→med→low, then soonest follow-up). Dates are relative
+ * to today so the due pills show Today / overdue as they would live.
+ */
+const wsDay = (offset) => new Date(Date.now() + offset * DAY).toISOString().slice(0, 10);
+const WS_OWNER = { id: ME.id, name: ME.name };
+const WS_STD = { id: ME_STD.id, name: ME_STD.name };
+const WS_PEOPLE = [WS_OWNER, WS_STD];
+const wsRow = (fields) => ({
+  version: 1,
+  created_at: '2026-10-01T09:00:00Z',
+  updated_at: '2026-10-01T09:00:00Z',
+  ...fields,
+});
+const WS_ITEMS = [
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e1001',
+    kind: 'call',
+    category: 'darz',
+    title: 'Call the framer about the Sepehri',
+    body: 'Ask about the museum glass quote',
+    due_date: wsDay(0),
+    due_time: '15:00:00',
+    done: false,
+    done_at: null,
+    created_at: '2026-10-08T09:00:00Z',
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e1002',
+    kind: 'task',
+    category: 'urgent',
+    title: 'Send the autumn invoice batch',
+    body: '',
+    due_date: wsDay(-2),
+    due_time: null,
+    done: false,
+    done_at: null,
+    created_at: '2026-10-05T09:00:00Z',
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e1003',
+    kind: 'idea',
+    category: 'ideas',
+    title: 'A winter salon for first-time collectors',
+    body: '',
+    due_date: null,
+    due_time: null,
+    done: false,
+    done_at: null,
+    created_at: '2026-10-04T09:00:00Z',
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e1004',
+    kind: 'note',
+    category: 'koocheh',
+    title: 'Koocheh lease renews in March',
+    body: '',
+    due_date: null,
+    due_time: null,
+    done: false,
+    done_at: null,
+    created_at: '2026-10-03T09:00:00Z',
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e1005',
+    kind: 'task',
+    category: 'personal',
+    title: 'Renew the studio insurance',
+    body: '',
+    due_date: wsDay(-5),
+    due_time: null,
+    done: true,
+    done_at: '2026-10-07T09:00:00Z',
+    created_at: '2026-10-02T09:00:00Z',
+  }),
+];
+const WS_TASKS = [
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e2001',
+    title: 'Photograph the new consignments',
+    assignee: WS_STD,
+    status: 'doing',
+    due_date: wsDay(3),
+    done_at: null,
+    minutes_logged: 45,
+    created_at: '2026-10-09T09:00:00Z',
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e2002',
+    title: 'Update the Aria Gallery pricelist',
+    assignee: null,
+    status: 'todo',
+    due_date: null,
+    done_at: null,
+    minutes_logged: 0,
+    created_at: '2026-10-08T09:00:00Z',
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e2003',
+    title: 'Ship the Tanavoli to Dubai',
+    assignee: WS_OWNER,
+    status: 'done',
+    due_date: wsDay(-1),
+    done_at: new Date(Date.now() - DAY).toISOString(),
+    minutes_logged: 120,
+    created_at: '2026-10-06T09:00:00Z',
+  }),
+];
+const WS_CONTACTS = [
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e3001',
+    name: 'Leila Karimi',
+    company: 'Collector · Tehran',
+    phone: '0912 111 2233',
+    email: 'leila@example.invalid',
+    priority: 'high',
+    last_contact: wsDay(-12),
+    next_followup: wsDay(1),
+    notes: 'Interested in Sepehri works on paper.',
+    collector: { id: '00000000-0000-4000-8000-0000000000c1', display_name: 'Leila K.' },
+    artist: null,
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e3002',
+    name: 'Babak Rahimi',
+    company: 'Framer',
+    phone: '',
+    email: '',
+    priority: 'med',
+    last_contact: null,
+    next_followup: wsDay(-3),
+    notes: '',
+    collector: null,
+    artist: null,
+  }),
+  wsRow({
+    id: '00000000-0000-4000-8000-0000000e3003',
+    name: 'Nazanin Farahani',
+    company: 'Studio assistant',
+    phone: '',
+    email: 'nazanin@example.invalid',
+    priority: 'low',
+    last_contact: null,
+    next_followup: null,
+    notes: '',
+    collector: null,
+    artist: null,
+  }),
+];
+/** A locked workspace PATCH (or toggle): 409 on a stale version, else merged. */
+const wsPatch = (row, body, apply) => {
+  if (!row) return notFound('No record matches the given query.');
+  if (typeof body?.expected_version !== 'number')
+    return validation('Validation failed.', { expected_version: ['This field is required.'] });
+  if (body.expected_version !== row.version) return conflict();
+  const { expected_version: _v, ...fields } = body;
+  apply(row, fields);
+  row.version += 1;
+  row.updated_at = new Date().toISOString();
+  return envelope(row);
+};
+const wsById = (rows, path) => rows.find((r) => r.id === path.split('/')[4]);
+const wsPerson = (id) => (id ? (WS_PEOPLE.find((p) => p.id === id) ?? null) : null);
+const WS_PRI = { high: 0, med: 1, low: 2 };
+const wsContactsOrdered = () =>
+  WS_CONTACTS.slice().sort(
+    (a, b) =>
+      WS_PRI[a.priority] - WS_PRI[b.priority] ||
+      (a.next_followup ?? '9999').localeCompare(b.next_followup ?? '9999') ||
+      b.created_at.localeCompare(a.created_at),
+  );
+const wsPerformance = () => {
+  const week = Date.now() - 7 * DAY;
+  const rows = new Map();
+  for (const t of WS_TASKS) {
+    const key = t.assignee?.id ?? null;
+    const r = rows.get(key) ?? {
+      team_user_id: key,
+      name: t.assignee?.name ?? 'Unassigned',
+      open: 0,
+      done: 0,
+      done_last_7d: 0,
+      minutes_logged: 0,
+    };
+    if (t.status === 'done') {
+      r.done++;
+      if (t.done_at && Date.parse(t.done_at) >= week) r.done_last_7d++;
+    } else r.open++;
+    r.minutes_logged += t.minutes_logged;
+    rows.set(key, r);
+  }
+  return {
+    performance: [...rows.values()].sort(
+      (a, b) =>
+        (a.name === 'Unassigned') - (b.name === 'Unassigned') || a.name.localeCompare(b.name),
+    ),
+    behaviour: WS_PEOPLE.map((p, i) => ({
+      team_user_id: p.id,
+      name: p.name,
+      total_logins: i === 0 ? 14 : 3,
+      last_login: i === 0 ? new Date(Date.now() - 3600_000).toISOString() : null,
+      tasks_done: WS_TASKS.filter((t) => t.status === 'done' && t.assignee?.id === p.id)
+        .length,
+    })),
+  };
+};
+const workspacePatterns = [
+  // ---- My workspace (owner) ----
+  [/^\/api\/workspace\/items\/$/, 'GET', (_p, _b, url) => pageOf(WS_ITEMS, url)],
+  [
+    /^\/api\/workspace\/items\/$/,
+    'POST',
+    (_p, body) => {
+      const row = wsRow({
+        id: gid('e1'),
+        kind: body?.kind ?? 'task',
+        category: body?.category ?? 'personal',
+        title: body?.title ?? '',
+        body: body?.body ?? '',
+        due_date: body?.due_date ?? null,
+        due_time: body?.due_time ?? null,
+        done: false,
+        done_at: null,
+        created_at: new Date().toISOString(),
+      });
+      WS_ITEMS.unshift(row);
+      return envelope(row);
+    },
+  ],
+  [
+    /^\/api\/workspace\/items\/[^/]+\/toggle\/$/,
+    'POST',
+    (path, body) =>
+      wsPatch(wsById(WS_ITEMS, path), body, (row, f) => {
+        row.done = !!f.done;
+        row.done_at = row.done ? new Date().toISOString() : null;
+      }),
+  ],
+  [
+    /^\/api\/workspace\/items\/[^/]+\/$/,
+    'PATCH',
+    (path, body) => wsPatch(wsById(WS_ITEMS, path), body, (row, f) => Object.assign(row, f)),
+  ],
+  [
+    /^\/api\/workspace\/items\/[^/]+\/$/,
+    'DELETE',
+    (path) => {
+      const at = WS_ITEMS.findIndex((r) => r.id === path.split('/')[4]);
+      if (at < 0) return notFound('No WorkspaceItem matches the given query.');
+      WS_ITEMS.splice(at, 1);
+      return { status: 204, body: undefined };
+    },
+  ],
+  // ---- Team workflow (admin) ----
+  [/^\/api\/workspace\/team-tasks\/performance\/$/, 'GET', () => envelope(wsPerformance())],
+  [
+    /^\/api\/workspace\/team-tasks\/$/,
+    'GET',
+    (_p, _b, url) =>
+      pageOf(
+        url.searchParams.get('ordering') === '-created'
+          ? WS_TASKS.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))
+          : WS_TASKS,
+        url,
+      ),
+  ],
+  [
+    /^\/api\/workspace\/team-tasks\/$/,
+    'POST',
+    (_p, body) => {
+      const row = wsRow({
+        id: gid('e2'),
+        title: body?.title ?? '',
+        assignee: wsPerson(body?.assignee),
+        status: body?.status ?? 'todo',
+        due_date: body?.due_date ?? null,
+        done_at: null,
+        minutes_logged: 0,
+        created_at: new Date().toISOString(),
+      });
+      WS_TASKS.unshift(row);
+      return envelope(row);
+    },
+  ],
+  [
+    /^\/api\/workspace\/team-tasks\/[^/]+\/log-time\/$/,
+    'POST',
+    (path, body) => {
+      const row = wsById(WS_TASKS, path);
+      if (!row) return notFound('No TeamTask matches the given query.');
+      if (!Number.isInteger(body?.minutes) || body.minutes < 1)
+        return validation('Validation failed.', {
+          minutes: ['Ensure this value is greater than or equal to 1.'],
+        });
+      row.minutes_logged += body.minutes;
+      return envelope(row);
+    },
+  ],
+  [
+    /^\/api\/workspace\/team-tasks\/[^/]+\/$/,
+    'PATCH',
+    (path, body) =>
+      wsPatch(wsById(WS_TASKS, path), body, (row, f) => {
+        if ('assignee' in f) row.assignee = wsPerson(f.assignee);
+        if ('title' in f) row.title = f.title;
+        if ('due_date' in f) row.due_date = f.due_date;
+        if ('status' in f) {
+          row.status = f.status;
+          row.done_at = f.status === 'done' ? new Date().toISOString() : null;
+        }
+      }),
+  ],
+  [
+    /^\/api\/workspace\/team-tasks\/[^/]+\/$/,
+    'DELETE',
+    (path) => {
+      const at = WS_TASKS.findIndex((r) => r.id === path.split('/')[4]);
+      if (at < 0) return notFound('No TeamTask matches the given query.');
+      WS_TASKS.splice(at, 1);
+      return { status: 204, body: undefined };
+    },
+  ],
+  // ---- Contacts (owner) ----
+  [/^\/api\/workspace\/contacts\/$/, 'GET', (_p, _b, url) => pageOf(wsContactsOrdered(), url)],
+  [
+    /^\/api\/workspace\/contacts\/$/,
+    'POST',
+    (_p, body) => {
+      const row = wsRow({
+        id: gid('e3'),
+        name: body?.name ?? '',
+        company: body?.company ?? '',
+        phone: body?.phone ?? '',
+        email: body?.email ?? '',
+        priority: body?.priority ?? 'med',
+        last_contact: body?.last_contact ?? null,
+        next_followup: body?.next_followup ?? null,
+        notes: body?.notes ?? '',
+        collector: null,
+        artist: null,
+        created_at: new Date().toISOString(),
+      });
+      WS_CONTACTS.push(row);
+      return envelope(row);
+    },
+  ],
+  [
+    /^\/api\/workspace\/contacts\/[^/]+\/$/,
+    'PATCH',
+    (path, body) =>
+      wsPatch(wsById(WS_CONTACTS, path), body, (row, f) => {
+        // the links are written as a uuid and read back as {id, display_name}
+        const { collector: _c, artist: _a, ...rest } = f;
+        Object.assign(row, rest);
+      }),
+  ],
+  [
+    /^\/api\/workspace\/contacts\/[^/]+\/$/,
+    'DELETE',
+    (path) => {
+      const at = WS_CONTACTS.findIndex((r) => r.id === path.split('/')[4]);
+      if (at < 0) return notFound('No Contact matches the given query.');
+      WS_CONTACTS.splice(at, 1);
+      return { status: 204, body: undefined };
+    },
+  ],
+  // ---- Pricelist approvals (admin, read-only) — the submitted gallery lists ----
+  [
+    /^\/api\/workspace\/pricelist-approvals\/$/,
+    'GET',
+    (_p, _b, url) =>
+      pageOf(
+        GALLERY_PRICELISTS.filter((p) => p.status === 'submitted').map((p) => {
+          const link = GALLERY_LINKS.find((l) => l.id === p.link);
+          return {
+            id: p.id,
+            title: p.title,
+            notes: p.notes,
+            status: p.status,
+            submitted_at: p.created_at,
+            link: {
+              id: link.id,
+              name: link.name,
+              source_type: link.source_type,
+              contact_name: link.contact_name ?? '',
+            },
+          };
+        }),
+        url,
+      ),
+  ],
+];
+
 const patterns = [
   // Public documents (`AllowAny`): only `legal_terms` is published here, as a
   // confirmed public `Document`; any other kind is the backend's 404.
@@ -3326,6 +3754,7 @@ function respond(req, res, body, raw = '') {
     ...phase6Patterns,
     ...phase7Patterns,
     ...phase8Patterns,
+    ...workspacePatterns,
     ...patterns,
   ]) {
     if (req.method === method && re.test(url.pathname)) {

@@ -151,6 +151,20 @@ import type {
   AuditLogQuery,
   ArtworkFacets,
   ArtworkSelectionGrant,
+  WorkspaceItem,
+  WorkspaceItemInput,
+  WorkspaceItemPatch,
+  WorkspaceItemQuery,
+  TeamTask,
+  TeamTaskInput,
+  TeamTaskPatch,
+  TeamTaskQuery,
+  TeamPerformance,
+  WorkspaceContact,
+  ContactInput,
+  ContactPatch,
+  ContactQuery,
+  PricelistApproval,
 } from './types';
 import type { PortalClient } from './PortalClient';
 
@@ -1585,6 +1599,96 @@ export class AccountingAdminService extends ResourceService {
   settlementVersions(query: { page?: number; per_page?: number } = {}) {
     return this.list<SettlementWorksheetVersion>(
       '/settlement/versions/',
+      query as RequestOptions['query'],
+    );
+  }
+}
+
+/** `/api/workspace/` — the Team desk's Executive Workspace (G-TEAM-1, backend
+ * `apps.workspace` W1–W4; contract `docs/WORKSPACE_API.md`). The old Team tab
+ * (`darz-studio.html:19417`) kept all of this in localStorage; here it is four
+ * resource groups with a permission split the desk must mirror:
+ *
+ *  - **items** (My workspace) and **contacts** — `IsOwner`: a standard admin
+ *    gets 403;
+ *  - **team-tasks** and **pricelist-approvals** — `IsStandardAdminOrOwner`.
+ *
+ * Every PATCH, and the item toggle, carries `expected_version` (a stale one is
+ * a 409 `ConflictError`). Time on a task is append-only: `minutes_logged` is
+ * derived and only grows through `logTime`. The approvals inbox is read-only —
+ * approving is `GalleryAdminService.setPricelistStatus`, not a route here. */
+export class WorkspaceService extends ResourceService {
+  constructor(client: ApiClient) {
+    super(client, '/workspace');
+  }
+
+  // --- My workspace (owner-only) -------------------------------------------
+  items(query: WorkspaceItemQuery = {}) {
+    return this.list<WorkspaceItem>('/items/', query as RequestOptions['query']);
+  }
+  createItem(body: Partial<WorkspaceItemInput>) {
+    return this.create<WorkspaceItem>('/items/', body);
+  }
+  updateItem(id: string, body: WorkspaceItemPatch) {
+    return this.client.send<WorkspaceItem>('PATCH', `${this.basePath}/items/${id}/`, { body });
+  }
+  /** The checkbox. `done_at` is set/cleared server-side to match `done`. */
+  toggleItem(id: string, done: boolean, expectedVersion: number) {
+    return this.create<WorkspaceItem>(`/items/${id}/toggle/`, {
+      done,
+      expected_version: expectedVersion,
+    });
+  }
+  deleteItem(id: string) {
+    return this.remove(`/items/${id}/`);
+  }
+
+  // --- Team workflow (admin) -----------------------------------------------
+  teamTasks(query: TeamTaskQuery = {}) {
+    return this.list<TeamTask>('/team-tasks/', query as RequestOptions['query']);
+  }
+  createTeamTask(body: TeamTaskInput) {
+    return this.create<TeamTask>('/team-tasks/', body);
+  }
+  updateTeamTask(id: string, body: TeamTaskPatch) {
+    return this.client.send<TeamTask>('PATCH', `${this.basePath}/team-tasks/${id}/`, {
+      body,
+    });
+  }
+  deleteTeamTask(id: string) {
+    return this.remove(`/team-tasks/${id}/`);
+  }
+  /** Append a time log (the old `+15m` posts 15). Answers the task with its
+   * new `minutes_logged`. No lock: a log is an append, never an overwrite. */
+  logTime(id: string, minutes: number) {
+    return this.create<TeamTask>(`/team-tasks/${id}/log-time/`, { minutes });
+  }
+  /** The two tables — not paginated. */
+  teamPerformance() {
+    return this.retrieve<TeamPerformance>('/team-tasks/performance/');
+  }
+
+  // --- Contacts (owner-only) -----------------------------------------------
+  /** Server-ordered high→med→low priority, then soonest follow-up. */
+  contacts(query: ContactQuery = {}) {
+    return this.list<WorkspaceContact>('/contacts/', query as RequestOptions['query']);
+  }
+  createContact(body: ContactInput) {
+    return this.create<WorkspaceContact>('/contacts/', body);
+  }
+  updateContact(id: string, body: ContactPatch) {
+    return this.client.send<WorkspaceContact>('PATCH', `${this.basePath}/contacts/${id}/`, {
+      body,
+    });
+  }
+  deleteContact(id: string) {
+    return this.remove(`/contacts/${id}/`);
+  }
+
+  // --- Pricelist approvals (admin, read-only) -------------------------------
+  pricelistApprovals(query: { page?: number; per_page?: number } = {}) {
+    return this.list<PricelistApproval>(
+      '/pricelist-approvals/',
       query as RequestOptions['query'],
     );
   }
