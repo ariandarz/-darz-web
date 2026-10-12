@@ -56,7 +56,7 @@ Nothing is merged without your word.
 
 | | |
 | --- | --- |
-| Web | V1 **released**: `main` = `development` = `960d571` (2026-09-27) |
+| Web | **Released 2026-10-12** (V1 + the Team Workspace desk, #117): `main` = `development` = `723e0cf` |
 | Backend | `development` @ **`f322a30`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **868** unit · 163 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |

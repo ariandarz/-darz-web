@@ -5,6 +5,10 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-12 — Team Workspace released to `main`
+On the owner's instructions, #116 was merged into `development`, then #117 released `development` → `main` (`723e0cf`).
+The production deploy is READY and `development` was fast-forwarded to match `main`; the live site stays visual-only until the real API URL is set.
+
 ## 2026-10-12 — Team Workspace desk built (G-TEAM-1)
 `/admin/team` is the old Executive Workspace on `/api/workspace/`: My workspace · Team workflow (+15m time, performance, approvals box) · Contacts · Logins, quick add; locked PATCHes, 409 → ConflictBanner.
 Team workflow + approvals open to a standard admin (`team` out of `OWNER_ONLY`); owner tabs behind `RequireOwner`. Reject disabled (no `rejected` pricelist state, G-TEAM-2). Schema regenerated (backend `f322a30`).
