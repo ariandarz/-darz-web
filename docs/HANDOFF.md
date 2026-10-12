@@ -15,9 +15,9 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 | --- | --- |
 | Branches | `main` and `development`; `development` is the working line. **V1 released to `main` on 2026-09-27** (#113); the two are level at `960d571`. |
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
-| Backend | `darz-backend-api` `development` @ **`c2eb912`** — the V1 API (224 paths / 323 operations) **plus all eight defect fixes**: #71–#78 merged 2026-10-01 (1013 tests, schema 0/0). |
-| API adoption | 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). |
-| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **837 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
+| Backend | `darz-backend-api` `development` @ **`f322a30`** — the V1 API **plus all eight defect fixes** (#71–#78) and the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12 (G-TEAM-1 PR): 247 paths / 358 operations, non-breaking. |
+| API adoption | V1 snapshot (323 ops): 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). **Not re-run for the 35 operations added since:** the 19 `/api/workspace/` ones are 16 integrated + 3 not needed (G-TEAM-1); the other 16 (G-PORT, Projects documents, G-CAT-9) are UI-pending. |
+| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **868 unit** (79 files) · build · **163 E2E** (collector 40 · desks 105 · portal 6 · smoke 4 · team 8). Runs on **Node 20**. |
 | Live | https://darz-web.vercel.app — serves V1 since 2026-09-27; auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
@@ -59,7 +59,7 @@ work in this order:
    so a real portal link can be issued. `NUM_PROXIES` was **dropped by the owner as not needed now**. The
    mapping of PR → wire change is still in `V1_CONTRACT_ISSUES.md` § "Backend fix PRs". **The FE follow-up
    is now the next piece of work** (one PR, verified non-breaking):
-   - regenerate the schema;
+   - ~~regenerate the schema~~ — done 2026-10-12 in the G-TEAM-1 PR (against `f322a30`);
    - retire the `HoldDetail`/`PortalState` hand types;
    - add the C-12 image preview;
    - add a portal 429 message;
@@ -68,11 +68,14 @@ work in this order:
    C-26, the PATCH drops `gallery_selected`), the post-V1 candidates in the matrix. `isPathAllowed` was
    removed 2026-09-27.
 4. **V2 or later — settled, do not work on these.** Logistics, Library, Insights & Stories, the Social
-   suite (and Strategy / Automations / Languages / Analytics / Team Workspace / "Notify collectors"). The
+   suite (and Strategy / Automations / Languages / Analytics / "Notify collectors"). The
    owner ruled them **V2-or-later on 2026-10-01**: they have no backend, there is nothing to adopt, and they
    are **not** a backlog to clear. Do not implement, plan or re-raise them. Authority: `TASKLIST.md` § D.
 
-When the backend moves past `c2eb912`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
+**Team Workspace (G-TEAM-1) is built** (2026-10-12) — it came off the V2 list when its backend shipped; open
+follow-ups are G-TEAM-2 (no `rejected` pricelist state) and setting a contact's collector/artist link.
+
+When the backend moves past `f322a30`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
 `API_ADOPTION_MATRIX.md`; Phase 10's script approach is described in its Summary), and update the stub in the
 same PR.
 

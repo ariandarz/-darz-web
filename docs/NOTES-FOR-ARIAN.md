@@ -41,6 +41,11 @@ Nothing is merged without your word.
 - **Languages (i18n, off today):** which languages ship, and do we do a real right-to-left pass?
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
+- **Team desk (built 2026-10-12):**
+  - pricelist **Reject** is shown but disabled — the backend has no `rejected` pricelist state (G-TEAM-2).
+    Add one, or should Reject mean "superseded"?
+  - a contact can be linked to a collector/artist (the card then shows a jump-to link), but the desk has
+    no control to set the link — the old card had none. Add a picker?
 - **Small backend follow-ups:**
   - the admin share can still move a document to another collector;
   - completed and cancelled projects still count in the dashboard tiles;
@@ -52,8 +57,8 @@ Nothing is merged without your word.
 | | |
 | --- | --- |
 | Web | V1 **released**: `main` = `development` = `960d571` (2026-09-27) |
-| Backend | `development` @ **`c2eb912`** — fix PRs **#71–#78 all merged** 2026-10-01 (1013 tests, schema 0/0) |
-| Gate | **837** unit · 155 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
+| Backend | `development` @ **`f322a30`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
+| Gate | **868** unit · 163 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |
 
 Detail: `DARZ_WEB_V1_STATUS.md` (full picture), `V1_CONTRACT_ISSUES.md` § "Backend fix PRs",
