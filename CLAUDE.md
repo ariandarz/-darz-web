@@ -52,6 +52,10 @@ Two sources are required **together** for every feature — neither alone is eno
   **2026-09-27 — "merge 114" then "release development to main"**, two separate instructions:
   #114 merged into `development`, then #113 released `development` → `main` (`960d571`,
   production deploy READY), with `development` fast-forwarded to `main` so the two are level.
+  **2026-10-12 — "merge 116" then "release development to main"**, again two separate
+  instructions: #116 (Team Workspace desk, G-TEAM-1) merged into `development`, then #117 released
+  `development` → `main` (`723e0cf`, production deploy READY), and `development` was
+  fast-forwarded to `main` again.
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full
