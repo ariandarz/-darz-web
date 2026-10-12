@@ -23,12 +23,14 @@ is this branch). The site is still **visual-only in production** until the owner
 non-integrated operation carries a one-line reason in `docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`.
 
 **Final gate (Phase 10, run on this branch):** typecheck ✅ · oxlint **0** warnings/errors ✅ · prettier ✅ ·
-**838/838 unit tests** (76 files) ✅ · production build ✅ (`VITE_API_BASE_URL=https://api.invalid/api`) ·
+**837/837 unit tests** (76 files) ✅ · production build ✅ (`VITE_API_BASE_URL=https://api.invalid/api`) ·
 **155/155 Playwright E2E** (collector 40 · desks 105 · portal 6 · smoke 4) against `e2e/stub-server.mjs` ✅.
 
-What remains is not frontend V1 work: **backend defects** (C-6…C-25 in `V1_CONTRACT_ISSUES.md`, the
-security set C-13 first), **owner decisions** (Q-2, Q-4, the Q-5 remainder, Q-8, Q-9), and **post-V1
-features** with no backend (Logistics, Library, Insights & Stories, the Social suite, …).
+What remains is not frontend V1 work: **backend defects** (C-6…C-25 in `V1_CONTRACT_ISSUES.md` — all
+fixed and merged 2026-10-01) and **owner decisions** (Q-2, Q-4, the Q-5 remainder, Q-8, Q-9).
+
+Logistics, Library, Insights & Stories and the Social suite are **V2 or later** — the owner settled this on
+2026-10-01. They are out of scope, not a remaining gap; see `TASKLIST.md` § D and do not re-raise them.
 
 ## V1 architecture
 
@@ -124,7 +126,7 @@ Status words: **Complete** (built and bound, nothing V1 left) · **Partial** (V1
 
 | Section | Purpose | Screens | Implemented | APIs used | Actions | Roles | V1 status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, Sent pills + Pending review, History, pricelist upload **and builder** with status, messages, exhibition services (create, pick services, send, sign documents by name) | `gallery/portal/{token}/…` (11 of 15 operations integrated; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign | token + PIN | Partial — the old "Save draft" of a services selection is not built (the portal exhibition PATCH cannot carry `gallery_selected`, C-26); referral, drawn signature, offer engine, formatted pricelist download have no backend |
+| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, Sent pills + Pending review, History, pricelist upload **and builder** with status, messages, exhibition services (create, pick services, send, sign documents by name) | `gallery/portal/{token}/…` (11 of 15 operations integrated; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign | token + PIN | Partial — the old "Save draft" of a services selection is not built (the portal exhibition PATCH cannot carry `gallery_selected`, C-26). Referral, drawn signature, portal actions/offer-floor, and formatted pricelist download **now have backends (shipped 2026-10-01)** — UI pending; see API_GAPS G-PORT-5/7/8/P3c + ADMIN_ARCHITECTURE |
 
 ### Admin panel
 
@@ -233,7 +235,10 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 
 ### Backend limitations (open on `darz-backend-api`, detail in `V1_CONTRACT_ISSUES.md` § B)
 
-**Update 2026-09-26:** each row below except C-16 and C-21 now has a draft fix PR on `darz-backend-api`, #71–#77. None of them is merged yet; they wait on the backend owner. See `V1_CONTRACT_ISSUES.md` § "Backend fix PRs" for which PR fixes which row. The FE work-arounds stay until the PRs merge.
+**Update 2026-10-01 — all fixed.** Every row below except the two notes (C-16, C-21) had a fix PR on
+`darz-backend-api` (#71–#78), and **all eight were merged on 2026-10-01**; backend `development` is now
+`c2eb912` (full suite 1013 passed, schema 0 warnings / 0 errors). The FE work-arounds recorded below can
+now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend fix PRs" and `TASKLIST.md` § B.
 
 - **C-6** PATCH without `expected_version` → 500 (not 400) on 18 endpoints; FE always sends it.
 - **C-7** no hold member in the request-detail union; FE hand-types `HoldDetail`.
@@ -267,7 +272,8 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
   `RequireOwner`; every owner-only tab with a route is `RequireOwner`-wrapped).
 - Hand types that the backend schema should own (`HoldDetail`, `PortalState`).
 - Unused bindings kept to mirror the served routes (listed above).
-- `schema.d.ts` must be regenerated whenever the backend moves past `df0421f`.
+- `schema.d.ts` must be regenerated whenever the backend moves. **Regenerated 2026-10-12** against `f322a30`
+  (247 paths / 358 operations) in the G-TEAM-1 PR — non-breaking, no new type errors.
 - The E2E stub mirrors backend shapes by hand; it has to move in the same PR as any shape change.
 
 ### Future / post-V1
@@ -300,7 +306,7 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 | Admin App Design | Complete | Complete | Complete | |
 | Question-set editor | Missing | Missing | Deferred post-V1 | owner-deferred G-P25-2(b) |
 | Intelligence / Marketing Hub / Document Builder | Missing | Missing | Deferred post-V1 | G-6 (Q-8) |
-| Logistics / Analytics / Social / Strategy / Automations / Languages / Library / Insights & Stories | Missing | Not applicable | Deferred post-V1 | no backend |
+| Logistics / Analytics / Social / Strategy / Automations / Languages / Library / Insights & Stories | Missing | Not applicable | **V2 or later** (owner, 2026-10-01 — out of scope, do not re-raise; `TASKLIST.md` § D) | no backend |
 
 ## Deferred / V2 candidates
 
@@ -309,12 +315,23 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
   (G-P13-1), the Club "Auction access" section (G-CLUB-3), counter-offer display (G-P5-9, needs wording — Q-4).
 - **G-6 (Q-8):** Intelligence (AI tagging, filters, recommendations, history, "Curated for you"), Marketing
   Hub, Document Builder / Studio (D18).
-- **No backend yet:** Logistics & Payment (Phase 20), Library / saved items (Phase 21), Insights & Stories
-  (Phase 22 — the nav tab stays hidden until a story can be published), i18n/RTL (G-I18N-1), the Social
-  suite, Strategy, Automations, Languages, Analytics, Team Workspace (G-TEAM-1), "Notify collectors" (needs
-  a push-send endpoint), the source-freshness loop (G-CAT-9), PDF/image import intake (D15), the settlement
-  calculator, theme editors (D17), the proposal builder.
-- **Gallery portal:** referral / Introduce (G-PORT-5), drawn signature (G-PORT-7), offer floor / auto-decline
-  engine (G-PORT-8), formatted pricelist download (P3c), the "Save draft" of a services selection (backend C-26).
+- **V2 or later — settled by the owner 2026-10-01, out of scope, do not implement or re-raise**
+  (authority: `TASKLIST.md` § D): Logistics & Payment (Phase 20), Library / saved items (Phase 21),
+  Insights & Stories (Phase 22 — the nav tab stays hidden until a story can be published, as the old app
+  does), the Social suite, Strategy, Automations, Languages, Analytics,
+  "Notify collectors" (needs a push-send endpoint).
+- **Built 2026-10-12:** the Team Workspace desk (G-TEAM-1) at `/admin/team` — My workspace · Team workflow ·
+  Contacts · Logins, against `docs/WORKSPACE_API.md`. Follow-ups: G-TEAM-2 (no `rejected` pricelist state),
+  setting a contact's collector/artist link.
+- **Ready to build (backend shipped, UI pending)** (all shipped 2026-10-01, see API_GAPS.md /
+  ADMIN_ARCHITECTURE.md): the **Projects Proposal + Invoice
+  Builder** (`/projects/admin/projects/{id}/documents/…`), the **source-freshness loop (G-CAT-9)**
+  (`/catalog/admin/.../confirm-available|sources/confirm|freshness-summary|freshness-settings`), and the
+  **Artists `records`/`top-price` sorts** (`?ordering=records|top-price`).
+- **Still open, not ruled V2:** i18n/RTL (G-I18N-1), PDF/image import
+  intake (D15), the settlement calculator, theme editors (D17).
+- **Gallery portal — backend shipped 2026-10-01, UI pending:** referral / Introduce (G-PORT-5), drawn
+  signature (G-PORT-7), portal actions + offer floor (G-PORT-8), formatted pricelist download (P3c). See
+  API_GAPS.md G-PORT-5/7/8/P3c for endpoints. Still no backend: the "Save draft" of a services selection (C-26).
 - **Small post-V1 candidates:** legacy-id deep-link redirect (`catalog/legacy-lookup/`), a background
   catalogue poller on `change-stamp/`, the Refine filters on the Database desk.

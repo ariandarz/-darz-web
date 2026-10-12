@@ -5,15 +5,18 @@ Nothing is merged without your word.
 
 ## TODO
 
-1. [ ] **Merge the backend fix PRs** on `darz-backend-api`: #71–#78. They are drafts, each with tests.
-   Merge the security ones, **#74** (login rate limit) and **#76** (gallery portal PIN, uploads), before any real
-   portal link goes out. Only the top of the backend `CHANGELOG.md` conflicts between them; keep both entries.
-2. [ ] **Set `NUM_PROXIES`** on the production backend. Behind one Caddy, set it to `1`. Until it's set,
-   anyone can get around the per-IP limits.
+1. [x] ~~Merge the backend fix PRs #71–#78~~. **Done 2026-10-01** — all eight merged into
+   `darz-backend-api` `development` (now `c2eb912`), in order, each verified (1013 tests, schema 0/0).
+   The security pair #74/#76 is in, so a real portal link can now be issued. **One loose end:** their PR
+   branches were updated by another process mid-merge, so seven may still show as *open* on GitHub even
+   though their code is merged — safe to close by hand and delete the branches (nothing is missing from
+   `development`; this was verified three ways).
+2. **`NUM_PROXIES` — dropped, not needed now.** Your call, 2026-10-01: over-engineering at this stage.
+   It will be set later if and when production use calls for it, with the deploy work. Not an open task.
 3. [ ] **Give the real API URL** (`VITE_API_BASE_URL`). Until then the live site shows layout only, with no
    sign-in and no data. This is the biggest blocker.
-4. [ ] **Say "release development to main"** to merge **#113** and put V1 on the live site. CI is green.
-5. [ ] **Review #114**, the docs PR that links each backend PR to its issue.
+4. [x] ~~Release #113~~. **Done 2026-09-27:** V1 is on `main` (`960d571`) and deployed.
+5. [x] ~~Review #114~~. Merged 2026-09-27.
 6. [ ] After the backend PRs merge, ask for the **small web follow-up**:
    - regenerate the types;
    - show the admin image preview;
@@ -38,6 +41,11 @@ Nothing is merged without your word.
 - **Languages (i18n, off today):** which languages ship, and do we do a real right-to-left pass?
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
+- **Team desk (built 2026-10-12):**
+  - pricelist **Reject** is shown but disabled — the backend has no `rejected` pricelist state (G-TEAM-2).
+    Add one, or should Reject mean "superseded"?
+  - a contact can be linked to a collector/artist (the card then shows a jump-to link), but the desk has
+    no control to set the link — the old card had none. Add a picker?
 - **Small backend follow-ups:**
   - the admin share can still move a document to another collector;
   - completed and cancelled projects still count in the dashboard tiles;
@@ -48,9 +56,9 @@ Nothing is merged without your word.
 
 | | |
 | --- | --- |
-| Web | V1 complete on `development`; **#113** (release) and **#114** (docs) are open |
-| Backend | fix PRs **#71–#78** are open drafts on `darz-backend-api` |
-| Gate | 838 unit · 155 E2E · typecheck · lint · format · build, all green |
+| Web | V1 **released**: `main` = `development` = `960d571` (2026-09-27) |
+| Backend | `development` @ **`f322a30`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
+| Gate | **868** unit · 163 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |
 
 Detail: `DARZ_WEB_V1_STATUS.md` (full picture), `V1_CONTRACT_ISSUES.md` § "Backend fix PRs",

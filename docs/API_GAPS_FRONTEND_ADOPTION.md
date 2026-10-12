@@ -14,6 +14,11 @@ Measured against backend `development` @ `df0421f` (PR #70, **final V1: 224 path
 `-darz-web` `v1/phase-10-final` (= `development` after PRs #102–#111). The matrix was re-verified against the
 code in Phase 10 (script-parsed bindings: 271, 0 dangling; every Integrated row has a UI caller). **No "Not
 bound" row remains** — each non-integrated operation carries a final status and a reason.
+>
+> **Current state (2026-10-01):** the backend has moved on — `development` is **`c2eb912`**, with all eight
+> defect fixes (#71–#78) merged. The measurement below still holds for API *surface* (the same 224 paths /
+> 323 operations) but the response *shapes* changed; regenerate `src/api/schema.d.ts` before trusting one.
+
 
 **Totals: 261 Integrated · 1 Bound, no UI · 14 Excluded (owner-deferred, API ready) · 31 Excluded (not V1) ·
 15 Not needed · 1 Backend-only = 323.** (Baseline 2026-09-25: 225 · 3 partial · 9 bound-no-UI · 85 not bound ·

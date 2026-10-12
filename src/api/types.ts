@@ -1274,3 +1274,87 @@ export interface PageQuery {
   page?: number;
   per_page?: number;
 }
+
+/* ---- Team Workspace (G-TEAM-1, backend `apps.workspace` W1–W4) ----------
+ * The old Team tab's "Executive Workspace" (`darz-studio.html:19417`), which
+ * was client-local in the old app. Contract: `docs/WORKSPACE_API.md`. Every
+ * PATCH (and the item toggle) is locked — `expected_version` is required on
+ * the generated `Patched*Update` bodies, a stale one 409s. */
+
+/** A My-workspace item (owner-only, `IsOwner`). `done_at` is server-managed:
+ * flip `done` through `toggle/`, never by PATCHing `done_at`. */
+export type WorkspaceItem = Schemas['WorkspaceItem'];
+export type WorkspaceItemKind = Schemas['WorkspaceItemKindEnum'];
+export type WorkspaceItemCategory = Schemas['WorkspaceItemCategoryEnum'];
+/** POST body — `kind` defaults to `task`, `category` to `personal`. */
+export type WorkspaceItemInput = Pick<
+  WorkspaceItem,
+  'kind' | 'category' | 'title' | 'body' | 'due_date' | 'due_time'
+>;
+export type WorkspaceItemPatch = Locked<Schemas['PatchedWorkspaceItemUpdate']>;
+/** `WorkspaceItemFilterSet` — `due` windows are over `due_date` relative to
+ * today; `overdue` also requires not-done. */
+export interface WorkspaceItemQuery {
+  kind?: WorkspaceItemKind;
+  category?: WorkspaceItemCategory;
+  done?: boolean;
+  due?: 'today' | 'week' | 'overdue';
+  search?: string;
+  ordering?: 'due' | '-due' | 'created' | '-created';
+  page?: number;
+  per_page?: number;
+}
+
+/** A team task (admin-visible, `IsStandardAdminOrOwner`). `minutes_logged`
+ * is DERIVED — the sum of the append-only time logs — and only grows through
+ * `log-time/`. `assignee` reads as `{id, name}` and is written as a TeamUser
+ * uuid (or `null` = Unassigned). */
+export type TeamTask = Omit<Schemas['TeamTask'], 'assignee'> & {
+  /** nullable on the wire (an unassigned task) though the generated type
+   * omits `null` — the nested serializer is `read_only`, not `allow_null`. */
+  assignee: Schemas['TeamUserBrief'] | null;
+};
+export type TeamTaskStatus = Schemas['TeamTaskStatusEnum'];
+export type TeamTaskInput = Schemas['TeamTaskWrite'];
+export type TeamTaskPatch = Locked<Schemas['PatchedTeamTaskUpdate']>;
+export interface TeamTaskQuery {
+  status?: TeamTaskStatus;
+  /** a TeamUser uuid */
+  assignee?: string;
+  search?: string;
+  ordering?: 'due' | '-due' | 'created' | '-created';
+  page?: number;
+  per_page?: number;
+}
+/** `GET team-tasks/performance/` — the old desk's two tables. `performance`
+ * carries an "Unassigned" row (`team_user_id: null`); `behaviour` is one row
+ * per active admin account (owner + standard admins). */
+export type TeamPerformance = Schemas['TeamPerformanceResponse'];
+export type TeamPerformanceRow = Schemas['TeamPerformanceRow'];
+export type AdminBehaviourRow = Schemas['AdminBehaviourRow'];
+
+/** A Contacts-desk row (owner-only). `collector` / `artist` are optional
+ * links, read as `{id, display_name}` and written as a uuid. */
+export type WorkspaceContact = Omit<Schemas['Contact'], 'collector' | 'artist'> & {
+  /** both nullable on the wire (a contact needs neither link) though the
+   * generated type omits `null`, as with `Artwork.artist`. */
+  collector: Schemas['LinkedPartyBrief'] | null;
+  artist: Schemas['LinkedPartyBrief'] | null;
+};
+export type ContactPriority = Schemas['ContactPriorityEnum'];
+export type ContactInput = Schemas['ContactWrite'];
+export type ContactPatch = Locked<Schemas['PatchedContactUpdate']>;
+/** The list is server-ordered high→med→low, then soonest `next_followup` —
+ * render it as served. */
+export interface ContactQuery {
+  priority?: ContactPriority;
+  /** next follow-up within N days, overdue included */
+  followup_due_soon?: number;
+  search?: string;
+  page?: number;
+  per_page?: number;
+}
+
+/** The approvals inbox row (admin-visible, read-only): only `submitted`
+ * gallery pricelists. Acting on one is `GalleryAdminService.setPricelistStatus`. */
+export type PricelistApproval = Schemas['PricelistApproval'];

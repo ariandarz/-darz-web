@@ -7,8 +7,11 @@ the long historical task log (that detail now lives in `CHANGELOG.md` and `docs/
 - **How to adopt the closed backend work** → **`API_GAPS_FRONTEND_ADOPTION.md`**.
 - **Backend's next tier of gaps** → **`../darzmarket-api/docs/GROUP_B_API_GAPS_PLAN.md`**.
 - **Owner decisions in one place** → **`NOTES-FOR-ARIAN.md`**. **Start-here** → **`HANDOFF.md`**.
+- **The eight deferred features, costed and planned** → **`DEFERRED_FEATURES_PLAN.md`** (awaiting the
+  owner's pick; nothing started).
 
-> **Status legend:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked.
+> **Status legend:** `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked ·
+> `[V2]` **ruled V2-or-later by the owner — out of scope, do not implement or re-raise** (§ D).
 > When you finish a task: set `[x]`, add a 3-line `CHANGELOG.md` entry, update the API gap's row in
 > `API_GAPS.md`, and move focus. Merging needs an explicit per-request owner instruction (`CLAUDE.md`).
 
@@ -21,12 +24,12 @@ structure — trace every decision to the approved package + `app.html`.
 
 | | |
 | --- | --- |
-| Branches | `main` and `development`; `development` is the working line. **All V1 phases (PRs #102–#112) are merged into `development`.** Open: **#113** release `development` → `main` (waits for "release development to main") · **#114** docs. |
+| Branches | `main` and `development`, level at `960d571`. **V1 released to `main` on 2026-09-27** (#113, after #114). |
 | V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
-| Backend | `darz-backend-api` `development` @ `df0421f` (PR #70) — the final V1 API. Defects C-6…C-25 have draft fix PRs **#71–#77**, unmerged (`V1_CONTRACT_ISSUES.md` § "Backend fix PRs"). |
-| Gate | typecheck · lint 0 · format · **838 unit** (76 files) · build · **155 E2E** (collector 40 · desks 105 · portal 6 · smoke 4). Runs on **Node 20**. |
-| Live site | https://darz-web.vercel.app — Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
+| Backend | `darz-backend-api` `development` @ **`f322a30`** — the V1 API **with every defect fix merged** (C-6…C-26, PRs **#71–#78**, `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"; still notes only: C-16, C-21), plus the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12: 247 paths / 358 operations. |
+| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **868 unit** (79 files) · build · **163 E2E** (collector 40 · desks 105 · portal 6 · smoke 4 · team 8). Runs on **Node 20**. |
+| Live site | https://darz-web.vercel.app — serves V1 since 2026-09-27; Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
 `DARZ_WEB_V1_STATUS.md` § Remaining gaps.
@@ -62,15 +65,23 @@ structure — trace every decision to the approved package + `app.html`.
   - #76 C-13 portal + C-8/C-9/C-12
   - #77 C-2/C-7/C-14/C-15/C-18
   - #78 C-26 (portal Save draft), opened 2026-09-27
-- [ ] **Owner merges #71–#78.** #74 and #76 (security) must merge before any real portal link is issued.
-- [ ] **Set `NUM_PROXIES`** on the production backend. Every per-IP throttle depends on it.
-- [ ] After they merge, do the FE follow-up:
+- [x] **#71–#78 all merged into `darz-backend-api` `development`** on 2026-10-01, in order, each verified
+      (full suite **1013 passed**, schema **0 warnings / 0 errors**, no missing migrations). Backend
+      `development` is now **`c2eb912`**. The C-13 security pair (#74, #76) is in, so the blocker on issuing
+      a real portal link is cleared.
+- [ ] **FE follow-up — now actionable** (one PR; verified non-breaking, see `DEFERRED_FEATURES_PLAN.md` § 3):
   - regenerate `schema.d.ts`;
   - retire `HoldDetail`/`PortalState` hand types;
   - add the C-12 image preview;
   - add a portal 429 message;
   - read the new option labels.
 - [ ] Still notes, with no PR: C-16 (list-only rollups), C-21 (no pricelist status guard).
+- **`NUM_PROXIES` — not now, deliberately.** Owner decision 2026-10-01: **over-engineering at this stage.**
+  It is a DRF setting that only matters once the production deployment's proxy topology is fixed, and it
+  changes nothing for the current visual-only site. **Do not raise it as an open task.** It will be
+  set/implemented later, based on actual production use, as part of the deploy work (§ D, Deploy Phase 14).
+  Background, if ever needed: unset, DRF's per-IP throttles key on a client-sent `X-Forwarded-For`; the
+  portal PIN limit is keyed on the link instead, so it is unaffected either way.
 
 ### C · Frontend follow-ups (post-V1, small)
 - [ ] Portal **"Save draft"** of a services selection (the one Bound-no-UI operation). **Blocked on the
@@ -79,14 +90,34 @@ structure — trace every decision to the approved package + `app.html`.
 - [ ] Post-V1 candidates recorded in the matrix: legacy-id deep-link redirect, a `change-stamp` poller, the
       Database Refine filters (G7), FE-R1…R4 Records extras.
 
-### D · Deferred / backend-blocked features (owner-scoped)
-- [!] **Logistics & Payment desk** (backend Phase 20 — no `/api/logistics/` namespace).
-- [!] **Library + pricelist formatting** (backend Phase 21; P3c formatted download).
-- [!] **Insights & Stories** (backend Phase 22 — the nav tab stays hidden until a story can be published).
-- [!] Social suite, Strategy, Automations, Languages, Analytics, Team Workspace, "Notify collectors"
+### D · V2 or later — out of scope, settled (owner decision, 2026-10-01)
+
+> **These are NOT V1 and NOT post-V1 follow-ups. The owner has ruled them V2 or later.**
+> Do not implement them, do not plan them, and do not re-raise them as open work, gaps or
+> "remaining" items in any doc, audit or handoff. They have no backend, so there is nothing to
+> adopt. A row here is a closed scope decision, not a backlog entry — only the owner reopens one.
+> This block is the single authority; every other doc points here rather than restating it.
+
+- [V2] **Logistics & Payment desk** (would need backend Phase 20 — no `/api/logistics/` namespace).
+- [V2] **Library + pricelist formatting** (would need backend Phase 21; P3c formatted download).
+- [V2] **Insights & Stories** (would need backend Phase 22 — the nav tab stays hidden until a story can be
+      published, exactly as the old app behaves; nothing to build).
+- [V2] **Social suite**, Strategy, Automations, Languages, Analytics, "Notify collectors"
       (no push-send endpoint), portal referral / drawn signature / offer engine.
+      _(Team Workspace is no longer here — its backend shipped 2026-10-01; see the build task below.)_
 - [ ] **Deploy Phase 14** — Vercel auto-deploys `main`; the ArvanCloud `docker build` + deep-route `curl`
       have **not been run**. DNS/hosting cutover pends the real API URL and `darzmarket-api` Phase 18.
+
+### Ready to build (backend shipped, UI pending)
+- [x] **Team Workspace desk (G-TEAM-1)** — done 2026-10-12. `src/features/admin/TeamPage.tsx` is the old three-tab
+      Executive Workspace + approvals box against **`docs/WORKSPACE_API.md`**, plus a fourth owner tab, Logins (the
+      old logins desk): My workspace (owner) · Team workflow + time + performance (admin) · Contacts (owner) ·
+      Pricelist-approvals box (admin, approves via the gallery status endpoint). Owner tabs behind `RequireOwner`;
+      `team` left `OWNER_ONLY` so a standard admin reaches Team workflow + approvals; "no backend" copy removed.
+- [ ] **G-TEAM-2 (backend)** — a gallery pricelist has no `rejected` status (`submitted · accepted · superseded`), so
+      the approvals box's Reject is shown disabled with the reason. Add the state (or decide Reject = `superseded`).
+- [ ] **Contact links in the UI** — the desk shows a contact's optional collector/artist "jump to" link, but has no
+      control to SET one (the old card had none). Owner call whether to add a picker.
 
 ### Done in V1 (was open on 2026-09-24)
 - [x] Frontend adoption of every closed V1 and Group-B gap (Batches 1–8 → V1 Phases 0–9a).

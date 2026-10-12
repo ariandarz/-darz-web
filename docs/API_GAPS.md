@@ -7,6 +7,11 @@ re-verified against the code in Phase 10: **261 Integrated · 1 Bound, no UI · 
 (owner-deferred, API ready) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only**. The completed-V1
 picture is **`DARZ_WEB_V1_STATUS.md`**; backend↔frontend contract problems still open are in
 **`V1_CONTRACT_ISSUES.md`** (`C-…` IDs).
+>
+> **Current state (2026-10-01):** the backend has moved on — `development` is **`c2eb912`**, with all eight
+> defect fixes (#71–#78) merged. The measurement below still holds for API *surface* (the same 224 paths /
+> 323 operations) but the response *shapes* changed; regenerate `src/api/schema.d.ts` before trusting one.
+
 
 Every gap row below carries its final FE state: **adopted** (with the phase), **deferred-owner** (owner
 question, API ready), **excluded** (not V1, with the reason) or **blocked** (with the reason). No backend
@@ -74,8 +79,9 @@ trusting any shape (`CLAUDE.md` → "API access").
 | Phase 5b | Database desk 4 hard filters | ✅ Closed | `gallery_portal`/`complete`/`duplicate_images`/`size` on admin filter set. **FE adopted (V1 Phase 4):** Gallery Portal · Images "Duplicates (same image)" · Details "Missing required fields" · Size selects in More filters, sent to the list and to facets. |
 | G-P6-1..4 | Saved/favorites loop | ✅ Closed | See `PHASE_6_API_GAPS.md` history. |
 | G-CAT-1/3/8 | Admin row thumb + artist name, artists search/ordering/works_count, publish gate | ✅ Closed | 2026-09-25. See "2026-09-25 backend additions". **FE adopted (V1 Phase 4).** |
+| G9 (artist sorts) | Artists list `records` / `top-price` sorts | ✅ Closed | **Backend shipped 2026-10-01.** `?ordering=records` (count of the artist's auction records) and `?ordering=top-price` (highest **sold** auction result, nulls last) on both the collector `artists/` and the admin roster; `records_count` + `top_record_price` now on the artist row. **FE: wire the "Most records"/"Top price" sort options in `ArtistListPage`.** |
 | G-CAT-4..7 | Old editor fields with no backend | ➖ Stated on the editor | Not V1 API gaps. |
-| G-CAT-9 | Source-freshness loop | ⛔ Deferred | Backend Phase 10 sources loop. FE: excluded (not V1, no backend). |
+| G-CAT-9 | Source-freshness loop | ✅ Closed | **Backend shipped 2026-10-01.** `Artwork.source_confirmed_at` + freshness bands (≤30 fresh / 31–60 due / 61–90 stale / >90 risky). Admin: `POST /catalog/admin/artworks/{id}/confirm-available/` (optional `{status}` routes through the guarded availability machine), `POST /catalog/admin/sources/confirm/` (`{source_name?, source_type?}` — bulk per-source), `GET /catalog/admin/sources/freshness-summary/` (needs-reconfirmation counts + per-source rollup), `GET/PATCH /catalog/admin/sources/freshness-settings/` (owner toggle `hide_unconfirmed`/`hide_after_days`, default off). Admin artwork list filters `?freshness=`/`?needs_reconfirmation=`; `source_confirmed_at` + derived `freshness` on the admin row. When the toggle is on, long-unconfirmed source-linked works drop off the collector catalogue and reappear on reconfirm. **FE: build the Sources desk freshness pills + "Confirm available".** |
 
 ## Recommendations — questionnaire
 
@@ -162,7 +168,7 @@ trusting any shape (`CLAUDE.md` → "API access").
 | G-PORT-14 | `object_key` + `file_url` on pricelists | ✅ Adopted (Phase 5): "Open file" on the desk and the portal row | 5 |
 | G-PORT-15 | `?search=` on admin links | ✅ Adopted (Phase 5): the partner search is a server query | 5 |
 | G-PORT-16 | `quantity` on exhibition service lines | ✅ Adopted (Phase 5): compose sends/shows it; Issue document splits the line amount back into qty × unit; portal prints "n ×" | 5 |
-| G-PORT-5/7/8, P3c | Referral tab, drawn signature, offer engine, formatted pricelist download | ⛔ **No backend**: not V1 | — |
+| G-PORT-5/7/8, P3c | Referral tab, drawn signature, portal actions/offer-floor, formatted pricelist download | ✅ Closed | **Backend shipped 2026-10-01.** **P3c:** `POST /gallery/admin/pricelists/{id}/rendered/` stores the client-rendered branded PDF → downloadable via `file_url`. **G-PORT-7:** portal sign endpoint takes an optional `signature_image` (base64 PNG, ≤2MB), stored as `signature_image_key` + served as `signature_image_url`, typed `signer_name` kept too. **G-PORT-5:** `PortalReferral` — portal `GET/POST /gallery/portal/{token}/referrals/` + admin `GET /gallery/admin/referrals/` (filter `?status=`/`?link=`) + `POST /gallery/admin/referrals/{id}/review/`. **G-PORT-8:** portal `POST /gallery/portal/{token}/artworks/{id}/actions/` proposes `allowed_actions`/`offer_floor` → approval queue → applied to the artwork; the crm offer-floor engine enforces it (no separate auto-decline object). **FE: build each surface.** |
 | G-PORT-10 | Pre-PIN name probe | ➖ Dropped by owner | — |
 
 ## Backend defects (raise on `darz-backend-api`) — final state
@@ -190,8 +196,10 @@ schema path). FE-side fixed: C-1…C-5 (Phase 0).
 | Item | State | Note |
 | --- | --- | --- |
 | G-6: Intelligence · Marketing Hub · Document Builder | ⛔ Deferred | API ready, no UI. Owner decision. |
-| Phase 20 Logistics | ⛔ Deferred | No `/api/logistics/` namespace. |
-| Phase 21 Library (saved-items library) | ⛔ Deferred | No library endpoints. **Per-link gallery pricelists are no longer a gap:** status lifecycle, soft cap and a structured builder shipped 2026-09-25 (P3a/P3b, see below). Only the formatted download (P3c) is still unbuilt. |
+| G-TEAM-1: Team Workspace suite | ✅ Done | **Backend shipped 2026-10-01** (`apps.workspace` W1–W4 + `accounts.TeamLoginEvent`); **desk built 2026-10-12** at `/admin/team` against **`docs/WORKSPACE_API.md`** — My workspace · Team workflow · Contacts · Logins + the approvals box. |
+| G-TEAM-2: no `rejected` pricelist state | 🔴 Backend | `GalleryPricelist.STATUS_CHOICES` is `submitted · accepted · superseded`; the old approvals box's Reject has nothing true to send, so the desk shows it disabled with the reason. Add `rejected` (or the owner rules Reject = `superseded`). |
+| Phase 20 Logistics | 🚫 **V2 or later** | Owner decision 2026-10-01: out of scope, do not implement or re-raise (`TASKLIST.md` § D). No `/api/logistics/` namespace. |
+| Phase 21 Library (saved-items library) | 🚫 **V2 or later** | Owner decision 2026-10-01: out of scope, do not implement or re-raise (`TASKLIST.md` § D). No library endpoints. **Per-link gallery pricelists are no longer a gap:** status lifecycle, soft cap and a structured builder shipped 2026-09-25 (P3a/P3b, see below). Only the formatted download (P3c) is still unbuilt. |
 | Auction Sales | ✅ Done | Built V1 Phase 2 (2026-09-25): `/admin/sales?source=auction`, the Sales desk with a fixed `source=auction` scope; the auto-created drafts list there, each row's **Lot N** links to its auction page (lot resolved via `GET …/admin/lots/{id}/`). |
 | G7 "Refine" filter UI, FE-R1…R4 (Records desk/curation/import/sub-tabs) | ⚪ Frontend-only | Backend ready. FE: excluded from V1 — the old Database desk had no Refine control (`refine_*`, `price_min/max`, `tag` stay unsent); the admin Records desk shipped, curation/import beyond it are post-V1. |
 | Legacy-id lookup / catalogue change-stamp | ⚪ Frontend-only | FE final: **legacy lookup excluded** (not V1: no legacy-link redirect route in the approved app; post-V1 candidate if old Darz/Airtable links still circulate) · **change-stamp not needed** (the collector catalogue is server-paged, so there is no full-list walk to guard). |
@@ -209,8 +217,9 @@ schema path). FE-side fixed: C-1…C-5 (Phase 0).
   § Remaining gaps.
 - **Owner-deferred, API ready** (Q-4/Q-5): G-P24-2, G-P25-2(b), G-P5-4, G-P5-5, G-P5-12, G-P13-1, G-CLUB-3
   club section, G-P5-9.
-- **Deferred/unbuilt phases** (⛔ rows: G-6 Intelligence/Marketing/Document Builder, Logistics, Library,
-  Insights & Stories) → owner-scoped; `TASKLIST.md`.
+- **V2 or later** (⛔ rows: Logistics, Library, Insights & Stories, the Social suite) → **settled by the
+  owner on 2026-10-01: out of scope, do not implement or re-raise.** Authority: `TASKLIST.md` § D.
+  G-6 (Intelligence / Marketing / Document Builder) stays a separate owner call, Q-8.
 
 Rows marked "(verify)" carry an older doc's closed-claim that was not re-run against the schema — confirm
 when that area is next touched.

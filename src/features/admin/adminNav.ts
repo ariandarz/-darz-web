@@ -59,7 +59,8 @@ export interface AdminTab {
 export interface AdminGroup {
   key: string;
   label: string;
-  /** Rendered gold (`.ad-gtab--owner`, `:8199`) and offered to an owner only. */
+  /** Rendered gold (`.ad-gtab--owner`, `:8199`). Visibility is decided by its
+   * tabs alone (`visibleGroups`), as in the old panel. */
   owner?: boolean;
   /** Folded under "More" (`AD_FOLDED`, `:11781`). */
   folded?: boolean;
@@ -67,19 +68,27 @@ export interface AdminGroup {
 }
 
 /**
- * `darz-studio.html:11800`, verbatim. Every key here is hidden from a standard
- * admin — but never from the owner, see `isTabAllowed`.
+ * `darz-studio.html:11797`, verbatim **less one key**. Every key here is hidden
+ * from a standard admin — but never from the owner, see `isTabAllowed`.
  *
  * Note what is **not** in it: `design`. The old panel deliberately leaves App
  * Design open to a standard admin, which is why backend Phase 32 gated it at
  * `IsStandardAdminOrOwner` while Memberships and Team-logins got `IsOwner`.
  * Keep the two in step — this list is the frontend's half of the same rule.
+ *
+ * The one deliberate deviation: **`team` is out** (G-TEAM-1, owner decision
+ * 2026-10-12). The old list has it and the old `teamView` refuses a non-owner
+ * outright (`:19419`), but the backend that replaced the client-local desk put
+ * Team workflow and the pricelist-approvals inbox at `IsStandardAdminOrOwner`
+ * (`apps/workspace/views.py`, W2/W4) and the owner asked for a standard admin
+ * to see exactly those two. The owner-only parts of the desk — My workspace,
+ * Contacts and Logins (`IsOwner`) — are gated per tab inside `TeamPage` by
+ * `RequireOwner`, so the page is reachable while those tabs stay shut.
  */
 export const OWNER_ONLY: readonly string[] = [
   'igStudio',
   'socialCal',
   'socialAi',
-  'team',
   'strategy',
   'access',
   'marketing',
@@ -531,7 +540,17 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
           'computed status (C-17), extend/revoke. Owner-only (Q-1). Issuing a ' +
           'key stays on the collector’s page.',
       ),
-      tab('team', 'Team', '/admin/team', 'ready', '11b·4'),
+      tab(
+        'team',
+        'Team',
+        '/admin/team',
+        'ready',
+        '11b·4 + G-TEAM-1',
+        'The Executive Workspace — My workspace · Team workflow · Contacts, plus ' +
+          'Logins (G-TEAM-1, /api/workspace/). Not owner-only: Team workflow and ' +
+          'the pricelist approvals are IsStandardAdminOrOwner; the other tabs are ' +
+          'gated inside the page by RequireOwner.',
+      ),
       tab(
         'strategy',
         'Strategy',
@@ -641,13 +660,15 @@ export function visibleTabs(group: AdminGroup, role: AdminRole): AdminTab[] {
   return group.tabs.filter((t) => t.path !== null && isTabAllowed(t, role));
 }
 
-/** Groups with at least one renderable tab. An owner-only group is dropped
- * wholesale for a standard admin, matching the old panel hiding the whole
- * `.ad-gtab` when no tab inside it is allowed (`_dzApplyTabVisibility`, :11812). */
+/** Groups with at least one renderable tab — the old panel's own rule: it
+ * hides the whole `.ad-gtab` exactly when no tab inside it is allowed
+ * (`_dzApplyTabVisibility`, :11812), and never looks at whether the group is
+ * gold. So a gold group stays hidden from a standard admin while every tab in
+ * it is owner-only (Social, Access Management), and shows with just its open
+ * tabs otherwise — today the Owner group, whose Team tab a standard admin may
+ * use (G-TEAM-1, see `OWNER_ONLY`). */
 export function visibleGroups(role: AdminRole): AdminGroup[] {
-  return ADMIN_GROUPS.filter(
-    (g) => (role === 'owner' || !g.owner) && visibleTabs(g, role).length > 0,
-  );
+  return ADMIN_GROUPS.filter((g) => visibleTabs(g, role).length > 0);
 }
 
 /** The top row: the unfolded groups, in `ADGROUPS` order. Dashboard, Chat and

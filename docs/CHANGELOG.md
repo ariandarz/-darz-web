@@ -5,6 +5,61 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-12 — Team Workspace desk built (G-TEAM-1)
+`/admin/team` is the old Executive Workspace on `/api/workspace/`: My workspace · Team workflow (+15m time, performance, approvals box) · Contacts · Logins, quick add; locked PATCHes, 409 → ConflictBanner.
+Team workflow + approvals open to a standard admin (`team` out of `OWNER_ONLY`); owner tabs behind `RequireOwner`. Reject disabled (no `rejected` pricelist state, G-TEAM-2). Schema regenerated (backend `f322a30`).
+
+## 2026-10-01 — Backend shipped: G-PORT portal features (P3c, G-PORT-5/7/8)
+The larger gallery-portal backlog now has endpoints on `darz-backend-api` `development`: formatted
+pricelist download (P3c — `POST /gallery/admin/pricelists/{id}/rendered/`), drawn signatures (G-PORT-7 —
+optional `signature_image` base64 PNG on the portal sign endpoint → `signature_image_url`), the referral
+"Introduce" tab (G-PORT-5 — `PortalReferral`, portal submit/list + admin review desk), and portal-write
+of per-work `allowed_actions`/`offer_floor` (G-PORT-8 — `POST /gallery/portal/{token}/artworks/{id}/actions/`
+→ approval queue, enforced by the crm offer-floor engine). Reconciled API_GAPS / ADMIN_ARCHITECTURE /
+DARZ_WEB_V1_STATUS. All UI-pending.
+
+## 2026-10-01 — Backend shipped: Projects Proposal/Invoice Builder, source-freshness (G-CAT-9), artist sorts
+Three backend seams closed on `darz-backend-api` `development`: Projects proposal **and** invoice documents
+(`/projects/admin/projects/{id}/documents/…`, FE composes `fields` + drives draft→confirmed→signed); the
+source-freshness loop G-CAT-9 (`/catalog/admin/.../confirm-available | sources/confirm | freshness-summary |
+freshness-settings`, admin `?freshness=`/`?needs_reconfirmation=`, owner hide-stale toggle); and the Artists
+`records`/`top-price` sorts (`?ordering=records|top-price`). Reconciled API_GAPS / ADMIN_ARCHITECTURE /
+DARZ_WEB_V1_STATUS. All three UI-pending.
+
+## 2026-10-01 — Team Workspace backend shipped (G-TEAM-1); docs + build spec added
+Backend `apps.workspace` W1–W4 + `accounts.TeamLoginEvent` merged to `darz-backend-api` `development`:
+the old Team tab's suite (My workspace · Team workflow + time + performance · Contacts · pricelist-approvals)
+now has real endpoints under `/api/workspace/`. Added `docs/WORKSPACE_API.md` (frontend build spec); flipped
+G-TEAM-1 to ⚪ frontend-only across ADMIN_ARCHITECTURE / API_GAPS / TASKLIST / DARZ_WEB_V1_STATUS. UI pending.
+
+## 2026-10-01 — Backend fix PRs #71–#78 merged; docs brought level
+All eight merged into `darz-backend-api` `development` (now `c2eb912`), in order, each verified: 1013 tests,
+schema 0/0, no missing migrations. Regenerating `schema.d.ts` against it is **non-breaking** (same 323
+operations, 0 new type errors, 837 unit tests pass) — not yet committed. Backend-state lines updated across
+HANDOFF / TASKLIST / NOTES / V1_STATUS / API_GAPS / API_GAPS_FRONTEND_ADOPTION / V1_CONTRACT_ISSUES.
+
+## 2026-10-01 — `NUM_PROXIES` dropped as an open task (owner)
+Owner decision: over-engineering at this stage, not needed now; to be set later if real production use calls
+for it, with the deploy work. Recorded as a closed decision in `TASKLIST.md` § B, `NOTES-FOR-ARIAN.md` and
+`V1_CONTRACT_ISSUES.md` so it stops appearing as a to-do.
+
+## 2026-10-01 — Implementation plan for the eight deferred features
+New `docs/DEFERRED_FEATURES_PLAN.md`: G-P24-2 · G-P5-9 · G-P5-12 · G-P13-1 · G-P5-5 · G-P5-4 · G-CLUB-3 ·
+G-P25-2(b), each with the old-app source to port (cited), the verified API, the frontend work, tests and the
+owner decision it needs. Findings: five of the eight already have old-app copy/markup; G-P5-9 and G-P5-5 have
+none; G-P5-4's backend model differs from the old app's; G-P13-1 has no push-send endpoint. Nothing started.
+
+## 2026-10-01 — Logistics, Library, Insights & Stories, Social suite ruled V2 or later (owner)
+Owner decision: these four (plus Strategy / Automations / Languages / Analytics / Team Workspace / "Notify
+collectors") are **out of V1 and out of the post-V1 queue** — not to be implemented, planned or re-raised.
+`TASKLIST.md` § D is the single authority (new `[V2]` status); HANDOFF, V1_STATUS, API_GAPS, API_ADOPTION_PLAN
+and ADMIN_ARCHITECTURE (D20 resolved "No") now point there instead of listing them as remaining work.
+
+## 2026-09-27 — V1 released to `main`
+
+- On the owner's instructions, #114 was merged into `development`, then #113 released `development` → `main` (`960d571`). The production deploy is READY, and `development` was fast-forwarded to match `main`.
+- The live site serves V1 but stays visual-only until the real API URL is set.
+
 ## 2026-09-27 — `isPathAllowed` removed; portal "Save draft" found blocked (C-26)
 
 - Removed the unused `adminNav.isPathAllowed` (guards are `RequireTeam`/`RequireOwner`); its tests now use `findTab`/`isTabAllowed`.

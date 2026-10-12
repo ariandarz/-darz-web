@@ -1,0 +1,934 @@
+/* =============================================================================
+   The Team desk's Executive Workspace (G-TEAM-1) — `teamView()`'s `_WS_CSS`,
+   `darz-studio.html:19430-19484`, ported rule for rule in the same order (the
+   old sheet relies on order in one place: `.ws-sub` is declared twice, once
+   for the header line and once for the item's note input, and the header line
+   inherits the second rule's colour — kept that way).
+
+   The old desk is charcoal-only (`.acc-charcoal ws-root`, :19428), so its
+   neutrals were literals. They are mapped onto tokens here, as every admin
+   sheet in this repo does, so one rule set holds in Paper and Black: in Black
+   (`html.dz-bw`) the tokens land within a shade of the old literals (`--ink`
+   is the old `--wsink` exactly). The accent literals (status dots, stat
+   colours, priority edges) are kept as the old values.
+
+   Not ported: the custom `.dzcal` calendar popover (:19485-19503) — due dates
+   use the native date/time input dressed as the old `.ws-due` pill (owner
+   decision, 2026-10-12).
+   ========================================================================== */
+
+.ws-root {
+  --wsink: var(--ink);
+  --ws2: var(--ink2);
+  --wsmut: var(--ink3);
+  --wscard: var(--card);
+  --wsline: var(--hair);
+  --wsfield: var(--soft);
+  --wsfl: var(--hair);
+  /* the old filled buttons read #1a1714 on the light ink; the inverse here */
+  --wsinv: var(--paper);
+}
+.ws-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.ws-h1 {
+  font-family: var(--font-head);
+  font-weight: 600;
+  font-size: 27px;
+  letter-spacing: 0.01em;
+  color: var(--wsink);
+  margin: 0;
+  line-height: 1.1;
+}
+.ws-sub {
+  font-size: 12px;
+  color: var(--wsmut);
+  margin-top: 6px;
+  line-height: 1.5;
+  max-width: 62ch;
+}
+.ws-tabs {
+  display: inline-flex;
+  gap: 3px;
+  background: var(--soft);
+  border: 1px solid var(--wsline);
+  border-radius: 12px;
+  padding: 3px;
+  flex-wrap: wrap;
+}
+.ws-tabs button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ws2);
+  padding: 8px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.ws-tabs button:hover {
+  color: var(--wsink);
+}
+.ws-tabs button.on {
+  background: var(--wsink);
+  color: var(--wsinv);
+}
+.ws-tb-badge {
+  background: #e11d48;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  min-width: 17px;
+  text-align: center;
+}
+.ws-tabs button.on .ws-tb-badge {
+  background: var(--wsinv);
+  color: var(--wsink);
+}
+.ws-stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin: 0 0 16px;
+}
+/* Team and Contacts carry three tiles (the old inline `repeat(3,1fr)`) */
+.ws-stats.is-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 900px) {
+  .ws-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+@media (max-width: 520px) {
+  .ws-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+.ws-stat {
+  text-align: left;
+  background: var(--wscard);
+  border: 1px solid var(--wsline);
+  border-radius: 13px;
+  padding: 14px 15px;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 0.14s,
+    transform 0.14s,
+    box-shadow 0.14s;
+}
+.ws-stat:hover {
+  border-color: var(--ink3);
+  transform: translateY(-1px);
+  box-shadow: var(--dz-shadow-card);
+}
+/* `_wsStat` with no filter: `style="cursor:default"` (:19279) */
+.ws-stat.is-static {
+  cursor: default;
+}
+.ws-stat-n {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--wsink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.ws-stat-l {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wsmut);
+  margin-top: 8px;
+}
+.ws-stat.warn .ws-stat-n {
+  color: #f0a830;
+}
+.ws-stat.good .ws-stat-n {
+  color: #3ecf8e;
+}
+.ws-stat.due .ws-stat-n {
+  color: #67b9ff;
+}
+.ws-cats {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+.ws-cat {
+  border: 1px solid var(--wsline);
+  background: var(--wscard);
+  color: var(--ws2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 30px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition:
+    border-color 0.12s,
+    color 0.12s,
+    background 0.12s;
+}
+.ws-cat:hover {
+  border-color: var(--ink3);
+  color: var(--wsink);
+}
+.ws-cat.on {
+  background: var(--wsink);
+  border-color: var(--wsink);
+  color: var(--wsinv);
+}
+.ws-cat-n {
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--wsmut);
+}
+.ws-cat.on .ws-cat-n {
+  color: var(--wsinv);
+  opacity: 0.55;
+}
+.ws-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--wscard);
+  border: 1px solid var(--wsline);
+  border-radius: 13px;
+  padding: 9px 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+/* the Team tab's add row sits under the approvals box (`margin-top:16px`) */
+.ws-add.is-spaced {
+  margin-top: 16px;
+}
+.ws-addinput {
+  flex: 1;
+  min-width: 170px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--wsink);
+  padding: 5px 6px;
+}
+.ws-addinput::placeholder {
+  color: var(--wsmut);
+}
+.ws-addbtn {
+  flex: 0 0 auto;
+  background: var(--wsink);
+  color: var(--wsinv);
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.ws-addbtn:hover {
+  opacity: 0.9;
+}
+.ws-addbtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ws-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ws-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  background: var(--wscard);
+  border: 1px solid var(--wsline);
+  border-radius: 12px;
+  padding: 11px 12px;
+  transition: border-color 0.12s;
+}
+.ws-item:hover {
+  border-color: var(--ink3);
+}
+.ws-item.is-done {
+  opacity: 0.5;
+}
+/* This port's addition, not the old sheet's: on a phone the old row let the
+   meta selects take the whole width and squeezed the title to a letter. Below
+   560px the meta wraps under the title instead. */
+@media (max-width: 560px) {
+  .ws-item {
+    flex-wrap: wrap;
+  }
+  .ws-body {
+    flex-basis: calc(100% - 70px);
+  }
+  .ws-meta {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+}
+.ws-check {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  margin-top: 2px;
+  border: 1.5px solid var(--ink3);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.ws-check:hover {
+  border-color: var(--ink2);
+}
+.ws-check.on {
+  background: #3ecf8e;
+  border-color: #3ecf8e;
+}
+.ws-check.on::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 5px;
+  height: 9px;
+  border: solid #14241a;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ws-kdot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: #7a8aa0;
+}
+.ws-kdot.k-idea {
+  background: #e8c35a;
+}
+.ws-kdot.k-note {
+  background: #8a8f99;
+}
+.ws-kdot.k-opportunity {
+  background: #3ecf8e;
+}
+/* the Team tab's status dot (`statCol`, :19320) — was an inline background */
+.ws-kdot.s-todo {
+  background: #9a9a9a;
+}
+.ws-kdot.s-doing {
+  background: #7c7cf0;
+}
+.ws-kdot.s-done {
+  background: #3ecf8e;
+}
+.ws-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ws-title {
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wsink);
+  padding: 2px 0;
+  width: 100%;
+}
+.ws-item.is-done .ws-title {
+  text-decoration: line-through;
+}
+.ws-title::placeholder {
+  color: var(--wsmut);
+}
+.ws-sub {
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ws2);
+  padding: 1px 0;
+  width: 100%;
+}
+.ws-sub::placeholder {
+  color: var(--wsmut);
+}
+/* the task row's time line: `display:flex;gap:7px;align-items:center;
+   color:var(--wsmut)` plus a monospace figure (:19327) */
+.ws-sub.ws-time {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: var(--wsmut);
+}
+.ws-time-n {
+  font-family: ui-monospace, Menlo, monospace;
+}
+.ws-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.ws-sel {
+  background: var(--wsfield);
+  border: 1px solid var(--wsfl);
+  color: var(--ws2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 7px;
+  padding: 5px 7px;
+  cursor: pointer;
+  max-width: 128px;
+}
+/* the add rows' larger selects / company field (:19349, :19366) */
+.ws-sel.is-lg {
+  font-size: 12.5px;
+  padding: 8px 10px;
+}
+.ws-sel.is-field {
+  min-width: 120px;
+  padding: 8px 10px;
+  color: var(--wsink);
+  cursor: text;
+}
+/* the task status select: bold, in its status colour (:19321) */
+.ws-sel.s-todo,
+.ws-sel.s-doing,
+.ws-sel.s-done {
+  font-weight: 700;
+}
+.ws-sel.s-todo {
+  color: #9a9a9a;
+}
+.ws-sel.s-doing {
+  color: #7c7cf0;
+}
+.ws-sel.s-done {
+  color: #3ecf8e;
+}
+.ws-x {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 0;
+  color: #7a5560;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition:
+    color 0.12s,
+    background 0.12s;
+}
+.ws-x:hover {
+  color: #ff6b81;
+  background: rgba(225, 29, 72, 0.12);
+}
+/* `.ws-due` is the old date button; here it is a <label> around a native
+   date (+ time) input, so the pill keeps its look and the picker is the
+   platform's own. */
+.ws-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--wsfield);
+  border: 1px solid var(--wsfl);
+  color: var(--ws2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 7px;
+  padding: 5px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition:
+    border-color 0.12s,
+    color 0.12s;
+}
+.ws-due:hover {
+  border-color: var(--ink3);
+  color: var(--wsink);
+}
+.ws-due svg {
+  opacity: 0.7;
+}
+.ws-due.empty {
+  color: var(--wsmut);
+}
+.ws-due.soon {
+  border-color: #3a5a78;
+  color: #2f78bd;
+}
+.ws-due.over {
+  border-color: #c98a96;
+  color: var(--danger);
+  background: rgba(225, 29, 72, 0.1);
+}
+html.dz-bw .ws-due.soon {
+  color: #9fccff;
+}
+html.dz-bw .ws-due.over {
+  border-color: #6a3540;
+  color: #ff9aa8;
+}
+/* the native inputs sit invisibly over the pill and catch the click; the
+   pill's own label is what shows. */
+.ws-due input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+  font: inherit;
+}
+.ws-due input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+/* the time half of a due pill, beside it (the old popover's time field, :19493) */
+.ws-due-time {
+  background: var(--wsfield);
+  border: 1px solid var(--wsfl);
+  color: var(--ws2);
+  font: inherit;
+  font-size: 11px;
+  border-radius: 7px;
+  padding: 4px 6px;
+  width: 84px;
+}
+html.dz-bw .ws-due-time {
+  color-scheme: dark;
+}
+/* `+15m` — a small `.ws-due` (`style="padding:3px 8px"`, :19327) */
+.ws-due.is-log {
+  padding: 3px 8px;
+}
+.ws-empty {
+  text-align: center;
+  color: var(--wsmut);
+  font-size: 13px;
+  padding: 34px 16px;
+  background: var(--wscard);
+  border: 1px dashed var(--wsline);
+  border-radius: 13px;
+  line-height: 1.6;
+}
+.ws-sectlbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--wsmut);
+  margin: 22px 2px 9px;
+}
+.ws-cgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(264px, 1fr));
+  gap: 12px;
+}
+.ws-contact {
+  background: var(--wscard);
+  border: 1px solid var(--wsline);
+  border-radius: 14px;
+  padding: 14px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border-left: 3px solid var(--ink3);
+}
+.ws-contact.pri-high {
+  border-left-color: #e11d48;
+}
+.ws-contact.pri-med {
+  border-left-color: #f0a830;
+}
+.ws-contact.pri-low {
+  border-left-color: #3ecf8e;
+}
+.ws-c-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ws-c-name {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--wsink);
+}
+.ws-c-name::placeholder {
+  color: var(--wsmut);
+}
+.ws-c-pri {
+  background: var(--wsfield);
+  border: 1px solid var(--wsfl);
+  color: var(--ws2);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.ws-c-f {
+  background: var(--wsfield);
+  border: 1px solid var(--wsfl);
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--wsink);
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ws-c-f::placeholder {
+  color: var(--wsmut);
+}
+.ws-c-dates {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ws-c-dlab {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--wsmut);
+  margin-bottom: 4px;
+}
+.ws-c-notes {
+  min-height: 48px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.ws-c-del {
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  color: #7a5560;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 2px;
+}
+.ws-c-del:hover {
+  color: #ff6b81;
+}
+/* The contact's optional collector/artist link (G-TEAM-1 W3) — the backend's
+   own addition, not in the old card: a quiet "jump to" line, only when set. */
+.ws-c-link {
+  font-size: 11.5px;
+  color: var(--wsmut);
+}
+.ws-c-link a {
+  color: var(--ws2);
+  font-weight: 600;
+}
+.ws-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--wsink);
+  color: var(--wsinv);
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 9000;
+  border: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.ws-fab:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+}
+.ws-qa-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9001;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
+}
+.ws-qa-scrim.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ws-qa {
+  position: fixed;
+  right: 24px;
+  bottom: 90px;
+  width: 330px;
+  max-width: calc(100vw - 32px);
+  background: var(--card);
+  border: 1px solid var(--wsline);
+  border-radius: 16px;
+  z-index: 9002;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity 0.18s,
+    transform 0.18s;
+  overflow: hidden;
+}
+.ws-qa.on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+@media (max-width: 560px) {
+  .ws-qa {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+}
+.ws-qa-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--wsink);
+}
+.ws-qa-x {
+  background: transparent;
+  border: 0;
+  color: var(--wsmut);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+.ws-qa-types {
+  display: flex;
+  gap: 4px;
+  padding: 0 14px 12px;
+  flex-wrap: wrap;
+}
+.ws-qa-types button {
+  flex: 1;
+  min-width: 52px;
+  border: 1px solid var(--wsline);
+  background: transparent;
+  color: var(--ws2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 7px 4px;
+  cursor: pointer;
+}
+.ws-qa-types button.on {
+  background: var(--wsink);
+  color: var(--wsinv);
+  border-color: var(--wsink);
+}
+.ws-qa-form {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.ws-qa-form .ws-c-f {
+  font-size: 14px;
+}
+.ws-qa-row {
+  display: flex;
+  gap: 8px;
+}
+.ws-qa-save {
+  background: var(--wsink);
+  color: var(--wsinv);
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px;
+  cursor: pointer;
+  margin-top: 2px;
+}
+.ws-qa-save:hover {
+  opacity: 0.9;
+}
+
+/* ---- The Team tab's two tables and the approvals box (:19333-19353) ------ */
+
+/* `.ad-empty` (:8939 + :9151 + the admindark :9216) — the empty table row */
+.ws-root .ad-empty {
+  padding: 34px;
+  text-align: center;
+  color: var(--ink3);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ws-root .ad-tbl td.is-c,
+.ws-root .ad-tbl th.is-c {
+  text-align: center;
+}
+.ws-root .ad-tbl td.is-name {
+  font-weight: 700;
+}
+.ws-root .ad-tbl td.is-mono {
+  font-family: ui-monospace, Menlo, monospace;
+}
+.ws-root .ad-tbl td.is-good {
+  color: #3ecf8e;
+}
+.ws-root .ad-tbl td.is-when {
+  white-space: nowrap;
+  color: var(--ink3);
+  font-size: 11.5px;
+}
+/* the box: `padding:12px 14px;margin:16px 0 0`, its edge red-brown while
+   anything waits (:19340) */
+.ws-pa {
+  padding: 12px 14px;
+  margin: 16px 0 0;
+}
+.ws-pa.is-waiting {
+  border-color: #7a5560;
+}
+.ws-pa-h {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--wsink);
+}
+.ws-pa.is-waiting .ws-pa-h {
+  margin-bottom: 4px;
+}
+.ws-pa-badge {
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  display: inline-block;
+}
+.ws-pa-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-top: 1px solid var(--wsline);
+}
+.ws-pa-main {
+  min-width: 0;
+}
+.ws-pa-t {
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--wsink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ws-pa-from {
+  font-size: 11px;
+  color: var(--wsmut);
+}
+.ws-pa-acts {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.ws-pa-acts .ws-addbtn {
+  padding: 7px 13px;
+}
+.ws-pa-acts .ws-x {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 9px;
+  border: 1px solid var(--wsfl);
+  border-radius: 8px;
+}
+.ws-pa-acts .ws-x:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: transparent;
+  color: #7a5560;
+}
+.ws-pa-none {
+  font-size: 11.5px;
+  color: var(--wsmut);
+  margin-top: 4px;
+}
+
+/* The Logins tab's "＋ New login" sits at the end of its filter row (the desk's
+   heading row holds the tab switcher here); bottom-aligned with the fields. */
+.ws-root .ad-toolbar > .ad-action {
+  align-self: flex-end;
+}
