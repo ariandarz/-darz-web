@@ -20,6 +20,7 @@ import {
   AuctionsAdminService,
   AccountingAdminService,
   CoreAdminService,
+  WorkspaceService,
   AuthService,
   CatalogService,
   CrmService,
@@ -82,6 +83,8 @@ export class DarzApi {
   readonly auctionsAdmin: AuctionsAdminService;
   readonly accountingAdmin: AccountingAdminService;
   readonly coreAdmin: CoreAdminService;
+  /** The Team desk's Executive Workspace (G-TEAM-1). */
+  readonly workspace: WorkspaceService;
   /** The no-login partner portal — its own unauthenticated client. */
   readonly portal: GalleryPortalService;
 
@@ -107,6 +110,7 @@ export class DarzApi {
     this.auctionsAdmin = new AuctionsAdminService(this.client);
     this.accountingAdmin = new AccountingAdminService(this.client);
     this.coreAdmin = new CoreAdminService(this.client);
+    this.workspace = new WorkspaceService(this.client);
     this.portal = new GalleryPortalService(new PortalClient(baseUrl));
   }
 }

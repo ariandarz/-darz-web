@@ -272,9 +272,8 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
   `RequireOwner`; every owner-only tab with a route is `RequireOwner`-wrapped).
 - Hand types that the backend schema should own (`HoldDetail`, `PortalState`).
 - Unused bindings kept to mirror the served routes (listed above).
-- `schema.d.ts` must be regenerated whenever the backend moves past `c2eb912`. **It is currently behind:**
-  the committed copy is from 2026-09-25; regenerating against `c2eb912` was verified non-breaking on
-  2026-10-01 (same 323 operations, no new type errors, 837 unit tests pass) but has not been committed.
+- `schema.d.ts` must be regenerated whenever the backend moves. **Regenerated 2026-10-12** against `f322a30`
+  (247 paths / 358 operations) in the G-TEAM-1 PR — non-breaking, no new type errors.
 - The E2E stub mirrors backend shapes by hand; it has to move in the same PR as any shape change.
 
 ### Future / post-V1
@@ -321,9 +320,11 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
   Insights & Stories (Phase 22 — the nav tab stays hidden until a story can be published, as the old app
   does), the Social suite, Strategy, Automations, Languages, Analytics,
   "Notify collectors" (needs a push-send endpoint).
-- **Ready to build (backend shipped, UI pending):** Team Workspace desk (G-TEAM-1) — backend `apps.workspace`
-  W1–W4 + `accounts.TeamLoginEvent` shipped 2026-10-01; build against `docs/WORKSPACE_API.md`. Plus
-  (all shipped 2026-10-01, see API_GAPS.md / ADMIN_ARCHITECTURE.md): the **Projects Proposal + Invoice
+- **Built 2026-10-12:** the Team Workspace desk (G-TEAM-1) at `/admin/team` — My workspace · Team workflow ·
+  Contacts · Logins, against `docs/WORKSPACE_API.md`. Follow-ups: G-TEAM-2 (no `rejected` pricelist state),
+  setting a contact's collector/artist link.
+- **Ready to build (backend shipped, UI pending)** (all shipped 2026-10-01, see API_GAPS.md /
+  ADMIN_ARCHITECTURE.md): the **Projects Proposal + Invoice
   Builder** (`/projects/admin/projects/{id}/documents/…`), the **source-freshness loop (G-CAT-9)**
   (`/catalog/admin/.../confirm-available|sources/confirm|freshness-summary|freshness-settings`), and the
   **Artists `records`/`top-price` sorts** (`?ordering=records|top-price`).

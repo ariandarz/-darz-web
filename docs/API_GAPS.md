@@ -196,7 +196,8 @@ schema path). FE-side fixed: C-1…C-5 (Phase 0).
 | Item | State | Note |
 | --- | --- | --- |
 | G-6: Intelligence · Marketing Hub · Document Builder | ⛔ Deferred | API ready, no UI. Owner decision. |
-| G-TEAM-1: Team Workspace suite | ⚪ Frontend-only | **Backend shipped 2026-10-01** (`apps.workspace` W1–W4 + `accounts.TeamLoginEvent`). The whole My-workspace / Team-workflow / Contacts desk + pricelist-approvals box now has endpoints under `/api/workspace/`. Build the Team desk against **`docs/WORKSPACE_API.md`** (full contract). No longer deferred/V2. |
+| G-TEAM-1: Team Workspace suite | ✅ Done | **Backend shipped 2026-10-01** (`apps.workspace` W1–W4 + `accounts.TeamLoginEvent`); **desk built 2026-10-12** at `/admin/team` against **`docs/WORKSPACE_API.md`** — My workspace · Team workflow · Contacts · Logins + the approvals box. |
+| G-TEAM-2: no `rejected` pricelist state | 🔴 Backend | `GalleryPricelist.STATUS_CHOICES` is `submitted · accepted · superseded`; the old approvals box's Reject has nothing true to send, so the desk shows it disabled with the reason. Add `rejected` (or the owner rules Reject = `superseded`). |
 | Phase 20 Logistics | 🚫 **V2 or later** | Owner decision 2026-10-01: out of scope, do not implement or re-raise (`TASKLIST.md` § D). No `/api/logistics/` namespace. |
 | Phase 21 Library (saved-items library) | 🚫 **V2 or later** | Owner decision 2026-10-01: out of scope, do not implement or re-raise (`TASKLIST.md` § D). No library endpoints. **Per-link gallery pricelists are no longer a gap:** status lifecycle, soft cap and a structured builder shipped 2026-09-25 (P3a/P3b, see below). Only the formatted download (P3c) is still unbuilt. |
 | Auction Sales | ✅ Done | Built V1 Phase 2 (2026-09-25): `/admin/sales?source=auction`, the Sales desk with a fixed `source=auction` scope; the auto-created drafts list there, each row's **Lot N** links to its auction page (lot resolved via `GET …/admin/lots/{id}/`). |

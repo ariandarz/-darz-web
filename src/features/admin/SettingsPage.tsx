@@ -169,10 +169,10 @@ export function SettingsPage() {
         <p>
           The rest of the old Settings tab is not here, and is not coming as-is. Who may see
           which desk is decided by two real roles now — owner and admin — set on{' '}
-          <a href="/admin/team">Team</a>, not by a per-tab matrix. What a <em>collector</em>{' '}
-          sees is on <a href="/admin/design">App Design</a>. The old workspace's force-dark
-          switch and its Settings passkey were device-local locks; the server's own owner
-          permission is the gate.
+          <a href="/admin/team?tab=logins">Team › Logins</a>, not by a per-tab matrix. What a{' '}
+          <em>collector</em> sees is on <a href="/admin/design">App Design</a>. The old
+          workspace's force-dark switch and its Settings passkey were device-local locks; the
+          server's own owner permission is the gate.
         </p>
       </div>
 

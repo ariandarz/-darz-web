@@ -1,6 +1,6 @@
 # Team Workspace API — frontend build spec (G-TEAM-1)
 
-**Status: backend COMPLETE (2026-10-01).** The old Team tab's "Executive Workspace"
+**Status: backend COMPLETE (2026-10-01); frontend desk BUILT (2026-10-12, `/admin/team`).** The old Team tab's "Executive Workspace"
 (`darz-studio.html` `teamView` — My workspace · Team workflow · Contacts, plus the
 pricelist-approvals box) was client-local in the old app and had **no backend**. It now
 has a real one: Django app `apps.workspace` (+ `accounts.TeamLoginEvent`), backend
@@ -160,8 +160,10 @@ gallery side; this just aggregates the pending queue for the desk.
 Only `status=submitted` rows appear (rows on soft-deleted links are excluded).
 
 **Acting on one** uses the existing gallery endpoint (NOT a workspace route):
-`POST /api/gallery/admin/pricelists/{id}/status/` with the accepted/rejected status
-(`GalleryService.set_status`). After acting, re-fetch this inbox.
+`POST /api/gallery/admin/pricelists/{id}/status/` with `{ status: "accepted" }`
+(`GalleryPricelistService.set_status`). After acting, re-fetch this inbox.
+**Correction (2026-10-12):** there is no `rejected` status — `GalleryPricelist.STATUS_CHOICES` is
+`submitted · accepted · superseded` — so the desk's Reject is disabled with the reason (G-TEAM-2).
 
 ---
 

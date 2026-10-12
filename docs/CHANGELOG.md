@@ -5,6 +5,10 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-12 — Team Workspace desk built (G-TEAM-1)
+`/admin/team` is the old Executive Workspace on `/api/workspace/`: My workspace · Team workflow (+15m time, performance, approvals box) · Contacts · Logins, quick add; locked PATCHes, 409 → ConflictBanner.
+Team workflow + approvals open to a standard admin (`team` out of `OWNER_ONLY`); owner tabs behind `RequireOwner`. Reject disabled (no `rejected` pricelist state, G-TEAM-2). Schema regenerated (backend `f322a30`).
+
 ## 2026-10-01 — Backend shipped: G-PORT portal features (P3c, G-PORT-5/7/8)
 The larger gallery-portal backlog now has endpoints on `darz-backend-api` `development`: formatted
 pricelist download (P3c — `POST /gallery/admin/pricelists/{id}/rendered/`), drawn signatures (G-PORT-7 —

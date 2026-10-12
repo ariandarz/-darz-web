@@ -1314,7 +1314,7 @@ export interface paths {
         put?: never;
         /**
          * Collector login
-         * @description Access-key login for collectors. Returns a JWT pair carrying `principal=collector`. A locked or expired key is refused.
+         * @description Access-key login for collectors. Returns a JWT pair carrying `principal=collector`. A locked or expired key is refused. Rate-limited per IP (shared with team login).
          */
         post: operations["auth_collector_login_create"];
         delete?: never;
@@ -1415,7 +1415,7 @@ export interface paths {
         put?: never;
         /**
          * Team login
-         * @description Email/password login for admins/team (the `owner`/`standard_admin` roles). Returns a JWT pair carrying `principal=team`.
+         * @description Email/password login for admins/team (the `owner`/`standard_admin` roles). Returns a JWT pair carrying `principal=team`. Rate-limited per IP (shared with collector login).
          */
         post: operations["auth_team_login_create"];
         delete?: never;
@@ -1606,6 +1606,26 @@ export interface paths {
         patch: operations["catalog_admin_artworks_partial_update"];
         trace?: never;
     };
+    "/api/catalog/admin/artworks/{id}/confirm-available/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a work's source still has it available (G-CAT-9)
+         * @description Stamps `source_confirmed_at` = now (the old 'Confirm available'). An optional `status` also records what the source reported, routed through the guarded availability machine (an illegal transition is a 400; a status equal to the current one just re-confirms).
+         */
+        post: operations["catalog_admin_artworks_confirm_available_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/catalog/admin/artworks/{id}/publish/": {
         parameters: {
             query?: never;
@@ -1617,7 +1637,7 @@ export interface paths {
         put?: never;
         /**
          * Publish an artwork
-         * @description Makes it eligible for the collector catalogue (still gated by visibility=visible_all).
+         * @description Makes it eligible for the collector catalogue (still gated by visibility=visible_all). 400 VALIDATION_ERROR when the listing is incomplete — `error.details.missing` lists what's missing.
          */
         post: operations["catalog_admin_artworks_publish_create"];
         delete?: never;
@@ -1812,6 +1832,64 @@ export interface paths {
         put?: never;
         /** Discard an import batch */
         post: operations["catalog_admin_import_batches_discard_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/sources/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm every active work from one source (G-CAT-9)
+         * @description Bulk-stamps `source_confirmed_at` for all source-linked, still-active works matching the given source_name (case-insensitive) and/or source_type.
+         */
+        post: operations["catalog_admin_sources_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/admin/sources/freshness-settings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the hide-stale setting (G-CAT-9) */
+        get: operations["catalog_admin_sources_freshness_settings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the hide-stale setting (G-CAT-9) */
+        patch: operations["catalog_admin_sources_freshness_settings_partial_update"];
+        trace?: never;
+    };
+    "/api/catalog/admin/sources/freshness-summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Source-freshness desk summary (G-CAT-9)
+         * @description The 'needs reconfirmation' counts (due/stale/risky) over source-linked active works, plus a per-source rollup and the current hide-stale setting.
+         */
+        get: operations["catalog_admin_sources_freshness_summary_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3000,6 +3078,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/gallery/admin/pricelists/{id}/rendered/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach the rendered formatted-pricelist PDF (G-PORT P3c)
+         * @description Stores the branded, client-rendered PDF against the pricelist so it is downloadable via `file_url`. Mainly for a structured (built) pricelist, which has lines but no file.
+         */
+        post: operations["gallery_admin_pricelists_rendered_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gallery/admin/pricelists/{id}/status/": {
         parameters: {
             query?: never;
@@ -3014,6 +3112,40 @@ export interface paths {
          * @description submitted → accepted (the current one; supersedes any prior accepted) → superseded.
          */
         post: operations["gallery_admin_pricelists_status_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/admin/referrals/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List portal referrals (G-PORT-5) */
+        get: operations["gallery_admin_referrals_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/admin/referrals/{id}/review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Review a portal referral (G-PORT-5) */
+        post: operations["gallery_admin_referrals_review_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3088,6 +3220,26 @@ export interface paths {
         get: operations["gallery_portal_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/portal/{token}/artworks/{artwork_id}/actions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose collector actions / offer floor for an assigned work (G-PORT-8)
+         * @description Lands in the pending-review queue; on approval it applies to the artwork's allowed_actions / offer_floor, which the existing crm offer-floor engine then enforces on collector offers. The artwork must be assigned to this link.
+         */
+        post: operations["gallery_portal_artworks_actions_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3250,6 +3402,24 @@ export interface paths {
          * @description An alternative to uploading a file: the source enters priced line items directly. Lands as a submitted pricelist, same review flow.
          */
         post: operations["gallery_portal_pricelists_build_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gallery/portal/{token}/referrals/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the source's own referrals (G-PORT-5) */
+        get: operations["gallery_portal_referrals_retrieve"];
+        put?: never;
+        /** Introduce a collector/gallery to Darz (G-PORT-5) */
+        post: operations["gallery_portal_referrals_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3709,6 +3879,75 @@ export interface paths {
         post?: never;
         /** Delete a project attachment */
         delete: operations["projects_admin_projects_attachments_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{project_pk}/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a project's proposal/invoice documents (admin) */
+        get: operations["projects_admin_project_documents_list"];
+        put?: never;
+        /** Create a project proposal or invoice document */
+        post: operations["projects_admin_projects_documents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{project_pk}/documents/{document_id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm (issue) a project document */
+        post: operations["projects_admin_projects_documents_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{project_pk}/documents/{document_id}/sign/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign a confirmed project document */
+        post: operations["projects_admin_projects_documents_sign_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/admin/projects/{project_pk}/documents/{document_id}/upload/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload the rendered PDF for a project document (multipart) */
+        post: operations["projects_admin_projects_documents_upload_create"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4346,6 +4585,191 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspace/contacts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List contacts */
+        get: operations["workspace_contacts_list"];
+        put?: never;
+        /** Create a contact */
+        post: operations["workspace_contacts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspace/contacts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one contact */
+        get: operations["workspace_contacts_retrieve"];
+        put?: never;
+        post?: never;
+        /** Soft-delete a contact */
+        delete: operations["workspace_contacts_destroy"];
+        options?: never;
+        head?: never;
+        /** Update a contact */
+        patch: operations["workspace_contacts_partial_update"];
+        trace?: never;
+    };
+    "/api/workspace/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List my workspace items */
+        get: operations["workspace_items_list"];
+        put?: never;
+        /** Create a workspace item */
+        post: operations["workspace_items_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspace/items/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one workspace item */
+        get: operations["workspace_items_retrieve"];
+        put?: never;
+        post?: never;
+        /** Soft-delete a workspace item */
+        delete: operations["workspace_items_destroy"];
+        options?: never;
+        head?: never;
+        /** Update a workspace item */
+        patch: operations["workspace_items_partial_update"];
+        trace?: never;
+    };
+    "/api/workspace/items/{id}/toggle/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Toggle a workspace item's completion */
+        post: operations["workspace_items_toggle_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspace/pricelist-approvals/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List pending pricelist approvals
+         * @description Pending gallery pricelists (status=submitted) across every portal link, for the Team desk's approvals box. Read-only — approve/reject stay on the gallery endpoint (POST /api/gallery/admin/pricelists/{id}/status/).
+         */
+        get: operations["workspace_pricelist_approvals_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspace/team-tasks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List team tasks */
+        get: operations["workspace_team_tasks_list"];
+        put?: never;
+        /** Create a team task */
+        post: operations["workspace_team_tasks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspace/team-tasks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one team task */
+        get: operations["workspace_team_tasks_retrieve"];
+        put?: never;
+        post?: never;
+        /** Soft-delete a team task */
+        delete: operations["workspace_team_tasks_destroy"];
+        options?: never;
+        head?: never;
+        /** Update a team task */
+        patch: operations["workspace_team_tasks_partial_update"];
+        trace?: never;
+    };
+    "/api/workspace/team-tasks/{id}/log-time/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log time against a team task */
+        post: operations["workspace_team_tasks_log_time_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspace/team-tasks/performance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Team performance & admin behaviour rollups
+         * @description Per-person task rollup (open / done / done-7d / minutes) plus per-admin behaviour (total logins, last login, tasks done).
+         */
+        get: operations["workspace_team_tasks_performance_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4866,6 +5290,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminArtworkConfirmAvailableResponse: {
+            data: components["schemas"]["ArtworkAdmin"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminArtworkCreateResponse: {
             data: components["schemas"]["ArtworkAdmin"];
             /** @default true */
@@ -4911,6 +5343,23 @@ export interface components {
             total_count: number;
             has_next: boolean;
             has_previous: boolean;
+        };
+        AdminArtworkPublishBlockedDetails: {
+            non_field_errors: string[];
+            /** @description The missing essentials, a subset of, in this order: title, size, medium, artist, price, image (DataHealthService.publish_blockers). */
+            missing: string[];
+        };
+        AdminArtworkPublishBlockedResponse: {
+            /** @default false */
+            success: boolean;
+            error: components["schemas"]["AdminArtworkPublishBlockedResponseError"];
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminArtworkPublishBlockedResponseError: {
+            details?: components["schemas"]["AdminArtworkPublishBlockedDetails"];
+            code: string;
+            message: string;
         };
         AdminArtworkPublishResponse: {
             data: components["schemas"]["ArtworkAdmin"];
@@ -5091,6 +5540,16 @@ export interface components {
             total_count: number;
             has_next: boolean;
             has_previous: boolean;
+        };
+        /** @description Per-admin login + task-completion rollup for the 'Admin behaviour' table. */
+        AdminBehaviourRow: {
+            /** Format: uuid */
+            team_user_id: string;
+            name: string;
+            total_logins: number;
+            /** Format: date-time */
+            last_login: string | null;
+            tasks_done: number;
         };
         AdminCampaignAnalyticsCreateResponse: {
             data: components["schemas"]["CampaignAnalytics"];
@@ -5714,6 +6173,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminFreshnessSummaryResponse: {
+            data: components["schemas"]["FreshnessSummary"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminImportBatchConfirmResponse: {
             data: components["schemas"]["ArtworkImportBatch"];
             /** @default true */
@@ -6234,6 +6701,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AdminPricelistRenderedResponse: {
+            data: components["schemas"]["GalleryPricelist"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminPricelistStatusResponse: {
             data: components["schemas"]["GalleryPricelist"];
             /** @default true */
@@ -6288,6 +6763,58 @@ export interface components {
         };
         AdminProjectDetailResponse: {
             data: components["schemas"]["Project"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectDocConfirmResponse: {
+            data: components["schemas"]["Document"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectDocCreateResponse: {
+            data: components["schemas"]["Document"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectDocListResponse: {
+            data: components["schemas"]["AdminProjectDocListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectDocListResponseData: {
+            pagination: components["schemas"]["AdminProjectDocListResponsePagination"];
+            results: components["schemas"]["Document"][];
+        };
+        AdminProjectDocListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminProjectDocSignResponse: {
+            data: components["schemas"]["Document"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminProjectDocUploadResponse: {
+            data: components["schemas"]["Document"];
             /** @default true */
             success: boolean;
             message: string;
@@ -6394,6 +6921,34 @@ export interface components {
         };
         AdminQuestionSetUpdateResponse: {
             data: components["schemas"]["QuestionSet"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminReferralListResponse: {
+            data: components["schemas"]["AdminReferralListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminReferralListResponseData: {
+            pagination: components["schemas"]["AdminReferralListResponsePagination"];
+            results: components["schemas"]["PortalReferral"][];
+        };
+        AdminReferralListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        AdminReferralReviewResponse: {
+            data: components["schemas"]["PortalReferral"];
             /** @default true */
             success: boolean;
             message: string;
@@ -6668,6 +7223,30 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        AdminSourceConfirmResponse: {
+            data: components["schemas"]["SourceConfirmResult"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminSourceFreshnessSettingsResponse: {
+            data: components["schemas"]["SourceFreshnessSettings"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        AdminSourceFreshnessSettingsUpdateResponse: {
+            data: components["schemas"]["SourceFreshnessSettings"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
         AdminTeamUserCreateResponse: {
             data: components["schemas"]["TeamUserCreateResponse"];
             /** @default true */
@@ -6748,6 +7327,14 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /**
+         * @description * `purchase` - Buy
+         *     * `hold` - Hold
+         *     * `offer` - Make an offer
+         *     * `viewing` - Request a viewing
+         * @enum {string}
+         */
+        AllowedActionsEnum: "purchase" | "hold" | "offer" | "viewing";
         /**
          * @description Also served, as-is, from the public endpoint (``AllowAny``) — see
          *     ``apps.core.models.AppTheme``'s docstring on the old panel's identical
@@ -6836,6 +7423,9 @@ export interface components {
             nationality?: string;
             external_ids?: unknown;
             readonly works_count: number | null;
+            readonly records_count: number | null;
+            /** Format: decimal */
+            readonly top_record_price: string | null;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -6852,6 +7442,9 @@ export interface components {
             readonly bio: string;
             readonly birth_year: number | null;
             readonly nationality: string;
+            readonly records_count: number | null;
+            /** Format: decimal */
+            readonly top_record_price: string | null;
         };
         ArtistDetailResponse: {
             data: components["schemas"]["ArtistCollector"];
@@ -6929,6 +7522,9 @@ export interface components {
             visibility?: components["schemas"]["ArtworkVisibilityEnum"];
             source_name?: string;
             source_type?: components["schemas"]["ArtworkSourceTypeEnum"] | components["schemas"]["BlankEnum"];
+            /** Format: date-time */
+            readonly source_confirmed_at: string | null;
+            readonly freshness: components["schemas"]["ArtworkFreshness"];
             public_description?: string;
             internal_notes?: string;
             provenance?: string;
@@ -7013,6 +7609,14 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /** @description G-CAT-9 — derived source-freshness pill for an artwork row (read-only). */
+        ArtworkFreshness: {
+            state: components["schemas"]["StateEnum"];
+            label: string;
+            days: number;
+            /** Format: date-time */
+            confirmed_at: string | null;
         };
         /**
          * @description Read/output shape only. Object storage upload goes through
@@ -8071,6 +8675,120 @@ export interface components {
          */
         CommissionTypeEnum: "pct" | "fixed";
         /**
+         * @description Optional status update alongside a one-tap confirm (ports the old
+         *     'Update…' picker). Omit `status` for a plain re-confirm.
+         */
+        ConfirmAvailable: {
+            status?: components["schemas"]["ArtworkAvailabilityStatusEnum"] | components["schemas"]["BlankEnum"];
+        };
+        /**
+         * @description Bulk 'Confirm all works from this source' — at least one of source_name
+         *     / source_type is required (validated in the view/service).
+         */
+        ConfirmSource: {
+            source_name?: string;
+            source_type?: components["schemas"]["ArtworkSourceTypeEnum"] | components["schemas"]["BlankEnum"];
+        };
+        Contact: {
+            /** Format: uuid */
+            readonly id: string;
+            name?: string;
+            /** Company / role */
+            company?: string;
+            phone?: string;
+            /** Format: email */
+            email?: string;
+            priority?: components["schemas"]["ContactPriorityEnum"];
+            /** Format: date */
+            last_contact?: string | null;
+            /**
+             * Next follow-up
+             * Format: date
+             */
+            next_followup?: string | null;
+            notes?: string;
+            readonly collector: components["schemas"]["LinkedPartyBrief"];
+            readonly artist: components["schemas"]["LinkedPartyBrief"];
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        ContactCreateResponse: {
+            data: components["schemas"]["Contact"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ContactDetailResponse: {
+            data: components["schemas"]["Contact"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ContactListResponse: {
+            data: components["schemas"]["ContactListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ContactListResponseData: {
+            pagination: components["schemas"]["ContactListResponsePagination"];
+            results: components["schemas"]["Contact"][];
+        };
+        ContactListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        /**
+         * @description * `high` - High
+         *     * `med` - Medium
+         *     * `low` - Low
+         * @enum {string}
+         */
+        ContactPriorityEnum: "high" | "med" | "low";
+        ContactUpdateResponse: {
+            data: components["schemas"]["Contact"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ContactWrite: {
+            name?: string;
+            /** Company / role */
+            company?: string;
+            phone?: string;
+            /** Format: email */
+            email?: string;
+            priority?: components["schemas"]["ContactPriorityEnum"];
+            /** Format: date */
+            last_contact?: string | null;
+            /**
+             * Next follow-up
+             * Format: date
+             */
+            next_followup?: string | null;
+            notes?: string;
+            /** Format: uuid */
+            collector?: string | null;
+            /** Format: uuid */
+            artist?: string | null;
+        };
+        /**
          * @description * `USD` - US Dollar
          *     * `EUR` - Euro
          *     * `GBP` - British Pound
@@ -8111,12 +8829,6 @@ export interface components {
          * @enum {string}
          */
         DeliveryStatusEnum: "pending" | "in_transit" | "delivered";
-        /**
-         * @description * `exhibition_proposal` - exhibition_proposal
-         *     * `exhibition_invoice` - exhibition_invoice
-         * @enum {string}
-         */
-        DocTypeEnum: "exhibition_proposal" | "exhibition_invoice";
         Document: {
             /** Format: uuid */
             readonly id: string;
@@ -8151,6 +8863,9 @@ export interface components {
             readonly signed_at: string | null;
             /** Format: uuid */
             readonly signed_by: string | null;
+            readonly signature_image_key: string;
+            /** Format: uri */
+            readonly signature_image_url: string | null;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version: number;
             /** Format: date-time */
@@ -8231,6 +8946,10 @@ export interface components {
          */
         EntryTypeEnum: "income" | "expense";
         ErrorDetail: {
+            /** @description Present on validation errors: the per-field messages keyed by field name (e.g. {"expected_version": ["This field is required."]}), "non_field_errors" / "__all__" for errors not tied to one field, plus any endpoint-specific keys (e.g. the artwork publish gate's "missing"). */
+            details?: {
+                [key: string]: unknown;
+            };
             code: string;
             message: string;
         };
@@ -8250,11 +8969,17 @@ export interface components {
             admin_note?: string;
         };
         ExhibitionDocumentCreate: {
-            doc_type: components["schemas"]["DocTypeEnum"];
+            doc_type: components["schemas"]["ExhibitionDocumentCreateDocTypeEnum"];
             /** @default  */
             title: string;
             fields?: unknown;
         };
+        /**
+         * @description * `exhibition_proposal` - exhibition_proposal
+         *     * `exhibition_invoice` - exhibition_invoice
+         * @enum {string}
+         */
+        ExhibitionDocumentCreateDocTypeEnum: "exhibition_proposal" | "exhibition_invoice";
         ExhibitionDocumentUpload: {
             /** Format: uri */
             file: string;
@@ -8330,9 +9055,6 @@ export interface components {
             /** @default  */
             project: string;
         };
-        ExhibitionPortalSign: {
-            signer_name: string;
-        };
         ExhibitionPublish: {
             published: boolean;
         };
@@ -8398,9 +9120,6 @@ export interface components {
          * @enum {string}
          */
         ExhibitionServiceLineStatusEnum: "proposed" | "confirmed" | "declined" | "delivered";
-        ExhibitionSubmit: {
-            service_keys: string[];
-        };
         /**
          * @description * `1w` - 1w
          *     * `1m` - 1m
@@ -8452,6 +9171,18 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /** @description The 'needs reconfirmation' desk stats + per-source rollup (G-CAT-9). */
+        FreshnessSummary: {
+            needs_reconfirmation: number;
+            due: number;
+            stale: number;
+            risky: number;
+            fresh: number;
+            new: number;
+            hide_unconfirmed: boolean;
+            hide_after_days: number;
+            by_source: components["schemas"]["SourceRollup"][];
+        };
         /**
          * @description Set/clear the Darz funnel-stage override on one assigned artwork
          *     (Phase 12). Empty string clears it — the portal then derives the stage.
@@ -8472,15 +9203,6 @@ export interface components {
          * @enum {string}
          */
         FunnelStatusEnum: "listed" | "viewed" | "saved" | "requested" | "offer_received" | "on_hold" | "reserved" | "sold" | "withdrawn";
-        /**
-         * @description G-PORT-1 — a source's replacement image for an assigned work. FileField
-         *     (not ImageField) to match the codebase's upload serializers, which don't
-         *     depend on Pillow; the object is stored and reviewed before it's ever applied.
-         */
-        GalleryImageReplacementUpload: {
-            /** Format: uri */
-            file: string;
-        };
         /**
          * @description Never includes token/pin_hash — the plaintext token+PIN are shown to
          *     the admin exactly once, at issue time, via GalleryLinkIssueResponseSerializer.
@@ -8626,18 +9348,10 @@ export interface components {
             readonly object_key: string;
             /** Format: uri */
             readonly file_url: string | null;
-            readonly status: components["schemas"]["Status2ffEnum"];
+            readonly status: components["schemas"]["GalleryPricelistStatusEnum"];
             readonly lines: components["schemas"]["GalleryPricelistLine"][];
             /** Format: date-time */
             readonly created_at: string;
-        };
-        /** @description G-PORT-3…6 (P3b) — build a structured pricelist in-portal (no file). */
-        GalleryPricelistBuilder: {
-            /** @default  */
-            title: string;
-            /** @default  */
-            notes: string;
-            lines: components["schemas"]["_GalleryPricelistLineInput"][];
         };
         /** @description G-PORT-3 — the soft-cap snapshot for a link's pricelists (advisory). */
         GalleryPricelistCap: {
@@ -8659,18 +9373,22 @@ export interface components {
             readonly note: string;
             readonly position: number;
         };
-        /** @description G-PORT-3 — admin sets a submitted pricelist's status. */
-        GalleryPricelistStatus: {
-            status: components["schemas"]["Status2ffEnum"];
-        };
-        GalleryPricelistUpload: {
+        /** @description G-PORT P3c — the branded, client-rendered formatted pricelist PDF. */
+        GalleryPricelistRenderedUpload: {
             /** Format: uri */
             file: string;
-            /** @default  */
-            title: string;
-            /** @default  */
-            notes: string;
         };
+        /** @description G-PORT-3 — admin sets a submitted pricelist's status. */
+        GalleryPricelistStatus: {
+            status: components["schemas"]["GalleryPricelistStatusEnum"];
+        };
+        /**
+         * @description * `submitted` - Submitted
+         *     * `accepted` - Accepted
+         *     * `superseded` - Superseded
+         * @enum {string}
+         */
+        GalleryPricelistStatusEnum: "submitted" | "accepted" | "superseded";
         GalleryUpdate: {
             /** Format: uuid */
             readonly id: string;
@@ -8680,6 +9398,8 @@ export interface components {
             readonly artwork: string | null;
             readonly kind: components["schemas"]["GalleryUpdateKindEnum"];
             readonly payload: unknown;
+            /** Format: uri */
+            readonly image_url: string | null;
             readonly status: components["schemas"]["BidderRegistrationStatusEnum"];
             /** Format: uuid */
             readonly reviewed_by: string | null;
@@ -8702,18 +9422,13 @@ export interface components {
          *     * `invoice_signed` - Invoice signed
          *     * `ask` - Ask about a work
          *     * `withdraw` - Withdraw a work
+         *     * `actions` - Actions & offer floor
          * @enum {string}
          */
-        GalleryUpdateKindEnum: "availability" | "status" | "price" | "correction" | "image" | "note" | "new" | "exhibition" | "invoice_request" | "invoice_signed" | "ask" | "withdraw";
+        GalleryUpdateKindEnum: "availability" | "status" | "price" | "correction" | "image" | "note" | "new" | "exhibition" | "invoice_request" | "invoice_signed" | "ask" | "withdraw" | "actions";
         GalleryUpdateReview: {
             /** @default  */
             note: string;
-        };
-        GalleryUpdateSubmit: {
-            kind: components["schemas"]["GalleryUpdateKindEnum"];
-            /** Format: uuid */
-            artwork?: string | null;
-            payload?: unknown;
         };
         GenerateRecommendations: {
             /** @default 50 */
@@ -8734,6 +9449,16 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /**
+         * @description No client input for V1 — expires_at is always server-set (48h TTL).
+         *
+         *     Declared read-only (C-7) so the schema's `RequestDetail` union gets a hold
+         *     member; a client-sent `expires_at` is ignored on create.
+         */
+        HoldDetail: {
+            /** Format: date-time */
+            readonly expires_at: string;
         };
         LedgerAttachment: {
             /** Format: uuid */
@@ -8881,6 +9606,12 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /** @description Read-only {id, display_name} for a linked collector or artist. */
+        LinkedPartyBrief: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
         };
         LogoutInput: {
             refresh: string;
@@ -9468,13 +10199,17 @@ export interface components {
             nationality?: string;
             external_ids?: unknown;
             readonly works_count?: number | null;
+            readonly records_count?: number | null;
+            /** Format: decimal */
+            readonly top_record_price?: string | null;
             /** @description Optimistic-lock counter; bumped on every save. */
             readonly version?: number;
             /** Format: date-time */
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedArtworkImportRowUpdate: {
             resolved_data?: unknown;
@@ -9520,6 +10255,9 @@ export interface components {
             visibility?: components["schemas"]["ArtworkVisibilityEnum"];
             source_name?: string;
             source_type?: components["schemas"]["ArtworkSourceTypeEnum"] | components["schemas"]["BlankEnum"];
+            /** Format: date-time */
+            readonly source_confirmed_at?: string | null;
+            readonly freshness?: components["schemas"]["ArtworkFreshness"];
             public_description?: string;
             internal_notes?: string;
             provenance?: string;
@@ -9539,7 +10277,8 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /**
          * @description Admin PATCH input — adds the optimistic-lock guard (G-LOCK-1) so two
@@ -9616,7 +10355,8 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /**
          * @description G-AUC-1 — edit an auction's listing/window/terms. Allowed only while the
@@ -9634,7 +10374,8 @@ export interface components {
             ends_at?: string;
             terms?: string;
             terms_required?: boolean;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedChecklistTemplateUpdate: {
             /** Format: uuid */
@@ -9648,7 +10389,8 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /**
          * @description Collector self-edit (G-B1) — only the collector-editable subset. Every
@@ -9666,7 +10408,8 @@ export interface components {
             note?: string;
             artwork_ids?: string[];
             collector_ids?: string[];
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /** @description Adds the optimistic-lock input required on every update. */
         PatchedCollectorUpdate: {
@@ -9691,7 +10434,31 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
+        };
+        PatchedContactUpdate: {
+            name?: string;
+            /** Company / role */
+            company?: string;
+            phone?: string;
+            /** Format: email */
+            email?: string;
+            priority?: components["schemas"]["ContactPriorityEnum"];
+            /** Format: date */
+            last_contact?: string | null;
+            /**
+             * Next follow-up
+             * Format: date
+             */
+            next_followup?: string | null;
+            notes?: string;
+            /** Format: uuid */
+            collector?: string | null;
+            /** Format: uuid */
+            artist?: string | null;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedDocumentUpdate: {
             title?: string;
@@ -9709,15 +10476,6 @@ export interface components {
             discount?: string;
             admin_note?: string;
             request_status?: components["schemas"]["RequestStatusEnum"];
-        };
-        PatchedExhibitionEventUpdate: {
-            title?: string;
-            event_date?: string;
-            venue?: string;
-            artists?: string;
-            note?: string;
-            gallery_note?: string;
-            project?: string;
         };
         /** @description G-PORT-12b — the editable exhibition service menu (admin desk). */
         PatchedExhibitionServiceCatalogItemUpdate: {
@@ -9737,7 +10495,8 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedLedgerEntryUpdate: {
             entry_type?: components["schemas"]["EntryTypeEnum"];
@@ -9767,7 +10526,8 @@ export interface components {
             /** Format: decimal */
             commission_pct?: string | null;
             arian_review?: components["schemas"]["ArianReviewWrite"];
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /**
          * @description G-AUC-2 — edit a scheduled lot's listing/mechanics. auction/artwork are
@@ -9792,7 +10552,8 @@ export interface components {
             /** Format: date-time */
             ends_at?: string;
             soft_close_sec?: number;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedMarketingCampaign: {
             /** Format: uuid */
@@ -9841,7 +10602,8 @@ export interface components {
             expiry?: string | null;
             whatsapp?: string;
             notes?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedPackageTemplateUpdate: {
             /** Format: uuid */
@@ -9882,7 +10644,8 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedPartnerOrgUpdate: {
             /** Format: uuid */
@@ -9899,7 +10662,20 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
+        };
+        PatchedPortalExhibitionEventUpdate: {
+            title?: string;
+            gallery_selected?: string[];
+            event_date?: string;
+            venue?: string;
+            artists?: string;
+            note?: string;
+            gallery_note?: string;
+            project?: string;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin?: string;
         };
         PatchedPrivateDealWrite: {
             /** Deal title */
@@ -9907,7 +10683,7 @@ export interface components {
             /** Format: date */
             deal_date?: string | null;
             status?: components["schemas"]["PrivateDealStatusEnum"];
-            priority?: components["schemas"]["PriorityEnum"];
+            priority?: components["schemas"]["PrivateDealPriorityEnum"];
             /** Private note */
             note?: string;
             /** Artist */
@@ -10052,13 +10828,14 @@ export interface components {
             deal_fx_rate?: string | null;
             /** Format: date */
             deal_fx_rate_date?: string | null;
-            status?: components["schemas"]["Status2c3Enum"];
+            status?: components["schemas"]["ProjectStatusEnum"];
             /**
              * Stage sub-state
              * @description {stage_key: {owner, start, due, deps, files, checklist, intApproved, cliApproved, notes, doneTs}}
              */
             stages?: unknown;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /**
          * @description PATCH — every field optional. When `questions` is supplied it FULL-
@@ -10069,7 +10846,8 @@ export interface components {
             intro?: string;
             is_active?: boolean;
             questions?: components["schemas"]["QuestionWrite"][];
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedRecommendation: {
             /** Format: uuid */
@@ -10123,7 +10901,8 @@ export interface components {
             fees_tax?: string | null;
             /** Format: uuid */
             responsible?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         PatchedServiceCatalogItemUpdate: {
             /** Format: uuid */
@@ -10143,7 +10922,28 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
+        };
+        /** @description Owner toggle for hiding long-unconfirmed works from collectors. */
+        PatchedSourceFreshnessSettings: {
+            /** Hide unconfirmed works from collectors */
+            hide_unconfirmed?: boolean;
+            hide_after_days?: number;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly updated_at?: string;
+        };
+        PatchedTeamTaskUpdate: {
+            title?: string;
+            /** Format: uuid */
+            assignee?: string | null;
+            status?: components["schemas"]["TeamTaskStatusEnum"];
+            /** Format: date */
+            due_date?: string | null;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /** @description All fields optional (partial update) + the optimistic-lock input. */
         PatchedTeamUserUpdate: {
@@ -10152,7 +10952,31 @@ export interface components {
             name?: string;
             role?: components["schemas"]["RoleEnum"];
             is_active?: boolean;
-            expected_version?: number;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
+        };
+        PatchedWorkspaceItemUpdate: {
+            /** Format: uuid */
+            readonly id?: string;
+            kind?: components["schemas"]["WorkspaceItemKindEnum"];
+            category?: components["schemas"]["WorkspaceItemCategoryEnum"];
+            title?: string;
+            body?: string;
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: time */
+            due_time?: string | null;
+            done?: boolean;
+            /** Format: date-time */
+            readonly done_at?: string | null;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
         };
         /**
          * @description * `cash` - Cash
@@ -10178,6 +11002,47 @@ export interface components {
          * @enum {string}
          */
         PaymentStatusEnum: "unpaid" | "partial" | "paid";
+        PortalActionsProposalResponse: {
+            data: components["schemas"]["GalleryUpdate"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /**
+         * @description An assigned_artworks[] item: the assignment + ``funnel`` (present only
+         *     when the link has feat_funnel).
+         */
+        PortalAssignedArtwork: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly link: string;
+            /** Format: uuid */
+            readonly artwork: string;
+            readonly snapshot: unknown;
+            /** Format: uri */
+            readonly image_url: string | null;
+            /**
+             * Funnel status override
+             * @description Darz-set override for the portal's derived stage. Blank = derive from catalogue status then the strongest live collector signal.
+             *
+             *     * `listed` - Listed
+             *     * `viewed` - Viewed
+             *     * `saved` - Saved
+             *     * `requested` - Requested
+             *     * `offer_received` - Offer received
+             *     * `on_hold` - On hold
+             *     * `reserved` - Reserved
+             *     * `sold` - Sold
+             *     * `withdrawn` - Withdrawn
+             */
+            readonly funnel_status: components["schemas"]["FunnelStatusEnum"];
+            /** Format: date-time */
+            readonly created_at: string;
+            funnel?: components["schemas"]["PortalFunnelEntry"] | null;
+        };
         PortalExhibitionCatalogueResponse: {
             data?: {
                 [key: string]: unknown;
@@ -10208,6 +11073,23 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        PortalExhibitionEventCreate: {
+            title: string;
+            /** @default  */
+            event_date: string;
+            /** @default  */
+            venue: string;
+            /** @default  */
+            artists: string;
+            /** @default  */
+            note: string;
+            /** @default  */
+            gallery_note: string;
+            /** @default  */
+            project: string;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
+        };
         PortalExhibitionListResponse: {
             data?: {
                 [key: string]: unknown;
@@ -10218,6 +11100,13 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        PortalExhibitionPortalSign: {
+            signer_name: string;
+            /** @default  */
+            signature_image: string;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
+        };
         PortalExhibitionSignResponse: {
             data: components["schemas"]["Document"];
             /** @default true */
@@ -10225,6 +11114,11 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        PortalExhibitionSubmit: {
+            service_keys: string[];
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
         };
         PortalExhibitionSubmitResponse: {
             data?: {
@@ -10246,6 +11140,23 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        PortalFunnelActivity: {
+            offers: number;
+            holds: number;
+            requests: number;
+            saves: number;
+            views: number;
+            /** Format: date-time */
+            last_activity_at: string | null;
+        };
+        /**
+         * @description One FunnelDerivationService.for_link entry. ``activity`` only when the
+         *     link has feat_funnel_activity.
+         */
+        PortalFunnelEntry: {
+            stage: string;
+            activity?: components["schemas"]["PortalFunnelActivity"];
+        };
         PortalFunnelStatusResponse: {
             data?: {
                 [key: string]: unknown;
@@ -10263,6 +11174,17 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /**
+         * @description G-PORT-1 — a source's replacement image for an assigned work. FileField
+         *     (not ImageField) to match the codebase's upload serializers, which don't
+         *     depend on Pillow; the object is stored and reviewed before it's ever applied.
+         */
+        PortalImageReplacementUpload: {
+            /** Format: uri */
+            file: string;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
         };
         PortalMessageListResponse: {
             data: components["schemas"]["PortalMessageListResponseData"];
@@ -10284,6 +11206,11 @@ export interface components {
             has_next: boolean;
             has_previous: boolean;
         };
+        PortalMessageSend: {
+            body: string;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
+        };
         PortalMessageSendResponse: {
             data: components["schemas"]["GalleryMessage"];
             /** @default true */
@@ -10291,6 +11218,37 @@ export interface components {
             message: string;
             /** Format: date-time */
             timestamp: string;
+        };
+        /**
+         * @description G-PORT-8 — the source proposes per-work collector actions and/or a minimum
+         *     acceptable offer for one of its assigned works. Lands in the approval queue;
+         *     applied to the Artwork on approval. At least one of the two is required.
+         */
+        PortalPortalActionsProposal: {
+            allowed_actions?: components["schemas"]["AllowedActionsEnum"][];
+            /** Format: decimal */
+            offer_floor?: string | null;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
+        };
+        /** @description G-PORT-5 — the portal "Introduce" form. */
+        PortalPortalReferralSubmit: {
+            /** @default collector */
+            referred_kind: components["schemas"]["PortalReferralKindEnum"];
+            referred_name: string;
+            /**
+             * Format: email
+             * @default
+             */
+            referred_email: string;
+            /** @default  */
+            referred_phone: string;
+            /** @default  */
+            referred_org: string;
+            /** @default  */
+            note: string;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
         };
         PortalPricelistBuildResponse: {
             data: components["schemas"]["GalleryPricelist"];
@@ -10300,6 +11258,26 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /** @description G-PORT-3…6 (P3b) — build a structured pricelist in-portal (no file). */
+        PortalPricelistBuilder: {
+            /** @default  */
+            title: string;
+            /** @default  */
+            notes: string;
+            lines: components["schemas"]["_GalleryPricelistLineInput"][];
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
+        };
+        PortalPricelistUpload: {
+            /** Format: uri */
+            file: string;
+            /** @default  */
+            title: string;
+            /** @default  */
+            notes: string;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
+        };
         PortalPricelistUploadResponse: {
             data: components["schemas"]["GalleryPricelist"];
             /** @default true */
@@ -10308,8 +11286,128 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        /** @description Read shape — the admin review desk and the portal's own list. */
+        PortalReferral: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Referrer link
+             * Format: uuid
+             */
+            readonly link: string;
+            readonly source_name: string;
+            readonly referred_kind: components["schemas"]["PortalReferralKindEnum"];
+            readonly referred_name: string;
+            /** Format: email */
+            readonly referred_email: string;
+            readonly referred_phone: string;
+            /** Referred organization */
+            readonly referred_org: string;
+            readonly note: string;
+            readonly status: components["schemas"]["PortalReferralStatusEnum"];
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `collector` - Collector
+         *     * `gallery` - Gallery
+         *     * `artist` - Artist
+         *     * `other` - Other
+         * @enum {string}
+         */
+        PortalReferralKindEnum: "collector" | "gallery" | "artist" | "other";
+        PortalReferralListResponse: {
+            data: components["schemas"]["PortalReferralListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        PortalReferralListResponseData: {
+            pagination: components["schemas"]["PortalReferralListResponsePagination"];
+            results: components["schemas"]["PortalReferral"][];
+        };
+        PortalReferralListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        /** @description Admin sets a referral's review status. */
+        PortalReferralReview: {
+            status: components["schemas"]["PortalReferralStatusEnum"];
+        };
+        /**
+         * @description * `new` - New
+         *     * `reviewed` - Reviewed
+         *     * `accepted` - Accepted
+         *     * `declined` - Declined
+         * @enum {string}
+         */
+        PortalReferralStatusEnum: "new" | "reviewed" | "accepted" | "declined";
+        PortalReferralSubmitResponse: {
+            data: components["schemas"]["PortalReferral"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /**
+         * @description C-8 — GET portal/{token}/: the link plus everything the portal renders
+         *     from one read (see views.portal_state).
+         */
+        PortalState: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly source_type: components["schemas"]["GalleryLinkSourceTypeEnum"];
+            /** @description Display name of the gallery/artist/collector/dealer. */
+            readonly name: string;
+            readonly status: components["schemas"]["GalleryLinkStatusEnum"];
+            /** @description Portal branding customization blob. */
+            readonly theme: unknown;
+            readonly feature_flags: unknown;
+            /**
+             * Show sales funnel
+             * @description Show each shared work's derived status stage in the portal.
+             */
+            readonly feat_funnel: boolean;
+            /**
+             * Show funnel activity counts
+             * @description Also show anonymous aggregate activity counts (views/saves/requests/offers/holds). Never exposes a collector identity.
+             */
+            readonly feat_funnel_activity: boolean;
+            readonly contact_name: string;
+            /** Format: email */
+            readonly contact_email: string;
+            readonly contact_phone: string;
+            /** Format: date-time */
+            readonly expires_at: string | null;
+            /** Format: uuid */
+            readonly issued_by: string | null;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly assigned_artworks: components["schemas"]["PortalAssignedArtwork"][];
+            readonly pricelists: components["schemas"]["GalleryPricelist"][];
+            readonly messages: components["schemas"]["GalleryMessage"][];
+            readonly updates: components["schemas"]["PortalUpdate"][];
+            /**
+             * Format: uri
+             * @description First assigned work's image URL, or null.
+             */
+            readonly cover: string | null;
+        };
         PortalStateResponse: {
-            data: components["schemas"]["GalleryLink"];
+            data: components["schemas"]["PortalState"];
             /** @default true */
             success: boolean;
             message: string;
@@ -10333,6 +11431,14 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        PortalUpdateSubmit: {
+            kind: components["schemas"]["GalleryUpdateKindEnum"];
+            /** Format: uuid */
+            artwork?: string | null;
+            payload?: unknown;
+            /** @description The link's PIN. On every portal write it goes in the body (a form field on multipart uploads). */
+            pin: string;
+        };
         PortalUpdateSubmitResponse: {
             data: components["schemas"]["GalleryUpdate"];
             /** @default true */
@@ -10355,19 +11461,54 @@ export interface components {
          */
         PriceTypeEnum: "fixed" | "on_request" | "estimate";
         /**
+         * @description One pending gallery pricelist awaiting the owner's confirmation. Read-only
+         *     — approve/reject stay on the gallery endpoint (`admin_pricelist_status`),
+         *     which this inbox simply aggregates across every portal link (W4).
+         */
+        PricelistApproval: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            notes: string;
+            status: string;
+            /** Format: date-time */
+            submitted_at: string;
+            link: components["schemas"]["PricelistApprovalLink"];
+        };
+        /** @description The submitting portal link — the old desk's 'From {submitter}'. */
+        PricelistApprovalLink: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            source_type: string;
+            contact_name: string;
+        };
+        PricelistApprovalListResponse: {
+            data: components["schemas"]["PricelistApprovalListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        PricelistApprovalListResponseData: {
+            pagination: components["schemas"]["PricelistApprovalListResponsePagination"];
+            results: components["schemas"]["PricelistApproval"][];
+        };
+        PricelistApprovalListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        /**
          * @description * `team` - team
          *     * `collector` - collector
          * @enum {string}
          */
         PrincipalEnum: "team" | "collector";
-        /**
-         * @description * `low` - Low
-         *     * `medium` - Medium
-         *     * `high` - High
-         *     * `urgent` - Urgent
-         * @enum {string}
-         */
-        PriorityEnum: "low" | "medium" | "high" | "urgent";
         PrivateDeal: {
             /** Format: uuid */
             readonly id: string;
@@ -10376,7 +11517,7 @@ export interface components {
             /** Format: date */
             deal_date?: string | null;
             status?: components["schemas"]["PrivateDealStatusEnum"];
-            priority?: components["schemas"]["PriorityEnum"];
+            priority?: components["schemas"]["PrivateDealPriorityEnum"];
             /** Private note */
             note?: string;
             /** Artist */
@@ -10487,6 +11628,14 @@ export interface components {
             readonly updated_at: string;
         };
         /**
+         * @description * `low` - Low
+         *     * `medium` - Medium
+         *     * `high` - High
+         *     * `urgent` - Urgent
+         * @enum {string}
+         */
+        PrivateDealPriorityEnum: "low" | "medium" | "high" | "urgent";
+        /**
          * @description * `artist` - Artist
          *     * `collector` - Collector
          *     * `gallery` - Gallery
@@ -10512,7 +11661,7 @@ export interface components {
             /** Format: date */
             deal_date?: string | null;
             status?: components["schemas"]["PrivateDealStatusEnum"];
-            priority?: components["schemas"]["PriorityEnum"];
+            priority?: components["schemas"]["PrivateDealPriorityEnum"];
             /** Private note */
             note?: string;
             /** Artist */
@@ -10653,7 +11802,7 @@ export interface components {
             deal_fx_rate?: string | null;
             /** Format: date */
             deal_fx_rate_date?: string | null;
-            status?: components["schemas"]["Status2c3Enum"];
+            status?: components["schemas"]["ProjectStatusEnum"];
             stage?: components["schemas"]["StageEnum"];
             /**
              * Stage sub-state
@@ -10749,6 +11898,27 @@ export interface components {
             }[];
         };
         /**
+         * @description Create a proposal/invoice document for a project. ``fields`` carries the
+         *     composer payload the frontend builds (title/client/intro/notes/pricing/lines);
+         *     the backend stores it verbatim (owner call: FE composes).
+         */
+        ProjectDocumentCreate: {
+            doc_type: components["schemas"]["ProjectDocumentCreateDocTypeEnum"];
+            /** @default  */
+            title: string;
+            fields?: unknown;
+        };
+        /**
+         * @description * `project_proposal` - project_proposal
+         *     * `project_invoice` - project_invoice
+         * @enum {string}
+         */
+        ProjectDocumentCreateDocTypeEnum: "project_proposal" | "project_invoice";
+        ProjectDocumentUpload: {
+            /** Format: uri */
+            file: string;
+        };
+        /**
          * @description G-PROJ-9 — exact per-currency subtotals, plus a converted grand total
          *     when the project carries a manual FX rate (else `fx` is null).
          */
@@ -10768,8 +11938,33 @@ export interface components {
         ProjectServiceCategoryEnum: "media" | "production" | "curatorial" | "other";
         ProjectStageUpdate: {
             stage: components["schemas"]["StageEnum"];
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
             expected_version: number;
         };
+        /**
+         * @description * `New Lead` - New Lead
+         *     * `Under Review` - Under Review
+         *     * `Qualified` - Qualified
+         *     * `Proposal in Preparation` - Proposal in Preparation
+         *     * `Proposal Sent` - Proposal Sent
+         *     * `Negotiation` - Negotiation
+         *     * `Approved` - Approved
+         *     * `Awaiting Contract` - Awaiting Contract
+         *     * `Awaiting Deposit` - Awaiting Deposit
+         *     * `In Research` - In Research
+         *     * `In Production` - In Production
+         *     * `Internal Review` - Internal Review
+         *     * `Client Review` - Client Review
+         *     * `Scheduled` - Scheduled
+         *     * `Published` - Published
+         *     * `Reporting` - Reporting
+         *     * `Awaiting Final Payment` - Awaiting Final Payment
+         *     * `Completed` - Completed
+         *     * `Archived` - Archived
+         *     * `Cancelled` - Cancelled
+         * @enum {string}
+         */
+        ProjectStatusEnum: "New Lead" | "Under Review" | "Qualified" | "Proposal in Preparation" | "Proposal Sent" | "Negotiation" | "Approved" | "Awaiting Contract" | "Awaiting Deposit" | "In Research" | "In Production" | "Internal Review" | "Client Review" | "Scheduled" | "Published" | "Reporting" | "Awaiting Final Payment" | "Completed" | "Archived" | "Cancelled";
         PublicDocumentResponse: {
             data: components["schemas"]["Document"];
             /** @default true */
@@ -11220,7 +12415,7 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
-        RequestDetail: components["schemas"]["OfferDetail"] | components["schemas"]["ViewingDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["PurchaseIntentDetail"];
+        RequestDetail: components["schemas"]["HoldDetail"] | components["schemas"]["OfferDetail"] | components["schemas"]["ViewingDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["SimpleDetail"] | components["schemas"]["PurchaseIntentDetail"];
         RequestDetailResponse: {
             data: components["schemas"]["RequestCollector"];
             /** @default true */
@@ -11628,6 +12823,25 @@ export interface components {
          * @enum {string}
          */
         SlotEnum: "image" | "invoice" | "certificate" | "agreement" | "receipt" | "shipping" | "other";
+        SourceConfirmResult: {
+            confirmed: number;
+        };
+        /** @description Owner toggle for hiding long-unconfirmed works from collectors. */
+        SourceFreshnessSettings: {
+            /** Hide unconfirmed works from collectors */
+            hide_unconfirmed?: boolean;
+            hide_after_days?: number;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        SourceRollup: {
+            source_name: string;
+            source_type: string;
+            total: number;
+            needs_reconfirmation: number;
+        };
         /**
          * @description * `lead` - Lead
          *     * `qualification` - Qualification
@@ -11650,36 +12864,14 @@ export interface components {
          */
         StageEnum: "lead" | "qualification" | "brief" | "proposal" | "scopeApproval" | "contract" | "deposit" | "research" | "planning" | "production" | "internalReview" | "clientReview" | "finalApproval" | "publication" | "reporting" | "finalPayment" | "archive";
         /**
-         * @description * `New Lead` - New Lead
-         *     * `Under Review` - Under Review
-         *     * `Qualified` - Qualified
-         *     * `Proposal in Preparation` - Proposal in Preparation
-         *     * `Proposal Sent` - Proposal Sent
-         *     * `Negotiation` - Negotiation
-         *     * `Approved` - Approved
-         *     * `Awaiting Contract` - Awaiting Contract
-         *     * `Awaiting Deposit` - Awaiting Deposit
-         *     * `In Research` - In Research
-         *     * `In Production` - In Production
-         *     * `Internal Review` - Internal Review
-         *     * `Client Review` - Client Review
-         *     * `Scheduled` - Scheduled
-         *     * `Published` - Published
-         *     * `Reporting` - Reporting
-         *     * `Awaiting Final Payment` - Awaiting Final Payment
-         *     * `Completed` - Completed
-         *     * `Archived` - Archived
-         *     * `Cancelled` - Cancelled
+         * @description * `fresh` - fresh
+         *     * `new` - new
+         *     * `due` - due
+         *     * `stale` - stale
+         *     * `risky` - risky
          * @enum {string}
          */
-        Status2c3Enum: "New Lead" | "Under Review" | "Qualified" | "Proposal in Preparation" | "Proposal Sent" | "Negotiation" | "Approved" | "Awaiting Contract" | "Awaiting Deposit" | "In Research" | "In Production" | "Internal Review" | "Client Review" | "Scheduled" | "Published" | "Reporting" | "Awaiting Final Payment" | "Completed" | "Archived" | "Cancelled";
-        /**
-         * @description * `submitted` - Submitted
-         *     * `accepted` - Accepted
-         *     * `superseded` - Superseded
-         * @enum {string}
-         */
-        Status2ffEnum: "submitted" | "accepted" | "superseded";
+        StateEnum: "fresh" | "new" | "due" | "stale" | "risky";
         /**
          * @description * `style` - style
          *     * `subject` - subject
@@ -11709,6 +12901,116 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        TeamPerformanceEnvelope: {
+            data: components["schemas"]["TeamPerformanceResponse"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        TeamPerformanceResponse: {
+            performance: components["schemas"]["TeamPerformanceRow"][];
+            behaviour: components["schemas"]["AdminBehaviourRow"][];
+        };
+        /** @description Per-person task rollup for the 'Performance by person' table. */
+        TeamPerformanceRow: {
+            /** Format: uuid */
+            team_user_id: string | null;
+            name: string;
+            open: number;
+            done: number;
+            done_last_7d: number;
+            minutes_logged: number;
+        };
+        TeamTask: {
+            /** Format: uuid */
+            readonly id: string;
+            title?: string;
+            readonly assignee: components["schemas"]["TeamUserBrief"];
+            status?: components["schemas"]["TeamTaskStatusEnum"];
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: date-time */
+            readonly done_at: string | null;
+            readonly minutes_logged: number;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        TeamTaskCreateResponse: {
+            data: components["schemas"]["TeamTask"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        TeamTaskDetailResponse: {
+            data: components["schemas"]["TeamTask"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        TeamTaskListResponse: {
+            data: components["schemas"]["TeamTaskListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        TeamTaskListResponseData: {
+            pagination: components["schemas"]["TeamTaskListResponsePagination"];
+            results: components["schemas"]["TeamTask"][];
+        };
+        TeamTaskListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        TeamTaskLogTime: {
+            minutes: number;
+        };
+        TeamTaskLogTimeResponse: {
+            data: components["schemas"]["TeamTask"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /**
+         * @description * `todo` - To do
+         *     * `doing` - In progress
+         *     * `done` - Done
+         * @enum {string}
+         */
+        TeamTaskStatusEnum: "todo" | "doing" | "done";
+        TeamTaskUpdateResponse: {
+            data: components["schemas"]["TeamTask"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        TeamTaskWrite: {
+            title?: string;
+            /** Format: uuid */
+            assignee?: string | null;
+            status?: components["schemas"]["TeamTaskStatusEnum"];
+            /** Format: date */
+            due_date?: string | null;
+        };
         /**
          * @description Password is never serialized — the same discipline as
          *     ``AccessKeyAdminSerializer``/``MembershipCodeAdminSerializer``.
@@ -11727,6 +13029,11 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        TeamUserBrief: {
+            /** Format: uuid */
+            readonly id: string;
+            name?: string;
         };
         TeamUserCreate: {
             /** Format: email */
@@ -11787,6 +13094,108 @@ export interface components {
             /** Format: date-time */
             preferred_time: string;
             mode: components["schemas"]["ModeEnum"];
+        };
+        WorkspaceItem: {
+            /** Format: uuid */
+            readonly id: string;
+            kind?: components["schemas"]["WorkspaceItemKindEnum"];
+            category?: components["schemas"]["WorkspaceItemCategoryEnum"];
+            title?: string;
+            body?: string;
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: time */
+            due_time?: string | null;
+            done?: boolean;
+            /** Format: date-time */
+            readonly done_at: string | null;
+            /** @description Optimistic-lock counter; bumped on every save. */
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `urgent` - Urgent
+         *     * `waiting` - Waiting
+         *     * `followup` - Follow Up
+         *     * `ideas` - Ideas
+         *     * `personal` - Personal
+         *     * `darz` - Darz
+         *     * `koocheh` - Koocheh
+         *     * `team` - Team
+         * @enum {string}
+         */
+        WorkspaceItemCategoryEnum: "urgent" | "waiting" | "followup" | "ideas" | "personal" | "darz" | "koocheh" | "team";
+        WorkspaceItemCreateResponse: {
+            data: components["schemas"]["WorkspaceItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        WorkspaceItemDetailResponse: {
+            data: components["schemas"]["WorkspaceItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        /**
+         * @description * `task` - Task
+         *     * `followup` - Follow-up
+         *     * `call` - Call
+         *     * `meeting` - Meeting
+         *     * `reminder` - Reminder
+         *     * `idea` - Idea
+         *     * `note` - Note
+         *     * `opportunity` - Opportunity
+         * @enum {string}
+         */
+        WorkspaceItemKindEnum: "task" | "followup" | "call" | "meeting" | "reminder" | "idea" | "note" | "opportunity";
+        WorkspaceItemListResponse: {
+            data: components["schemas"]["WorkspaceItemListResponseData"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        WorkspaceItemListResponseData: {
+            pagination: components["schemas"]["WorkspaceItemListResponsePagination"];
+            results: components["schemas"]["WorkspaceItem"][];
+        };
+        WorkspaceItemListResponsePagination: {
+            page: number;
+            per_page: number;
+            total_pages: number;
+            total_count: number;
+            has_next: boolean;
+            has_previous: boolean;
+        };
+        WorkspaceItemToggle: {
+            done: boolean;
+            /** @description The record's current `version` (optimistic lock). Always required, also on PATCH. */
+            expected_version: number;
+        };
+        WorkspaceItemToggleResponse: {
+            data: components["schemas"]["WorkspaceItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        WorkspaceItemUpdateResponse: {
+            data: components["schemas"]["WorkspaceItem"];
+            /** @default true */
+            success: boolean;
+            message: string;
+            /** Format: date-time */
+            timestamp: string;
         };
         /** @description Per-collector engagement tallies shown on a roster row (G-KEY-1). */
         _AccessKeyActivity: {
@@ -15030,6 +16439,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     auth_logout_create: {
@@ -15193,6 +16610,14 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15804,6 +17229,49 @@ export interface operations {
             };
         };
     };
+    catalog_admin_artworks_confirm_available_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfirmAvailable"];
+                "application/x-www-form-urlencoded": components["schemas"]["ConfirmAvailable"];
+                "multipart/form-data": components["schemas"]["ConfirmAvailable"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminArtworkConfirmAvailableResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     catalog_admin_artworks_publish_create: {
         parameters: {
             query?: never;
@@ -15821,6 +17289,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminArtworkPublishResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminArtworkPublishBlockedResponse"];
                 };
             };
             404: {
@@ -16187,6 +17663,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_sources_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfirmSource"];
+                "application/x-www-form-urlencoded": components["schemas"]["ConfirmSource"];
+                "multipart/form-data": components["schemas"]["ConfirmSource"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSourceConfirmResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_sources_freshness_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSourceFreshnessSettingsResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_sources_freshness_settings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSourceFreshnessSettings"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSourceFreshnessSettings"];
+                "multipart/form-data": components["schemas"]["PatchedSourceFreshnessSettings"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSourceFreshnessSettingsUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    catalog_admin_sources_freshness_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFreshnessSummaryResponse"];
                 };
             };
         };
@@ -18880,6 +20460,48 @@ export interface operations {
             };
         };
     };
+    gallery_admin_pricelists_rendered_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["GalleryPricelistRenderedUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["GalleryPricelistRenderedUpload"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPricelistRenderedResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     gallery_admin_pricelists_status_create: {
         parameters: {
             query?: never;
@@ -18903,6 +20525,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminPricelistStatusResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_referrals_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Filter by referrer link id. */
+                link?: string;
+                /** @description Filter by status (new/reviewed/accepted/declined). */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReferralListResponse"];
+                };
+            };
+        };
+    };
+    gallery_admin_referrals_review_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalReferralReview"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalReferralReview"];
+                "multipart/form-data": components["schemas"]["PortalReferralReview"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReferralReviewResponse"];
                 };
             };
             400: {
@@ -19037,9 +20726,9 @@ export interface operations {
     };
     gallery_portal_retrieve: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
+            query: {
+                /** @description The link's PIN (reads only; writes send it in the body). */
+                pin: string;
             };
             header?: never;
             path: {
@@ -19073,14 +20762,79 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_portal_artworks_actions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artwork_id: string;
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalPortalActionsProposal"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalPortalActionsProposal"];
+                "multipart/form-data": components["schemas"]["PortalPortalActionsProposal"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalActionsProposalResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_artworks_image_create: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 artwork_pk: string;
@@ -19090,9 +20844,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GalleryImageReplacementUpload"];
-                "application/x-www-form-urlencoded": components["schemas"]["GalleryImageReplacementUpload"];
-                "multipart/form-data": components["schemas"]["GalleryImageReplacementUpload"];
+                "application/json": components["schemas"]["PortalImageReplacementUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalImageReplacementUpload"];
+                "multipart/form-data": components["schemas"]["PortalImageReplacementUpload"];
             };
         };
         responses: {
@@ -19128,13 +20882,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_exhibition_list: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
+            query: {
+                /** @description The link's PIN (reads only; writes send it in the body). */
+                pin: string;
             };
             header?: never;
             path: {
@@ -19168,6 +20930,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_exhibitions_create: {
@@ -19181,9 +20951,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExhibitionEventCreate"];
-                "application/x-www-form-urlencoded": components["schemas"]["ExhibitionEventCreate"];
-                "multipart/form-data": components["schemas"]["ExhibitionEventCreate"];
+                "application/json": components["schemas"]["PortalExhibitionEventCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalExhibitionEventCreate"];
+                "multipart/form-data": components["schemas"]["PortalExhibitionEventCreate"];
             };
         };
         responses: {
@@ -19219,13 +20989,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_exhibitions_retrieve: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
+            query: {
+                /** @description The link's PIN (reads only; writes send it in the body). */
+                pin: string;
             };
             header?: never;
             path: {
@@ -19268,6 +21046,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_exhibitions_partial_update: {
@@ -19282,9 +21068,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedExhibitionEventUpdate"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedExhibitionEventUpdate"];
-                "multipart/form-data": components["schemas"]["PatchedExhibitionEventUpdate"];
+                "application/json": components["schemas"]["PatchedPortalExhibitionEventUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPortalExhibitionEventUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedPortalExhibitionEventUpdate"];
             };
         };
         responses: {
@@ -19320,6 +21106,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_exhibitions_documents_sign_create: {
@@ -19335,9 +21129,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExhibitionPortalSign"];
-                "application/x-www-form-urlencoded": components["schemas"]["ExhibitionPortalSign"];
-                "multipart/form-data": components["schemas"]["ExhibitionPortalSign"];
+                "application/json": components["schemas"]["PortalExhibitionPortalSign"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalExhibitionPortalSign"];
+                "multipart/form-data": components["schemas"]["PortalExhibitionPortalSign"];
             };
         };
         responses: {
@@ -19373,6 +21167,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_exhibitions_submit_create: {
@@ -19387,9 +21189,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExhibitionSubmit"];
-                "application/x-www-form-urlencoded": components["schemas"]["ExhibitionSubmit"];
-                "multipart/form-data": components["schemas"]["ExhibitionSubmit"];
+                "application/json": components["schemas"]["PortalExhibitionSubmit"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalExhibitionSubmit"];
+                "multipart/form-data": components["schemas"]["PortalExhibitionSubmit"];
             };
         };
         responses: {
@@ -19425,13 +21227,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_exhibitions_catalogue_retrieve: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
+            query: {
+                /** @description The link's PIN (reads only; writes send it in the body). */
+                pin: string;
             };
             header?: never;
             path: {
@@ -19465,13 +21275,21 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_messages_retrieve: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
+            query: {
+                /** @description The link's PIN (reads only; writes send it in the body). */
+                pin: string;
             };
             header?: never;
             path: {
@@ -19505,6 +21323,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_messages_create: {
@@ -19518,9 +21344,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GalleryMessageSend"];
-                "application/x-www-form-urlencoded": components["schemas"]["GalleryMessageSend"];
-                "multipart/form-data": components["schemas"]["GalleryMessageSend"];
+                "application/json": components["schemas"]["PortalMessageSend"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalMessageSend"];
+                "multipart/form-data": components["schemas"]["PortalMessageSend"];
             };
         };
         responses: {
@@ -19556,6 +21382,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_pricelists_create: {
@@ -19569,9 +21403,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GalleryPricelistUpload"];
-                "application/x-www-form-urlencoded": components["schemas"]["GalleryPricelistUpload"];
-                "multipart/form-data": components["schemas"]["GalleryPricelistUpload"];
+                "application/json": components["schemas"]["PortalPricelistUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalPricelistUpload"];
+                "multipart/form-data": components["schemas"]["PortalPricelistUpload"];
             };
         };
         responses: {
@@ -19607,14 +21441,19 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_pricelists_build_create: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 token: string;
@@ -19623,9 +21462,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GalleryPricelistBuilder"];
-                "application/x-www-form-urlencoded": components["schemas"]["GalleryPricelistBuilder"];
-                "multipart/form-data": components["schemas"]["GalleryPricelistBuilder"];
+                "application/json": components["schemas"]["PortalPricelistBuilder"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalPricelistBuilder"];
+                "multipart/form-data": components["schemas"]["PortalPricelistBuilder"];
             };
         };
         responses: {
@@ -19661,13 +21500,128 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_portal_referrals_retrieve: {
+        parameters: {
+            query: {
+                /** @description The link's PIN (reads only; writes send it in the body). */
+                pin: string;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReferralListResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    gallery_portal_referrals_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalPortalReferralSubmit"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalPortalReferralSubmit"];
+                "multipart/form-data": components["schemas"]["PortalPortalReferralSubmit"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalReferralSubmitResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_status_retrieve: {
         parameters: {
-            query?: {
-                /** @description The link's PIN. */
-                pin?: string;
+            query: {
+                /** @description The link's PIN (reads only; writes send it in the body). */
+                pin: string;
             };
             header?: never;
             path: {
@@ -19701,6 +21655,14 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     gallery_portal_updates_create: {
@@ -19714,9 +21676,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GalleryUpdateSubmit"];
-                "application/x-www-form-urlencoded": components["schemas"]["GalleryUpdateSubmit"];
-                "multipart/form-data": components["schemas"]["GalleryUpdateSubmit"];
+                "application/json": components["schemas"]["PortalUpdateSubmit"];
+                "application/x-www-form-urlencoded": components["schemas"]["PortalUpdateSubmit"];
+                "multipart/form-data": components["schemas"]["PortalUpdateSubmit"];
             };
         };
         responses: {
@@ -19745,6 +21707,14 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20979,6 +22949,197 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_project_documents_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectDocListResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_documents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectDocumentCreate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProjectDocumentCreate"];
+                "multipart/form-data": components["schemas"]["ProjectDocumentCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectDocCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_documents_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectDocConfirmResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_documents_sign_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectDocSignResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    projects_admin_projects_documents_upload_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+                project_pk: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ProjectDocumentUpload"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProjectDocumentUpload"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProjectDocUploadResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             404: {
                 headers: {
@@ -22367,6 +24528,647 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminSaleSummaryResponse"];
+                };
+            };
+        };
+    };
+    workspace_contacts_list: {
+        parameters: {
+            query?: {
+                /** @description Next follow-up within N days (default 7). */
+                followup_due_soon?: number;
+                /** @description Filter by exact priority (high|med|low). */
+                priority?: string;
+                /** @description Free-text over name, company and email. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactListResponse"];
+                };
+            };
+        };
+    };
+    workspace_contacts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ContactWrite"];
+                "application/x-www-form-urlencoded": components["schemas"]["ContactWrite"];
+                "multipart/form-data": components["schemas"]["ContactWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_contacts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_contacts_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_contacts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedContactUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedContactUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedContactUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_items_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by exact category. */
+                category?: string;
+                /** @description Filter by completion state. */
+                done?: boolean;
+                /** @description Due window: today | week | overdue. */
+                due?: string;
+                /** @description Filter by exact kind. */
+                kind?: string;
+                /** @description due | -due | created | -created. */
+                ordering?: string;
+                /** @description Free-text over title and body. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceItemListResponse"];
+                };
+            };
+        };
+    };
+    workspace_items_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WorkspaceItem"];
+                "application/x-www-form-urlencoded": components["schemas"]["WorkspaceItem"];
+                "multipart/form-data": components["schemas"]["WorkspaceItem"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceItemCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_items_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceItemDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_items_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedWorkspaceItemUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedWorkspaceItemUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedWorkspaceItemUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceItemUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_items_toggle_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkspaceItemToggle"];
+                "application/x-www-form-urlencoded": components["schemas"]["WorkspaceItemToggle"];
+                "multipart/form-data": components["schemas"]["WorkspaceItemToggle"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceItemToggleResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_pricelist_approvals_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricelistApprovalListResponse"];
+                };
+            };
+        };
+    };
+    workspace_team_tasks_list: {
+        parameters: {
+            query?: {
+                /** @description Filter by assignee id. */
+                assignee?: string;
+                /** @description due | -due | created | -created. */
+                ordering?: string;
+                /** @description Free-text over title. */
+                search?: string;
+                /** @description Filter by exact status (todo|doing|done). */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamTaskListResponse"];
+                };
+            };
+        };
+    };
+    workspace_team_tasks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TeamTaskWrite"];
+                "application/x-www-form-urlencoded": components["schemas"]["TeamTaskWrite"];
+                "multipart/form-data": components["schemas"]["TeamTaskWrite"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamTaskCreateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_team_tasks_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamTaskDetailResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_team_tasks_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_team_tasks_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTeamTaskUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTeamTaskUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedTeamTaskUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamTaskUpdateResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_team_tasks_log_time_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamTaskLogTime"];
+                "application/x-www-form-urlencoded": components["schemas"]["TeamTaskLogTime"];
+                "multipart/form-data": components["schemas"]["TeamTaskLogTime"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamTaskLogTimeResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    workspace_team_tasks_performance_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamPerformanceEnvelope"];
                 };
             };
         };

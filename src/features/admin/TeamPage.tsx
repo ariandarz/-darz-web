@@ -1,378 +1,130 @@
 /**
- * TeamPage — `/admin/team`, the owner's "👥 Team logins" desk (backend Phase
- * 31's port target). Owner-only; `RequireOwner` renders the refusal card for
- * anyone else.
+ * TeamPage — `/admin/team`, the old Team tab's **Executive Workspace**
+ * (`teamView`, `darz-studio.html:19417-19429`) over the backend that replaced
+ * its localStorage (G-TEAM-1, `apps.workspace` W1–W4; contract
+ * `docs/WORKSPACE_API.md`).
  *
- * Content: issue a login (the generated password is returned exactly once —
- * `ShownOnceSecret`), list/search/role-filter, edit name/email/role/active,
- * remove. Two rules the API enforces are surfaced as *disabled controls with a
- * reason*, not as a toast after the fact: a team user cannot deactivate or
- * remove **their own** account (the 400 exists so an owner cannot lock
- * themselves out).
+ * The shell is the old one: a serif heading and its line for the open tab,
+ * the `.ws-tabs` switcher beside it (the Team button badged with the pending
+ * pricelist count, `:19424`), the tab's body, and the floating ＋ quick add.
+ * The tab rides the URL (`?tab=`), like the Sales and Accounting sub-tabs, so
+ * a tab can be linked to.
  *
- * Two deviations, both already made and flagged by the backend (Phase 31),
- * kept in step here:
- *  - the old desk hard-codes every member to `role:'admin'` plus a per-tab
- *    `teamAccess` grant; this system's two real roles (`owner` /
- *    `standard_admin`) are used directly — the role picker offers those two
- *    and there is no parallel access-grant UI;
- *  - the old `teamView` (`darz-studio.html:19420`) is a whole **Workspace**
- *    (My workspace · Team workflow · Contacts — tasks, notes, time tracking,
- *    approvals) around the logins. That suite is client-local in the old app
- *    and has **no backend here** (G-TEAM-1, `docs/ADMIN_ARCHITECTURE.md` §2)
- *    — this desk is the logins, and says so rather than pretending.
+ * | tab        | who                     | backend                                  |
+ * |------------|-------------------------|------------------------------------------|
+ * | My workspace (`me`) | owner          | `/workspace/items/` — `IsOwner`           |
+ * | Team (`team`)       | owner + admin  | `/workspace/team-tasks/`, `pricelist-approvals/` — `IsStandardAdminOrOwner` |
+ * | Contacts (`contacts`) | owner        | `/workspace/contacts/` — `IsOwner`        |
+ * | Logins (`logins`)   | owner          | `/auth/admin/team-users/` — `IsOwner`     |
+ *
+ * **Gating.** The old `teamView` refused any non-owner outright (`:19419`) and
+ * the old nav hid the tab. The backend opened Team workflow and the approvals
+ * inbox to a standard admin, and the owner asked for exactly those two to be
+ * theirs (2026-10-12) — so the route is no longer owner-only (`adminNav`'s
+ * `OWNER_ONLY` drops `team`), a standard admin's switcher offers Team alone,
+ * and every owner-only tab is wrapped in `RequireOwner`: a typed
+ * `?tab=contacts` gets the old refusal card, never a 403. The quick add is
+ * owner-only too (both things it writes are `IsOwner`).
+ *
+ * **Logins** is this port's fourth tab: the owner's team-logins desk lived at
+ * this route before the workspace did, and the old app kept it in a separate
+ * overlay (`:20648`) — owner decision 2026-10-12 to keep it here, as a tab.
  */
 import { useState } from 'react';
-import { useApi, useOptions, useSession } from '../../api/hooks';
-import type { AdminAccountsService } from '../../api/services';
-import type { Choice, Paginated, TeamUserAdmin } from '../../api/types';
-import { ListController } from '../shared/ListController';
+import { useSearchParams } from 'react-router-dom';
+import { useApi, useSession } from '../../api/hooks';
+import { cx } from '../../lib/cx';
 import { useListController } from '../shared/useListController';
-import {
-  ConfirmDialog,
-  DeskAction,
-  DeskList,
-  DeskPage,
-  SearchFilter,
-  SelectFilter,
-  ShownOnceSecret,
-  isConflict,
-  type Column,
-} from './kit';
+import { asAdminRole, type AdminRole } from './adminNav';
+import { DeskToast, useDeskToast } from './kit';
+import { RequireOwner } from './RequireOwner';
+import { ContactsTab } from './team/ContactsTab';
+import { ApprovalsController } from './team/controllers';
+import { MyWorkspaceTab } from './team/MyWorkspaceTab';
+import { QuickAdd } from './team/QuickAdd';
+import { TeamLoginsTab } from './team/TeamLoginsTab';
+import { TeamWorkflowTab } from './team/TeamWorkflowTab';
+import { OWNER_TABS, TAB_HEAD, tabsFor, teamTab, type TeamTab } from './team/workspace';
 import './admin.css';
 
-interface TeamQuery {
-  search?: string;
-  role?: string;
-  per_page?: number;
-  page?: number;
-}
-
-class TeamController extends ListController<TeamUserAdmin, TeamQuery> {
-  private readonly accounts: AdminAccountsService;
-  constructor(accounts: AdminAccountsService) {
-    super({});
-    this.accounts = accounts;
-  }
-  protected fetchPage(query: TeamQuery): Promise<Paginated<TeamUserAdmin>> {
-    return this.accounts.teamUsers(query);
-  }
-}
-
 export function TeamPage() {
-  const { adminAccounts } = useApi();
   const { me } = useSession();
-  const options = useOptions();
-  const roles = (options?.['accounts.team_role'] as Choice[] | undefined) ?? [];
+  const role = asAdminRole(me?.role);
+  const [params, setParams] = useSearchParams();
+  const tab = teamTab(params.get('tab'), role);
 
-  const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<TeamUserAdmin | null>(null);
-  const [removing, setRemoving] = useState<TeamUserAdmin | null>(null);
-  const [issued, setIssued] = useState<{ email: string; password: string } | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const desk = <WorkspaceDesk tab={tab} role={role} onTab={(t) => setParams({ tab: t })} />;
+  if (!OWNER_TABS.has(tab)) return desk;
+  return <RequireOwner title={TAB_HEAD[tab].title}>{desk}</RequireOwner>;
+}
 
-  const { state, setQuery, setPage, reload } = useListController<TeamUserAdmin, TeamQuery>(
-    () => new TeamController(adminAccounts),
-  );
+function WorkspaceDesk({
+  tab,
+  role,
+  onTab,
+}: {
+  tab: TeamTab;
+  role: AdminRole;
+  onTab: (tab: TeamTab) => void;
+}) {
+  const { workspace } = useApi();
+  const toast = useDeskToast();
+  // The inbox is the shell's: the Team button's badge counts it on every tab.
+  const [approvalsCtrl] = useState(() => new ApprovalsController(workspace));
+  const { state: approvals, reload: reloadApprovals } = useListController(() => approvalsCtrl);
+  // bumped when the quick add saves, so the open tab re-reads
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const remove = async (u: TeamUserAdmin) => {
-    setBusyId(u.id);
-    setActionError(null);
-    try {
-      await adminAccounts.deleteTeamUser(u.id);
-      await reload();
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : 'Could not remove.');
-    } finally {
-      setBusyId(null);
-    }
-  };
+  const head = TAB_HEAD[tab];
+  const pending = approvals.results.length;
 
-  const columns: ReadonlyArray<Column<TeamUserAdmin>> = [
-    {
-      key: 'name',
-      header: 'Name',
-      cell: (u) => (
-        <>
-          <span className="ad-cellmain">{u.name || '—'}</span>
-          {u.id === me?.id && <span className="ad-cellsub">you</span>}
-        </>
-      ),
-    },
-    { key: 'email', header: 'Email', cell: (u) => u.email },
-    {
-      key: 'role',
-      header: 'Role',
-      cell: (u) => roles.find((r) => r.value === u.role)?.label ?? u.role,
-    },
-    {
-      key: 'active',
-      header: 'Active',
-      cell: (u) =>
-        u.is_active ? (
-          <span className="ad-exp is-ok">Active</span>
-        ) : (
-          <span className="ad-exp is-expired">Deactivated</span>
-        ),
-    },
-    {
-      key: 'since',
-      header: 'Since',
-      className: 'ad-when',
-      cell: (u) => new Date(u.created_at).toLocaleDateString('en-GB'),
-    },
-    {
-      key: 'actions',
-      header: '',
-      cell: (u) => {
-        const self = u.id === me?.id;
-        return (
-          <span className="ad-keyacts" aria-busy={busyId === u.id || undefined}>
-            <button type="button" className="ad-rowbtn" onClick={() => setEditing(u)}>
-              Edit
-            </button>
+  return (
+    <div className="dz-page ad-page ad-page--wide ws-root">
+      <div className="ws-head">
+        <div>
+          <h1 className="ws-h1">{head.title}</h1>
+          <div className="ws-sub">{head.sub}</div>
+        </div>
+        <div className="ws-tabs" role="tablist" aria-label="Workspace">
+          {tabsFor(role).map((t) => (
             <button
               type="button"
-              className="ad-rowbtn is-danger"
-              disabled={self}
-              /* the API 400s a self-remove; a disabled control with the reason
-                 beats an error toast after the fact */
-              title={self ? 'You cannot remove your own login.' : undefined}
-              onClick={() => setRemoving(u)}
+              role="tab"
+              key={t.key}
+              aria-selected={tab === t.key}
+              className={cx(tab === t.key && 'on')}
+              onClick={() => onTab(t.key)}
             >
-              Remove
+              {t.label}
+              {t.key === 'team' && pending > 0 && (
+                <span className="ws-tb-badge">{pending}</span>
+              )}
             </button>
-          </span>
-        );
-      },
-    },
-  ];
-
-  return (
-    <DeskPage
-      wide
-      title="Team"
-      action={<DeskAction onClick={() => setCreating(true)}>＋ New login</DeskAction>}
-      toolbar={
-        <>
-          <SearchFilter
-            label="Search"
-            value={state.query.search}
-            onChange={(search) => setQuery({ search })}
-            placeholder="Search team — name, email…"
-          />
-          <SelectFilter
-            label="Role"
-            anyLabel="All roles"
-            value={state.query.role}
-            onChange={(role) => setQuery({ role })}
-            choices={roles}
-          />
-        </>
-      }
-      subtitle={
-        <>
-          Sign-ins for the desk. The old panel's workspace suite (tasks · notes · time ·
-          contacts) has no backend here and is not part of this desk.
-        </>
-      }
-    >
-      {issued && (
-        <ShownOnceSecret
-          label={`Password for ${issued.email}`}
-          value={issued.password}
-          hint="Generated once — they sign in with it at /admin/login and it is never shown again."
-          onDismiss={() => setIssued(null)}
-        />
-      )}
-
-      {(creating || editing) && (
-        <TeamForm
-          existing={editing}
-          roles={roles}
-          self={editing?.id === me?.id}
-          onClose={() => {
-            setCreating(false);
-            setEditing(null);
-          }}
-          onSaved={(password, email) => {
-            setCreating(false);
-            setEditing(null);
-            if (password && email) setIssued({ email, password });
-            void reload();
-          }}
-        />
-      )}
-
-      <DeskList
-        label="Team"
-        status={state.status}
-        error={state.error}
-        actionError={actionError}
-        rows={state.results}
-        pagination={state.pagination}
-        onPage={setPage}
-        columns={columns}
-        rowKey={(u) => u.id}
-        busyKey={busyId}
-        empty="No team logins yet."
-      />
-
-      {removing && (
-        <ConfirmDialog
-          message={`Remove ${removing.name || removing.email}? They can no longer sign in.`}
-          okLabel="Remove"
-          danger
-          onCancel={() => setRemoving(null)}
-          onConfirm={() => {
-            const u = removing;
-            setRemoving(null);
-            void remove(u);
-          }}
-        />
-      )}
-    </DeskPage>
-  );
-}
-
-function TeamForm({
-  existing,
-  roles,
-  self,
-  onClose,
-  onSaved,
-}: {
-  existing: TeamUserAdmin | null;
-  roles: Choice[];
-  self: boolean;
-  onClose: () => void;
-  onSaved: (password: string | null, email: string | null) => void;
-}) {
-  const { adminAccounts } = useApi();
-  const [draft, setDraft] = useState<{
-    email: string;
-    name: string;
-    role: string;
-    is_active: boolean;
-  }>(() => ({
-    email: existing?.email ?? '',
-    name: existing?.name ?? '',
-    role: (existing?.role as string) ?? 'standard_admin',
-    is_active: existing?.is_active ?? true,
-  }));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const save = async () => {
-    if (busy) return;
-    if (!draft.email.trim()) {
-      setError('An email is required.');
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      if (existing) {
-        await adminAccounts.updateTeamUser(existing.id, {
-          ...draft,
-          role: draft.role as TeamUserAdmin['role'],
-          expected_version: existing.version,
-        });
-        onSaved(null, null);
-      } else {
-        const created = await adminAccounts.createTeamUser({
-          email: draft.email.trim(),
-          name: draft.name,
-          role: draft.role,
-        });
-        onSaved(created.password, created.email);
-      }
-    } catch (err: unknown) {
-      // A 409 on THIS form is the one worth spelling out: the field two admins
-      // race on is `role`, so a silent overwrite hands someone the wrong
-      // permissions. The lock was not sent at all until 2026-09-22 — see
-      // `AdminAccountsService.updateTeamUser`.
-      setError(
-        isConflict(err)
-          ? 'Someone else changed this login while you were editing. Close and reopen it to see their changes — otherwise you may overwrite a role they just set.'
-          : err instanceof Error
-            ? err.message
-            : 'Could not save.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="ad-card ad-form">
-      <div className="ad-form-h">{existing ? 'Edit login' : 'New login'}</div>
-      <div className="ad-form-grid">
-        <label className="ad-field">
-          <span className="ad-filter-l">Email</span>
-          <input
-            type="email"
-            value={draft.email}
-            onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-            autoFocus={!existing}
-          />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Name</span>
-          <input
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          />
-        </label>
-        <label className="ad-field">
-          <span className="ad-filter-l">Role</span>
-          <select
-            value={draft.role}
-            onChange={(e) => setDraft({ ...draft, role: e.target.value })}
-          >
-            {roles.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {existing && (
-          <label className="ad-field">
-            <span className="ad-filter-l">Active</span>
-            <select
-              value={draft.is_active ? 'yes' : 'no'}
-              disabled={self}
-              /* the API refuses a self-deactivate — same disabled-with-reason
-                 treatment as Remove */
-              title={self ? 'You cannot deactivate your own login.' : undefined}
-              onChange={(e) => setDraft({ ...draft, is_active: e.target.value === 'yes' })}
-            >
-              <option value="yes">Active</option>
-              <option value="no">Deactivated</option>
-            </select>
-          </label>
-        )}
+          ))}
+        </div>
       </div>
-      {error && (
-        <p className="dz-state err" role="alert">
-          {error}
-        </p>
+
+      {tab === 'me' && <MyWorkspaceTab refreshKey={refreshKey} say={toast.say} />}
+      {tab === 'team' && (
+        <TeamWorkflowTab
+          refreshKey={refreshKey}
+          say={toast.say}
+          approvals={{
+            rows: approvals.results,
+            loading: approvals.status === 'loading',
+            error: approvals.status === 'error' ? approvals.error : null,
+            reload: () => void reloadApprovals(),
+          }}
+        />
       )}
-      <div className="ad-form-a">
-        <button type="button" className="ad-ghostbtn" onClick={onClose} disabled={busy}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="ad-action"
-          onClick={() => void save()}
-          disabled={busy}
-        >
-          {existing ? 'Save changes' : 'Create login'}
-        </button>
-      </div>
+      {tab === 'contacts' && <ContactsTab refreshKey={refreshKey} say={toast.say} />}
+      {tab === 'logins' && <TeamLoginsTab />}
+
+      {/* the old ＋ rides the three workspace tabs (`:19428`) — owner-only */}
+      {role === 'owner' && tab !== 'logins' && (
+        <QuickAdd onSaved={() => setRefreshKey((k) => k + 1)} say={toast.say} />
+      )}
+      <DeskToast message={toast.message} />
     </div>
   );
 }

@@ -23,12 +23,17 @@ import {
 } from './adminNav';
 
 describe('OWNER_ONLY — the old panel’s list, :11800', () => {
-  it('gates Memberships, Team and Access Request', () => {
-    // the three Phase 11b desks backend Phases 30/31/34 put behind IsOwner
+  it('gates Memberships and Access Request', () => {
+    // the Phase 11b desks backend Phases 30/34 put behind IsOwner
     expect(OWNER_ONLY).toContain('memberships');
-    expect(OWNER_ONLY).toContain('team');
     expect(OWNER_ONLY).toContain('system');
     expect(OWNER_ONLY).toContain('access');
+  });
+
+  it('does NOT gate Team — its workflow + approvals are IsStandardAdminOrOwner (G-TEAM-1)', () => {
+    // The one deviation from the old list. The desk's owner-only tabs (My
+    // workspace, Contacts, Logins) are gated inside TeamPage instead.
+    expect(OWNER_ONLY).not.toContain('team');
   });
 
   it('does NOT gate App Design — the backend matches it at IsStandardAdminOrOwner', () => {
@@ -48,8 +53,8 @@ describe('OWNER_ONLY — the old panel’s list, :11800', () => {
 
 describe('isTabAllowed — the owner always sees every tab', () => {
   const ownerTab = {
-    key: 'team',
-    label: 'Team',
+    key: 'memberships',
+    label: 'Memberships',
     path: '/x',
     ownerOnly: true,
     api: 'ready' as const,
@@ -111,7 +116,8 @@ describe('visibleGroups', () => {
       'owner',
       'system',
     ]);
-    // `system` is owner-only, so a standard admin still sees one group
+    // `system` is all owner-only tabs, so it stays hidden; the gold Owner
+    // group shows with Team alone (G-TEAM-1)
     expect(visibleGroups('standard_admin').map((g) => g.key)).toEqual([
       'catalog',
       'artists',
@@ -123,13 +129,16 @@ describe('visibleGroups', () => {
       'sales',
       'projects',
       'operations',
+      'owner',
     ]);
   });
 
-  it('drops an owner-only group wholesale for a standard admin', () => {
+  it('drops a gold group only when every tab in it is owner-only (the old :11812 rule)', () => {
     const keys = visibleGroups('standard_admin').map((g) => g.key);
-    expect(keys).not.toContain('owner');
     expect(keys).not.toContain('system');
+    expect(keys).not.toContain('social');
+    const owner = ADMIN_GROUPS.find((g) => g.key === 'owner')!;
+    expect(visibleTabs(owner, 'standard_admin').map((t) => t.key)).toEqual(['team']);
   });
 
   it('splits into the top row and the folded ones', () => {
