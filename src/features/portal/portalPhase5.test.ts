@@ -268,7 +268,15 @@ describe('the pricelist builder (P3b)', () => {
     expect(builderLineErrors(new Error('x'), [0])).toEqual({});
   });
 
-  it('labels a pricelist status with the raw value while options lack one (C-14)', () => {
+  it('labels a pricelist status from options, the raw value as the fallback', () => {
+    const options = {
+      'gallery.pricelist_status': [
+        { value: 'submitted', label: 'Submitted' },
+        { value: 'rejected', label: 'Declined' },
+      ],
+    };
+    expect(pricelistStatusLabel(options, 'rejected')).toBe('Declined');
+    expect(pricelistStatusLabel(null, 'rejected')).toBe('Rejected');
     expect(pricelistStatusLabel(null, 'superseded')).toBe('Superseded');
     expect(pricelistStatusLabel(null, '')).toBe('Submitted');
   });

@@ -273,7 +273,8 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
 - Hand types that the backend schema should own (`HoldDetail`, `PortalState`).
 - Unused bindings kept to mirror the served routes (listed above).
 - `schema.d.ts` must be regenerated whenever the backend moves. **Regenerated 2026-10-12** against `f322a30`
-  (247 paths / 358 operations) in the G-TEAM-1 PR — non-breaking, no new type errors.
+  (247 paths / 358 operations) in the G-TEAM-1 PR, then against `bf2b9dc` in the G-TEAM-2 PR (only
+  `rejected` added to `GalleryPricelistStatusEnum`) — non-breaking, no new type errors.
 - The E2E stub mirrors backend shapes by hand; it has to move in the same PR as any shape change.
 
 ### Future / post-V1
@@ -321,8 +322,8 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
   does), the Social suite, Strategy, Automations, Languages, Analytics,
   "Notify collectors" (needs a push-send endpoint).
 - **Built 2026-10-12:** the Team Workspace desk (G-TEAM-1) at `/admin/team` — My workspace · Team workflow ·
-  Contacts · Logins, against `docs/WORKSPACE_API.md`. Follow-ups: G-TEAM-2 (no `rejected` pricelist state),
-  setting a contact's collector/artist link.
+  Contacts · Logins, against `docs/WORKSPACE_API.md`. G-TEAM-2 (Reject → `rejected`) done the same
+  day; open follow-up: setting a contact's collector/artist link.
 - **Ready to build (backend shipped, UI pending)** (all shipped 2026-10-01, see API_GAPS.md /
   ADMIN_ARCHITECTURE.md): the **Projects Proposal + Invoice
   Builder** (`/projects/admin/projects/{id}/documents/…`), the **source-freshness loop (G-CAT-9)**

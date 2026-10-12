@@ -42,8 +42,6 @@ Nothing is merged without your word.
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
 - **Team desk (built 2026-10-12):**
-  - pricelist **Reject** is shown but disabled — the backend has no `rejected` pricelist state (G-TEAM-2).
-    Add one, or should Reject mean "superseded"?
   - a contact can be linked to a collector/artist (the card then shows a jump-to link), but the desk has
     no control to set the link — the old card had none. Add a picker?
 - **Small backend follow-ups:**
@@ -57,7 +55,7 @@ Nothing is merged without your word.
 | | |
 | --- | --- |
 | Web | **Released 2026-10-12** (V1 + the Team Workspace desk, #117): `main` = `development` = `723e0cf` |
-| Backend | `development` @ **`f322a30`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
+| Backend | `development` @ **`bf2b9dc`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **868** unit · 163 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |
 

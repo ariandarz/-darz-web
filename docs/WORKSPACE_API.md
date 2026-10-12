@@ -162,8 +162,9 @@ Only `status=submitted` rows appear (rows on soft-deleted links are excluded).
 **Acting on one** uses the existing gallery endpoint (NOT a workspace route):
 `POST /api/gallery/admin/pricelists/{id}/status/` with `{ status: "accepted" }`
 (`GalleryPricelistService.set_status`). After acting, re-fetch this inbox.
-**Correction (2026-10-12):** there is no `rejected` status — `GalleryPricelist.STATUS_CHOICES` is
-`submitted · accepted · superseded` — so the desk's Reject is disabled with the reason (G-TEAM-2).
+Reject sends `{ status: "rejected" }` — added by backend #91 (`bf2b9dc`, G-TEAM-2); until then the
+statuses were `submitted · accepted · superseded` and the desk showed Reject disabled. Unlike `accepted`,
+`rejected` leaves the link's current accepted list alone.
 
 ---
 

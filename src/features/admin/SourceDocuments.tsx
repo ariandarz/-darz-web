@@ -7,12 +7,14 @@
  * file, and move its status. Bound to backend P3a/P3b + G-PORT-14 (V1
  * Phase 5): an upload opens through its presigned `file_url`, a list built
  * in the portal shows its structured `lines`, and the status buttons set
- * `submitted` / `accepted` / `superseded` (`POST admin/pricelists/{id}/status/`).
+ * `submitted` / `accepted` / `superseded` / `rejected` (`POST
+ * admin/pricelists/{id}/status/`; `rejected` since G-TEAM-2).
  * The old buttons were Mark formatting / Mark formatted / Reject over the
- * old states; these are the same "Mark …" over the backend's three — and
+ * old states; these are the same "Mark …" over the backend's four — and
  * because accepting one SUPERSEDES the link's previous accepted list with
- * no guard (C-21), the whole list is re-read after every change. The status
- * has no `/api/options/` entry (C-14), so its label is the raw value. The
+ * no guard (C-21), the whole list is re-read after every change. Labels come
+ * from `/api/options/` `gallery.pricelist_status` (served — the C-14 note
+ * that it was missing is stale), the raw value only as a fallback. The
  * soft cap (`…/pricelists/cap/`) is advisory: a line when over, never a block.
  *
  * `DocumentsSection` — every proposal and invoice Darz has issued this
@@ -47,7 +49,16 @@ const PRICELIST_STATUSES: readonly GalleryPricelistStatus[] = [
   'submitted',
   'accepted',
   'superseded',
+  'rejected',
 ];
+
+/** The pill's tone: accepted green; superseded and rejected the old
+ * "rejected" red (`.ad-stpill.is-gone`) — neither is the list Darz uses. */
+function pricelistTone(st: string): 'ok' | 'gone' | 'neut' {
+  if (st === 'accepted') return 'ok';
+  if (st === 'superseded' || st === 'rejected') return 'gone';
+  return 'neut';
+}
 
 export function PricelistsSection({ linkId }: { linkId: string }) {
   const { galleryAdmin } = useApi();
@@ -123,9 +134,7 @@ export function PricelistsSection({ linkId }: { linkId: string }) {
                     </b>
                     {pl.notes && <span className="ad-cellsub"> — {pl.notes}</span>}
                   </span>
-                  <span
-                    className={`ad-stpill is-${st === 'accepted' ? 'ok' : st === 'superseded' ? 'gone' : 'neut'}`}
-                  >
+                  <span className={`ad-stpill is-${pricelistTone(st)}`}>
                     {pricelistStatusLabel(options, st)}
                   </span>
                 </div>

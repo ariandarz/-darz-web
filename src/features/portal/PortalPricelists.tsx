@@ -7,9 +7,9 @@
  *  - the upload is real multipart into the private documents bucket
  *    (`GalleryPricelistService.submit`); a built list is JSON lines
  *    (`…/pricelists/build/`, `GalleryPricelistService.build`);
- *  - each row shows its server `status` (submitted · accepted · superseded —
- *    labels fall back to the raw value, C-14) and opens its own file through
- *    `file_url` (G-PORT-14).
+ *  - each row shows its server `status` (submitted · accepted · superseded ·
+ *    rejected — labelled by `gallery.pricelist_status` in `/api/options/`)
+ *    and opens its own file through `file_url` (G-PORT-14).
  *
  * Still different from the old page, for a backend reason:
  *  - the weekly 3-upload quota line is absent — the backend keeps a soft cap

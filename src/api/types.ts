@@ -718,8 +718,9 @@ export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
 
 /** A pricelist a partner sent from the portal — `GalleryPricelistSerializer`:
  * `file_url` (a presigned read of the uploaded file, G-PORT-14; `null` for a
- * pricelist built in-portal), `status` (submitted/accepted/superseded, P3a —
- * NOT in `/api/options/`, C-14) and the structured builder `lines` (P3b). */
+ * pricelist built in-portal), `status` (submitted/accepted/superseded, P3a;
+ * rejected, G-TEAM-2 — labelled by `gallery.pricelist_status` in
+ * `/api/options/`) and the structured builder `lines` (P3b). */
 export type GalleryPricelistAdmin = Schemas['GalleryPricelist'];
 export type GalleryPricelistLine = Schemas['GalleryPricelistLine'];
 /** `GalleryPricelist.STATUS_CHOICES` — the wire values, from the schema enum. */
@@ -953,7 +954,8 @@ export interface PortalPricelist {
   notes: string;
   object_key: string;
   file_url: string | null;
-  /** submitted · accepted · superseded — not in `/api/options/` (C-14) */
+  /** submitted · accepted · superseded · rejected — labels from
+   * `gallery.pricelist_status` in `/api/options/` */
   status: string;
   lines: PortalPricelistLine[];
   created_at: string;

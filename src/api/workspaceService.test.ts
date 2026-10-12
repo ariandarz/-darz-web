@@ -116,10 +116,13 @@ describe('Pricelist approvals', () => {
   it('reads the workspace inbox and acts through the gallery status route', async () => {
     const { client, sent } = spyClient();
     await new WorkspaceService(client as never).pricelistApprovals({ per_page: 100 });
-    await new GalleryAdminService(client as never).setPricelistStatus(ID, 'accepted');
+    const gallery = new GalleryAdminService(client as never);
+    await gallery.setPricelistStatus(ID, 'accepted');
+    await gallery.setPricelistStatus(ID, 'rejected'); // G-TEAM-2
     expect(sent.map((r) => [r.method, r.path, r.body])).toEqual([
       ['GET', '/workspace/pricelist-approvals/', undefined],
       ['POST', `/gallery/admin/pricelists/${ID}/status/`, { status: 'accepted' }],
+      ['POST', `/gallery/admin/pricelists/${ID}/status/`, { status: 'rejected' }],
     ]);
     expect(sent[0].query).toEqual({ per_page: 100 });
   });

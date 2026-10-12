@@ -27,7 +27,7 @@ structure — trace every decision to the approved package + `app.html`.
 | Branches | `main` and `development`, level at `723e0cf`. **V1 released to `main` on 2026-09-27** (#113, after #114); **G-TEAM-1 released 2026-10-12** (#117, after #116). |
 | V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
-| Backend | `darz-backend-api` `development` @ **`f322a30`** — the V1 API **with every defect fix merged** (C-6…C-26, PRs **#71–#78**, `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"; still notes only: C-16, C-21), plus the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12: 247 paths / 358 operations. |
+| Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **with every defect fix merged** (C-6…C-26, PRs **#71–#78**, `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"; still notes only: C-16, C-21), plus the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12: 247 paths / 358 operations. |
 | Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **868 unit** (79 files) · build · **163 E2E** (collector 40 · desks 105 · portal 6 · smoke 4 · team 8). Runs on **Node 20**. |
 | Live site | https://darz-web.vercel.app — serves the 2026-10-12 release (V1 + G-TEAM-1); Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
@@ -114,8 +114,9 @@ structure — trace every decision to the approved package + `app.html`.
       old logins desk): My workspace (owner) · Team workflow + time + performance (admin) · Contacts (owner) ·
       Pricelist-approvals box (admin, approves via the gallery status endpoint). Owner tabs behind `RequireOwner`;
       `team` left `OWNER_ONLY` so a standard admin reaches Team workflow + approvals; "no backend" copy removed.
-- [ ] **G-TEAM-2 (backend)** — a gallery pricelist has no `rejected` status (`submitted · accepted · superseded`), so
-      the approvals box's Reject is shown disabled with the reason. Add the state (or decide Reject = `superseded`).
+- [x] **G-TEAM-2** — done 2026-10-12. Backend #91 (`bf2b9dc`) added a `rejected` pricelist status; the approvals
+      box's Reject sends it (toast "Pricelist rejected"), the partner desk gained "Mark rejected". Needs the backend
+      deployed with migration `gallery.0012` before it works live.
 - [ ] **Contact links in the UI** — the desk shows a contact's optional collector/artist "jump to" link, but has no
       control to SET one (the old card had none). Owner call whether to add a picker.
 

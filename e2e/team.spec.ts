@@ -6,7 +6,8 @@
  *  - every inline edit carries the row's lock (`expected_version`), and a 409
  *    raises the ConflictBanner, not a plain error;
  *  - the checkbox goes through `toggle/`, `+15m` APPENDS `{minutes: 15}`;
- *  - approving a pricelist is the GALLERY route, and Reject stays disabled;
+ *  - approving or rejecting a pricelist is the GALLERY route (`accepted` /
+ *    `rejected`, the latter since G-TEAM-2);
  *  - the gating: a standard admin gets Team workflow + approvals only, and a
  *    typed owner tab answers with the refusal card.
  */
@@ -143,7 +144,7 @@ test('Team: +15m appends a time log, and the row shows the server total', async 
   expect(thrown).toEqual([]);
 });
 
-test('Approve goes through the gallery status route; Reject is disabled with its reason', async () => {
+test('Approve and Reject go through the gallery status route', async () => {
   thrown = [];
   await page.goto('/admin/team?tab=team');
   const box = page.locator('.ws-pa');
@@ -151,9 +152,6 @@ test('Approve goes through the gallery status route; Reject is disabled with its
   // the stub's own submitted list; the portal spec may have sent another
   const row = box.locator('.ws-pa-row', { hasText: 'From Golestan' });
   await expect(row).toBeVisible();
-  const reject = row.getByRole('button', { name: 'Reject' });
-  await expect(reject).toBeDisabled();
-  await expect(reject).toHaveAttribute('title', /no “rejected” state/);
 
   // answered here so the shared stub's pricelist stays `submitted` for others
   const url = '**/api/gallery/admin/pricelists/*/status/';
@@ -172,6 +170,11 @@ test('Approve goes through the gallery status route; Reject is disabled with its
       'Pricelist approved — they can print now',
     );
     expect(sent).toEqual([{ status: 'accepted' }]);
+
+    // the intercepted answer left the stub's row `submitted`, so it is back
+    await row.getByRole('button', { name: 'Reject' }).click();
+    await expect(page.locator('.dz-toast')).toContainText('Pricelist rejected');
+    expect(sent).toEqual([{ status: 'accepted' }, { status: 'rejected' }]);
   } finally {
     await page.unroute(url);
   }
