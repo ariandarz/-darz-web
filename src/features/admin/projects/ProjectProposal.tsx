@@ -48,7 +48,8 @@
  * **currency choice** (no exchange rate exists: a proposal in a currency
  * the lines are not priced in goes out non-priced, see `currencyNote`).
  *
- * **The invoice is new.** The old Projects area had no invoice composer —
+ * **The invoice is new — kept by the owner (2026-10-13).** The old Projects
+ * area had no invoice composer —
  * only an invoice STATUS on the Money section (`:13801`). The backend now
  * stores one, so this card offers "Invoice" beside the proposal, built as
  * the exhibition services invoice is (billed to, the priced lines, total
@@ -69,8 +70,8 @@
  * PDF and send it), **⎙ Print** (print from the PDF), the preview's
  * Desktop / Tablet / Mobile frames, the old **Proposal Builder** desk
  * (`builder`, `:14644` — the free-form draft-to-document editor with AI
- * organise, custom sections and design options; the nav's "Proposal" tab
- * still says so), the Library copy of the rendered HTML (`_propArchive` — the
+ * organise, custom sections and design options — skipped by the owner
+ * 2026-10-13; the nav's "Proposal" tab says so), the Library copy of the rendered HTML (`_propArchive` — the
  * document itself is the record here, and the Documents desk lists it), and
  * the package's `internal.recFee` as the Total investment (`:14054` — that
  * field is internal-only on this backend; the total is the lines' sum).

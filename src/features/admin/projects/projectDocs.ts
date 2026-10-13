@@ -22,7 +22,8 @@
  * kept an invoice STATUS (`:13801`). The invoice here is the exhibition
  * services invoice's shape (`exhibitions/issueForm.ts`, the golden invoice
  * fixture) filled from the project and its package: billed to, the priced
- * lines, total due, payment note, terms, bank block. Flagged as such.
+ * lines, total due, payment note, terms, bank block. Flagged; the owner
+ * kept it (2026-10-13).
  */
 import type {
   PackageTemplateAdmin,

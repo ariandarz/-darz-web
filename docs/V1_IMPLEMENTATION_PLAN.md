@@ -68,7 +68,7 @@ The "Not V1" rows are excluded on purpose, with the reason recorded; they are no
 | Admin: Auctions (Live, Records, Registrations) | ✅ | — |
 | Admin: Sources/Galleries, Exhibitions, Issue document, Exhibition Services | ✅ incl. the **exhibition-catalogue editor** | — |
 | Admin: Documents (list, detail, **History**) | ✅ | Pricelists & saved items library (Phase 21), Document Builder/Studio (D18, G-6) |
-| Admin: Projects suite | ✅ incl. FX + totals | Proposal builder composition (backend not built) |
+| Admin: Projects suite | ✅ incl. FX + totals | — (proposal + invoice built on the record 2026-10-13; the Proposal builder desk skipped by the owner) |
 | Admin: Accounting, Team, Settings, App Design | ✅ (complete today) | Settlement calculator, theme editors (D17) |
 | Admin: **Intelligence** (5 tabs), **Marketing Hub** | ❌ | G-6: owner-deferred, although the API is ready (Q-8) |
 | Admin: Logistics, Analytics, Social ×4, Strategy, Automations, Languages, Team Workspace | ❌ | No backend |

@@ -265,7 +265,8 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
 ### Panel / Admin gaps
 - The Club "Auction access" section (owner-deferred), the question-set editor (owner-deferred), the
   Intelligence and Marketing desks (G-6), and the no-backend desks (Logistics, Analytics, Social ×4,
-  Strategy, Automations, Languages, Library, Document Builder, Proposal builder).
+  Strategy, Automations, Languages, Library, Document Builder). The Proposal builder desk is skipped by the
+  owner (2026-10-13) — not a gap.
 
 ### Technical debt
 - ~~`adminNav.isPathAllowed` unused~~ — removed 2026-09-27 (the route guards are `RequireTeam` /
@@ -329,7 +330,8 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
   **source-freshness loop (G-CAT-9)** (Galleries & Sources › Artwork Sources, the Market App desk's
   reconfirmation tile + Confirm available, the owner's hide-stale card), and the **Artists `records` /
   `top-price` sorts** (collector list + admin roster, the roster's Records column). Not ported, stated:
-  the free-form Proposal Builder desk, Share / Print, the v1230 review-period selects.
+  Share / Print, the v1230 review-period selects. Owner, 2026-10-13: the invoice is kept; the free-form
+  Proposal Builder desk is skipped.
 - **Still open, not ruled V2:** i18n/RTL (G-I18N-1), PDF/image import
   intake (D15), the settlement calculator, theme editors (D17).
 - **Gallery portal — built 2026-10-13:** referral / Introduce (G-PORT-5, + the `/admin/referrals` desk),

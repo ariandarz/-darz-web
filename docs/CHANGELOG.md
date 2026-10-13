@@ -5,6 +5,14 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-13 — Release record (#125) released to `main`
+On the owner's second "release development to main", #126 released `development` → `main` (`eb735f2`, docs only).
+The production deploy is READY and `development` was fast-forwarded to `main` again.
+
+## 2026-10-13 — Owner decisions: keep the project invoice, skip the Proposal Builder desk
+Recorded the owner's *"keep the invoice, skip the proposal builder"*: the record's invoice stays as built; the free-form builder desk joins `TASKLIST.md` § D (skipped, not V2).
+Docs and code comments only (NOTES-FOR-ARIAN, TASKLIST, API_GAPS, ADMIN_ARCHITECTURE/SCREENS, V1 status/plan, HANDOFF, `adminNav`, `ProjectProposal`, `projectDocs`).
+
 ## 2026-10-13 — Proposal + Invoice builder, G-CAT-9, G9 released to `main`
 On the owner's instructions, #122 was merged into `development`, then #124 released `development` → `main` (`de3342e`).
 The production deploy is READY and `development` was fast-forwarded to `main`; the live site stays visual-only until the real API URL is set.

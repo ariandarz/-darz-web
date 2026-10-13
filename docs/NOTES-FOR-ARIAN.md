@@ -49,10 +49,10 @@ Nothing is merged without your word.
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
 - **Proposal / invoice, freshness, artist sorts (released 2026-10-13, #124):**
-  - the project **invoice** is new — the old Projects area had no invoice composer, only a status. It
-    is built like the exhibition services invoice and is owner-only. Keep it?
-  - the free-form **Proposal Builder** desk (paste a draft, AI organise, custom sections, design
-    options) is still not ported — only the record's composer is. Wanted?
+  - ~~the project **invoice** is new — keep it?~~ **Decided 2026-10-13: keep it** (as built — the
+    exhibition services invoice's shape, owner-only).
+  - ~~the free-form **Proposal Builder** desk — wanted?~~ **Decided 2026-10-13: skip it.** Only the
+    record's composer exists; the desk is out of scope (`TASKLIST.md` § D).
   - the admin roster's **"Sort: Top price"** and its Top price column are additions (the old roster
     never ranked by price). The figure mixes currencies (the backend converts nothing), so it is shown
     as a bare number.
@@ -72,7 +72,7 @@ Nothing is merged without your word.
 
 | | |
 | --- | --- |
-| Web | **Released 2026-10-13** (#124 — V1, Team Workspace, the G-PORT portal features, the Proposal + Invoice builder, source freshness, artist sorts): `main` = `development` = `de3342e`, production deploy READY |
+| Web | **Released 2026-10-13** (#124 — V1, Team Workspace, the G-PORT portal features, the Proposal + Invoice builder, source freshness, artist sorts): then #126 (docs only): `main` = `development` = `eb735f2`, production deploy READY |
 | Backend | `development` @ **`bf2b9dc`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **925** unit · 176 E2E · lint · format · build green (2026-10-13). **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |
