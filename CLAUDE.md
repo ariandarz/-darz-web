@@ -63,7 +63,7 @@ Two sources are required **together** for every feature — neither alone is eno
   that release) into `development`, and a second "release development to main": #126 released it
   (`eb735f2`, docs only, production deploy READY), with `development` fast-forwarded again. Then
   "keep the invoice, skip the proposal builder" — a scope ruling, not a merge instruction: #127
-  records it and waits for the owner.
+  recorded it and waited until the owner said, separately, "merge 127 when green".
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full
