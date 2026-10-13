@@ -5,6 +5,14 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-13 — Release record (#125) released to `main`
+On the owner's second "release development to main", #126 released `development` → `main` (`eb735f2`, docs only).
+The production deploy is READY and `development` was fast-forwarded to `main` again.
+
+## 2026-10-13 — Owner decisions: keep the project invoice, skip the Proposal Builder desk
+Recorded the owner's *"keep the invoice, skip the proposal builder"*: the record's invoice stays as built; the free-form builder desk joins `TASKLIST.md` § D (skipped, not V2).
+Docs and code comments only (NOTES-FOR-ARIAN, TASKLIST, API_GAPS, ADMIN_ARCHITECTURE/SCREENS, V1 status/plan, HANDOFF, `adminNav`, `ProjectProposal`, `projectDocs`).
+
 ## 2026-10-13 — Proposal + Invoice builder, G-CAT-9, G9 released to `main`
 On the owner's instructions, #122 was merged into `development`, then #124 released `development` → `main` (`de3342e`).
 The production deploy is READY and `development` was fast-forwarded to `main`; the live site stays visual-only until the real API URL is set.
@@ -12,6 +20,10 @@ The production deploy is READY and `development` was fast-forwarded to `main`; t
 ## 2026-10-13 — Proposal + Invoice builder, source freshness (G-CAT-9), artist sorts (G9) built
 Project record: the old composer inline, filed as `project_proposal`/`project_invoice` (draft → final → signed; invoice new, owner-only).
 Sources › Artwork Sources + Market App desk: freshness pills, Confirm / Update… / Confirm all, strip, owner hide-stale card. Artists: Most records · Top price, Records column. Schema unchanged (`bf2b9dc`).
+
+## 2026-10-13 — G-TEAM-2 Reject + G-PORT-5/7/8 + P3c released to `main`
+On the owner's instructions, #121 was merged into `development` once its CI passed, then #123 released `development` → `main` (`c53d174`, carrying #120 too).
+The production deploy is READY and `development` was fast-forwarded to `main`. Live use needs the backend at `bf2b9dc`+ (migration `gallery.0012`); the site stays visual-only until the real API URL is set.
 
 ## 2026-10-13 — Gallery portal G-PORT-5/7/8 + P3c built (backend `bf2b9dc`, schema regen identical)
 Portal: Introduce tab (referrals), the old §80 signing pad (typed name + drawn PNG; the mark shows on the row), per-work "What collectors can do" + minimum offer posting to `…/actions/` (Save or Send update; an empty grid sends `viewing`, never `[]`).

@@ -428,7 +428,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
           'as project documents (…/projects/{id}/documents/, kind project_proposal | ' +
           'project_invoice; draft → final → signed) and rendered client-side like ' +
           'the exhibition documents. The old Proposal Builder (the free-form ' +
-          'draft-to-document editor, :14644) is not ported.',
+          'draft-to-document editor, :14644) is not ported — the owner ' +
+          'ruled 2026-10-13: keep the invoice, skip the builder.',
       ),
       tab(
         'projCalc',
