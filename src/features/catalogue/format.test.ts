@@ -3,7 +3,7 @@
  * (V1 Phase 10) and humanises the raw value until they arrive.
  */
 import { describe, expect, it } from 'vitest';
-import { availabilityLabel } from './format';
+import { availabilityLabel, formatMoney, recordsLine } from './format';
 
 describe('availabilityLabel', () => {
   it('prefers the label /api/options/ serves', () => {
@@ -26,5 +26,20 @@ describe('availabilityLabel', () => {
   it('renders no word for a row without the field', () => {
     expect(availabilityLabel(undefined, {})).toBe('');
     expect(availabilityLabel(null)).toBe('');
+  });
+});
+
+describe('the artist card figures (G9)', () => {
+  it('counts records the old way — singular at one, nothing at zero or unknown', () => {
+    expect(recordsLine(12)).toBe('12 records');
+    expect(recordsLine(1)).toBe('1 record');
+    expect(recordsLine(0)).toBe('');
+    expect(recordsLine(null)).toBe('');
+    expect(recordsLine(undefined)).toBe('');
+  });
+
+  it('prints top_record_price (a decimal string) as a grouped whole number', () => {
+    expect(formatMoney('1200000.00')).toBe('1,200,000');
+    expect(formatMoney('45000.50')).toBe('45,001');
   });
 });

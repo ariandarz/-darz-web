@@ -864,6 +864,9 @@ const ADMIN_ARTWORKS = [
     is_published: true,
     published_at: '2026-09-01T10:00:00Z',
     source_type: 'gallery',
+    // G-CAT-9: confirmed by its source 12 days ago → "Confirmed 12d ago"
+    source_name: 'Aria Gallery',
+    source_confirmed_at: new Date(Date.now() - 12 * DAY).toISOString(),
     _complete: true,
     _dup: false,
     created_at: new Date(Date.now() - 3 * DAY).toISOString(),
@@ -886,6 +889,9 @@ const ADMIN_ARTWORKS = [
     is_published: true,
     published_at: '2026-08-10T10:00:00Z',
     source_type: 'dealer',
+    // G-CAT-9: never confirmed, added in May → "Risky · outdated"
+    source_name: 'Saba Dealers',
+    source_confirmed_at: null,
     _complete: true,
     _dup: true,
     created_at: '2026-05-02T10:00:00Z',
@@ -905,6 +911,71 @@ const ADMIN_ARTWORKS = [
     created_at: '2025-11-20T10:00:00Z',
   },
 ];
+/* ---- G-CAT-9 source freshness — `apps/catalog/freshness.py`, ported ------
+   Confirmations land in `CONFIRMED` (id → ISO) so a spec sees the pill move. */
+const CONFIRMED = {};
+const FRESH_SETTINGS = {
+  hide_unconfirmed: false,
+  hide_after_days: 90,
+  version: 1,
+  updated_at: '2026-10-01T00:00:00Z',
+};
+const sourceLinked = (w) => !!(String(w.source_name || '').trim() || w.source_type);
+const freshnessOf = (w) => {
+  const confirmed_at = CONFIRMED[w.id] ?? w.source_confirmed_at ?? null;
+  const ct = confirmed_at ? Date.parse(confirmed_at) : 0;
+  const base = ct || Date.parse(w.created_at);
+  const days = base ? Math.floor((Date.now() - base) / DAY) : 9999;
+  const at = { days, confirmed_at };
+  if (days <= 30)
+    return ct
+      ? {
+          state: 'fresh',
+          label: days <= 1 ? 'Confirmed today' : `Confirmed ${days}d ago`,
+          ...at,
+        }
+      : { state: 'new', label: 'Awaiting first confirm', ...at };
+  if (days <= 60) return { state: 'due', label: 'Needs update', ...at };
+  if (days <= 90) return { state: 'stale', label: `Not confirmed ${days}d`, ...at };
+  return { state: 'risky', label: ct ? `Risky · ${days}d` : 'Risky · outdated', ...at };
+};
+const withFreshness = (w) => ({
+  ...w,
+  source_confirmed_at: CONFIRMED[w.id] ?? w.source_confirmed_at ?? null,
+  freshness: freshnessOf(w),
+});
+const freshActive = (w) =>
+  sourceLinked(w) && !['sold', 'withdrawn', 'archived'].includes(w.availability_status);
+const freshnessSummary = () => {
+  const totals = { fresh: 0, new: 0, due: 0, stale: 0, risky: 0 };
+  const by = {};
+  for (const w of ADMIN_ARTWORKS.filter(freshActive)) {
+    const st = freshnessOf(w).state;
+    totals[st] += 1;
+    const key =
+      String(w.source_name || '')
+        .trim()
+        .toLowerCase() || `type:${w.source_type}`;
+    by[key] ??= {
+      source_name: String(w.source_name || '').trim(),
+      source_type: w.source_type,
+      total: 0,
+      needs_reconfirmation: 0,
+    };
+    by[key].total += 1;
+    if (['due', 'stale', 'risky'].includes(st)) by[key].needs_reconfirmation += 1;
+  }
+  return {
+    needs_reconfirmation: totals.due + totals.stale + totals.risky,
+    ...totals,
+    hide_unconfirmed: FRESH_SETTINGS.hide_unconfirmed,
+    hide_after_days: FRESH_SETTINGS.hide_after_days,
+    by_source: Object.values(by).sort(
+      (a, b) => b.needs_reconfirmation - a.needs_reconfirmation || b.total - a.total,
+    ),
+  };
+};
+
 /** The Database's filters over the fixture, the server's way. */
 const adminArtworkList = (sp) => {
   const b = (k) => (sp.get(k) === 'true' ? true : sp.get(k) === 'false' ? false : undefined);
@@ -927,17 +998,41 @@ const adminArtworkList = (sp) => {
         (w.visibility === 'gallery_portal') === b('gallery_portal')) &&
       (!sp.get('size') || size(w) === sp.get('size')) &&
       (!sp.get('source_type') || w.source_type === sp.get('source_type')) &&
-      (!sp.get('created_after') || w.created_at >= sp.get('created_after')),
-  ).map(({ _complete, _dup, ...w }) => w);
+      (!sp.get('created_after') || w.created_at >= sp.get('created_after')) &&
+      (!sp.get('source') || w.source_name === sp.get('source')) &&
+      // G-CAT-9 — both restrict to source-linked works
+      (!sp.getAll('freshness').length ||
+        (sourceLinked(w) && sp.getAll('freshness').includes(freshnessOf(w).state))) &&
+      (b('needs_reconfirmation') === undefined ||
+        (sourceLinked(w) &&
+          ['due', 'stale', 'risky'].includes(freshnessOf(w).state) ===
+            b('needs_reconfirmation'))),
+  ).map(({ _complete, _dup, ...w }) => withFreshness(w));
 };
 const adminArtwork = (id) => adminArtworkList(new URLSearchParams()).find((w) => w.id === id);
 
-/** The admin artists roster (G-CAT-3): server search + ordering, `works_count`. */
+/** The admin artists roster (G-CAT-3): server search + ordering, `works_count`;
+ * G9 (2026-10-01) adds `records_count` / `top_record_price` and the `records`
+ * / `top-price` orderings (top price: highest first, nulls last). */
 const ADMIN_ARTISTS = [
-  ['00000000-0000-4000-8000-00000000a871', 'Parviz Tanavoli', 30, '2026-01-10T00:00:00Z'],
-  ['00000000-0000-4000-8000-00000000a872', 'Monir Farmanfarmaian', 12, '2026-03-02T00:00:00Z'],
-  ['00000000-0000-4000-8000-00000000a873', 'Behjat Sadr', 4, '2026-09-01T00:00:00Z'],
-].map(([id, display_name, works_count, created_at]) => ({
+  [
+    '00000000-0000-4000-8000-00000000a871',
+    'Parviz Tanavoli',
+    30,
+    '2026-01-10T00:00:00Z',
+    7,
+    '1200000.00',
+  ],
+  [
+    '00000000-0000-4000-8000-00000000a872',
+    'Monir Farmanfarmaian',
+    12,
+    '2026-03-02T00:00:00Z',
+    9,
+    '850000.00',
+  ],
+  ['00000000-0000-4000-8000-00000000a873', 'Behjat Sadr', 4, '2026-09-01T00:00:00Z', 0, null],
+].map(([id, display_name, works_count, created_at, records_count, top_record_price]) => ({
   id,
   display_name,
   name_variants: [],
@@ -946,10 +1041,17 @@ const ADMIN_ARTISTS = [
   nationality: 'Iranian',
   external_ids: {},
   works_count,
+  records_count,
+  top_record_price,
   version: 1,
   created_at,
   updated_at: created_at,
 }));
+/** `top-price` — the backend's `F('top_record_price').desc(nulls_last=True)`. */
+const byTopPrice = (a, b) =>
+  (b.top_record_price == null ? -1 : Number(b.top_record_price)) -
+    (a.top_record_price == null ? -1 : Number(a.top_record_price)) ||
+  a.display_name.localeCompare(b.display_name);
 const adminArtistList = (sp) => {
   const q = (sp.get('search') || '').toLowerCase();
   const rows = ADMIN_ARTISTS.filter((a) => a.display_name.toLowerCase().includes(q));
@@ -959,6 +1061,9 @@ const adminArtistList = (sp) => {
     created: (a, b) => a.created_at.localeCompare(b.created_at),
     '-created': (a, b) => b.created_at.localeCompare(a.created_at),
     works: (a, b) => b.works_count - a.works_count,
+    records: (a, b) =>
+      b.records_count - a.records_count || a.display_name.localeCompare(b.display_name),
+    'top-price': byTopPrice,
   }[sp.get('ordering') || ''];
   return by ? [...rows].sort(by) : rows;
 };
@@ -1235,6 +1340,30 @@ const phase6Patterns = [
     (_p, _b, url) => {
       const kind = url.searchParams.get('kind');
       return pageOf(kind ? ADMIN_DOCS.filter((d) => d.kind === kind) : ADMIN_DOCS, url);
+    },
+  ],
+  [
+    /^\/api\/documents\/admin\/documents\/[^/]+\/$/,
+    'PATCH',
+    (path, body) => {
+      const d = docById(path.split('/')[5]);
+      if (!d) return notFound('No Document matches the given query.');
+      if (d.status !== 'draft')
+        return {
+          status: 400,
+          body: {
+            success: false,
+            error: {
+              code: 'validation_error',
+              message: 'Only a draft document can be edited.',
+            },
+            timestamp: new Date().toISOString(),
+          },
+        };
+      for (const k of ['title', 'ref', 'fields', 'visibility'])
+        if (body && k in body) d[k] = body[k];
+      d.updated_at = new Date().toISOString();
+      return envelope(d);
     },
   ],
   [
@@ -1558,6 +1687,23 @@ const routes = {
     return envelope({ active: questionSetActive });
   },
   [`GET /api/catalog/artists/${E2E_ARTIST.id}/`]: () => envelope(E2E_ARTIST),
+  // The collector Artists list — the admin roster's rows in their public
+  // shape, ordered the server's way (G9: `records` / `top-price`).
+  'GET /api/catalog/artists/': (req) =>
+    page(
+      adminArtistList(new URL(req.url, 'http://x').searchParams).map(
+        ({ id, display_name, nationality, birth_year, records_count, top_record_price }) => ({
+          id,
+          display_name,
+          name_variants: [],
+          bio: '',
+          nationality,
+          birth_year,
+          records_count,
+          top_record_price,
+        }),
+      ),
+    ),
   // A collector request create (201). Answers a minimal row — the app renders
   // its confirmation from its own copy; the spec reads the REQUEST body.
   'POST /api/crm/requests/': (_req, body) => ({
@@ -2852,6 +2998,49 @@ const PARTNER_ORGS = [
     updated_at: '2026-09-01T10:00:00Z',
   },
 ];
+/** The package applied to P-0002 — what the project's Proposal / Invoice
+ * composer builds from (lines over SERVICE_CATALOG, all TMN). */
+const PKG_COVERAGE = {
+  id: '00000000-0000-4000-8000-0000000070b1',
+  name: 'Opening coverage',
+  purpose: 'Document the opening and its works.',
+  lines: [
+    { svcId: '00000000-0000-4000-8000-00000000dc01', count: 3 },
+    { svcId: '00000000-0000-4000-8000-00000000dc02', count: 1 },
+  ],
+  counts: {
+    posts: 4,
+    stories: 2,
+    articles: 0,
+    interviews: 1,
+    photos: 40,
+    videos: 0,
+    videoMin: 0,
+  },
+  onsite: true,
+  team: [],
+  suppliers: [],
+  client_resp: 'Access to the space on the opening night',
+  materials: 'Artwork list and captions',
+  prod_timeline: '3 weeks',
+  pub_timeline: 'Within 10 days of the opening',
+  revisions: 2,
+  approval: 'One review round',
+  usage_rights: '12 months, all channels',
+  archive_duration: '2 years',
+  addons: [{ name: 'Drone footage', price: 900000, currency: 'TMN' }],
+  internal: {},
+  deposit_pct: 50,
+  payment_stages: [
+    { label: 'Deposit', pct: 50 },
+    { label: 'On delivery', pct: 50 },
+  ],
+  cancellation: 'Free until a week before the opening',
+  version: 1,
+  created_at: '2026-09-01T10:00:00Z',
+  updated_at: '2026-09-01T10:00:00Z',
+};
+
 const PROJECT_BASE = {
   client_partner_org: null,
   client_name: '',
@@ -2928,6 +3117,8 @@ const PROJECTS = [
     no: 'P-0002',
     name: 'Kargah documentation',
     client_partner_org: { id: P7_ORG, name: 'Avaplat Studio' },
+    // the Proposal Builder's package (Proposal section + composer)
+    applied_package: PKG_COVERAGE.id,
     partner_orgs: [{ id: P7_ORG, name: 'Avaplat Studio' }],
     category: 'documentation',
     status: 'Qualified',
@@ -3296,6 +3487,97 @@ const phase7Patterns = [
     },
   ],
   [/^\/api\/projects\/admin\/partners\/$/, 'GET', (_p, _b, url) => pageOf(PARTNER_ORGS, url)],
+  [
+    /^\/api\/projects\/admin\/packages\/[^/]+\/$/,
+    'GET',
+    (path) =>
+      path.split('/')[5] === PKG_COVERAGE.id
+        ? envelope(PKG_COVERAGE)
+        : notFound('No PackageTemplate matches the given query.'),
+  ],
+  // Proposal Builder (2026-10-01) — the project's proposal / invoice documents,
+  // kept in ADMIN_DOCS so the generic read / PATCH / Documents desk see them
+  [
+    /^\/api\/projects\/admin\/projects\/[^/]+\/documents\/$/,
+    'GET',
+    (path, _b, url) =>
+      pageOf(
+        ADMIN_DOCS.filter(
+          (d) => d.ref === path.split('/')[5] && String(d.kind).startsWith('project_'),
+        ),
+        url,
+      ),
+  ],
+  [
+    /^\/api\/projects\/admin\/projects\/[^/]+\/documents\/$/,
+    'POST',
+    (path, body) => {
+      const p = projectById(path);
+      if (!p) return notFound('No Project matches the given query.');
+      const now = new Date().toISOString();
+      const doc = {
+        ...DOC_BASE,
+        id: `00000000-0000-4000-8000-${String(Date.now()).slice(-12)}`,
+        kind: body?.doc_type,
+        ref: p.id,
+        title:
+          body?.title ||
+          `${p.name} — ${body?.doc_type === 'project_invoice' ? 'Invoice' : 'Proposal'}`,
+        fields: body?.fields ?? {},
+        status: 'draft',
+        object_key: '',
+        pdf_url: null,
+        confirmed_at: null,
+        signed_at: null,
+        collector: null,
+        shared_at: null,
+        created_at: now,
+        updated_at: now,
+      };
+      ADMIN_DOCS.unshift(doc);
+      return { status: 201, body: envelope(doc) };
+    },
+  ],
+  [
+    /^\/api\/projects\/admin\/projects\/[^/]+\/documents\/[^/]+\/(upload|confirm|sign)\/$/,
+    'POST',
+    (path) => {
+      const [, , , , , pid, , did, action] = path.split('/');
+      const d = ADMIN_DOCS.find((x) => x.id === did && x.ref === pid);
+      if (!d)
+        return {
+          status: 400,
+          body: {
+            success: false,
+            error: { code: 'validation_error', message: 'No such document on this project.' },
+            timestamp: new Date().toISOString(),
+          },
+        };
+      const bad = (message) => ({
+        status: 400,
+        body: {
+          success: false,
+          error: { code: 'validation_error', message },
+          timestamp: new Date().toISOString(),
+        },
+      });
+      if (action === 'upload')
+        Object.assign(d, {
+          object_key: `documents/${d.kind}/${d.id}.pdf`,
+          pdf_url: `${STUB_ORIGIN}/files/doc.pdf`,
+        });
+      if (action === 'confirm') {
+        if (!d.object_key) return bad('Upload a PDF before confirming.');
+        Object.assign(d, { status: 'confirmed', confirmed_at: new Date().toISOString() });
+      }
+      if (action === 'sign') {
+        if (d.status !== 'confirmed') return bad('Only a confirmed document can be signed.');
+        d.signed_at = new Date().toISOString();
+      }
+      d.updated_at = new Date().toISOString();
+      return envelope(d);
+    },
+  ],
   [/^\/api\/projects\/admin\/checklists\/$/, 'GET', (_p, _b, url) => pageOf(CHECKLISTS, url)],
   // the stub's own read-back of the last PATCH a desk sent a project
   [
@@ -3702,6 +3984,59 @@ const workspacePatterns = [
 ];
 
 const patterns = [
+  // G-CAT-9 — the source-freshness loop
+  [
+    /^\/api\/catalog\/admin\/artworks\/[^/]+\/confirm-available\/$/,
+    'POST',
+    (path, body) => {
+      const id = path.split('/')[5];
+      const w = ADMIN_ARTWORKS.find((a) => a.id === id);
+      // a portal work (GALLERY_WORKS) is a real artwork too, just not one of
+      // the Database fixture's rows — the Source Updates desk stamps it on approve
+      if (!w) return envelope({ id, source_confirmed_at: new Date().toISOString() });
+      if (body?.status) w.availability_status = body.status;
+      CONFIRMED[w.id] = new Date().toISOString();
+      return envelope(adminArtwork(w.id));
+    },
+  ],
+  [
+    /^\/api\/catalog\/admin\/sources\/confirm\/$/,
+    'POST',
+    (_p, body) => {
+      const name = String(body?.source_name || '')
+        .trim()
+        .toLowerCase();
+      const hits = ADMIN_ARTWORKS.filter(
+        (w) =>
+          freshActive(w) &&
+          (!name ||
+            String(w.source_name || '')
+              .trim()
+              .toLowerCase() === name) &&
+          (!body?.source_type || w.source_type === body.source_type),
+      );
+      for (const w of hits) CONFIRMED[w.id] = new Date().toISOString();
+      return envelope({ confirmed: hits.length });
+    },
+  ],
+  [
+    /^\/api\/catalog\/admin\/sources\/freshness-summary\/$/,
+    'GET',
+    () => envelope(freshnessSummary()),
+  ],
+  [
+    /^\/api\/catalog\/admin\/sources\/freshness-settings\/$/,
+    'GET',
+    () => envelope(FRESH_SETTINGS),
+  ],
+  [
+    /^\/api\/catalog\/admin\/sources\/freshness-settings\/$/,
+    'PATCH',
+    (_p, body) => {
+      Object.assign(FRESH_SETTINGS, body ?? {}, { version: FRESH_SETTINGS.version + 1 });
+      return envelope(FRESH_SETTINGS);
+    },
+  ],
   // Public documents (`AllowAny`): only `legal_terms` is published here, as a
   // confirmed public `Document`; any other kind is the backend's 404.
   [

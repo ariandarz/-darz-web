@@ -15,10 +15,21 @@
  *
  * This module is HEAVY (@react-pdf/renderer) — always `import()` it lazily
  * from the composer, never statically from a page.
+ *
+ * **The project proposal's extra blocks** (Proposal Builder, 2026-10-13) are
+ * all optional, so an exhibition document renders exactly as before. They
+ * carry the old project composer's sections (`_proposalHTML`,
+ * `darz-studio.html:14537-14634`) in this paper design: the "Prepared for
+ * …" line (`:14559-14567`), Introduction (`:14572`, one paragraph per line —
+ * the old `splitParagraphs`), Deliverables and Timeline (`:14584-14596`, as
+ * label/value rows), the Investment's payment schedule and add-ons
+ * (`:14599-14608`, printed only when the document carries a total), and the
+ * package terms under "Notes & terms" (`:14611-14620`, notes first).
  */
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 // the brand faces, registered once for every PDF in this chunk
 import './pdfFonts';
+import { paragraphs } from './text';
 
 /* the paper palette (fixture `:root.paper`) */
 const INK = '#0A0A0A';
@@ -123,6 +134,33 @@ const st = StyleSheet.create({
   noteV: { fontSize: 9.4, color: TEXT, lineHeight: 1.55 },
   bankGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
   bankCell: { width: '50%', paddingRight: 12, marginBottom: 6 },
+  para: { fontSize: 9.6, color: TEXT, lineHeight: 1.6, marginBottom: 5 },
+  dl: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: HAIR,
+    paddingVertical: 5,
+    gap: 12,
+  },
+  dt: {
+    width: 130,
+    fontSize: 6.8,
+    fontWeight: 700,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: LBL,
+    marginTop: 1.6,
+  },
+  dd: { flexGrow: 1, flexBasis: 0, fontSize: 9.4, color: INK },
+  subH: {
+    fontSize: 6.8,
+    fontWeight: 700,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: LBL,
+    marginTop: 12,
+    marginBottom: 2,
+  },
   sigRow: { flexDirection: 'row', gap: 24, marginTop: 26 },
   sigCol: { flexGrow: 1, flexBasis: 0 },
   sigHead: {
@@ -188,6 +226,36 @@ export interface DocumentPdfFields {
    * for this project" / "From the client". Absent = the exhibition wording. */
   lines_label?: string;
   counterparty_label?: string;
+  /* ── the project proposal's optional blocks (see the header) ── */
+  /** Replaces the gallery · artists line: "Prepared for Client · Project". */
+  prepared_for?: string;
+  /** "Introduction" — every non-empty line is its own paragraph. */
+  intro?: string;
+  /** Label/value blocks after the lines — "Deliverables", "Timeline". */
+  sections?: Array<{ label: string; rows: Array<[string, string]> }>;
+  /** "Payment schedule" — printed only beside a total; an amount of 0 (a
+   * stage with no percentage) prints "—". Formatted like the totals. */
+  schedule?: Array<{ label: string; amount: number }>;
+  /** "Optional add-ons" — printed only beside a total, each in its own
+   * currency (the old row's `a.cur || cur`, `:14604`). */
+  addons?: Array<{ name: string; price: number; currency?: string }>;
+  /** The terms block's heading ("Notes & terms") and the package's own
+   * terms printed under the text as label/value rows. */
+  terms_label?: string;
+  terms_rows?: Array<[string, string]>;
+}
+
+function DefRows({ rows }: { rows: Array<[string, string]> }) {
+  return (
+    <>
+      {rows.map(([k, v]) => (
+        <View style={st.dl} key={k} wrap={false}>
+          <Text style={st.dt}>{k}</Text>
+          <Text style={st.dd}>{v}</Text>
+        </View>
+      ))}
+    </>
+  );
 }
 
 const SYM: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', TMN: 'T ', T: 'T ' };
@@ -250,7 +318,9 @@ export function DarzDocument({
         <View style={st.seam} />
 
         <Text style={st.h1}>{show.title ?? ''}</Text>
-        <Text style={st.sub}>{[show.gallery, show.artists].filter(Boolean).join(' · ')}</Text>
+        <Text style={st.sub}>
+          {fields.prepared_for ?? [show.gallery, show.artists].filter(Boolean).join(' · ')}
+        </Text>
 
         {shownFacts.length > 0 && (
           <View style={st.facts}>
@@ -259,6 +329,17 @@ export function DarzDocument({
                 <Text style={st.factK}>{k}</Text>
                 <Text style={st.factV}>{v}</Text>
               </View>
+            ))}
+          </View>
+        )}
+
+        {paragraphs(fields.intro).length > 0 && (
+          <View>
+            <Text style={st.secLbl}>Introduction</Text>
+            {paragraphs(fields.intro).map((p, i) => (
+              <Text style={st.para} key={i}>
+                {p}
+              </Text>
             ))}
           </View>
         )}
@@ -290,6 +371,15 @@ export function DarzDocument({
           </View>
         ))}
 
+        {(fields.sections ?? [])
+          .filter((sec) => sec.rows.length > 0)
+          .map((sec) => (
+            <View key={sec.label} wrap={false}>
+              <Text style={st.secLbl}>{sec.label}</Text>
+              <DefRows rows={sec.rows} />
+            </View>
+          ))}
+
         {/* A document with no total at all is the old "calm non-priced
             version" (`darz-studio.html:14028`): it carries the scope and no
             money, so the whole block goes rather than printing a zero. */}
@@ -309,6 +399,31 @@ export function DarzDocument({
               <Text style={st.totGrandK}>{invoice ? 'Total due' : 'Total'}</Text>
               <Text style={st.totGrandV}>{moneyStr(fields.currency, fields.total)}</Text>
             </View>
+          </View>
+        )}
+
+        {/* :14599-14608 — the schedule and add-ons ride with the money: no
+            total, no schedule */}
+        {fields.total !== undefined && (fields.schedule ?? []).length > 0 && (
+          <View wrap={false}>
+            <Text style={st.subH}>Payment schedule</Text>
+            <DefRows
+              rows={(fields.schedule ?? []).map((r) => [
+                r.label,
+                r.amount ? moneyStr(fields.currency, r.amount) : '—',
+              ])}
+            />
+          </View>
+        )}
+        {fields.total !== undefined && (fields.addons ?? []).length > 0 && (
+          <View wrap={false}>
+            <Text style={st.subH}>Optional add-ons</Text>
+            <DefRows
+              rows={(fields.addons ?? []).map((r) => [
+                r.name,
+                `+ ${moneyStr(r.currency || fields.currency, r.price)}`,
+              ])}
+            />
           </View>
         )}
 
@@ -333,10 +448,19 @@ export function DarzDocument({
           </View>
         )}
 
-        {fields.terms ? (
+        {fields.terms || (fields.terms_rows ?? []).length > 0 ? (
           <View wrap={false}>
-            <Text style={st.secLbl}>Terms</Text>
-            <Text style={st.noteV}>{fields.terms}</Text>
+            <Text style={st.secLbl}>{fields.terms_label ?? 'Terms'}</Text>
+            {fields.terms_rows
+              ? paragraphs(fields.terms).map((p, i) => (
+                  <Text style={st.para} key={i}>
+                    {p}
+                  </Text>
+                ))
+              : fields.terms && <Text style={st.noteV}>{fields.terms}</Text>}
+            {(fields.terms_rows ?? []).length > 0 && (
+              <DefRows rows={fields.terms_rows ?? []} />
+            )}
           </View>
         ) : null}
 

@@ -660,3 +660,37 @@ test('the artist enquiry sends the artist id', async () => {
   await expect(page.getByText('Enquiry received')).toBeVisible();
   expect(thrown).toEqual([]);
 });
+
+/**
+ * G9 (backend 2026-10-01) — the Artists list's two record sorts, the old
+ * select's last two options (`app.html:5345-5346`), on the wire as the server
+ * spells them; the card's "Top price" row is the highest SOLD result.
+ */
+test('the Artists list sorts by records and top price', async () => {
+  thrown = [];
+  await page.goto('/artists');
+  await expect(page.locator('.dza-acard2').first()).toBeVisible();
+  for (const [label, wire] of [
+    ['Most records', 'records'],
+    ['Top price', 'top-price'],
+  ]) {
+    const req = page.waitForRequest(
+      (r) =>
+        r.url().includes('/api/catalog/artists/') &&
+        new URL(r.url()).searchParams.get('ordering') === wire,
+    );
+    await page.getByRole('button', { name: 'Sort artists' }).click();
+    await page.getByRole('option', { name: label }).click();
+    await req;
+  }
+  const first = page.locator('.dza-acard2').first();
+  await expect(first).toContainText('Parviz Tanavoli');
+  await expect(first).toContainText('7 records');
+  await expect(first.locator('.dza-atop2')).toContainText('Top price');
+  await expect(first.locator('.dza-atop2 .val')).toHaveText('1,200,000');
+  // no sold record, no row — and that artist sorts last
+  const last = page.locator('.dza-acard2').last();
+  await expect(last).toContainText('Behjat Sadr');
+  await expect(last.locator('.dza-atop2')).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});

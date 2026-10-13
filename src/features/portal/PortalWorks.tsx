@@ -809,7 +809,12 @@ function WorkCard({
         <div className="awc-foot">
           {/* an untouched card's send IS the old page's availability
               confirmation (kind availability, no status key) — label it as
-              what it does, the plainest "artwork availability" action */}
+              what it does, the plainest "artwork availability" action. It
+              reaches the source-freshness loop (G-CAT-9) when Darz approves
+              it: the Source Updates desk stamps the work confirmed on
+              approval, as the old approve did (`darz-studio.html:39151`) —
+              see `stampsConfirmation` in admin/SourcesPage.tsx. Until then
+              the work's freshness does not move. */}
           <button className="btn btn--primary" type="button" disabled={busy} onClick={onSend}>
             {/* an edit in hand wins over the pill: with the server's own
                 pending list, a card can be "Sent" and freshly edited at once */}

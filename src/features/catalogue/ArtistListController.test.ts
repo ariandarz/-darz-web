@@ -49,3 +49,18 @@ describe('ArtistListController', () => {
     expect(c.getSnapshot().query).toMatchObject({ page: 1, ordering: 'works' });
   });
 });
+
+describe('ArtistListController — the G9 sorts', () => {
+  it.each(['records', 'top-price'])('sends ordering=%s as the server spells it', async (o) => {
+    const artists = vi.fn(async (_q: ArtistQuery) => page([]));
+    const c = new ArtistListController({ artists } as never);
+    await c.reload();
+
+    c.setQuery({ ordering: o });
+    await vi.waitFor(() =>
+      expect(artists).toHaveBeenLastCalledWith(
+        expect.objectContaining({ ordering: o, page: 1 }),
+      ),
+    );
+  });
+});

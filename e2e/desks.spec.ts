@@ -1751,6 +1751,273 @@ test('Access: +1 week posts the extend and the row re-reads with the new expiry'
   expect(thrown).toEqual([]);
 });
 
+/* ── 2026-10-13: the three backend seams of 2026-10-01 ───────────────────── */
+
+test('Artists: the G9 sorts reach ?ordering=, and the record count opens Auction Records', async () => {
+  thrown = [];
+  const list = watchQueries('/api/catalog/admin/artists/');
+  const records = watchQueries('/api/auctions/admin/records/');
+  await list.start();
+  await records.start();
+  try {
+    await page.goto('/admin/artists');
+    await expect(page.getByText('Showing 3 of 3 artists')).toBeVisible();
+    await deskFilter('Sort').locator('select').selectOption('records');
+    await expect.poll(() => list.last()?.get('ordering')).toBe('records');
+    await deskFilter('Sort').locator('select').selectOption('top-price');
+    await expect.poll(() => list.last()?.get('ordering')).toBe('top-price');
+    // highest sold result first, the artist with none last
+    await expect(page.locator('tbody tr').first()).toContainText('Parviz Tanavoli');
+    await expect(page.locator('tbody tr').first()).toContainText('1,200,000');
+    await expect(page.locator('tbody tr').last()).toContainText('Behjat Sadr');
+    // :33558-33561 — `N ›` opens this artist's records
+    await page
+      .locator('tr')
+      .filter({ hasText: 'Parviz Tanavoli' })
+      .getByRole('link', { name: '7 ›' })
+      .click();
+    await page.waitForURL('**/admin/auction-records?artist=*');
+    // `some`, not `last`: the desk also walks the records once for its house
+    // dropdown, unfiltered, and that read can land after the list's
+    await expect
+      .poll(() =>
+        records.seen.some((q) => q.get('artist') === '00000000-0000-4000-8000-00000000a871'),
+      )
+      .toBe(true);
+    await expect(page.locator('.ad-fchip')).toContainText('Artist:');
+    const before = records.seen.length;
+    await page.locator('.ad-fchip').getByRole('button').click();
+    await expect.poll(() => records.seen.length).toBeGreaterThan(before);
+    expect(records.last()?.get('artist')).toBeNull();
+    await expect(page.locator('.ad-fchip')).toHaveCount(0);
+  } finally {
+    await list.stop();
+    await records.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Artwork Sources: the freshness strip, Update…, Confirm all and the owner hide switch (G-CAT-9)', async () => {
+  thrown = [];
+  const list = watchQueries('/api/catalog/admin/artworks/');
+  await list.start();
+  try {
+    await page.goto('/admin/sources?view=sources');
+    const tile = (l: string) =>
+      page
+        .locator('.sp-freshtiles .ad-tile')
+        .filter({ has: page.locator('.ad-tile-l', { hasText: l }) })
+        .locator('.ad-tile-v');
+    await expect(tile('Need reconfirmation')).toHaveText('1');
+    await expect(tile('Risky (90d+)')).toHaveText('1');
+    // "Confirmation: all" = every band = every source-linked work
+    await expect
+      .poll(() => list.seen[0]?.getAll('freshness').sort())
+      .toEqual(['due', 'fresh', 'new', 'risky', 'stale']);
+    const mirror = page.locator('.sp-artcard', { hasText: 'Mirror Study' });
+    await expect(mirror.locator('.sp-fresh')).toHaveText('Risky · outdated');
+    await expect(mirror.locator('.sp-fresh')).toHaveClass(/risky/);
+
+    // Update… on the gallery's work: confirm AND record what the source said
+    const heech = page.locator('.sp-artcard', { hasText: 'Heech in a Cage' });
+    const [asReq] = await Promise.all([
+      page.waitForRequest(
+        (r) => r.method() === 'POST' && r.url().includes('/confirm-available/'),
+      ),
+      heech
+        .getByLabel('Confirm with a status update from the source')
+        .selectOption('available'),
+    ]);
+    expect(asReq.postDataJSON()).toEqual({ status: 'available' });
+    await expect(page.locator('.dz-toast')).toContainText('Confirmed · status set to');
+
+    // ✓ Confirm all available — one source, by its name
+    await page
+      .locator('tr', { hasText: 'Aria Gallery' })
+      .getByRole('button', { name: '✓ Confirm all available' })
+      .click();
+    await expect(page.getByRole('dialog')).toContainText(
+      'Mark all 1 active work from Aria Gallery as confirmed available today?',
+    );
+    const [allReq] = await Promise.all([
+      page.waitForRequest(
+        (r) => r.method() === 'POST' && r.url().includes('/sources/confirm/'),
+      ),
+      page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click(),
+    ]);
+    expect(allReq.postDataJSON()).toEqual({ source_name: 'Aria Gallery' });
+    await expect(page.locator('.dz-toast')).toContainText('1 work confirmed');
+
+    // a tile opens its band
+    await tile('Risky (90d+)').click();
+    await expect.poll(() => list.last()?.getAll('freshness')).toEqual(['risky']);
+    await expect(page.locator('.sp-artcard')).toHaveCount(1);
+
+    // the owner's switch — a plain PATCH, no lock field; put back after
+    const hide = page.getByLabel('Hide unconfirmed works from collectors');
+    const [onReq] = await Promise.all([
+      page.waitForRequest(
+        (r) => r.method() === 'PATCH' && r.url().includes('/freshness-settings/'),
+      ),
+      hide.check(),
+    ]);
+    expect(onReq.postDataJSON()).toEqual({ hide_unconfirmed: true });
+    await expect(page.locator('.dz-toast')).toContainText(
+      'Stale works will be hidden from collectors until reconfirmed',
+    );
+    await expect(page.getByLabel('Hide after')).toBeEnabled();
+    await Promise.all([
+      page.waitForRequest(
+        (r) => r.method() === 'PATCH' && r.url().includes('/freshness-settings/'),
+      ),
+      hide.uncheck(),
+    ]);
+  } finally {
+    await list.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Market App: the reconfirmation tile and alert, and Confirm available (G-CAT-9)', async () => {
+  thrown = [];
+  const list = watchQueries('/api/catalog/admin/artworks/');
+  await list.start();
+  try {
+    await page.goto('/admin/published');
+    const needs = page
+      .locator('.ad-tile')
+      .filter({ hasText: 'Need reconfirmation' })
+      .locator('.ad-tile-v');
+    await expect(needs).toHaveText('1');
+    await expect(page.locator('.ad-remind')).toContainText(
+      '1 published work needs availability reconfirmation — 1 risky.',
+    );
+    await page.locator('.ad-remind').getByRole('button', { name: 'Review them →' }).click();
+    await expect.poll(() => list.last()?.get('needs_reconfirmation')).toBe('true');
+    await expect(page.getByText('Heech in a Cage')).toHaveCount(0);
+    const card = page.locator('.ad-pubcard', { hasText: 'Mirror Study' });
+    const [req] = await Promise.all([
+      page.waitForRequest(
+        (r) => r.method() === 'POST' && r.url().includes('/confirm-available/'),
+      ),
+      card.getByRole('button', { name: 'Confirm available' }).click(),
+    ]);
+    expect(req.postDataJSON()).toEqual({});
+    await expect(page.locator('.dz-toast')).toContainText('Confirmed available as of today');
+    await expect(needs).toHaveText('0');
+  } finally {
+    await list.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
+test('Source Updates: approving a report on a work also stamps its source confirmation', async () => {
+  thrown = [];
+  await page.goto('/admin/sources?view=updates');
+  // the stub's pending PRICE report (the portal spec may add other kinds
+  // about the same work when it runs first)
+  const price = page
+    .locator('.ad-updrow')
+    .filter({ has: page.locator('.ad-cellmain', { hasText: /· Price$/ }) })
+    .filter({ hasText: 'Mirror Mosaic' })
+    .first();
+  await price.getByRole('button', { name: 'Approve' }).click();
+  await expect(page.getByRole('dialog')).toContainText(
+    'It also records the source’s confirmation',
+  );
+  const [stamp] = await Promise.all([
+    page.waitForRequest(
+      (r) => r.method() === 'POST' && r.url().includes('/confirm-available/'),
+    ),
+    page.getByRole('dialog').getByRole('button', { name: 'Approve' }).click(),
+  ]);
+  expect(stamp.postDataJSON()).toEqual({});
+  expect(thrown).toEqual([]);
+});
+
+test('Project record: the proposal composer drafts, finalizes and signs; the invoice issues (Proposal Builder)', async () => {
+  thrown = [];
+  const P = '00000000-0000-4000-8000-000000007002';
+  await page.goto(`/admin/projects/${P}`);
+  await page.locator('summary', { hasText: 'Proposal' }).click();
+  const sec = page.locator('details', {
+    has: page.locator('summary', { hasText: 'Proposal' }),
+  });
+  await expect(sec).toContainText('Not created yet');
+  await sec.getByRole('button', { name: 'Preview & share proposal' }).click();
+  await expect(sec).toContainText('From the package · Opening coverage');
+  await expect(sec.getByLabel('Proposal title')).toHaveValue('Opening coverage');
+  await expect(sec.getByLabel('Client name')).toHaveValue('Avaplat Studio');
+  await expect(sec).toContainText('Pricing shows automatically because a price is set.');
+  await sec.getByLabel('Short introduction').fill('Darz documents the opening night.');
+  await sec.getByRole('button', { name: 'Without pricing' }).click();
+  await expect(sec).toContainText('The proposal will send without any pricing.');
+
+  // Save draft — created under the project, `doc_type` + the composer's own fields
+  const [create] = await Promise.all([
+    page.waitForRequest(
+      (r) =>
+        r.method() === 'POST' && r.url().endsWith(`/projects/admin/projects/${P}/documents/`),
+    ),
+    sec.getByRole('button', { name: 'Save draft' }).click(),
+  ]);
+  const body = create.postDataJSON();
+  expect(body.doc_type).toBe('project_proposal');
+  expect(body.fields).toMatchObject({
+    title: 'Opening coverage',
+    client: 'Avaplat Studio',
+    projectName: 'Kargah documentation',
+    intro: 'Darz documents the opening night.',
+    pricing: 'off',
+  });
+  expect(body.fields.reference).toMatch(/^DARZ-PRO-\d{4}-\d{4}$/);
+  // "Without pricing": the calm non-priced version carries no total
+  expect(body.fields.total).toBeUndefined();
+  await expect(sec.getByRole('status')).toHaveText('Proposal draft saved');
+
+  // Finalize — the second save is a PATCH of the same draft, then upload → confirm
+  const confirmed = page.waitForRequest(
+    (r) => r.method() === 'POST' && /\/documents\/[^/]+\/confirm\/$/.test(r.url()),
+  );
+  const [patch] = await Promise.all([
+    page.waitForRequest(
+      (r) => r.method() === 'PATCH' && r.url().includes('/documents/admin/documents/'),
+    ),
+    sec.getByRole('button', { name: 'Finalize' }).click(),
+  ]);
+  expect(patch.postDataJSON().fields.intro).toBe('Darz documents the opening night.');
+  await confirmed;
+  await expect(page.getByText('Proposal finalized & saved to the Library')).toBeVisible();
+  await expect(sec).toContainText('Last saved · Final');
+  await expect(sec.locator('.dzp-line', { hasText: 'Proposal' })).toContainText('Final');
+
+  // Sign for Darz
+  await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/sign\/$/.test(r.url())),
+    sec.getByRole('button', { name: 'Sign for Darz' }).click(),
+  ]);
+  await expect(sec.locator('.dzp-line', { hasText: 'Proposal' })).toContainText(
+    'Final · signed by Darz',
+  );
+
+  // the invoice (owner login): priced, SINV series
+  await sec.getByRole('button', { name: 'Invoice', exact: true }).click();
+  await expect(sec.getByLabel('Billed to')).toHaveValue('Avaplat Studio');
+  const [inv] = await Promise.all([
+    page.waitForRequest(
+      (r) =>
+        r.method() === 'POST' && r.url().endsWith(`/projects/admin/projects/${P}/documents/`),
+    ),
+    sec.getByRole('button', { name: 'Finalize' }).click(),
+  ]);
+  expect(inv.postDataJSON().doc_type).toBe('project_invoice');
+  expect(inv.postDataJSON().fields.reference).toMatch(/^DARZ-SINV-\d{4}-\d{4}$/);
+  expect(inv.postDataJSON().fields.total).toBeGreaterThan(0);
+  await expect(page.getByText('Invoice finalized & saved to the Library')).toBeVisible();
+  await expect(sec.locator('.dzp-line', { hasText: 'Invoice' })).toContainText('Final');
+  expect(thrown).toEqual([]);
+});
+
 test('Access: a standard admin gets the owner-only refusal card (Q-1)', async ({
   browser,
 }) => {
