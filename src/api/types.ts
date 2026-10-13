@@ -774,8 +774,34 @@ export type ExhibitionCatalogPatch = Locked<Partial<Omit<ExhibitionCatalogInput,
 
 /** A portal submission in the review queue — approving an availability /
  * price / correction update applies it to the artwork through the real
- * catalog services; the other kinds record intent only. */
+ * catalog services, and so does an `actions` proposal (G-PORT-8: the work's
+ * `allowed_actions` / `offer_floor`); the other kinds record intent only. */
 export type GalleryUpdateAdmin = Schemas['GalleryUpdate'];
+
+/** G-PORT-5 — a lead a source introduced from its portal's Introduce tab
+ * (`PortalReferralSerializer`): the same read shape on the portal's own list
+ * and on the admin review desk. A logged lead only — reviewing it sets a
+ * status and triggers nothing downstream (owner call, `PortalReferral`). */
+export type PortalReferral = Schemas['PortalReferral'];
+/** collector · gallery · artist · other — NOT served by `/api/options/` (the
+ * backend registers no `gallery.referral_kind`), so read through
+ * `choiceLabel`, whose raw-value fallback is the model's own label. */
+export type PortalReferralKind = Schemas['PortalReferralKindEnum'];
+/** new · reviewed · accepted · declined — likewise unregistered in options. */
+export type PortalReferralStatus = Schemas['PortalReferralStatusEnum'];
+/** `POST portal/{token}/referrals/` body minus the riding `pin` — only the
+ * name is required (`PortalReferralSubmitSerializer`). */
+export type PortalReferralInput = Pick<
+  Schemas['PortalPortalReferralSubmit'],
+  'referred_name'
+> &
+  Partial<Omit<Schemas['PortalPortalReferralSubmit'], 'pin' | 'referred_name'>>;
+
+/** G-PORT-8 — `POST portal/{token}/artworks/{id}/actions/` body minus the
+ * `pin` (its `allowed_actions` are `CollectorAction`s, above). At least one key (`PortalActionsProposalSerializer.validate`). An
+ * EMPTY `allowed_actions` means "all four" once applied (`Artwork.
+ * resolved_allowed_actions`) — never send `[]` to mean "none". */
+export type PortalActionsProposal = Omit<Schemas['PortalPortalActionsProposal'], 'pin'>;
 
 /** Admin lot — `LotAdminSerializer`: the collector shape PLUS the
  * confidential `reserve_amount` and `leading_bidder`, with the artwork as a

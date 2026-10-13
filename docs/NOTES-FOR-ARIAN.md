@@ -26,6 +26,13 @@ Nothing is merged without your word.
 
 ## Decisions waiting on you (no rush)
 
+- **Portal "Introduce" now asks a gallery for someone else's contact details** (G-PORT-5, built 2026-10-13).
+  The old tab was a share link and said the gallery "never share[s] anyone's contact details"; the backend
+  built a lead form instead. The new tab asks the gallery to share only details the person is happy for Darz
+  to have. Keep the form, bring back the share link (needs a link slug the backend does not have), or both?
+- **The drawn signature is not on the document PDF** — the PDF is rendered when Darz issues it, before the
+  gallery signs. The mark shows on the signed row in the portal. Re-render on signing, or leave it?
+
 - **Portal lockout:** anyone who holds a portal link can lock it for up to 1 hour by guessing wrong PINs. OK for V1?
 - **Owner-deferred screens (API ready):**
   - selection-ready notice;
@@ -41,7 +48,7 @@ Nothing is merged without your word.
 - **Languages (i18n, off today):** which languages ship, and do we do a real right-to-left pass?
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
-- **Proposal / invoice, freshness, artist sorts (built 2026-10-13, not merged):**
+- **Proposal / invoice, freshness, artist sorts (built 2026-10-13, #122 — in `development`, not released):**
   - the project **invoice** is new — the old Projects area had no invoice composer, only a status. It
     is built like the exhibition services invoice and is owner-only. Keep it?
   - the free-form **Proposal Builder** desk (paste a draft, AI organise, custom sections, design

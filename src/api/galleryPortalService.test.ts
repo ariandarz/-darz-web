@@ -68,6 +68,12 @@ describe('GalleryPortalService — PIN in the body on every write (C-9)', () => 
       (s) => s.signExhibitionDocument(TOKEN, PIN, 'e1', 'd1', 'Ada'),
       'json',
     ],
+    ['submitReferral', (s) => s.submitReferral(TOKEN, PIN, { referred_name: 'Ada' }), 'json'],
+    [
+      'proposeActions',
+      (s) => s.proposeActions(TOKEN, PIN, ART, { allowed_actions: ['viewing'] }),
+      'json',
+    ],
   ];
 
   for (const [name, call, shape] of writes) {
@@ -89,6 +95,8 @@ describe('GalleryPortalService — PIN in the body on every write (C-9)', () => 
     await s.state(TOKEN, PIN);
     await s.exhibitions(TOKEN, PIN);
     await s.exhibitionCatalogue(TOKEN, PIN);
+    await s.referrals(TOKEN, PIN);
+    expect(sent).toHaveLength(4);
     for (const r of sent) {
       expect(r.method).toBe('GET');
       expect(r.query?.pin).toBe(PIN);
@@ -101,6 +109,51 @@ describe('GalleryPortalService — PIN in the body on every write (C-9)', () => 
     await new GalleryPortalService(client as never).replaceImage(TOKEN, PIN, ART, file);
     expect(sent[0].path).toBe(`/gallery/portal/${TOKEN}/artworks/${ART}/image/`);
     expect((sent[0].body as FormData).get('file')).toBeInstanceOf(File);
+  });
+
+  it('signs with the drawn PNG beside the typed name, and only when there is one (G-PORT-7)', async () => {
+    const { client, sent } = spyClient();
+    const s = new GalleryPortalService(client as never);
+    const png = 'data:image/png;base64,iVBORw0KGgo=';
+    await s.signExhibitionDocument(TOKEN, PIN, 'e1', 'd1', 'Ada', png);
+    await s.signExhibitionDocument(TOKEN, PIN, 'e1', 'd1', 'Ada');
+    expect(sent[0].path).toBe(`/gallery/portal/${TOKEN}/exhibitions/e1/documents/d1/sign/`);
+    expect(sent[0].body).toEqual({ pin: PIN, signer_name: 'Ada', signature_image: png });
+    // no key at all — not even a blank — when nothing was drawn
+    expect(sent[1].body).toEqual({ pin: PIN, signer_name: 'Ada' });
+  });
+
+  it('proposes actions / a floor to the work’s own …/actions/ endpoint (G-PORT-8)', async () => {
+    const { client, sent } = spyClient();
+    await new GalleryPortalService(client as never).proposeActions(TOKEN, PIN, ART, {
+      allowed_actions: ['purchase', 'offer'],
+      offer_floor: '8000',
+    });
+    expect(sent[0]).toMatchObject({
+      method: 'POST',
+      path: `/gallery/portal/${TOKEN}/artworks/${ART}/actions/`,
+      body: { pin: PIN, allowed_actions: ['purchase', 'offer'], offer_floor: '8000' },
+    });
+  });
+
+  it('introduces someone with a JSON body and lists its own introductions (G-PORT-5)', async () => {
+    const { client, sent } = spyClient();
+    const s = new GalleryPortalService(client as never);
+    await s.submitReferral(TOKEN, PIN, {
+      referred_kind: 'gallery',
+      referred_name: 'Ada',
+      referred_email: 'ada@x.invalid',
+    });
+    await s.referrals(TOKEN, PIN);
+    expect(sent[0]).toMatchObject({
+      method: 'POST',
+      path: `/gallery/portal/${TOKEN}/referrals/`,
+      body: { pin: PIN, referred_kind: 'gallery', referred_name: 'Ada' },
+    });
+    expect(sent[1]).toMatchObject({
+      method: 'GET',
+      path: `/gallery/portal/${TOKEN}/referrals/`,
+    });
   });
 
   it('buildPricelist posts its lines to …/pricelists/build/', async () => {
@@ -143,6 +196,37 @@ describe('GalleryAdminService — the Phase 5 desk calls', () => {
     expect(sent[1]).toMatchObject({
       method: 'GET',
       path: '/gallery/admin/links/l1/pricelists/cap/',
+    });
+  });
+
+  it('stores a rendered pricelist PDF as multipart `file` (P3c)', async () => {
+    const { client, sent } = spyClient();
+    const pdf = new Blob(['%PDF-1.3'], { type: 'application/pdf' });
+    await new GalleryAdminService(client as never).uploadRenderedPricelist(
+      'p1',
+      pdf,
+      'aria-pricelist-2026-10.pdf',
+    );
+    expect(sent[0]).toMatchObject({
+      method: 'POST',
+      path: '/gallery/admin/pricelists/p1/rendered/',
+    });
+    const file = (sent[0].body as FormData).get('file') as File;
+    expect(file.name).toBe('aria-pricelist-2026-10.pdf');
+    expect(file.type).toBe('application/pdf');
+  });
+
+  it('lists referrals by status / partner and reviews one with a bare status (G-PORT-5)', async () => {
+    const { client, sent } = spyClient();
+    const s = new GalleryAdminService(client as never);
+    await s.referrals({ status: 'new', link: 'l1', page: 1, per_page: 25 });
+    await s.reviewReferral('r1', 'accepted');
+    expect(sent[0].path).toBe('/gallery/admin/referrals/');
+    expect(sent[0].query).toMatchObject({ status: 'new', link: 'l1' });
+    expect(sent[1]).toMatchObject({
+      method: 'POST',
+      path: '/gallery/admin/referrals/r1/review/',
+      body: { status: 'accepted' },
     });
   });
 

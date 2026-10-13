@@ -10,8 +10,8 @@
  * two signature columns, `darz.art` foot. Fixture px sizes ride at ×0.75pt.
  *
  * Fonts are the brand's own (Barlow 300/600/700, Cormorant Garamond 500),
- * bundled as TTFs — @react-pdf embeds them, so the PDF looks the same on
- * every machine, offline included.
+ * bundled as TTFs and registered in `pdfFonts.ts` — @react-pdf embeds them,
+ * so the PDF looks the same on every machine, offline included.
  *
  * This module is HEAVY (@react-pdf/renderer) — always `import()` it lazily
  * from the composer, never statically from a page.
@@ -26,31 +26,10 @@
  * (`:14599-14608`, printed only when the document carries a total), and the
  * package terms under "Notes & terms" (`:14611-14620`, notes first).
  */
-import { Document, Font, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+// the brand faces, registered once for every PDF in this chunk
+import './pdfFonts';
 import { paragraphs } from './text';
-import barlowLight from './fonts/Barlow-Light.ttf';
-import barlowSemi from './fonts/Barlow-SemiBold.ttf';
-import barlowBold from './fonts/Barlow-Bold.ttf';
-import cormorantMedium from './fonts/Cormorant-Medium.ttf';
-import cormorantSemi from './fonts/Cormorant-SemiBold.ttf';
-
-Font.register({
-  family: 'Barlow',
-  fonts: [
-    { src: barlowLight, fontWeight: 300 },
-    { src: barlowSemi, fontWeight: 600 },
-    { src: barlowBold, fontWeight: 700 },
-  ],
-});
-Font.register({
-  family: 'Cormorant Garamond',
-  fonts: [
-    { src: cormorantMedium, fontWeight: 500 },
-    { src: cormorantSemi, fontWeight: 600 },
-  ],
-});
-// long strings (IBANs, notes) must wrap by character, not hyphenate
-Font.registerHyphenationCallback((word) => [word]);
 
 /* the paper palette (fixture `:root.paper`) */
 const INK = '#0A0A0A';

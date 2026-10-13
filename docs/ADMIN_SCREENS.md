@@ -62,6 +62,7 @@ A route of — means the desk is not built; the capture still exists for when it
 | Exhibition Services (`exhservices`) | `/admin/exhibition-services` | **none** | — |
 | Service checklist (`exhcatalogue`) | `/admin/exhibition-catalogue` | **none** (V1 Phase 5; compare against the old checklist editor, darz-studio.html:27896) | — |
 | Issue a document (`issue`) | `/admin/issue` | **none** | — |
+| Introductions (`referrals`) | `/admin/referrals` | **none** (G-PORT-5, 2026-10-13; no old desk — built from the Source Updates queue's parts) | — |
 | **Market App** | | | |
 | Published works (`market`) | `/admin/published` | `06-market-published` | — |
 | App Design (`design`) | `/admin/design` | `07-app-design` | ✅ |

@@ -126,7 +126,7 @@ Status words: **Complete** (built and bound, nothing V1 left) · **Partial** (V1
 
 | Section | Purpose | Screens | Implemented | APIs used | Actions | Roles | V1 status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, Sent pills + Pending review, History, pricelist upload **and builder** with status, messages, exhibition services (create, pick services, send, sign documents by name) | `gallery/portal/{token}/…` (11 of 15 operations integrated; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign | token + PIN | Partial — the old "Save draft" of a services selection is not built (the portal exhibition PATCH cannot carry `gallery_selected`, C-26). Referral, drawn signature, portal actions/offer-floor, and formatted pricelist download **now have backends (shipped 2026-10-01)** — UI pending; see API_GAPS G-PORT-5/7/8/P3c + ADMIN_ARCHITECTURE |
+| Gallery portal | A source updates its works with Darz | `/portal/:token` (gate, dead, unreachable, Works, Pricelists, History, Messages, Exhibitions, Introduce) | PIN gate with retry card (C-4), cover, work cards with `image_url`, availability/price/correction updates, **replace image**, **ask**, **withdraw**, **what collectors can do + minimum offer** (G-PORT-8), Sent pills + Pending review, History, pricelist upload **and builder** with status (+ "Open Darz pricelist" once formatted, P3c), messages, exhibition services (create, pick services, send, **sign on the drawn pad**, G-PORT-7), **Introduce** (G-PORT-5) | `gallery/portal/{token}/…` (14 of 18 operations integrated — the V1 11 of 15 plus the three G-PORT-5/8 ones, 2026-10-13; `messages/`, `status/` and `exhibitions/{id}/` GET are embedded in the state read; the exhibition PATCH is bound with no UI) | submit updates, upload, build, message, create/submit exhibition, sign, introduce, propose actions | token + PIN | Partial — the old "Save draft" of a services selection is not built (the portal exhibition PATCH cannot carry `gallery_selected`, C-26). G-PORT-5/7/8 and P3c **built 2026-10-13**; their backend gaps are C-27…C-30 |
 
 ### Admin panel
 
@@ -164,7 +164,7 @@ Operation-level detail (one row per method + path, with the UI caller or the rea
 | `accounting/admin/*` | Accounting | 23 of 24 | Complete | deal attachments list embedded in the deal |
 | `sales/admin/*` | Sales | 12 of 12 | Complete | |
 | `documents/*` | Profile documents, Documents desk, legal links | 15 of 15 | Complete | |
-| `gallery/portal/*` | Portal | 11 of 15 integrated, 1 bound-no-UI | Partial | 3 state-embedded reads not needed; "Save draft" blocked on backend (C-26) |
+| `gallery/portal/*` | Portal | 14 of 18 integrated, 1 bound-no-UI (V1: 11 of 15; +3 G-PORT-5/8, 2026-10-13) | Partial | 3 state-embedded reads not needed; "Save draft" blocked on backend (C-26) |
 | `gallery/admin/*` | Sources, Exhibitions, Service checklist | 33 of 37 | Complete | exhibition DELETE excluded (no old delete); exhibition PATCH, link DELETE, catalogue-item read not needed |
 | `projects/admin/*` | Projects | 29 of 32 | Complete | 3 single reads not needed |
 | `recommendations/*` collector | Questionnaire | 3 of 5 | Complete | `published/` + `dismiss/` excluded (G-6) |
@@ -332,8 +332,8 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
   the free-form Proposal Builder desk, Share / Print, the v1230 review-period selects.
 - **Still open, not ruled V2:** i18n/RTL (G-I18N-1), PDF/image import
   intake (D15), the settlement calculator, theme editors (D17).
-- **Gallery portal — backend shipped 2026-10-01, UI pending:** referral / Introduce (G-PORT-5), drawn
-  signature (G-PORT-7), portal actions + offer floor (G-PORT-8), formatted pricelist download (P3c). See
-  API_GAPS.md G-PORT-5/7/8/P3c for endpoints. Still no backend: the "Save draft" of a services selection (C-26).
+- **Gallery portal — built 2026-10-13:** referral / Introduce (G-PORT-5, + the `/admin/referrals` desk),
+  drawn signature (G-PORT-7), portal actions + offer floor (G-PORT-8), formatted pricelist download (P3c).
+  Backend gaps found while building: C-27…C-30. Still no backend: the "Save draft" of a services selection (C-26).
 - **Small post-V1 candidates:** legacy-id deep-link redirect (`catalog/legacy-lookup/`), a background
   catalogue poller on `change-stamp/`, the Refine filters on the Database desk.

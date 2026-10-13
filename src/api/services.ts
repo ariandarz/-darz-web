@@ -111,6 +111,10 @@ import type {
   PortalCatalogueEntry,
   PortalPricelistBuild,
   PortalUpdate,
+  PortalReferral,
+  PortalReferralInput,
+  PortalReferralStatus,
+  PortalActionsProposal,
   GalleryPricelistCap,
   GalleryPricelistStatus,
   ExhibitionCatalogItem,
@@ -1204,6 +1208,34 @@ export class GalleryAdminService extends ResourceService {
   pricelistCap(linkId: string) {
     return this.retrieve<GalleryPricelistCap>(`/links/${linkId}/pricelists/cap/`);
   }
+  /** P3c — the branded PDF, rendered CLIENT-side, stored against the
+   * pricelist and served back through its `file_url`. **It REPLACES
+   * `object_key`** (`GalleryPricelistService.attach_rendered`), so it is only
+   * ever called for a list BUILT in the portal (lines, no file of its own) —
+   * on an upload it would orphan the gallery's own file. Multipart `file`. */
+  uploadRenderedPricelist(id: string, file: Blob, filename: string) {
+    const form = new FormData();
+    form.append('file', file, filename);
+    return this.create<GalleryPricelistAdmin>(`/pricelists/${id}/rendered/`, form);
+  }
+
+  /** G-PORT-5 — the leads sources introduced from their portals' Introduce
+   * tab (`?status=` new/reviewed/accepted/declined, `?link=` one partner). */
+  referrals(
+    query: {
+      status?: PortalReferralStatus;
+      link?: string;
+      page?: number;
+      per_page?: number;
+    } = {},
+  ) {
+    return this.list<PortalReferral>('/referrals/', query as RequestOptions['query']);
+  }
+  /** Sets the review status and nothing else — no invite, no collector is
+   * created (`PortalReferralService.review`); the admin follows up by hand. */
+  reviewReferral(id: string, status: PortalReferralStatus) {
+    return this.create<PortalReferral>(`/referrals/${id}/review/`, { status });
+  }
 
   /** The link's Q&A thread — the admin side of the portal's Messages tab.
    * Chronological (`GalleryMessage.Meta.ordering = created_at`). */
@@ -2221,19 +2253,59 @@ export class GalleryPortalService {
     );
   }
 
-  /** Accept a proposal / sign an invoice — name-only (the old canvas pad does
-   * not port: the backend takes `signer_name`, G-PORT-7). */
+  /** Accept a proposal / sign an invoice. The typed `signer_name` is always
+   * required; the drawn signature (G-PORT-7) rides beside it as a PNG data URL
+   * (`signature_image`, ≤2 MB decoded) and is kept too — "keep both" is the
+   * owner's call (`ExhibitionDocumentService.portal_stamp`). Sent only when
+   * there is one: a blank string is the serializer's own "none". */
   signExhibitionDocument(
     token: string,
     pin: string,
     eventId: string,
     documentId: string,
     signerName: string,
+    signatureImage?: string,
   ) {
     return this.client.send<DocumentAdmin>(
       'POST',
       `${this.base(token)}/exhibitions/${eventId}/documents/${documentId}/sign/`,
-      { body: { pin, signer_name: signerName } },
+      {
+        body: {
+          pin,
+          signer_name: signerName,
+          ...(signatureImage ? { signature_image: signatureImage } : {}),
+        },
+      },
+    );
+  }
+
+  /** G-PORT-5 — the source's own introductions, newest first (paginated;
+   * `?pin=` like every portal read). */
+  referrals(token: string, pin: string) {
+    return this.client.send<{ results: PortalReferral[] }>(
+      'GET',
+      `${this.base(token)}/referrals/`,
+      { query: { pin, per_page: 100 } },
+    );
+  }
+
+  /** G-PORT-5 — introduce someone to Darz. Its own record, NOT a pending
+   * update: it never touches the catalogue and has no approval to wait on. */
+  submitReferral(token: string, pin: string, body: PortalReferralInput) {
+    return this.client.send<PortalReferral>('POST', `${this.base(token)}/referrals/`, {
+      body: { pin, ...body },
+    });
+  }
+
+  /** G-PORT-8 — propose which collector actions a work offers and/or its
+   * private minimum offer. Lands as a pending `actions` update; approval
+   * writes them to the artwork and the crm offer engine then refuses a
+   * below-floor offer server-side. Nothing here declines anything. */
+  proposeActions(token: string, pin: string, artworkId: string, body: PortalActionsProposal) {
+    return this.client.send<PortalUpdate>(
+      'POST',
+      `${this.base(token)}/artworks/${encodeURIComponent(artworkId)}/actions/`,
+      { body: { pin, ...body } },
     );
   }
 }
