@@ -108,6 +108,9 @@ structure — trace every decision to the approved package + `app.html`.
       _(Team Workspace is no longer here — its backend shipped 2026-10-01; nor are the portal referral, drawn
       signature and offer engine — their backend shipped the same day (G-PORT-5/7/8) and the owner asked for
       them on 2026-10-13. See the build tasks below.)_
+- [skip] **Proposal Builder desk** (`builder`, `darz-studio.html:14644` — the free-form draft-to-document editor
+      with AI organise, custom sections and design options). Owner, 2026-10-13: *"keep the invoice, skip the
+      proposal builder"*. Not V2 either — skipped; the record's proposal composer is the proposal surface.
 - [ ] **Deploy Phase 14** — Vercel auto-deploys `main`; the ArvanCloud `docker build` + deep-route `curl`
       have **not been run**. DNS/hosting cutover pends the real API URL and `darzmarket-api` Phase 18.
 
@@ -134,8 +137,8 @@ structure — trace every decision to the approved package + `app.html`.
       documents under `/projects/admin/projects/{id}/documents/`: Save draft (create / PATCH `fields`) · Finalize
       (render → upload → confirm) · ↓ Download PDF · Preview · Sign for Darz · Continue a draft. `fields` = the old
       `_propSave` payload (title/client/projectName/intro/notes/pricing) + the PDF snapshot (`projectDocs.ts`). The
-      invoice is NEW (no old project invoice) — owner-only, exhibition-invoice shape. Not ported: Share, Print, the
-      free-form Proposal Builder desk (`builder`, `:14644`).
+      invoice is NEW (no old project invoice) — owner-only, exhibition-invoice shape; **kept by the owner 2026-10-13**.
+      Not ported: Share, Print. The free-form Proposal Builder desk is skipped by the owner (§ D).
 - [x] **Source-freshness loop (G-CAT-9)** — done 2026-10-13. Galleries & Sources › **Artwork Sources** tab
       (`ArtworkSources.tsx`, old `shared` tab): strip, reminder, confirmation filter, per-work Confirm / Update…,
       per-source "✓ Confirm all available", owner hide-stale card; Market App desk: "Need reconfirmation" tile +

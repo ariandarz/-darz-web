@@ -74,7 +74,9 @@ work in this order:
 
 **Built and released 2026-10-13 (#122 → #124, on the owner's "merge 122 when green" then "release development to main"):** the Projects proposal + invoice composer
 on the record, the source-freshness loop (G-CAT-9, Galleries & Sources › Artwork Sources + the Market App desk) and
-the Artists `records` / `top-price` sorts. Owner calls on what is new in them are in `NOTES-FOR-ARIAN.md`.
+the Artists `records` / `top-price` sorts. Owner calls on what is new in them are in `NOTES-FOR-ARIAN.md`;
+two are settled (2026-10-13): **the project invoice is kept**, and **the free-form Proposal Builder desk is
+skipped** — do not build or re-raise it (`TASKLIST.md` § D).
 
 **Team Workspace (G-TEAM-1) is built** (2026-10-12) — it came off the V2 list when its backend shipped; open
 G-TEAM-2 (pricelist Reject → `rejected`) followed the same day; the one open follow-up is setting a contact's

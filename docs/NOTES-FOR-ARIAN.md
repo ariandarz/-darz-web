@@ -49,10 +49,10 @@ Nothing is merged without your word.
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
 - **Proposal / invoice, freshness, artist sorts (released 2026-10-13, #124):**
-  - the project **invoice** is new — the old Projects area had no invoice composer, only a status. It
-    is built like the exhibition services invoice and is owner-only. Keep it?
-  - the free-form **Proposal Builder** desk (paste a draft, AI organise, custom sections, design
-    options) is still not ported — only the record's composer is. Wanted?
+  - ~~the project **invoice** is new — keep it?~~ **Decided 2026-10-13: keep it** (as built — the
+    exhibition services invoice's shape, owner-only).
+  - ~~the free-form **Proposal Builder** desk — wanted?~~ **Decided 2026-10-13: skip it.** Only the
+    record's composer exists; the desk is out of scope (`TASKLIST.md` § D).
   - the admin roster's **"Sort: Top price"** and its Top price column are additions (the old roster
     never ranked by price). The figure mixes currencies (the backend converts nothing), so it is shown
     as a bare number.
