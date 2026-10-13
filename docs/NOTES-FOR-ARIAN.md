@@ -72,7 +72,7 @@ Nothing is merged without your word.
 
 | | |
 | --- | --- |
-| Web | **Released 2026-10-13** (#124 — V1, Team Workspace, the G-PORT portal features, the Proposal + Invoice builder, source freshness, artist sorts): `main` = `development` = `de3342e`, production deploy READY |
+| Web | **Released 2026-10-13** (#124 — V1, Team Workspace, the G-PORT portal features, the Proposal + Invoice builder, source freshness, artist sorts): then #126 (docs only): `main` = `development` = `eb735f2`, production deploy READY |
 | Backend | `development` @ **`bf2b9dc`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **868** unit · 163 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |

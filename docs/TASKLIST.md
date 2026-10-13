@@ -24,12 +24,12 @@ structure — trace every decision to the approved package + `app.html`.
 
 | | |
 | --- | --- |
-| Branches | `main` and `development`, level at `de3342e` (released 2026-10-13, #123 then #124). **V1 released to `main` on 2026-09-27** (#113, after #114); **G-TEAM-1 released 2026-10-12** (#117, after #116). |
+| Branches | `main` and `development`, level at `eb735f2` (released 2026-10-13: #123, #124, then #126 — docs only). **V1 released to `main` on 2026-09-27** (#113, after #114); **G-TEAM-1 released 2026-10-12** (#117, after #116). |
 | V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
 | Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **with every defect fix merged** (C-6…C-26, PRs **#71–#78**, `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"; still notes only: C-16, C-21), plus the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12: 247 paths / 358 operations. |
 | Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **925 unit** (84 files) · build · **176 E2E** (collector 41 · desks 113 · portal 10 · smoke 4 · team 8) — measured 2026-10-13 on `development` + #122. Runs on **Node 20**. |
-| Live site | https://darz-web.vercel.app — serves the 2026-10-13 release (`de3342e`: V1 + G-TEAM-1/2 + G-PORT + the Proposal + Invoice builder, G-CAT-9, G9); Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
+| Live site | https://darz-web.vercel.app — serves the 2026-10-13 release (`eb735f2`; code as of `de3342e`: V1 + G-TEAM-1/2 + G-PORT + the Proposal + Invoice builder, G-CAT-9, G9); Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
 `DARZ_WEB_V1_STATUS.md` § Remaining gaps.
