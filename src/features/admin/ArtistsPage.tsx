@@ -5,8 +5,18 @@
  * Ported content:
  *  - the title, the search ("Search artists…", `:33583`) — now the server's
  *    `search` (G-CAT-3) — and the sort select (`:33587`) cut to the orderings
- *    the API serves: "Sort: Most works" (the old default, `works`) and
- *    "Sort: Name A–Z" (`name`);
+ *    the API serves: "Sort: Most works" (the old default, `works`), "Sort:
+ *    Most records" (`records`, G9 2026-10-01) and "Sort: Name A–Z" (`name`);
+ *  - **"Sort: Top price" is an ADDITION** (owner brief, 2026-10-13): the old
+ *    roster never ranked by price (`:33587` has no such option). It orders by
+ *    the row's `top_record_price` — the highest SOLD auction result, a raw
+ *    maximum across currencies (nothing converted), artists with none last —
+ *    and the figure shows in its own **Top price** column (also new, worded
+ *    as the collector card's row, `app.html:5330`) so the order can be read;
+ *  - the table's **Records** column (`:33599`), the old `recCell`
+ *    (`:33558-33561`): the row's `records_count` as an `N ›` link titled
+ *    "Open this artist in Auction Records" — the Records desk opened on
+ *    `?artist=` — or a grey 0;
  *  - the table's **Works** column (`:33599`/`:33571`) from the row's
  *    `works_count` — every non-deleted work, the old `r.works`;
  *  - the roster line "Showing n of m artists" (`:33596`): n is the search's
@@ -28,10 +38,10 @@
  * one page would order that page only. Flagged for the owner.
  *
  * **Not ported, stated** (no server counterpart yet):
- *  - the "In app" count and the scope select (Has works · Has auction records
- *    · … · In the Market App, `:33585`) and the record-based sorts — the
- *    roster carries `works_count` only;
- *  - auction-record counts and links (`recCell`) — the auctions phase's;
+ *  - the "In app" count, the Upcoming / Past record splits, and the scope
+ *    select (Has works · Has auction records · … · In the Market App,
+ *    `:33585`) with the "Most upcoming" / "Most in app" sorts — the roster
+ *    carries `works_count`, `records_count` and `top_record_price` only;
  *  - the profile status lane (draft/published/hidden/archived), highlights
  *    and achievements (`:33559`) — no backend fields (G-ART-1); the model
  *    carries name/bio/birth year/nationality/variants only. "Only a
@@ -48,6 +58,7 @@
  *    blanks.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../api/hooks';
 import type { ArtistAdmin, ArtistAdminQuery } from '../../api/types';
 import { useListController } from '../shared/useListController';
@@ -72,8 +83,11 @@ import './admin.css';
 /** `:33587`'s sort list, cut to what `ArtistAdminFilterSet` orders by. The
  * default ("Most works") is the select's "any" option — see the controller. */
 const SORTS: Array<{ value: NonNullable<ArtistAdminQuery['ordering']>; label: string }> = [
-  { value: 'name', label: 'Sort: Name A–Z' },
+  { value: 'records', label: 'Sort: Most records' },
+  // an addition — see the header; no old counterpart
+  { value: 'top-price', label: 'Sort: Top price' },
   { value: '-created', label: 'Sort: Recently added' },
+  { value: 'name', label: 'Sort: Name A–Z' },
 ];
 
 export function ArtistsPage() {
@@ -168,6 +182,38 @@ export function ArtistsPage() {
       key: 'works',
       header: 'Works',
       cell: (a) => (a.works_count == null ? '—' : a.works_count.toLocaleString('en-US')),
+    },
+    {
+      // :33558-33561 — the old `recCell`: `N ›` opening this artist in
+      // Auction Records, or a grey 0. List-only like `works_count` (C-16).
+      key: 'records',
+      header: 'Records',
+      cell: (a) =>
+        a.records_count == null ? (
+          '—'
+        ) : a.records_count > 0 ? (
+          <Link
+            className="ad-rowbtn"
+            to={`/admin/auction-records?artist=${a.id}`}
+            title="Open this artist in Auction Records"
+          >
+            {a.records_count.toLocaleString('en-US')} ›
+          </Link>
+        ) : (
+          <span className="ad-cellsub">0</span>
+        ),
+    },
+    {
+      // An addition (see the header): the highest SOLD result, a raw maximum
+      // over every currency — the magnitude only, so no currency is printed.
+      key: 'top',
+      header: 'Top price',
+      cell: (a) =>
+        a.top_record_price ? (
+          Number(a.top_record_price).toLocaleString('en-US', { maximumFractionDigits: 0 })
+        ) : (
+          <span className="ad-cellsub">—</span>
+        ),
     },
     {
       key: 'bio',

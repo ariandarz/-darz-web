@@ -1,69 +1,111 @@
 /**
  * ProjectProposal — the Proposal section of the project record
- * (`darz-studio.html:13851-13855`): the `.dzp-darz` "Client proposal" card
- * the old detail showed only once a package was applied, with its status
- * line, plus the issue chain behind its button.
+ * (`darz-studio.html:13848-13863`) and the project's Proposal + Invoice
+ * builder over `/projects/admin/projects/{id}/documents/` (backend
+ * 2026-10-01: `kind` project_proposal | project_invoice, `ref` = the
+ * project's id, draft → confirmed → signed).
  *
- * What changed: the old button ("Preview & share proposal", :13854) opened
- * the Proposal composer (`projProposal` :14049 → `_propForm` :14054 — title
- * / intro / notes fields, a pricing toggle, Save draft / Finalize / Share /
- * Download / Print / Preview over a localStorage draft). Here a proposal IS
- * a `documents.Document` (kind `proposal`, `ref` = the project number, the
- * package snapshot in `fields`), created → rendered client-side (the shared
- * proposal PDF, `../pdf/renderPdf`) → uploaded → confirmed in one go — the
- * same chain as the exhibition documents (`IssueDocumentDialog`,
- * ExhibitionComposePage.tsx), so the button reads "Issue proposal" and the
- * card lists this project's issued documents with their PDF. The reference
- * follows doc-reference.js: ONE `PRO` series shared with the exhibition
- * proposals, scanned over both kinds so a number is never reused.
+ * Ported content:
+ *  - the `.dzp-darz` "Client proposal" card (`:13851`): its sentence with the
+ *    "Last saved · Draft|Final · date" / "Not created yet" status from the
+ *    newest proposal, and its button "Preview & share proposal";
+ *  - the old **proposal composer** (`proposal()` → `_propForm`,
+ *    `:14027-14141`), inline on the record (the old detail had no second
+ *    modal layer here): the "From the package · …" summary (`:14058`), the
+ *    fields "Proposal title" · "Client name" · "Project / show" · "Short
+ *    introduction" · "Notes / terms (optional — shown above the package
+ *    terms)", the owner's Automatic / With pricing / Without pricing switch
+ *    with its notes (`:14060-14064`; a standard admin reads the old owner-
+ *    only line instead), the Draft / Final chip, and the footer's Save draft
+ *    · Finalize · ↓ Download PDF · Preview with Cancel;
+ *  - the document is the old composer's sections in the shared paper design
+ *    (`projectDocs.ts`, `pdf/documentPdf.tsx`): Introduction, the services,
+ *    Deliverables, Timeline, the Investment (when priced) and "Notes &
+ *    terms" — notes first, then the package's terms.
  *
- * Stated on screen rather than dropped:
- *  - a non-owner sees the old pricing toggle collapsed to its :14067 line
- *    and issues the old "calm non-priced version" (:14028): the snapshot
- *    carries no line prices, no subtotal and no total, and the shared
- *    `documentPdf` drops its totals block when the total is undefined, so
- *    the client-facing PDF shows the scope with no money on it;
- *  - the proposal's CURRENCY is a choice on the issue card, its options the
- *    backend's (`currency` on `GET /api/options/`), defaulting to the one
- *    the project's package lines are actually priced in — the catalogue's,
- *    which for Darz's real services is Toman (`standardSet.ts`) — and
- *    falling back to the desk default. Iranian galleries are quoted in
- *    Toman; international ones are a later phase, in USD or EUR chosen at
- *    the time. Pick a currency the lines are NOT priced in and no rate is
- *    invented: the document goes out with its line prices open ("On
- *    confirmation") and no totals — the same honest shape as the
- *    non-priced version above — and the card says which currency the lines
- *    carry and why the prices were left open;
- *  - the card's sentence (:13854) still says "preview and share"; a line
- *    under it says neither exists here — issuing confirms the PDF at once;
- *  - the documents list has no `ref` filter (only `kind`), so the card walks
- *    every proposal and filters client-side;
- *  - a failure after the draft was created (render / upload / confirm)
- *    keeps that draft in hand: Issue again resumes from the PDF under the
- *    same reference (never a second document with the same number), and
- *    the list reloads so the draft shows meanwhile.
- * Copy: the document's status prints from `documents.status` (options),
- * except a confirmed proposal reads "Final" — the old :13853 word.
- * Not ported: the composer's free-text intro, the three pricing modes, the
- * share link and the print view — no API for a share link, and the
- * document's own note + terms fields are what prints.
+ * What the lifecycle does here:
+ *  - **Save draft** creates the document (first time) or PATCHes its
+ *    `fields` (the generic documents PATCH — draft-only server-side; there is
+ *    no project-scoped one) — toast "Proposal draft saved" (`:14104`);
+ *  - **Finalize** saves, renders the PDF client-side, uploads it and confirms
+ *    — the backend refuses a confirm without a PDF — then "Proposal
+ *    finalized & saved to the Library" (`:14105`). A failure after the save
+ *    leaves the draft in the list; Finalize again resumes on the SAME
+ *    document, so a reference is never issued twice;
+ *  - **Preview** renders the PDF and opens it in a new tab; **↓ Download
+ *    PDF** renders and saves it. Neither saves the document (the old
+ *    Download also saved it as a draft — here Save draft is its own click);
+ *  - a confirmed document gets **Sign for Darz** (`…/sign/`), as the
+ *    exhibition invoices do (`ExhibitionComposePage.tsx`); a project has no
+ *    portal, so both kinds offer it;
+ *  - a draft in the list has **Continue**, which reopens the composer on it
+ *    with the fields it was saved with.
+ *
+ * Kept from this port (no old counterpart, already approved on the
+ * exhibition documents): the **reference** (`DARZ-PRO-…` shared with the
+ * exhibition proposals, `DARZ-SINV-…` with their invoices — scanned over
+ * every kind of the series, `exhibitionForm.ts::SERIES_KINDS`) and the
+ * **currency choice** (no exchange rate exists: a proposal in a currency
+ * the lines are not priced in goes out non-priced, see `currencyNote`).
+ *
+ * **The invoice is new.** The old Projects area had no invoice composer —
+ * only an invoice STATUS on the Money section (`:13801`). The backend now
+ * stores one, so this card offers "Invoice" beside the proposal, built as
+ * the exhibition services invoice is (billed to, the priced lines, total
+ * due, payment note, terms, the bank block seeded from the last issued
+ * invoice — `bankDetails.ts`). Owner login only, like every money surface on
+ * the record, and only in a currency the lines are priced in: an invoice
+ * with its prices left open is not an invoice.
+ *
+ * **Earlier proposals.** Until 2026-10-13 this section issued through the
+ * generic documents API (kind `proposal`, `ref` = the project NUMBER). The
+ * project-scoped list reads only `project_proposal` / `project_invoice` with
+ * `ref` = the project's id, so such a document no longer shows on this card
+ * — it stays in the Documents Library, and the PRO scan still counts its
+ * number (`SERIES_KINDS`). The live site has never had a real backend
+ * (Q-9), so no issued proposal is expected to be affected.
+ *
+ * Not ported, stated: **Share** (no share-link API — open or download the
+ * PDF and send it), **⎙ Print** (print from the PDF), the preview's
+ * Desktop / Tablet / Mobile frames, the old **Proposal Builder** desk
+ * (`builder`, `:14644` — the free-form draft-to-document editor with AI
+ * organise, custom sections and design options; the nav's "Proposal" tab
+ * still says so), the Library copy of the rendered HTML (`_propArchive` — the
+ * document itself is the record here, and the Documents desk lists it), and
+ * the package's `internal.recFee` as the Total investment (`:14054` — that
+ * field is internal-only on this backend; the total is the lines' sum).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useApi, useOptions } from '../../../api/hooks';
 import type {
-  Choice,
   DocumentAdmin,
   PackageTemplateAdmin,
   ProjectAdmin,
+  ProjectDocKind,
   ServiceCatalogItemAdmin,
 } from '../../../api/types';
 import { DeskBanner } from '../kit';
-import { nextReference } from '../exhibitionForm';
-import type { DocumentPdfFields } from '../pdf/renderPdf';
+import { SERIES_KINDS, nextReference, type BankDetails } from '../exhibitionForm';
 import {
-  PROPOSAL_SERIES,
+  EMPTY_BANK,
+  newestBank,
+  readLocalBank,
+  saveLocalBank,
+} from '../exhibitions/bankDetails';
+import {
+  PRICING_MODES,
+  PROJECT_DOCS,
+  buildProjectDocFields,
+  composerFrom,
+  docStatusWord,
+  packageSummary,
+  priceExists,
+  pricingNote,
+  type ComposerDraft,
+  type PricingMode,
+} from './projectDocs';
+import {
   asPackageLines,
-  buildProposalFields,
   choiceLabel,
   choices,
   defaultCurrency,
@@ -76,21 +118,24 @@ import '../admin.css';
 // the old detail's own inline styles on its list rows (:13813) and section gaps (:13793)
 const FILE_NAME = { flex: 1, fontSize: 12, color: 'var(--ink2)' } as const;
 const GAP12 = { marginTop: 12 } as const;
+const GAP10 = { marginTop: 10 } as const;
+// :14077 — the "Pricing" label's inline style
+const PRICING_LBL = {
+  fontSize: 8.5,
+  fontWeight: 700,
+  letterSpacing: '.08em',
+  textTransform: 'uppercase',
+  color: 'var(--ink3)',
+  marginBottom: 6,
+} as const;
 
-/** :13853 — the one old word kept over the options label: a confirmed
- * proposal read "Final" (the old proposal's own `final` status). */
-const STATUS_WORDS: Record<string, string> = { confirmed: 'Final' };
-
-/** The saved reference of a document (rule 1: it lives in `fields`). */
+/** The saved reference of a document (it lives in `fields`). */
 function refOf(d: DocumentAdmin): string | undefined {
   return ((d.fields ?? {}) as Record<string, unknown>).reference as string | undefined;
 }
 
-/** The document's status in words — the `documents.status` label, :13853's
- * "Final" for a confirmed one. */
-function statusWord(list: Choice[], d: DocumentAdmin): string {
-  return STATUS_WORDS[d.status] ?? choiceLabel(list, d.status);
-}
+const newestFirst = (a: DocumentAdmin, b: DocumentAdmin) =>
+  a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0;
 
 /**
  * Every currency the package's lines are ACTUALLY priced in, in line order,
@@ -119,24 +164,10 @@ function carriesCataloguePrices(lineCurs: string[], chosen: string): boolean {
   return lineCurs.length === 0 || (lineCurs.length === 1 && lineCurs[0] === chosen);
 }
 
-/** The snapshot with its money taken off: no line price (the shared renderer
- * prints "On confirmation" for an empty one, `documentPdf.tsx:287-289`) and
- * no totals block at all (it drops for an undefined total, :294) — the old
- * "calm non-priced version" (:14028). */
-function stripPrices(fields: DocumentPdfFields): void {
-  fields.lines = (fields.lines ?? []).map((l) => ({ ...l, price: '' }));
-  delete fields.subtotal;
-  delete fields.discount;
-  delete fields.total;
-}
-
-/** The sentence under the choice: which currency the package's lines are
- * priced in — so the choice is informed — and, when the chosen one is not
- * that, the plain reason the document goes out with its prices left open. */
+/** The sentence under the currency choice on a PROPOSAL: which currency the
+ * package's lines are priced in — so the choice is informed — and, when the
+ * chosen one is not that, the plain reason the prices are left open. */
 function currencyNote(a: {
-  hasPackage: boolean;
-  reading: boolean;
-  error: string;
   lineCurs: string[];
   chosen: string;
   canMoney: boolean;
@@ -144,11 +175,6 @@ function currencyNote(a: {
   word: (c: string) => string;
 }): string {
   const { word } = a;
-  if (!a.hasPackage)
-    return 'No package is applied to this project, so there are no catalogue prices to carry.';
-  if (a.error)
-    return `The package’s prices could not be read here (${a.error}) — choose the currency yourself. Issuing reads them again, and still leaves the line prices open if they are not in ${word(a.chosen)}.`;
-  if (a.reading) return 'Reading which currency the package’s lines are priced in…';
   const priced = a.lineCurs.map(word).join(' and ');
   if (!a.canMoney)
     return `${priced ? `The catalogue prices these lines in ${priced}. ` : ''}This login issues the non-priced version either way, so no price prints whichever currency is chosen — the choice only labels the document.`;
@@ -161,10 +187,17 @@ function currencyNote(a: {
   return `The package’s lines are priced in ${priced} and this proposal is in ${word(a.chosen)}. Nothing here converts one into the other, so the line prices go out open: “On confirmation” on every line, and no subtotal or total — the same shape as the non-priced version, with the figures left for you to state. Choose ${word(a.lineCurs[0])} to carry the catalogue’s prices as they stand.`;
 }
 
-/** A draft created by the issue chain whose PDF is not confirmed yet. */
-interface PendingDraft {
-  doc: DocumentAdmin;
-  fields: DocumentPdfFields;
+/** The same sentence on an INVOICE, which cannot go out with its prices
+ * open — so a mismatch is a reason Finalize waits, not a shape it takes. */
+function invoiceCurrencyNote(lineCurs: string[], chosen: string, word: (c: string) => string) {
+  const priced = lineCurs.map(word).join(' and ');
+  if (lineCurs.length === 0)
+    return `The package’s lines carry no currency of their own, so they go out under ${word(chosen)}.`;
+  if (lineCurs.length > 1)
+    return `The package’s lines are priced in more than one currency (${priced}). Nothing here converts between them, so no single invoice can carry them all — issue it once the package is priced in one currency.`;
+  if (carriesCataloguePrices(lineCurs, chosen))
+    return `The package’s lines are priced in ${priced} — this invoice carries those prices as they stand.`;
+  return `The package’s lines are priced in ${priced} and this invoice is in ${word(chosen)}. Nothing here converts one into the other, and an invoice cannot go out with its prices open — choose ${word(lineCurs[0])} to issue it.`;
 }
 
 export function ProjectProposal({
@@ -174,75 +207,102 @@ export function ProjectProposal({
 }: {
   project: ProjectAdmin;
   canMoney: boolean;
-  onIssued: () => void;
+  /** called with the line the record's status bar shows */
+  onIssued: (said: string) => void;
 }) {
-  const { documentsAdmin } = useApi();
-  const docStatuses = choices(useOptions(), 'documents.status');
+  const { projectsAdmin } = useApi();
   const [docs, setDocs] = useState<DocumentAdmin[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [issuing, setIssuing] = useState(false);
+  const [composing, setComposing] = useState<{
+    kind: ProjectDocKind;
+    draft: DocumentAdmin | null;
+  } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   // a promise chain (the `useOptions` shape): state is set in the settle
   // callbacks, never synchronously inside the effect
   const load = useCallback(
     () =>
-      walkPages((page) =>
-        documentsAdmin.documents({ kind: 'proposal', page, per_page: 100 }),
-      ).then(
-        (all) =>
-          setDocs(
-            all
-              .filter((d) => d.ref === project.no)
-              .sort((a, b) =>
-                a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
-              ),
-          ),
+      walkPages((page) => projectsAdmin.documents(project.id, { page, per_page: 100 })).then(
+        (all) => setDocs([...all].sort(newestFirst)),
         (err: unknown) =>
-          setError(err instanceof Error ? err.message : 'Could not load the proposals.'),
+          setError(err instanceof Error ? err.message : 'Could not load the documents.'),
       ),
-    [documentsAdmin, project.no],
+    [projectsAdmin, project.id],
   );
   useEffect(() => {
     void load();
   }, [load]);
 
-  // :13853 — "Last saved · Final · date" from the newest document, else the old line
-  const newest = docs?.[0];
+  const sign = async (d: DocumentAdmin) => {
+    setBusyId(d.id);
+    setError(null);
+    try {
+      await projectsAdmin.signDocument(project.id, d.id);
+      onIssued('Signed for Darz.');
+      void load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not sign the document.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // :13850 — "Last saved · Final · date" from the newest proposal, else the old line
+  const newest = docs?.find((d) => d.kind === 'project_proposal');
   const pst = newest
-    ? `Last saved · ${statusWord(docStatuses, newest)} · ${fmtDate(newest.updated_at)}`
+    ? `Last saved · ${newest.status === 'draft' ? 'Draft' : 'Final'} · ${fmtDate(newest.updated_at)}`
     : 'Not created yet';
+
+  const open = (kind: ProjectDocKind) => {
+    // an unfinished draft of the same kind is continued, never doubled
+    const draft = docs?.find((d) => d.kind === kind && d.status === 'draft') ?? null;
+    setComposing({ kind, draft });
+  };
 
   return (
     <>
-      {/* :13854 */}
+      {/* :13851 */}
       <div className="dzp-darz">
         <div className="h">Client proposal</div>
         <p>
           Generate, preview and share the polished Darz proposal for the applied package —{' '}
           {pst}.
         </p>
-        {/* the sentence's preview and share have no counterpart here (no share
-            link on the API, no preview step in the one-go chain) — said so */}
+        {/* the sentence's "share" has no counterpart here — said so */}
         <div className="dzp-mut" style={GAP12}>
-          No preview or share link yet — issuing renders and confirms the PDF in one go; open
-          it from the list below.
+          No share link — preview or download the PDF and send it yourself.
         </div>
-        {!canMoney && (
-          // :14067 — the old composer's owner-only pricing toggle, for a standard admin
-          <div className="dzp-mut" style={GAP12}>
-            Pricing is visible to the owner login only — this proposal sends as the refined,
-            non-priced version.
-          </div>
-        )}
         {error && <DeskBanner>{error}</DeskBanner>}
-        {docs === null && <p className="dz-state">Loading…</p>}
+        {docs === null && !error && <p className="dz-state">Loading…</p>}
         {docs && docs.length > 0 && (
           <div style={GAP12}>
             {docs.map((d) => (
               <div className="dzp-line" key={d.id}>
                 <span style={FILE_NAME}>
-                  {refOf(d) || d.title} · {statusWord(docStatuses, d)}
+                  {refOf(d) || d.title} ·{' '}
+                  {PROJECT_DOCS[d.kind as ProjectDocKind]?.word ?? d.kind} · {docStatusWord(d)}
                 </span>
+                {d.status === 'draft' && (
+                  <button
+                    type="button"
+                    className="dzp-btn sm gho"
+                    disabled={!!composing}
+                    onClick={() => setComposing({ kind: d.kind as ProjectDocKind, draft: d })}
+                  >
+                    Continue
+                  </button>
+                )}
+                {d.status === 'confirmed' && !d.signed_at && (
+                  <button
+                    type="button"
+                    className="dzp-btn sm gho"
+                    disabled={busyId === d.id}
+                    onClick={() => void sign(d)}
+                  >
+                    Sign for Darz
+                  </button>
+                )}
                 {d.pdf_url ? (
                   <a
                     className="dzp-btn sm gho"
@@ -259,36 +319,47 @@ export function ProjectProposal({
             ))}
           </div>
         )}
-        {!issuing && (
+        {!composing && (
           <div className="dzp-acts">
-            {/* Either login issues: the non-priced version carries no totals
-                at all and the renderer now drops the block for an undefined
-                total (`documentPdf.tsx`), so nothing prints a zero. The list
-                failing to load never blocks issuing (the chain has its own
-                reference fallback) — the button waits only while the list is
-                still on its way. */}
+            {/* The list failing to load never blocks the composer (it has
+                its own reference fallback) — the buttons wait only while
+                the list is still on its way. */}
             <button
               type="button"
               className="dzp-btn sm pri"
               disabled={docs === null && !error}
-              onClick={() => setIssuing(true)}
+              onClick={() => open('project_proposal')}
             >
-              Issue proposal
+              Preview &amp; share proposal
             </button>
+            {canMoney && (
+              // new — see the header; the passport's Proposal / Invoice pair (:27970-27972)
+              <button
+                type="button"
+                className="dzp-btn sm"
+                disabled={docs === null && !error}
+                onClick={() => open('project_invoice')}
+              >
+                Invoice
+              </button>
+            )}
           </div>
         )}
       </div>
-      {issuing && (
-        <ProposalIssueCard
+      {composing && (
+        <DocComposer
+          key={`${composing.kind}:${composing.draft?.id ?? 'new'}`}
           project={project}
           canMoney={canMoney}
+          kind={composing.kind}
+          draft={composing.draft}
           docs={docs ?? []}
-          onClose={() => setIssuing(false)}
-          onCreated={() => void load()}
-          onDone={() => {
-            setIssuing(false);
+          onClose={() => setComposing(null)}
+          onSaved={() => void load()}
+          onDone={(said) => {
+            setComposing(null);
             void load();
-            onIssued();
+            onIssued(said);
           }}
         />
       )}
@@ -297,79 +368,132 @@ export function ProjectProposal({
 }
 
 /**
- * The one-click issue chain, the `IssueDocumentDialog` shape rendered inline
- * (the old detail had no second modal layer; `.ad-modal*` has no stylesheet
- * in this repo either): reference (prefilled from the highest PRO number
- * seen across BOTH proposal kinds), currency, note, terms, then read the
- * package + catalogue → build the snapshot → create → render → upload →
- * confirm without further clicks. The currency is a CHOICE, not a
- * derivation: it defaults to the one the package's lines are priced in (the
- * catalogue's) and falls back to the desk default, and picking another
- * leaves the prices open rather than converting them — `currencyNote` says
- * which currency the lines carry and why, on the card, before the click.
- * The snapshot never re-derives (rule 1). A failure
- * after the create keeps the draft as `pending`: the next click resumes at
- * the render with the SAME document and snapshot, so the reference is issued
- * once (`onCreated` reloads the card's list so the draft shows meanwhile).
+ * The composer (`_propForm`, `:14051-14088`), inline. Everything it builds
+ * from — the package, the catalogue, the next reference, the bank block —
+ * is read once on open; Save draft / Finalize / Preview / Download each
+ * build the fields from those rows and the form as it stands.
  */
-function ProposalIssueCard({
+function DocComposer({
   project,
   canMoney,
+  kind,
+  draft,
   docs,
   onClose,
-  onCreated,
+  onSaved,
   onDone,
 }: {
   project: ProjectAdmin;
   canMoney: boolean;
+  kind: ProjectDocKind;
+  draft: DocumentAdmin | null;
   docs: DocumentAdmin[];
   onClose: () => void;
-  onCreated: () => void;
-  onDone: () => void;
+  onSaved: () => void;
+  onDone: (said: string) => void;
 }) {
   const { projectsAdmin, documentsAdmin } = useApi();
   const options = useOptions();
+  const invoice = kind === 'project_invoice';
+  const meta = PROJECT_DOCS[kind];
   const year = new Date().getFullYear();
-  const [reference, setReference] = useState('');
-  const [note, setNote] = useState('');
-  const [terms, setTerms] = useState('');
-  const [step, setStep] = useState<'form' | 'working'>('form');
-  const [progress, setProgress] = useState('');
-  const [error, setError] = useState('');
-  const [pending, setPending] = useState<PendingDraft | null>(null);
 
-  /* ── the proposal's currency ──────────────────────────────────────────
-     Darz prices Iranian galleries in Toman, and the catalogue is seeded in
-     Toman (`standardSet.ts`); international galleries are a later phase,
-     quoted in USD or EUR chosen at the time. So the currency is chosen here
-     rather than derived, and its options are the backend's — never a list
-     written out in this file. */
-  const currencies = choices(options, 'currency');
-  const pkgId = project.applied_package;
-  // which currency the lines are priced in, read once so the choice below is
-  // informed. The chain reads the package itself at issue time and decides
-  // from THAT, so the document is always built from the catalogue as of the
-  // click; this read only feeds the select and the sentence under it, and
-  // failing it never blocks issuing.
-  const [lineCurs, setLineCurs] = useState<string[] | null>(null);
-  const [curErr, setCurErr] = useState('');
+  // ── the rows the document is built from
+  const [pkg, setPkg] = useState<PackageTemplateAdmin | null>(null);
+  const [catalog, setCatalog] = useState<ServiceCatalogItemAdmin[] | null>(null);
+  const [readErr, setReadErr] = useState('');
   useEffect(() => {
-    if (!pkgId) return;
+    if (!project.applied_package) return;
     let alive = true;
-    Promise.all([projectsAdmin.packageTemplate(pkgId), walkServices(projectsAdmin)]).then(
-      ([pkg, catalog]) => alive && setLineCurs(lineCurrencies(pkg, catalog)),
+    Promise.all([
+      projectsAdmin.packageTemplate(project.applied_package),
+      walkServices(projectsAdmin),
+    ]).then(
+      ([p, c]) => {
+        if (!alive) return;
+        setPkg(p);
+        setCatalog(c);
+      },
       (err: unknown) =>
-        alive && setCurErr(err instanceof Error ? err.message : 'the catalogue read failed'),
+        alive && setReadErr(err instanceof Error ? err.message : 'the package read failed'),
     );
     return () => {
       alive = false;
     };
-  }, [projectsAdmin, pkgId]);
-  const reading = !!pkgId && lineCurs === null && !curErr;
-  // the chosen one, else the lines' own, else the desk default (:13287)
-  const [chosen, setChosen] = useState('');
+  }, [projectsAdmin, project.applied_package]);
+
+  // ── the form — a saved draft's fields first (composerFrom)
+  const [d, setD] = useState<ComposerDraft>(() =>
+    composerFrom(kind, project, null, draft?.fields, {
+      reference: '',
+      currency: '',
+      // this device's copy at once; the newest issued invoice's lands below
+      bank: kind === 'project_invoice' ? readLocalBank() : undefined,
+    }),
+  );
+  const set = <K extends keyof ComposerDraft>(k: K, v: ComposerDraft[K]) =>
+    setD((cur) => ({ ...cur, [k]: v }));
+  // the package's name is the old default title (:14035) — it shows once the
+  // package lands, until a saved draft or the admin gives another
+  const [titleTouched, setTitleTouched] = useState(!!draft);
+  const title = titleTouched ? d.title : pkg?.name || d.title;
+
+  // rule 4 (highest seen): one series over every kind that draws from it —
+  // a failed library read falls back to this project's own documents (a
+  // lower floor, still monotonic). A saved draft keeps its number.
+  useEffect(() => {
+    if (d.reference) return;
+    let alive = true;
+    const kinds = SERIES_KINDS[meta.code] ?? [kind];
+    Promise.all(
+      kinds.map((k) =>
+        walkPages((page) => documentsAdmin.documents({ kind: k, page, per_page: 100 })),
+      ),
+    ).then(
+      (lists) =>
+        alive && set('reference', nextReference(lists.flat().map(refOf), meta.code, year)),
+      () =>
+        alive &&
+        set(
+          'reference',
+          nextReference(docs.filter((x) => x.kind === kind).map(refOf), meta.code, year),
+        ),
+    );
+    return () => {
+      alive = false;
+    };
+    // `set` is stable in effect (a setState wrapper); `d.reference` gates it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentsAdmin, kind, meta.code, year, docs]);
+
+  // the invoice's bank block: the newest issued invoice's (exhibition or
+  // project) over this device's copy — never over what was typed or saved
+  const [bankTouched, setBankTouched] = useState(!!draft);
+  useEffect(() => {
+    if (!invoice || bankTouched) return;
+    let alive = true;
+    Promise.all(
+      (SERIES_KINDS.SINV ?? []).map((k) =>
+        documentsAdmin.documents({ kind: k, per_page: 20 }),
+      ),
+    ).then(
+      (pages) => {
+        const found = newestBank(pages.flatMap((p) => p.results).sort(newestFirst));
+        if (alive && found) setD((cur) => ({ ...cur, bank: found }));
+      },
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [documentsAdmin, invoice, bankTouched]);
+
+  // ── the currency (a choice, never a conversion)
+  const currencies = choices(options, 'currency');
+  const lineCurs = pkg && catalog ? lineCurrencies(pkg, catalog) : null;
+  const reading = !!project.applied_package && lineCurs === null && !readErr;
   const linesCur = lineCurs?.length === 1 ? lineCurs[0] : '';
-  const currency = chosen || linesCur || defaultCurrency(options);
+  const currency = d.currency || linesCur || defaultCurrency(options);
   // a <select> whose value has no option of its own silently shows a
   // different one: the options list can still be loading, and the catalogue
   // could one day carry a code the list does not
@@ -377,116 +501,168 @@ function ProposalIssueCard({
     ? currencies
     : [{ value: currency, label: currency || '—' }, ...currencies];
   const curWord = (c: string) => choiceLabel(currencies, c) || c || '—';
+  const carries = lineCurs !== null && carriesCataloguePrices(lineCurs, currency);
+  const priced = !!pkg && !!catalog && priceExists(pkg, catalog);
 
-  // rule 4 (highest seen): one PRO series over project AND exhibition
-  // proposals; the library being unreachable never blocks issuing — fall
-  // back to this project's own documents (a lower floor, still monotonic).
-  // Once a draft is pending its reference is fixed — no re-prefill.
-  useEffect(() => {
-    if (pending) return;
-    let alive = true;
-    Promise.all([
-      walkPages((page) => documentsAdmin.documents({ kind: 'proposal', page, per_page: 100 })),
-      walkPages((page) =>
-        documentsAdmin.documents({ kind: 'exhibition_proposal', page, per_page: 100 }),
-      ),
-    ]).then(
-      ([a, b]) =>
-        alive &&
-        setReference(nextReference([...a, ...b].map(refOf), PROPOSAL_SERIES.code, year)),
-      () => alive && setReference(nextReference(docs.map(refOf), PROPOSAL_SERIES.code, year)),
-    );
-    return () => {
-      alive = false;
-    };
-  }, [documentsAdmin, year, docs, pending]);
+  // ── issuing
+  const [doc, setDoc] = useState<DocumentAdmin | null>(draft);
+  const [step, setStep] = useState<'form' | 'working'>('form');
+  const [progress, setProgress] = useState('');
+  const [error, setError] = useState('');
+  const [said, setSaid] = useState('');
 
-  const issue = async () => {
-    setStep('working');
+  const whyNot = !project.applied_package
+    ? 'No package is applied to this project.'
+    : readErr
+      ? `The package could not be read (${readErr}).`
+      : !d.reference.trim()
+        ? 'A reference is needed.'
+        : invoice && !carries
+          ? 'An invoice needs its prices — see the currency note.'
+          : '';
+
+  const fields = () => {
+    if (!pkg || !catalog) throw new Error('The package is still loading.');
+    const full: ComposerDraft = { ...d, title, currency };
+    return buildProjectDocFields(project, pkg, catalog, full, {
+      money: canMoney && carries,
+    });
+  };
+  const docTitle = () =>
+    invoice ? `${project.name} — Invoice` : title.trim() || `${project.name} — Proposal`;
+
+  /** Create the document the first time, PATCH its fields after. */
+  const save = async (): Promise<DocumentAdmin> => {
+    const f = fields();
+    if (invoice) saveLocalBank(d.bank);
+    const saved = doc
+      ? await documentsAdmin.updateDocument(doc.id, { title: docTitle(), fields: f })
+      : await projectsAdmin.createDocument(project.id, {
+          doc_type: kind,
+          title: docTitle(),
+          fields: f,
+        });
+    setDoc(saved);
+    return saved;
+  };
+
+  const render = async () => {
+    const { renderDocumentPdf } = await import('../pdf/renderPdf');
+    return renderDocumentPdf(meta.render, fields());
+  };
+
+  const saveDraft = async () => {
     setError('');
-    let draft = pending;
+    setSaid('');
     try {
-      if (!draft) {
-        if (!project.applied_package)
-          throw new Error('No package is applied to this project.');
-        setProgress('Reading the package…');
-        const [pkg, catalog] = await Promise.all([
-          projectsAdmin.packageTemplate(project.applied_package),
-          walkPages((page) => projectsAdmin.services({ page, per_page: 100 })),
-        ]);
-        const clientName = project.client_partner_org?.name || project.client_name || '';
-        const fields = buildProposalFields(project, pkg, catalog, {
-          reference,
-          note,
-          terms,
-          currency,
-          clientName,
-        });
-        // The catalogue's prices go onto the document only when the chosen
-        // currency IS the one its lines are priced in — decided here, from
-        // the rows this snapshot is built from, not from the card's earlier
-        // read. Otherwise the document takes the same shape a standard
-        // admin's non-priced version takes (:14067 / :14028): no line
-        // prices, no subtotal, no total. No rate is invented either way.
-        if (!canMoney || !carriesCataloguePrices(lineCurrencies(pkg, catalog), currency))
-          stripPrices(fields);
-        setProgress('Creating the document…');
-        const doc = await documentsAdmin.createDocument({
-          kind: 'proposal',
-          title: `${project.name} — Project proposal`,
-          ref: project.no,
-          fields: { ...fields },
-        });
-        draft = { doc, fields };
-        setPending(draft);
-      }
-      setProgress('Rendering the PDF…');
-      const { renderDocumentPdf } = await import('../pdf/renderPdf');
-      const blob = await renderDocumentPdf('exhibition_proposal', draft.fields);
-      setProgress('Uploading…');
-      await documentsAdmin.uploadPdf(
-        draft.doc.id,
-        new File([blob], `${draft.fields.reference ?? reference}.pdf`, {
-          type: 'application/pdf',
-        }),
-      );
-      setProgress('Confirming (issuing)…');
-      await documentsAdmin.confirmDocument(draft.doc.id);
-      onDone();
+      await save();
+      onSaved();
+      setSaid(`${meta.word} draft saved`); // :14104
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'The issue chain failed.');
-      setStep('form');
-      // the draft exists on the server — let the list show it as such
-      if (draft) onCreated();
+      setError(err instanceof Error ? err.message : 'Could not save the draft.');
     }
   };
 
+  const finalize = async () => {
+    setStep('working');
+    setError('');
+    setSaid('');
+    let saved: DocumentAdmin | null = doc;
+    try {
+      setProgress('Saving the draft…');
+      saved = await save();
+      setProgress('Rendering the PDF…');
+      const blob = await render();
+      setProgress('Uploading…');
+      await projectsAdmin.uploadDocumentPdf(project.id, saved.id, blob, `${d.reference}.pdf`);
+      setProgress('Confirming…');
+      await projectsAdmin.confirmDocument(project.id, saved.id);
+      onDone(`${meta.word} finalized & saved to the Library`); // :14105
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Finalizing failed.');
+      setStep('form');
+      // the draft exists on the server — let the list show it as such
+      if (saved) onSaved();
+    }
+  };
+
+  const download = async () => {
+    setError('');
+    try {
+      const blob = await render();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${d.reference || meta.word}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 30_000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not render the PDF.');
+    }
+  };
+
+  const preview = async () => {
+    setError('');
+    // opened on the click itself, so no pop-up blocker stands between the
+    // render and the tab; the PDF lands in it when ready
+    const tab = window.open('', '_blank');
+    try {
+      const blob = await render();
+      const url = URL.createObjectURL(blob);
+      if (tab) tab.location.href = url;
+      else window.open(url, '_blank');
+    } catch (err) {
+      tab?.close();
+      setError(err instanceof Error ? err.message : 'Could not render the PDF.');
+    }
+  };
+
+  const busy = step === 'working';
+  const chip = doc
+    ? `${doc.status === 'draft' ? 'Draft' : 'Final'} · ${fmtDate(doc.updated_at)}`
+    : 'Draft';
+
   return (
     <div className="dzp-darz">
-      <div className="h">Issue proposal</div>
+      {/* :14066 — the head: eyebrow, title, the Draft / Final chip */}
+      <div className="h">{invoice ? 'Services invoice' : 'Proposal preview & sharing'}</div>
       <p>
-        Snapshot of the applied package as it stands — created, rendered and confirmed in one
-        go.
+        <b>{invoice ? d.projectName || project.name : title || 'Proposal'}</b>{' '}
+        <span className="dzp-chip">{chip}</span>
       </p>
-      {step === 'form' ? (
+
+      {/* :14058 — what the document is built from */}
+      <div className="dzp-darz">
+        <div className="h">From the package · {pkg?.name || 'Package'}</div>
+        <p>
+          {pkg && catalog
+            ? packageSummary(pkg, catalog, canMoney, currency)
+            : readErr
+              ? `The package could not be read (${readErr}).`
+              : 'Reading the package…'}
+        </p>
+      </div>
+
+      {busy ? (
+        <p className="dz-state" style={GAP12}>
+          {progress}
+        </p>
+      ) : (
         <>
           <div className="dzp-form" style={GAP12}>
-            {/* the two halves of the grid: the reference, and beside it the
-                currency this proposal is quoted in */}
             <label>
-              <span className="fl">{PROPOSAL_SERIES.label} reference</span>
+              <span className="fl">{meta.label} reference</span>
               <input
-                value={reference}
-                disabled={!!pending}
-                onChange={(e) => setReference(e.target.value)}
+                value={d.reference}
+                disabled={!!doc}
+                onChange={(e) => set('reference', e.target.value)}
               />
             </label>
             <label>
               <span className="fl">Currency</span>
               <select
                 value={currency}
-                disabled={!!pending || reading}
-                onChange={(e) => setChosen(e.target.value)}
+                disabled={reading}
+                onChange={(e) => set('currency', e.target.value)}
               >
                 {currencyChoices.map((c) => (
                   <option key={c.value} value={c.value}>
@@ -495,63 +671,195 @@ function ProposalIssueCard({
                 ))}
               </select>
             </label>
-            <label className="full">
-              <span className="fl">Note from Darz</span>
-              <textarea
-                className="dzp-ta"
-                rows={2}
-                value={note}
-                disabled={!!pending}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Optional — prints on the document"
-              />
+            {!invoice && (
+              <label className="full">
+                <span className="fl">Proposal title</span>
+                <input
+                  value={title}
+                  onChange={(e) => {
+                    setTitleTouched(true);
+                    set('title', e.target.value);
+                  }}
+                />
+              </label>
+            )}
+            <label>
+              <span className="fl">{invoice ? 'Billed to' : 'Client name'}</span>
+              <input value={d.client} onChange={(e) => set('client', e.target.value)} />
             </label>
-            <label className="full">
-              <span className="fl">Terms</span>
-              <textarea
-                className="dzp-ta"
-                rows={2}
-                value={terms}
-                disabled={!!pending}
-                onChange={(e) => setTerms(e.target.value)}
-                placeholder="Optional"
+            <label>
+              <span className="fl">Project / show</span>
+              <input
+                value={d.projectName}
+                onChange={(e) => set('projectName', e.target.value)}
               />
             </label>
           </div>
-          <div className="dzp-mut" style={GAP12}>
-            {currencyNote({
-              hasPackage: !!pkgId,
-              reading,
-              error: curErr,
-              lineCurs: lineCurs ?? [],
-              chosen: currency,
-              canMoney,
-              word: curWord,
-            })}
-          </div>
-          {error && <DeskBanner>{error}</DeskBanner>}
-          {pending && (
-            <div className="dzp-mut" style={GAP12}>
-              The draft {pending.fields.reference ?? reference} is created with these fields —
-              Issue again resumes from the PDF.
+          {lineCurs !== null && (
+            <div className="dzp-mut" style={GAP10}>
+              {invoice
+                ? invoiceCurrencyNote(lineCurs, currency, curWord)
+                : currencyNote({ lineCurs, chosen: currency, canMoney, word: curWord })}
             </div>
           )}
-          <div className="dzp-acts">
+
+          {invoice ? (
+            <div className="dzp-form" style={GAP10}>
+              <label className="full">
+                <span className="fl">Note from Darz</span>
+                <textarea
+                  className="dzp-ta"
+                  rows={2}
+                  value={d.note}
+                  placeholder="Payment terms, a reference to quote, anything to add"
+                  onChange={(e) => set('note', e.target.value)}
+                />
+              </label>
+              <label className="full">
+                <span className="fl">Payment terms</span>
+                <textarea
+                  className="dzp-ta"
+                  rows={2}
+                  value={d.terms}
+                  placeholder="e.g. 50% on signing, 50% on delivery"
+                  onChange={(e) => set('terms', e.target.value)}
+                />
+              </label>
+              {(
+                [
+                  ['holder', 'Account holder'],
+                  ['bank', 'Bank'],
+                  ['card', 'Card no.'],
+                  ['iban', 'Sheba (IBAN)'],
+                ] as Array<[keyof BankDetails, string]>
+              ).map(([k, label]) => (
+                <label key={k}>
+                  <span className="fl">{label}</span>
+                  <input
+                    value={d.bank[k] ?? ''}
+                    onChange={(e) => {
+                      setBankTouched(true);
+                      set('bank', { ...EMPTY_BANK, ...d.bank, [k]: e.target.value });
+                    }}
+                  />
+                </label>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="dzp-form" style={GAP10}>
+                <label className="full">
+                  <span className="fl">Short introduction</span>
+                  <textarea
+                    className="dzp-ta"
+                    value={d.intro}
+                    onChange={(e) => set('intro', e.target.value)}
+                  />
+                </label>
+                <label className="full">
+                  <span className="fl">
+                    Notes / terms (optional — shown above the package terms)
+                  </span>
+                  <textarea
+                    className="dzp-ta"
+                    value={d.notes}
+                    onChange={(e) => set('notes', e.target.value)}
+                  />
+                </label>
+              </div>
+              {/* :14060-14064 · :14077 */}
+              <div style={GAP12}>
+                <div className="fl" style={PRICING_LBL}>
+                  Pricing
+                </div>
+                {canMoney ? (
+                  <>
+                    <div className="dzp-acts" style={{ marginTop: 2 }}>
+                      {PRICING_MODES.map((m) => (
+                        <button
+                          key={m.value}
+                          type="button"
+                          className={`dzp-tog${d.pricing === m.value ? ' on' : ''}`}
+                          aria-pressed={d.pricing === m.value}
+                          onClick={() => set('pricing', m.value as PricingMode)}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="dzp-mut" style={{ marginTop: 6 }}>
+                      {pricingNote(d.pricing, priced)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="dzp-mut">
+                    Pricing is visible to the owner login only — this proposal sends as the
+                    refined, non-priced version.
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {error && <DeskBanner>{error}</DeskBanner>}
+          {said && (
+            <div className="dzp-mut" style={GAP12} role="status">
+              {said}
+            </div>
+          )}
+          {doc && doc.status === 'draft' && (
+            <div className="dzp-mut" style={GAP12}>
+              Saved as the draft {d.reference} — Finalize renders its PDF and confirms it.
+            </div>
+          )}
+          {whyNot && !reading && (
+            <div className="dzp-mut" style={GAP12}>
+              {whyNot}
+            </div>
+          )}
+
+          {/* :14079-14086 — Cancel left; Save draft · Finalize · Download ·
+              Preview right (Share and Print not ported, see the header) */}
+          <div className="dzp-acts" style={{ justifyContent: 'space-between' }}>
             <button type="button" className="dzp-btn gho" onClick={onClose}>
               Cancel
             </button>
-            <button
-              type="button"
-              className="dzp-btn pri"
-              disabled={!reference.trim() || reading}
-              onClick={() => void issue()}
-            >
-              Issue proposal
-            </button>
+            <span className="dzp-acts" style={{ marginTop: 0 }}>
+              <button
+                type="button"
+                className="dzp-btn"
+                disabled={reading || !!readErr || !d.reference.trim()}
+                onClick={() => void saveDraft()}
+              >
+                Save draft
+              </button>
+              <button
+                type="button"
+                className="dzp-btn"
+                disabled={reading || !!whyNot}
+                onClick={() => void finalize()}
+              >
+                Finalize
+              </button>
+              <button
+                type="button"
+                className="dzp-btn"
+                disabled={reading || !!readErr}
+                onClick={() => void download()}
+              >
+                ↓ Download PDF
+              </button>
+              <button
+                type="button"
+                className="dzp-btn pri"
+                disabled={reading || !!readErr}
+                onClick={() => void preview()}
+              >
+                Preview
+              </button>
+            </span>
           </div>
         </>
-      ) : (
-        <p className="dz-state">{progress}</p>
       )}
     </div>
   );

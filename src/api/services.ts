@@ -74,6 +74,8 @@ import type {
   SavedArtworkQuery,
   ArtworkAdmin,
   ArtworkAdminQuery,
+  FreshnessSummary,
+  SourceFreshnessSettings,
   ArtworkImageAdmin,
   ArtistAdmin,
   ArtistAdminQuery,
@@ -123,6 +125,7 @@ import type {
   ExhibitionLineInput,
   ExhibitionQuery,
   ProjectAdmin,
+  ProjectDocKind,
   ProjectCreateInput,
   ProjectPatch,
   ProjectStage,
@@ -733,6 +736,40 @@ export class CatalogAdminService extends ResourceService {
   transitionArtwork(id: string, toStatus: string) {
     return this.create<ArtworkAdmin>(`/artworks/${id}/transition/`, { to_status: toStatus });
   }
+  /* ── G-CAT-9 source freshness (backend 2026-10-01) ─────────────────────── */
+
+  /** "Confirm available" — stamps `source_confirmed_at` = now. With a
+   * `status` it also records what the source reported, routed through the
+   * guarded availability machine (an illegal move is a 400; the current
+   * status just re-confirms). The response is the full admin row, its
+   * `freshness` already re-derived. */
+  confirmAvailable(id: string, status?: string) {
+    return this.create<ArtworkAdmin>(
+      `/artworks/${id}/confirm-available/`,
+      status ? { status } : {},
+    );
+  }
+  /** "Confirm all" for one source — every source-linked, still-active work
+   * whose `source_name` matches (trimmed, case-insensitive) and/or whose
+   * `source_type` matches. At least one of the two is required (400). */
+  confirmSource(source: { source_name?: string; source_type?: string }) {
+    return this.create<{ confirmed: number }>('/sources/confirm/', source);
+  }
+  freshnessSummary() {
+    return this.retrieve<FreshnessSummary>('/sources/freshness-summary/');
+  }
+  freshnessSettings() {
+    return this.retrieve<SourceFreshnessSettings>('/sources/freshness-settings/');
+  }
+  /** Not version-locked — the serializer takes no `expected_version`. */
+  updateFreshnessSettings(body: { hide_unconfirmed?: boolean; hide_after_days?: number }) {
+    return this.client.send<SourceFreshnessSettings>(
+      'PATCH',
+      `${this.basePath}/sources/freshness-settings/`,
+      { body },
+    );
+  }
+
   /** The per-work Market App membership — what the old desk's toggle wrote. */
   publishArtwork(id: string) {
     return this.create<ArtworkAdmin>(`/artworks/${id}/publish/`);
@@ -1958,6 +1995,48 @@ export class ProjectsAdminService extends ResourceService {
   }
   deleteAttachment(projectId: string, attachmentId: string) {
     return this.remove(`/projects/${projectId}/attachments/${attachmentId}/`);
+  }
+
+  // --- proposal / invoice documents (Proposal Builder, 2026-10-01) -----------
+  // A project's proposal and services invoice are `documents.Document`
+  // (`kind` project_proposal | project_invoice, `ref` = the project's id) —
+  // the exhibition documents' exact shape. The client composes `fields` and
+  // renders the PDF; the backend stores, versions and runs
+  // draft → confirmed → signed. A draft's `fields` are edited through the
+  // generic `DocumentsAdminService.updateDocument` (no project-scoped PATCH).
+  documents(projectId: string, query: PageQuery = {}) {
+    return this.list<DocumentAdmin>(
+      `/projects/${projectId}/documents/`,
+      query as RequestOptions['query'],
+    );
+  }
+  createDocument(
+    projectId: string,
+    body: {
+      doc_type: ProjectDocKind;
+      title?: string;
+      fields?: Record<string, unknown>;
+    },
+  ) {
+    return this.create<DocumentAdmin>(`/projects/${projectId}/documents/`, body);
+  }
+  uploadDocumentPdf(projectId: string, documentId: string, file: Blob, filename: string) {
+    const form = new FormData();
+    form.append('file', file, filename);
+    return this.create<DocumentAdmin>(
+      `/projects/${projectId}/documents/${documentId}/upload/`,
+      form,
+    );
+  }
+  /** 400 "Upload a PDF before confirming." when no PDF is on the draft. */
+  confirmDocument(projectId: string, documentId: string) {
+    return this.create<DocumentAdmin>(
+      `/projects/${projectId}/documents/${documentId}/confirm/`,
+    );
+  }
+  /** 400 "Only a confirmed document can be signed." otherwise. */
+  signDocument(projectId: string, documentId: string) {
+    return this.create<DocumentAdmin>(`/projects/${projectId}/documents/${documentId}/sign/`);
   }
 
   // --- partner orgs ----------------------------------------------------------

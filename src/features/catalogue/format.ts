@@ -13,6 +13,12 @@ export function formatMoney(amount: string | number): string {
   return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
+/** An artist card's record count (`app.html:5329`) — "12 records", singular
+ * at one; nothing at zero or when the row does not carry it. */
+export function recordsLine(n: number | null | undefined): string {
+  return n ? `${n} record${n === 1 ? '' : 's'}` : '';
+}
+
 /**
  * The work's own image, or `null`.
  *

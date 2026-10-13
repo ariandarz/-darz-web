@@ -267,13 +267,17 @@ export type ExhibitionDocKind = keyof typeof DOC_SERIES;
  * prefills a reference has to read ALL of them or the number repeats.
  *
  * `PRO` is shared: an exhibition proposal and a project proposal
- * (`projects/projectForm.ts::PROPOSAL_SERIES`) are one series of Darz
- * proposals, stored under two kinds because they hang off different records.
- * `SINV` has one kind today and is listed for the same reason.
+ * (`projects/projectDocs.ts::PROJECT_DOCS`) are one series of Darz
+ * proposals, stored under different kinds because they hang off different
+ * records — `proposal` is the kind project proposals were issued under until
+ * the project-scoped documents endpoint (2026-10-01) gave them
+ * `project_proposal`, and stays in the scan so an old number is never
+ * reused. `SINV` is the same for services invoices: an exhibition's and,
+ * since 2026-10-01, a project's.
  */
 export const SERIES_KINDS: Record<string, readonly string[]> = {
-  PRO: ['exhibition_proposal', 'proposal'],
-  SINV: ['exhibition_invoice'],
+  PRO: ['exhibition_proposal', 'project_proposal', 'proposal'],
+  SINV: ['exhibition_invoice', 'project_invoice'],
 };
 
 /**

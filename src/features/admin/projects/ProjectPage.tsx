@@ -42,8 +42,9 @@
  *    the list;
  *  - `dzConfirm(reason, {okLabel:'Got it'})` for a blocked move (:13708) is
  *    the `.dzp-gate` panel, its button keeping the old word; `dzConfirm` for Delete is
- *    `ConfirmDialog`; the Proposal section issues a `documents.Document`
- *    (ProjectProposal.tsx) instead of opening the old composer (:14049);
+ *    `ConfirmDialog`; the Proposal section (ProjectProposal.tsx) carries the
+ *    old composer (:14049) inline and files its proposal — and, new, an
+ *    invoice — as project documents (`…/projects/{id}/documents/`);
  *  - the report buttons of the old Reports desk (:15455-15456) also sit under
  *    the header here, since the report is a route of this record now;
  *  - a partner org the Partners desk soft-deleted stays on the record (its
@@ -1002,7 +1003,7 @@ function ProjectRecord({ id }: { id: string }) {
               <ProjectProposal
                 project={project}
                 canMoney={canMoney}
-                onIssued={() => setNote('Proposal finalized & saved to the Library')} // :14108
+                onIssued={(said) => setNote(said)} // :14105 "Proposal finalized & saved to the Library"
               />
             </Section>
           )}

@@ -1,0 +1,292 @@
+/* ══ Source freshness (G-CAT-9) — Galleries & Sources › Artwork Sources ══════
+   Ported from `darz-studio.html`:
+   - .sp-artgrid / .sp-artcard / .sp-artimg / .sp-artb / .sp-arta / .sp-artt /
+     .sp-artsrc / .sp-arttags / .sp-tag  ← :9580-9593 (+ dark :9662-9664)
+   - .sp-confirm / .sp-fresh(.fresh|.new|.due|.stale|.risky) / .sp-cbtn /
+     .sp-cstat                            ← :9666-9671 (+ dark :9678-9682)
+   - .sp-setcard / .sp-set-t / .sp-set-row ← :9675-9677 (+ dark :9685-9686)
+   The neutral greys are mapped onto this project's tokens (the admin.css
+   rule); the five band colours are the old values, light and dark, because
+   they ARE the meaning of the pill.
+   This port's own joins: the strip tiles as buttons (`.sp-freshtiles`), the
+   rollup's "N need confirmation" (`.sp-needs`, the old `:27365` colour), the
+   card's label/note rows. */
+
+.sp-freshtiles button.ad-tile {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sp-freshtiles .ad-tile.is-on {
+  border-color: var(--ink);
+}
+
+.sp-intro {
+  margin: 0 0 12px;
+  max-width: 640px;
+  line-height: 1.5;
+}
+.sp-needs {
+  color: #9a6a12;
+  font-weight: 700;
+}
+
+/* :9580-9593 — the tiles */
+.sp-artgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.sp-artcard {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card);
+  transition:
+    border-color 0.14s,
+    transform 0.1s;
+}
+.sp-artcard:hover {
+  border-color: var(--hair2);
+  transform: translateY(-1px);
+}
+.sp-artcard .sp-artimg {
+  aspect-ratio: 4 / 5;
+  background: var(--soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink3);
+  font-size: 11px;
+  cursor: pointer;
+}
+.sp-artcard .sp-artimg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sp-artcard .sp-artb {
+  padding: 8px 10px 10px;
+}
+.sp-artcard .sp-arta {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-artcard .sp-artt {
+  font-size: 11px;
+  color: var(--ink2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sp-artcard .sp-artsrc {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-top: 4px;
+}
+.sp-artcard .sp-arttags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.sp-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: var(--soft);
+  color: var(--ink2);
+}
+.sp-tag.app {
+  background: var(--ctl-bg);
+  color: var(--ctl-text);
+}
+.sp-tag.arch {
+  background: #f2e7e7;
+  color: #9a4a4a;
+}
+
+/* :9666-9671 — the confirm row */
+.sp-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--hair);
+}
+.sp-fresh {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border-radius: 20px;
+  padding: 2px 8px;
+  background: var(--soft);
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.sp-fresh.fresh {
+  background: #e7f6ee;
+  color: #1f7a4d;
+}
+.sp-fresh.new {
+  background: #eef1f5;
+  color: #5a6a82;
+}
+.sp-fresh.due {
+  background: #fff4e0;
+  color: #9a6a12;
+}
+.sp-fresh.stale {
+  background: #fcebdd;
+  color: #9a5212;
+}
+.sp-fresh.risky {
+  background: #f8e1e1;
+  color: #b0322f;
+}
+.sp-cbtn {
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  border: 1px solid var(--ctl-border);
+  background: var(--ctl-bg);
+  color: var(--ctl-text);
+  border-radius: 7px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.sp-cbtn:hover {
+  opacity: 0.85;
+}
+.sp-cbtn:disabled,
+.sp-cstat:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sp-cstat {
+  font: inherit;
+  font-size: 10.5px;
+  border: 1px solid var(--hair2);
+  border-radius: 7px;
+  padding: 3px 6px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  max-width: 118px;
+}
+
+/* :9675-9677 — the owner card */
+.sp-setcard {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 15px 16px;
+  margin-top: 20px;
+  font-size: 12.5px;
+  color: var(--ink2);
+  line-height: 1.55;
+}
+.sp-setcard .sp-set-t {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.sp-setcard .sp-set-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+/* :27460's inline label style */
+.sp-setcard .sp-set-l {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sp-setcard .sp-set-l input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ink);
+}
+.sp-setcard select {
+  font: inherit;
+  font-size: 12.5px;
+  border: 1px solid var(--hair2);
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: var(--card);
+  color: var(--ink);
+}
+.sp-setcard .sp-set-note {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--ink3);
+}
+
+/* dark — the old `html.dz-admindark` band values (:9680), keyed on
+   `html.dz-bw` alone like `_projects.css` (the app never reads the OS
+   preference; `ThemeController.apply()` toggles this class). */
+html.dz-bw .sp-fresh.fresh {
+  background: #16321f;
+  color: #6cd49a;
+}
+html.dz-bw .sp-fresh.new {
+  background: #22272f;
+  color: #9bb0cc;
+}
+html.dz-bw .sp-fresh.due {
+  background: #332815;
+  color: #e0b87e;
+}
+html.dz-bw .sp-fresh.stale {
+  background: #3a2a18;
+  color: #e0a86e;
+}
+html.dz-bw .sp-fresh.risky,
+html.dz-bw .sp-tag.arch {
+  background: #3a2424;
+  color: #e09a9a;
+}
+html.dz-bw .sp-needs {
+  color: #e0b87e;
+}
+html.dz-bw .sp-cstat,
+html.dz-bw .sp-setcard select {
+  color-scheme: dark;
+}
+
+/* the Market App card's pill sits on its own line, at its own width */
+.ad-pubcard .sp-fresh {
+  align-self: flex-start;
+}
+
+/* the desk's segment grew a fourth option (Artwork Sources); on a phone it
+   scrolls inside the header instead of running under the sub-line */
+.sp-headacts {
+  max-width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.viewseg.sp-headseg {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.viewseg.sp-headseg button {
+  white-space: nowrap;
+}
