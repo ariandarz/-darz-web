@@ -63,16 +63,15 @@ describe('buildUpdatePayload — approve() reads these keys', () => {
     expect(p.fromPrice).toBe('12000.00');
     expect(p.fromCurrency).toBe('USD');
   });
-  it('untouched offer block stays out; a set one rides with its currency', () => {
-    expect(buildUpdatePayload(work, {}, '')).not.toHaveProperty('offer_actions');
-    const p = buildUpdatePayload(
-      work,
-      { offerActions: ['offer', 'visit'], offerFloor: '8,000' },
-      '',
-    );
-    expect(p.offer_actions).toEqual(['offer', 'visit']);
-    expect(p.offer_floor).toBe('8000');
-    expect(p.offer_currency).toBe('USD'); // falls back to the work's currency
+  it('the offer block never rides the update — it has its own endpoint (G-PORT-8)', () => {
+    const draft = { offerActions: ['offer'], offerFloor: '8,000' };
+    const p = buildUpdatePayload(work, draft, '');
+    expect(p).not.toHaveProperty('offer_actions');
+    expect(p).not.toHaveProperty('offer_floor');
+    expect(p).not.toHaveProperty('offer_currency');
+    // …and touching it alone is not an edit for the one update a send makes
+    expect(hasChange(draft, 'available')).toBe(false);
+    expect(updateKind(draft, 'available')).toBe('availability');
   });
 });
 

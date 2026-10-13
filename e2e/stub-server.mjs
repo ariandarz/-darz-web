@@ -162,6 +162,7 @@ const OPTIONS = {
     { value: 'invoice_signed', label: 'Invoice signed' },
     { value: 'ask', label: 'Ask about a work' },
     { value: 'withdraw', label: 'Withdraw a work' },
+    { value: 'actions', label: 'Actions & offer floor' },
   ],
   'gallery.update_status': [
     { value: 'pending', label: 'Pending' },
@@ -1793,6 +1794,19 @@ const GALLERY_UPDATES = [
     review_note: '',
     created_at: '2026-09-22T08:10:00Z',
   },
+  // G-PORT-8 — a proposal exactly as the portal view stores it
+  {
+    id: '00000000-0000-4000-8000-000000008b04',
+    link: GL_DESK,
+    artwork: GALLERY_WORKS[3].artwork,
+    kind: 'actions',
+    payload: { allowed_actions: ['purchase', 'viewing'], offer_floor: '40000' },
+    status: 'pending',
+    reviewed_by: null,
+    reviewed_at: null,
+    review_note: '',
+    created_at: '2026-10-02T08:00:00Z',
+  },
 ];
 const portalUpdate = (u) => ({
   id: u.id,
@@ -1939,6 +1953,120 @@ const GALLERY_EXHIBITION = {
 /** What the last portal image upload carried — Chromium hides a multipart
  * body with a file from `request.postData()`, so the walk asks the stub. */
 let LAST_IMAGE_UPLOAD = null;
+
+/* ── post-V1 G-PORT (backend 2026-10-01) ─────────────────────────────────── */
+
+/** P3c — pricelist id → the rendered PDF the desk stored, bytes intact. */
+const RENDERED_PDFS = new Map();
+/** The PDF part of a multipart body: from `%PDF` to the last `%%EOF`. */
+const pdfPart = (buf) => {
+  const start = buf.indexOf('%PDF');
+  const end = buf.lastIndexOf('%%EOF');
+  return start >= 0 && end > start ? buf.subarray(start, end + 5) : null;
+};
+
+/** G-PORT-5 — the leads sources introduced; one per state across the links. */
+const referral = (n, link, over) => ({
+  id: `00000000-0000-4000-8000-0000000c0${String(n).padStart(3, '0')}`,
+  link,
+  source_name: GALLERY_LINKS.find((l) => l.id === link).name,
+  referred_kind: 'collector',
+  referred_name: '',
+  referred_email: '',
+  referred_phone: '',
+  referred_org: '',
+  note: '',
+  status: 'new',
+  reviewed_at: null,
+  created_at: `2026-10-0${n}T10:00:00Z`,
+  ...over,
+});
+const REFERRALS = [
+  referral(1, GL_PORTAL, {
+    referred_name: 'Maryam Rahimi',
+    referred_email: 'maryam@collector.invalid',
+    status: 'reviewed',
+    reviewed_at: '2026-10-03T09:00:00Z',
+  }),
+  referral(2, GL_DESK, {
+    referred_name: 'Negar Tavakoli',
+    referred_kind: 'gallery',
+    referred_org: 'Negar Gallery',
+    referred_phone: '+98 21 0000 0000',
+    note: 'Shows young painters from Tabriz.',
+  }),
+  referral(3, GL_DESK, { referred_name: 'Ali Sadeghi', referred_email: 'ali@x.invalid' }),
+  referral(4, GL_DEALER, { referred_name: 'Shirin Navab', status: 'accepted' }),
+];
+
+/** G-PORT-7 — a PUBLISHED show on the portal link, so its two issued
+ * documents can be signed in the portal. `signature_image_url` echoes the
+ * posted data URL, so a test sees the mark it drew come back. */
+const PEX_ID = '00000000-0000-4000-8000-000000005e11';
+const portalDoc = (n, kind, title, reference) => ({
+  id: `00000000-0000-4000-8000-00000000de1${n}`,
+  kind,
+  ref: `00000000-0000-4000-8000-00000000ae1${n}`,
+  title,
+  fields: { reference },
+  object_key: `documents/exhibitions/${reference}.pdf`,
+  pdf_url: `${STUB_ORIGIN}/files/doc.pdf`,
+  visibility: 'private',
+  status: 'confirmed',
+  owner_lock: false,
+  collector: null,
+  shared_at: null,
+  created_by: ME.id,
+  confirmed_at: '2026-10-05T10:00:00Z',
+  confirmed_by: ME.id,
+  signed_at: null,
+  signed_by: null,
+  signature_image_key: '',
+  signature_image_url: null,
+  version: 2,
+  created_at: `2026-10-0${4 + n}T10:00:00Z`,
+  updated_at: `2026-10-0${4 + n}T10:00:00Z`,
+});
+const PORTAL_EXHIBITIONS = [
+  {
+    id: PEX_ID,
+    link: GL_PORTAL,
+    title: 'Spring Salon',
+    event_date: 'Nov 2026',
+    venue: 'Aria, upper floor',
+    artists: 'Parviz Tanavoli',
+    note: '',
+    project: '',
+    gallery_note: '',
+    gallery_selected: ['exhibition_photo'],
+    request_status: 'approved',
+    published: true,
+    currency: 'TMN',
+    discount: '',
+    created_at: '2026-10-01T10:00:00Z',
+    service_lines: [
+      {
+        id: '00000000-0000-4000-8000-00000000df11',
+        service_key: 'exhibition_photo',
+        title: 'Exhibition Photo Coverage',
+        description: 'Professional photographic documentation of the exhibition.',
+        quantity: 1,
+        price: '700000.00',
+        currency: 'TMN',
+        status: 'confirmed',
+        admin_note: '',
+        position: 0,
+        created_at: '2026-10-04T10:00:00Z',
+      },
+    ],
+    documents: [
+      portalDoc(1, 'exhibition_proposal', 'Spring Salon — Proposal', 'DARZ-PRO-2026-0007'),
+      portalDoc(2, 'exhibition_invoice', 'Spring Salon — Invoice', 'DARZ-INV-2026-0007'),
+    ],
+  },
+];
+/** What the last portal signature carried (the walk reads it back). */
+let LAST_SIGN = null;
 
 const unauthorized = (message) => ({
   status: 401,
@@ -2172,7 +2300,121 @@ const galleryPatterns = [
   [
     /^\/api\/gallery\/portal\/[^/]+\/exhibitions\/$/,
     'GET',
-    withPortal(() => envelope({ exhibitions: [] })),
+    withPortal((link) =>
+      envelope({
+        exhibitions: PORTAL_EXHIBITIONS.filter((e) => e.link === link.id).map(
+          ({ link: _l, ...e }) => e,
+        ),
+      }),
+    ),
+  ],
+  // G-PORT-7 — the typed name is required; a drawn PNG is optional and kept
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/exhibitions\/[^/]+\/documents\/[^/]+\/sign\/$/,
+    'POST',
+    withPortal((link, path, body) => {
+      const parts = path.split('/');
+      const ev = PORTAL_EXHIBITIONS.find((e) => e.link === link.id && e.id === parts[6]);
+      const doc = ev?.documents.find((d) => d.id === parts[8]);
+      if (!doc) return notFound('No Document matches the given query.');
+      const name = String(body?.signer_name ?? '').trim();
+      if (!name) return validation('Validation failed.', { signer_name: ['This field is required.'] });
+      const img = typeof body?.signature_image === 'string' ? body.signature_image : '';
+      if (img && !/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(img))
+        return validation('Validation failed.', {
+          signature_image: ['signature_image must be base64-encoded PNG data.'],
+        });
+      LAST_SIGN = { signer_name: name, image: img ? img.slice(0, 22) : '', bytes: img.length };
+      const verb = doc.kind === 'exhibition_proposal' ? 'accepted' : 'signed';
+      doc.fields = {
+        ...doc.fields,
+        [`portal_${verb}_at`]: new Date().toISOString(),
+        [`portal_${verb}_by`]: name,
+      };
+      if (img) {
+        doc.signature_image_key = `documents/signatures/${doc.id}/signature.png`;
+        doc.signature_image_url = img;
+      }
+      doc.version += 1;
+      return envelope(doc);
+    }),
+  ],
+  // G-PORT-5 — the source's own introductions, and a new one
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/referrals\/$/,
+    'GET',
+    withPortal((link, _p, _b, url) =>
+      pageOf(
+        REFERRALS.filter((r) => r.link === link.id)
+          .slice()
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
+        url,
+      ),
+    ),
+  ],
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/referrals\/$/,
+    'POST',
+    withPortal((link, _p, body) => {
+      const name = String(body?.referred_name ?? '').trim();
+      if (!name)
+        return validation('Validation failed.', { referred_name: ['This field is required.'] });
+      const email = String(body?.referred_email ?? '');
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+        return validation('Validation failed.', {
+          referred_email: ['Enter a valid email address.'],
+        });
+      const row = referral(REFERRALS.length + 1, link.id, {
+        id: gid('c0'),
+        referred_kind: body?.referred_kind || 'collector',
+        referred_name: name,
+        referred_email: email,
+        referred_phone: String(body?.referred_phone ?? ''),
+        referred_org: String(body?.referred_org ?? ''),
+        note: String(body?.note ?? ''),
+        created_at: new Date().toISOString(),
+      });
+      REFERRALS.push(row);
+      return { status: 201, body: envelope(row) };
+    }),
+  ],
+  // G-PORT-8 — a per-work actions / floor proposal into the queue
+  [
+    /^\/api\/gallery\/portal\/[^/]+\/artworks\/[^/]+\/actions\/$/,
+    'POST',
+    withPortal((link, path, body) => {
+      const artwork = path.split('/')[6];
+      if (!GALLERY_WORKS.some((w) => w.link === link.id && w.artwork === artwork))
+        return validation('This artwork is not assigned to your portal.', {
+          __all__: ['This artwork is not assigned to your portal.'],
+        });
+      const has = (k) => body && Object.prototype.hasOwnProperty.call(body, k);
+      if (!has('allowed_actions') && !has('offer_floor'))
+        return validation('Validation failed.', {
+          non_field_errors: ['Provide allowed_actions and/or offer_floor.'],
+        });
+      const valid = ['purchase', 'hold', 'offer', 'viewing'];
+      if (has('allowed_actions') && !body.allowed_actions.every((a) => valid.includes(a)))
+        return validation('Validation failed.', { allowed_actions: ['Not a valid choice.'] });
+      const payload = {};
+      if (has('allowed_actions')) payload.allowed_actions = [...new Set(body.allowed_actions)];
+      if (has('offer_floor'))
+        payload.offer_floor = body.offer_floor === null ? null : String(body.offer_floor);
+      const row = {
+        id: gid('8e'),
+        link: link.id,
+        artwork,
+        kind: 'actions',
+        payload,
+        status: 'pending',
+        reviewed_by: null,
+        reviewed_at: null,
+        review_note: '',
+        created_at: new Date().toISOString(),
+      };
+      GALLERY_UPDATES.push(row);
+      return { status: 201, body: envelope(portalUpdate(row)) };
+    }),
   ],
 
   // ---- the desk ----
@@ -2281,6 +2523,68 @@ const galleryPatterns = [
             p.status = 'superseded';
       pl.status = body.status;
       return envelope(plOut(pl));
+    },
+  ],
+  // P3c — the client-rendered PDF REPLACES object_key (attach_rendered)
+  [
+    /^\/api\/gallery\/admin\/pricelists\/[^/]+\/rendered\/$/,
+    'POST',
+    (path, _b, _u, raw, _m, buf) => {
+      const pl = GALLERY_PRICELISTS.find((p) => p.id === path.split('/')[5]);
+      if (!pl) return notFound('No GalleryPricelist matches the given query.');
+      const bytes = pdfPart(buf);
+      const filename = /name="file"; filename="([^"]+)"/.exec(String(raw))?.[1] ?? '';
+      if (!bytes || !/\.pdf$/i.test(filename))
+        return validation('Validation failed.', { file: ['No file was submitted.'] });
+      RENDERED_PDFS.set(pl.id, { bytes, filename });
+      pl.object_key = `gallery/${pl.link}/pricelists/${filename}`;
+      pl.file_url = `${STUB_ORIGIN}/files/rendered-${pl.id}.pdf`;
+      return envelope(plOut(pl));
+    },
+  ],
+  [
+    /^\/__stub\/pricelist\/[^/]+\/rendered\/$/,
+    'GET',
+    (path) => {
+      const hit = RENDERED_PDFS.get(path.split('/')[3]);
+      return envelope(
+        hit
+          ? {
+              filename: hit.filename,
+              bytes: hit.bytes.length,
+              head: hit.bytes.subarray(0, 5).toString('latin1'),
+            }
+          : null,
+      );
+    },
+  ],
+  [/^\/__stub\/portal\/last-sign\/$/, 'GET', () => envelope(LAST_SIGN)],
+  // G-PORT-5 — the review desk
+  [
+    /^\/api\/gallery\/admin\/referrals\/$/,
+    'GET',
+    (_p, _b, url) => {
+      const st = url.searchParams.get('status');
+      const link = url.searchParams.get('link');
+      return pageOf(
+        REFERRALS.filter((r) => (!st || r.status === st) && (!link || r.link === link))
+          .slice()
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
+        url,
+      );
+    },
+  ],
+  [
+    /^\/api\/gallery\/admin\/referrals\/[^/]+\/review\/$/,
+    'POST',
+    (path, body) => {
+      const r = REFERRALS.find((x) => x.id === path.split('/')[5]);
+      if (!r) return notFound('No PortalReferral matches the given query.');
+      if (!['new', 'reviewed', 'accepted', 'declined'].includes(body?.status))
+        return validation('Validation failed.', { status: ['Not a valid choice.'] });
+      r.status = body.status;
+      r.reviewed_at = new Date().toISOString();
+      return envelope(r);
     },
   ],
   [
@@ -3690,20 +3994,24 @@ const server = http.createServer((req, res) => {
     respond(req, res, undefined);
     return;
   }
-  let raw = '';
-  req.on('data', (chunk) => (raw += chunk));
+  // Buffers, not a string: a multipart PDF (P3c) must reach its handler with
+  // its bytes intact; every other handler still reads the text in `raw`.
+  const chunks = [];
+  req.on('data', (chunk) => chunks.push(chunk));
   req.on('end', () => {
+    const buf = Buffer.concat(chunks);
+    const raw = buf.toString('utf8');
     let body;
     try {
       body = raw ? JSON.parse(raw) : undefined;
     } catch {
       body = undefined; // multipart — handlers that need a form part read `raw`
     }
-    respond(req, res, body, raw);
+    respond(req, res, body, raw, buf);
   });
 });
 
-function respond(req, res, body, raw = '') {
+function respond(req, res, body, raw = '', buf = Buffer.alloc(0)) {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const key = `${req.method} ${url.pathname}`;
   const hit = routes[key];
@@ -3734,6 +4042,16 @@ function respond(req, res, body, raw = '') {
     res.end('%PDF-1.1\n% stub pricelist\n');
     return;
   }
+  // P3c — a formatted pricelist the desk rendered and stored, served back
+  // as its `file_url` (and to the walk, which rasterises it)
+  const rendered = url.pathname.match(/^\/files\/rendered-([^/]+)\.pdf$/);
+  if (rendered && RENDERED_PDFS.has(rendered[1])) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.writeHead(200);
+    res.end(RENDERED_PDFS.get(rendered[1]).bytes);
+    return;
+  }
   if (url.pathname === '/files/auction-cover.svg') {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.writeHead(200);
@@ -3761,7 +4079,7 @@ function respond(req, res, body, raw = '') {
       // A write's pattern reads the body it was sent (the follow-up date, a
       // note), as the keyed routes above already do; the gallery routes also
       // read the query (`?pin=`, `?search=`) and a multipart body's raw text.
-      const answered = answer(url.pathname, body, url, raw, req.method);
+      const answered = answer(url.pathname, body, url, raw, req.method, buf);
       const status = typeof answered.status === 'number' ? answered.status : 200;
       res.writeHead(status);
       res.end(JSON.stringify(status === 200 ? answered : answered.body));

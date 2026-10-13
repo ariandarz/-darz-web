@@ -18,14 +18,18 @@
  */
 import type { GalleryPortalService } from '../../api/services';
 import type {
+  PortalActionsProposal,
   PortalCatalogueEntry,
   PortalExhibition,
   PortalExhibitionInput,
   PortalPricelistBuild,
+  PortalReferral,
+  PortalReferralInput,
   PortalState,
   PortalUpdateSubmit,
 } from '../../api/types';
 import { HttpError, NetworkError, UnauthorizedError } from '../../api/errors';
+import { asArray } from '../../api/shapes';
 import { Observable } from '../shared/Observable';
 import { normalisePortalState } from './portalForm';
 
@@ -44,6 +48,9 @@ export interface PortalSnapshotState {
   /** Exhibition Services — loaded on first open of the tab. */
   exhibitions: PortalExhibition[] | null;
   catalogue: PortalCatalogueEntry[] | null;
+  /** The source's own introductions (G-PORT-5) — loaded when Introduce opens.
+   * Not in `portal_state`: a referral is its own record, not an update. */
+  referrals: PortalReferral[] | null;
 }
 
 export class PortalSession extends Observable<PortalSnapshotState> {
@@ -59,6 +66,7 @@ export class PortalSession extends Observable<PortalSnapshotState> {
       sentAt: {},
       exhibitions: null,
       catalogue: null,
+      referrals: null,
     });
     this.service = service;
     this.token = token;
@@ -190,13 +198,39 @@ export class PortalSession extends Observable<PortalSnapshotState> {
     return this.service.submitExhibition(this.token, this.pin, id, serviceKeys);
   }
 
-  signExhibitionDocument(eventId: string, documentId: string, signerName: string) {
+  /** The typed name always; the drawn PNG data URL beside it (G-PORT-7). */
+  signExhibitionDocument(
+    eventId: string,
+    documentId: string,
+    signerName: string,
+    signatureImage?: string,
+  ) {
     return this.service.signExhibitionDocument(
       this.token,
       this.pin,
       eventId,
       documentId,
       signerName,
+      signatureImage,
     );
+  }
+
+  /** G-PORT-8 — a per-work actions / minimum-offer proposal (pending review). */
+  proposeActions(artworkId: string, body: PortalActionsProposal) {
+    return this.service.proposeActions(this.token, this.pin, artworkId, body);
+  }
+
+  /** (Re)load the Introduce tab's list. The paginated envelope's `results`
+   * goes through `asArray` — a malformed page renders empty, never blank. */
+  async loadReferrals(): Promise<void> {
+    const page = await this.service.referrals(this.token, this.pin);
+    this.patch({ referrals: asArray<PortalReferral>(page?.results) });
+  }
+
+  /** G-PORT-5 — the new lead lands on top of the list without a refetch. */
+  async submitReferral(body: PortalReferralInput): Promise<PortalReferral> {
+    const row = await this.service.submitReferral(this.token, this.pin, body);
+    this.patch({ referrals: [row, ...(this.getSnapshot().referrals ?? [])] });
+    return row;
   }
 }

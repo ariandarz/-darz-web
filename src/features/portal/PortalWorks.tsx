@@ -20,12 +20,28 @@
  *    no gallery-side per-work question (its §90 asks run Darz → gallery), so
  *    this control has no old source: it borrows the Messages box's words.
  *
+ *  - "What collectors can do" + the minimum offer (old v1131/v1135/v1161,
+ *    :1349-1364) post to their own endpoint (`…/artworks/{id}/actions/`,
+ *    G-PORT-8) from the block's restored Save — and ride a card's Send
+ *    update the same way the photo does, so a ticked box is never lost. Each
+ *    lands as a pending `actions` update ("sent for review"); approval writes
+ *    them to the artwork and the crm offer engine refuses a below-floor offer
+ *    SERVER-side — nothing here declines anything.
+ *
  * Still different from the old page, for a backend reason:
  *  - the whole list renders (no 30-per-page client pager): `portal_state`
  *    serves every assigned work in one read, and a portal is a curated set.
- *  - "What collectors can do" + the offer floor ride the work's one
- *    Send update as payload for Darz to apply on review — there is no
- *    direct write or auto-decline engine behind them here (G-PORT-8).
+ *  - the offer block no longer auto-saves on every tick (old v1161 debounce):
+ *    the old write applied live, this one files a review item each time, so
+ *    a burst of ticks would be a burst of queue rows. Save (or Send update)
+ *    files one.
+ *  - the block cannot show what the work currently allows: the snapshot
+ *    carries no `allowed_actions`/`offer_floor`, so it prefills from this
+ *    portal's own last proposal (`priorActions`), else the default "all four";
+ *  - the offer currency is the work's own, read-only: `offer_floor` has no
+ *    currency field and the engine compares the raw amount
+ *    (`RequestService._enforce_offer_floor`), so the old currency box would
+ *    have been a choice the backend ignores — flagged, kept as a fixed box.
  */
 import {
   useCallback,
@@ -40,6 +56,7 @@ import type { PortalWork } from '../../api/types';
 import type { PortalSession } from './PortalSession';
 import {
   blankNewWork,
+  buildActionsProposal,
   buildAskPayload,
   buildNewWorkPayload,
   buildUpdatePayload,
@@ -51,9 +68,14 @@ import {
   funnelMeta,
   hasChange,
   imageFileProblem,
+  offerChanged,
+  offerExample,
   pendingStamps,
   prettyMedium,
+  priorActions,
+  shownActions,
   updateKind,
+  type ActionsPrior,
   type NewWorkDraft,
   type PortalDraft,
 } from './portalForm';
@@ -96,8 +118,10 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
   const origOf = (w: PortalWork) => w.snapshot.availability_status || 'available';
   const isDirty = (w: PortalWork) => {
     const d = draftOf(w.artwork);
-    return hasChange(d, origOf(w)) || !!d.imageFile;
+    return hasChange(d, origOf(w)) || !!d.imageFile || offerChanged(d);
   };
+  const updates = state.data?.updates ?? [];
+  const priorOf = (w: PortalWork) => priorActions(updates, w.artwork);
   // Server pending first, the optimistic mark over it until the next reload.
   const sent: Record<string, string> = {
     ...pendingStamps(state.data?.updates ?? []),
@@ -131,10 +155,13 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
     const draft = draftOf(w.artwork);
     setBusy((b) => ({ ...b, [w.artwork]: true }));
     try {
-      // the photo rides its own endpoint (multipart); the rest of the card is
-      // the one update it always was — skipped only when the photo IS the edit
+      // the photo and the offer block ride their own endpoints; the rest of
+      // the card is the one update it always was — skipped only when one of
+      // those IS the edit (an untouched card's send stays the confirmation)
       if (draft.imageFile) await session.replaceImage(w.artwork, draft.imageFile);
-      if (!draft.imageFile || hasChange(draft, origOf(w)))
+      const proposal = offerChanged(draft) ? buildActionsProposal(draft, priorOf(w)) : null;
+      if (proposal) await session.proposeActions(w.artwork, proposal);
+      if ((!draft.imageFile && !proposal) || hasChange(draft, origOf(w)))
         await session.submitUpdate({
           kind: updateKind(draft, origOf(w)),
           artwork: w.artwork,
@@ -194,6 +221,30 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
     setAllBusy(false);
     notify(`${ok} of ${toSubmit} update${toSubmit === 1 ? '' : 's'} sent to Darz.`);
     await session.reload();
+  };
+
+  /** The offer block's own Save (old `saveOffer`, :2205) — the whole block as
+   * shown, to `…/actions/` (G-PORT-8). The rest of the card's edit stays put
+   * for its own Send update. */
+  const saveOffer = async (w: PortalWork) => {
+    const proposal = buildActionsProposal(draftOf(w.artwork), priorOf(w), true);
+    if (!proposal) return;
+    setBusy((b) => ({ ...b, [w.artwork]: true }));
+    try {
+      await session.proposeActions(w.artwork, proposal);
+      session.markSent(w.artwork);
+      setDrafts((d) => {
+        const { offerActions: _a, offerFloor: _f, ...rest } = d[w.artwork] ?? {};
+        return { ...d, [w.artwork]: rest };
+      });
+      // the old not-applied wording (:2209): this backend always reviews first
+      notify('Offer settings sent to Darz for review.');
+      await session.reload();
+    } catch (err) {
+      if (!session.noteAuthFailure(err)) notify('Could not save. Please try again.');
+    } finally {
+      setBusy((b) => ({ ...b, [w.artwork]: false }));
+    }
   };
 
   /** `ask` — a question about this one work (G-PORT-4). */
@@ -365,6 +416,7 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
             w={w}
             options={options}
             draft={draftOf(w.artwork)}
+            prior={priorOf(w)}
             dirty={isDirty(w)}
             sentAt={sent[w.artwork]}
             advOpen={!!openAdv[w.artwork]}
@@ -373,6 +425,7 @@ export function PortalWorks({ session, options, staff, notify }: WorksProps) {
             onToggleAdv={() => setOpenAdv((o) => ({ ...o, [w.artwork]: !o[w.artwork] }))}
             onPatch={(patch) => patchDraft(w.artwork, patch)}
             onSend={() => void sendOne(w)}
+            onSaveOffer={() => void saveOffer(w)}
             onAsk={(q) => askAbout(w, q)}
             onWithdraw={() => void withdraw(w)}
             onImageRefused={notify}
@@ -414,6 +467,7 @@ function WorkCard({
   w,
   options,
   draft,
+  prior,
   dirty,
   sentAt,
   advOpen,
@@ -422,6 +476,7 @@ function WorkCard({
   onToggleAdv,
   onPatch,
   onSend,
+  onSaveOffer,
   onAsk,
   onWithdraw,
   onImageRefused,
@@ -429,6 +484,7 @@ function WorkCard({
   w: PortalWork;
   options: OptionsMap | null;
   draft: PortalDraft;
+  prior: ActionsPrior;
   dirty: boolean;
   sentAt?: string;
   advOpen: boolean;
@@ -437,6 +493,7 @@ function WorkCard({
   onToggleAdv: () => void;
   onPatch: (patch: Partial<PortalDraft>) => void;
   onSend: () => void;
+  onSaveOffer: () => void;
   onAsk: (question: string) => Promise<boolean>;
   onWithdraw: () => void;
   onImageRefused: (message: string) => void;
@@ -452,9 +509,10 @@ function WorkCard({
   const statusOpts = choices(options, 'catalog.availability_status');
   const currencies = choices(options, 'currency');
   const actions = choices(options, 'crm.collector_action');
-  // old actAllows (:1409): the snapshot carries no allowed-actions, so the
-  // untouched grid shows the old "empty = all four" default.
-  const acts = draft.offerActions ?? actions.map((a) => a.value);
+  // old actAllows (:1409) — read off this portal's last proposal, since the
+  // snapshot carries no allowed-actions; untouched, it is "empty = all four"
+  const acts = shownActions(draft, prior);
+  const floorShown = draft.offerFloor ?? fmtThousands(prior.floor ?? '');
   const toggleAct = (value: string, on: boolean) =>
     onPatch({
       offerActions: on
@@ -669,8 +727,8 @@ function WorkCard({
 
           <AskBox id={w.id} onAsk={onAsk} />
 
-          {/* v1135 — rides this card's Send update; Darz applies it on
-              review (G-PORT-8: no direct write, no auto-decline engine) */}
+          {/* v1135 — its own Save, to the actions endpoint (G-PORT-8); a
+              card's Send update carries it too. Darz reviews, then applies. */}
           <div className="offblk">
             <div className="offblk-seam" />
             <div className="offblk-h">What collectors can do</div>
@@ -705,8 +763,12 @@ function WorkCard({
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
+              {/* the old line (:1361) again: once Darz approves, the crm
+                  engine refuses a below-floor offer with "please enter a
+                  higher amount" (`OfferBelowFloor`) */}
               <span>
-                Private — never shown to collectors. Darz uses it when handling offers for you.
+                Private — never shown to collectors. A lower offer is automatically declined
+                with a note to offer more.
               </span>
             </div>
             <div className="offfloor-row">
@@ -714,24 +776,32 @@ function WorkCard({
                 <input
                   inputMode="decimal"
                   aria-label="Minimum offer"
-                  placeholder="e.g. 10,000"
-                  value={draft.offerFloor ?? ''}
+                  placeholder={offerExample(s.price_amount)}
+                  value={floorShown}
                   onChange={(e) => onPatch({ offerFloor: e.target.value })}
                   onBlur={(e) => onPatch({ offerFloor: fmtThousands(e.target.value) })}
                 />
               </div>
-              <select
-                className="off-cur"
-                aria-label="Offer currency"
-                value={draft.offerCurrency ?? s.currency ?? ''}
-                onChange={(e) => onPatch({ offerCurrency: e.target.value })}
+              {/* fixed to the work's currency — the floor has none of its own
+                  and is compared as a raw amount (see the header) */}
+              {s.currency && (
+                <select
+                  className="off-cur"
+                  aria-label="Offer currency"
+                  value={s.currency}
+                  disabled
+                >
+                  <option value={s.currency}>{s.currency}</option>
+                </select>
+              )}
+              <button
+                className="btn btn--primary"
+                type="button"
+                disabled={busy}
+                onClick={onSaveOffer}
               >
-                {currencies.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.value}
-                  </option>
-                ))}
-              </select>
+                Save
+              </button>
             </div>
           </div>
         </div>

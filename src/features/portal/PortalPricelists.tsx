@@ -15,8 +15,10 @@
  *  - the weekly 3-upload quota line is absent — the backend keeps a soft cap
  *    the DESK sees, never a portal-side block (`cap_status`), so "Used this
  *    week: n / 3" would be false;
- *  - the old processing/formatted/rejected states and "Open Darz pricelist ↗"
- *    (the formatted download, P3c) have no backend;
+ *  - the old processing/formatted states have no backend. The formatted
+ *    download does (P3c): once Darz formats a list BUILT here, its row opens
+ *    the stored PDF with the old "Open Darz pricelist ↗" (:1052) — gated on
+ *    the list having lines, since an upload's own file is "Open file ↗";
  *  - the builder is always offered (the old `feat_builder` switch has no
  *    field), and its rows are the new line shape: a work (an assigned one, or
  *    a typed title), price, currency, availability (`catalog.availability_
@@ -218,7 +220,8 @@ export function PortalPricelists({
  * note, then the server status. A built list reads "LIST" and "Pricelist
  * (built in portal)" as in the old card; an upload opens its own file. */
 function PricelistRow({ p, options }: { p: PortalPricelist; options: OptionsMap | null }) {
-  const isBuilt = !p.object_key && p.lines.length > 0;
+  // an upload never has lines; a list Darz formatted (P3c) has lines AND a file
+  const isBuilt = p.lines.length > 0;
   const ext = (p.title || '').split('.').pop() ?? '';
   const ic = isBuilt ? 'LIST' : ext && ext.length <= 4 ? ext.toUpperCase() : 'FILE';
   const st = p.status || 'submitted';
@@ -239,7 +242,7 @@ function PricelistRow({ p, options }: { p: PortalPricelist; options: OptionsMap 
       {p.file_url && (
         <div>
           <a className="pl-dl" href={p.file_url} target="_blank" rel="noopener noreferrer">
-            Open file ↗
+            {isBuilt ? 'Open Darz pricelist ↗' : 'Open file ↗'}
           </a>
         </div>
       )}

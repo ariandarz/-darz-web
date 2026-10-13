@@ -26,6 +26,13 @@ Nothing is merged without your word.
 
 ## Decisions waiting on you (no rush)
 
+- **Portal "Introduce" now asks a gallery for someone else's contact details** (G-PORT-5, built 2026-10-13).
+  The old tab was a share link and said the gallery "never share[s] anyone's contact details"; the backend
+  built a lead form instead. The new tab asks the gallery to share only details the person is happy for Darz
+  to have. Keep the form, bring back the share link (needs a link slug the backend does not have), or both?
+- **The drawn signature is not on the document PDF** — the PDF is rendered when Darz issues it, before the
+  gallery signs. The mark shows on the signed row in the portal. Re-render on signing, or leave it?
+
 - **Portal lockout:** anyone who holds a portal link can lock it for up to 1 hour by guessing wrong PINs. OK for V1?
 - **Owner-deferred screens (API ready):**
   - selection-ready notice;

@@ -255,7 +255,7 @@ export function SourceDetailPage() {
 
       {/* ---- what has passed between us, both ways ---- */}
       <DocumentsSection linkId={link.id} shows={shows} />
-      <PricelistsSection linkId={link.id} />
+      <PricelistsSection linkId={link.id} linkName={link.name} />
 
       {/* ---- the portal's Q&A thread, from this side ---- */}
       <MessagesSection linkId={link.id} />

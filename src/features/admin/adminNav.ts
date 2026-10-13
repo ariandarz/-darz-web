@@ -208,6 +208,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         'the portal’s Exhibition Services menu (G-PORT-12b) — the old passport’s per-gallery “Service checklist” (`darz-studio.html:27843`), one list for every portal now. Not in the old ADGROUPS: added for V1 Phase 5.',
       ),
       tab(
+        'referrals',
+        'Introductions',
+        '/admin/referrals',
+        'ready',
+        'G-PORT-5',
+        'the leads partners send from their portal’s Introduce tab (`PortalReferral`). Not in the old ADGROUPS and no old desk: the old portal’s “Share” tab handed out a `?ref=` link that landed as an access request. Review sets a status only — no invite.',
+      ),
+      tab(
         'issue',
         'Issue a document',
         '/admin/issue',

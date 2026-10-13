@@ -7,7 +7,9 @@
  * works with their images, a per-work ask and withdraw sent with the right
  * `kind`, a replacement photo sent as multipart with the PIN as a FORM PART
  * (C-9 — never the query), History reading the server's own updates across a
- * reload, and a pricelist built in the portal.
+ * reload, and a pricelist built in the portal. Then the post-V1 G-PORT
+ * surfaces (backend 2026-10-01): the per-work actions / minimum-offer proposal
+ * (G-PORT-8), the Introduce tab (G-PORT-5) and the drawn signature (G-PORT-7).
  *
  * Serial on one page. Only this file drives the Aria link (the desk walk uses
  * its own), so the stub's state is this file's to change.
@@ -19,6 +21,9 @@ const PIN = '246810';
 const WORK1 = '00000000-0000-4000-8000-000000006a01'; // the assignment row (card ids)
 const ART1 = '00000000-0000-4000-8000-000000007a01'; // its artwork
 const ART2 = '00000000-0000-4000-8000-000000007a02';
+const ART3 = '00000000-0000-4000-8000-000000007a03';
+const PEX = '00000000-0000-4000-8000-000000005e11'; // the published show (G-PORT-7)
+const DOC_INVOICE = '00000000-0000-4000-8000-00000000de12';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -182,5 +187,164 @@ test('Pricelists show their server status; one built in the portal lands as Subm
   const built = page.locator('.pl-card', { hasText: 'Pricelist (built in portal)' });
   await expect(built.locator('.pl-status')).toHaveText('Submitted');
   await expect(built.locator('.pl-meta')).toContainText('2 works');
+  expect(thrown).toEqual([]);
+});
+
+test('What collectors can do: Save posts the block to …/actions/ — none ticked is viewing (G-PORT-8)', async () => {
+  thrown = [];
+  await page.locator('.portnav').getByRole('button', { name: 'Your works' }).click();
+  const card = page.locator('.awc', { hasText: 'Heech Lovers' });
+  await card.getByRole('button', { name: /Add a price change or note/ }).click();
+  const block = card.locator('.offblk');
+  // the old "Private …" line again, and the work's own currency, fixed
+  await expect(block.locator('.offlock')).toContainText(
+    'A lower offer is automatically declined with a note to offer more.',
+  );
+  await expect(block.getByLabel('Offer currency')).toBeDisabled();
+  await expect(block.getByLabel('Minimum offer')).toHaveAttribute('placeholder', 'e.g. 10,000');
+  // untouched, the grid is the backend's default-open "all four"
+  const boxes = block.locator('.offact input');
+  await expect(boxes).toHaveCount(4);
+  for (let i = 0; i < 4; i++) await boxes.nth(i).uncheck();
+  await block.getByLabel('Minimum offer').fill('9,500');
+  const [req] = await Promise.all([
+    page.waitForRequest(isPost(`/artworks/${ART1}/actions/`)),
+    block.getByRole('button', { name: 'Save' }).click(),
+  ]);
+  // [] would mean ALL FOUR once applied — an empty grid sends viewing only
+  expect(req.postDataJSON()).toEqual({
+    pin: PIN,
+    allowed_actions: ['viewing'],
+    offer_floor: '9500',
+  });
+  expect(new URL(req.url()).searchParams.get('pin')).toBeNull();
+  await expect(page.locator('.toast.show')).toHaveText('Offer settings sent to Darz for review.');
+  // after the re-read the block prefills from the pending proposal
+  await expect(card.locator('.pill.pending')).toContainText('Sent');
+  await expect(block.getByLabel('Request a viewing')).toBeChecked();
+  await expect(block.getByLabel('Buy')).not.toBeChecked();
+  await expect(block.getByLabel('Minimum offer')).toHaveValue('9,500');
+  expect(thrown).toEqual([]);
+});
+
+test('a ticked box rides Send update to its own endpoint — no stray update (G-PORT-8)', async () => {
+  const card = page.locator('.awc', { hasText: 'Behjat Sadr' });
+  await card.getByRole('button', { name: /Add a price change or note/ }).click();
+  await card.locator('.offblk').getByLabel('Make an offer').uncheck();
+  const posts: string[] = [];
+  const onReq = (r: Request) => {
+    if (r.method() === 'POST') posts.push(new URL(r.url()).pathname);
+  };
+  page.on('request', onReq);
+  try {
+    const [req] = await Promise.all([
+      page.waitForRequest(isPost(`/artworks/${ART3}/actions/`)),
+      card.getByRole('button', { name: 'Send update' }).click(),
+    ]);
+    expect(req.postDataJSON()).toEqual({
+      pin: PIN,
+      allowed_actions: ['purchase', 'hold', 'viewing'],
+    });
+    await expect(page.locator('.toast.show')).toHaveText('Update sent to Darz.');
+  } finally {
+    page.off('request', onReq);
+  }
+  // only the offer block was touched, so no availability update went with it
+  expect(posts.filter((p) => p.endsWith('/updates/'))).toEqual([]);
+});
+
+test('Introduce: a lead needs a name, goes to …/referrals/, and tops the list (G-PORT-5)', async () => {
+  thrown = [];
+  await page.locator('.portnav').getByRole('button', { name: 'Introduce' }).click();
+  // the seeded introduction, with the status the desk gave it
+  const seeded = page.locator('.pl-card', { hasText: 'Maryam Rahimi' });
+  await expect(seeded.locator('.pl-status')).toHaveText('Reviewed');
+
+  await page.getByRole('button', { name: 'Send to Darz' }).click();
+  await expect(page.locator('.toast.show')).toHaveText(
+    'Please enter the name of the person you are introducing.',
+  );
+
+  await page.getByLabel('Introducing').selectOption('gallery');
+  await page.getByLabel('Name *').fill('Negin Farahani');
+  await page.getByLabel('Organisation').fill('Farahani Projects');
+  await page.getByLabel('Email').fill('not-an-email');
+  await page.getByRole('button', { name: 'Send to Darz' }).click();
+  // a field the server refuses says why
+  await expect(page.locator('.toast.show')).toHaveText('Enter a valid email address.');
+
+  await page.getByLabel('Email').fill('negin@farahani.invalid');
+  const [req] = await Promise.all([
+    page.waitForRequest(isPost('/referrals/')),
+    page.getByRole('button', { name: 'Send to Darz' }).click(),
+  ]);
+  expect(req.postDataJSON()).toMatchObject({
+    pin: PIN,
+    referred_kind: 'gallery',
+    referred_name: 'Negin Farahani',
+    referred_org: 'Farahani Projects',
+    referred_email: 'negin@farahani.invalid',
+  });
+  await expect(page.locator('.toast.show')).toHaveText('Sent to Darz.');
+  const first = page.locator('.pl-card').first();
+  await expect(first.locator('.pl-name')).toHaveText('Negin Farahani');
+  await expect(first.locator('.pl-meta').first()).toContainText('Gallery · Farahani Projects');
+  await expect(first.locator('.pl-status')).toHaveText('New');
+  // the form cleared for the next one; a referral is not a pending update
+  await expect(page.getByLabel('Name *')).toHaveValue('');
+  expect(thrown).toEqual([]);
+});
+
+test('Exhibitions: an invoice is signed on the pad — typed name + drawn PNG — and the row shows the mark (G-PORT-7)', async () => {
+  thrown = [];
+  await page.locator('.portnav').getByRole('button', { name: 'Exhibitions' }).click();
+  await page.locator('.exh-showcard', { hasText: 'Spring Salon' }).click();
+  const invoice = page.locator('.doc-row', { hasText: 'Spring Salon — Invoice' });
+  await expect(invoice.locator('.doc-state')).toHaveText('Awaiting your signature.');
+
+  // a proposal opens the pad with the old confirm dialog's words; Cancel sends nothing
+  const proposal = page.locator('.doc-row', { hasText: 'Spring Salon — Proposal' });
+  await proposal.getByRole('button', { name: 'Confirm & request invoice' }).click();
+  await expect(page.getByRole('dialog', { name: 'Confirm this proposal' })).toContainText(
+    'Ref DARZ-PRO-2026-0007. Darz will prepare the invoice and send it here for you to sign.',
+  );
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await invoice.getByRole('button', { name: 'Sign & confirm' }).click();
+  const pad = page.getByRole('dialog', { name: 'Sign the invoice' });
+  await expect(pad.locator('.sp-sub')).toContainText('Ref DARZ-INV-2026-0007.');
+  // the old refusals, in order: draw first, then the name
+  await pad.getByRole('button', { name: 'Sign & confirm invoice' }).click();
+  await expect(page.locator('.toast.show')).toHaveText('Please sign in the box first.');
+  const box = (await pad.locator('canvas').boundingBox())!;
+  await page.mouse.move(box.x + 30, box.y + 120);
+  await page.mouse.down();
+  for (let i = 1; i <= 12; i++)
+    await page.mouse.move(box.x + 30 + i * 22, box.y + 120 - Math.sin(i / 2) * 40);
+  await page.mouse.up();
+  await pad.getByRole('button', { name: 'Sign & confirm invoice' }).click();
+  await expect(page.locator('.toast.show')).toHaveText('Add the name of the person signing.');
+  await pad.getByLabel('Name of the person signing').fill('Sara Ahmadi');
+  const [req] = await Promise.all([
+    page.waitForRequest(isPost(`/exhibitions/${PEX}/documents/${DOC_INVOICE}/sign/`)),
+    pad.getByRole('button', { name: 'Sign & confirm invoice' }).click(),
+  ]);
+  const body = req.postDataJSON();
+  expect(body).toMatchObject({ pin: PIN, signer_name: 'Sara Ahmadi' });
+  expect(body.signature_image).toMatch(/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/);
+  await expect(page.locator('.toast.show')).toHaveText(
+    'Signed — thank you. Darz has been notified.',
+  );
+  await expect(pad).toHaveCount(0);
+  await expect(invoice.locator('.doc-state')).toHaveText('Signed — nothing more needed.');
+  await expect(invoice.locator('img.doc-sig')).toHaveAttribute('src', /^data:image\/png;base64,/);
+  // the signer is remembered as "Your name" (old :2054) — it was empty
+  await expect(page.locator('#gp-staff')).toHaveValue('Sara Ahmadi');
+  const seen = await page.request.get('http://127.0.0.1:8787/__stub/portal/last-sign/');
+  expect((await seen.json()).data).toMatchObject({
+    signer_name: 'Sara Ahmadi',
+    image: 'data:image/png;base64,',
+  });
   expect(thrown).toEqual([]);
 });

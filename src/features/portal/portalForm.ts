@@ -21,6 +21,8 @@
  */
 import type {
   Choice,
+  CollectorAction,
+  PortalActionsProposal,
   PortalCatalogueEntry,
   PortalExhibition,
   PortalMessage,
@@ -28,6 +30,8 @@ import type {
   PortalPricelistBuild,
   PortalPricelistLine,
   PortalPricelistLineInput,
+  PortalReferralInput,
+  PortalReferralKind,
   PortalSnapshot,
   PortalState,
   PortalUpdate,
@@ -73,6 +77,10 @@ export function prettyMedium(m: string | null | undefined): string {
     .join(' · ');
 }
 
+/** An update's payload as a plain record — never trusted to be an object. */
+const payloadOf = (u: Pick<PortalUpdate, 'payload'>) =>
+  (u.payload && typeof u.payload === 'object' ? u.payload : {}) as Record<string, unknown>;
+
 /* ── the per-work edit model (gallery-update.html:1406-1419) ────────────── */
 
 export interface PortalDraft {
@@ -88,10 +96,12 @@ export interface PortalDraft {
   needsCorrection?: boolean;
   imageNeedsUpdate?: boolean;
   note?: string;
-  /** "What collectors can do" — unset = untouched (G-PORT-8: advisory). */
+  /** "What collectors can do" (G-PORT-8) — unset = untouched. These go to
+   * their OWN endpoint (`…/artworks/{id}/actions/`), never into the update
+   * payload below: see `buildActionsProposal`. */
   offerActions?: string[];
+  /** the minimum offer as typed; `''` after a prefilled value = clear it */
   offerFloor?: string;
-  offerCurrency?: string;
   /** A replacement photo attached to this card (G-PORT-1) — it goes to its
    * own multipart endpoint on Send update, as a pending `image` update. */
   imageFile?: File;
@@ -105,8 +115,9 @@ function hasText(v: string | undefined): boolean {
   return !!(v && v.trim());
 }
 
-/** Any submittable edit at all — mirrors `hasChange` (:1411) plus the offer
- * block, which the old page saved separately and the new one rides along. */
+/** Any edit for the ONE update a send makes — mirrors `hasChange` (:1411).
+ * The offer block is not in it: the old page saved it separately (`saveOffer`,
+ * :2205) and so does this one, to its own endpoint (`offerChanged`). */
 export function hasChange(draft: PortalDraft, original: string): boolean {
   return !!(
     statusChanged(draft, original) ||
@@ -119,10 +130,13 @@ export function hasChange(draft: PortalDraft, original: string): boolean {
     hasText(draft.shippingNote) ||
     hasText(draft.provenance) ||
     draft.viewing ||
-    draft.hold2w ||
-    draft.offerActions !== undefined ||
-    hasText(draft.offerFloor)
+    draft.hold2w
   );
+}
+
+/** The "What collectors can do" block was touched (G-PORT-8). */
+export function offerChanged(draft: PortalDraft): boolean {
+  return draft.offerActions !== undefined || draft.offerFloor !== undefined;
 }
 
 /** The dominant change decides the kind — old `kindOf` (:1424) priority,
@@ -137,9 +151,7 @@ export function updateKind(draft: PortalDraft, original: string): string {
     hasText(draft.shippingNote) ||
     hasText(draft.provenance) ||
     draft.viewing ||
-    draft.hold2w ||
-    draft.offerActions !== undefined ||
-    hasText(draft.offerFloor)
+    draft.hold2w
   )
     return 'note';
   return 'availability'; // the plain "still available" confirmation
@@ -184,13 +196,111 @@ export function buildUpdatePayload(
   if (statusChanged(draft, original)) payload.availability_status = chosen;
   if (hasText(draft.price)) payload.price_amount = cleanAmount(draft.price);
   if (hasText(draft.currency)) payload.currency = draft.currency;
-  if (draft.offerActions !== undefined) payload.offer_actions = draft.offerActions;
-  if (hasText(draft.offerFloor)) {
-    payload.offer_floor = cleanAmount(draft.offerFloor);
-    payload.offer_currency = draft.offerCurrency || s.currency || '';
-  }
   if (staff) payload.staff = staff;
   return payload;
+}
+
+/* ── "What collectors can do" + minimum offer (G-PORT-8; old v1131/v1161,
+ *    gallery-update.html:1349-1364 + `saveOffer`, :2205-2209) ────────────── */
+
+/** `Artwork.COLLECTOR_ACTION_CHOICES`, in the backend's order — typed against
+ * the schema enum, so a renamed value fails the build. Labels still come from
+ * `crm.collector_action` in `/api/options/`. The old page's buy/offer/hold/
+ * visit map onto purchase/offer/hold/viewing. */
+export const COLLECTOR_ACTIONS: readonly CollectorAction[] = [
+  'purchase',
+  'hold',
+  'offer',
+  'viewing',
+];
+
+/** The minimum-offer field's EXAMPLE placeholder — old `_offerEx` (v1161,
+ * :725): about 85% of the asking price, rounded to a clean step, grouped;
+ * the old generic example when the work has no price. */
+export function offerExample(price: string | number | null | undefined): string {
+  const p = Number(String(price ?? '').replace(/[^0-9.]/g, '')) || 0;
+  if (p <= 0) return 'e.g. 80,000,000';
+  const step = p >= 1e7 ? 1e6 : p >= 1e6 ? 1e5 : p >= 1e4 ? 1e3 : p >= 1e3 ? 500 : 100;
+  let ex = Math.round((p * 0.85) / step) * step;
+  if (ex <= 0) ex = step;
+  return `e.g. ${fmtThousands(String(ex))}`;
+}
+
+/** What the portal last proposed for a work, as far as it can know. */
+export interface ActionsPrior {
+  actions: CollectorAction[] | null;
+  /** the floor as the server stored it (a decimal string), or null */
+  floor: string | null;
+}
+
+/**
+ * The snapshot carries neither `allowed_actions` nor `offer_floor`
+ * (`GalleryLinkArtworkService.assign`), so the old `actAllows(w,k)` /
+ * `w.offer_floor` prefill has nothing to read. The nearest truth the portal
+ * holds is its OWN `actions` proposals in `updates[]`: the newest pending or
+ * approved one decides each key separately (a proposal may carry only the
+ * floor, leaving earlier actions standing). Rejected ones never count. A change
+ * Darz makes on the artwork directly is invisible here — flagged.
+ */
+export function priorActions(
+  updates: readonly PortalUpdate[],
+  artworkId: string,
+): ActionsPrior {
+  const rows = updates
+    .filter(
+      (u) =>
+        u.kind === 'actions' &&
+        u.artwork === artworkId &&
+        (u.status === 'pending' || u.status === 'approved'),
+    )
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  let actions: CollectorAction[] | null = null;
+  let floor: string | null | undefined;
+  for (const u of rows) {
+    const p = payloadOf(u);
+    if (actions === null && Array.isArray(p.allowed_actions))
+      actions = COLLECTOR_ACTIONS.filter((a) => (p.allowed_actions as unknown[]).includes(a));
+    if (floor === undefined && 'offer_floor' in p)
+      floor = p.offer_floor === null || p.offer_floor === '' ? null : String(p.offer_floor);
+    if (actions !== null && floor !== undefined) break;
+  }
+  return { actions, floor: floor ?? null };
+}
+
+/** The ticked set the grid shows: the draft, else the last proposal, else the
+ * backend's default-open "all four" (an empty `allowed_actions`). */
+export function shownActions(draft: PortalDraft, prior: ActionsPrior): string[] {
+  return draft.offerActions ?? prior.actions ?? [...COLLECTOR_ACTIONS];
+}
+
+/**
+ * The proposal body — or `null` when there is nothing to send.
+ *
+ *  - `allowed_actions` goes when the grid was touched, or on the block's own
+ *    Save (`whole`), which — like the old `saveOffer` — sends the set shown.
+ *    **None ticked sends `['viewing']`**, the old page's own fallback
+ *    (`if(!list.length)list=['visit']`, :2206). It is also the only safe
+ *    reading here: `[]` means ALL FOUR once applied (`resolved_allowed_
+ *    actions`), the opposite of what an empty grid says.
+ *  - `offer_floor` goes only when the field was touched: the old digits-only
+ *    clean (:2207), and an emptied field is `null` — "no floor".
+ */
+export function buildActionsProposal(
+  draft: PortalDraft,
+  prior: ActionsPrior,
+  whole = false,
+): PortalActionsProposal | null {
+  const body: PortalActionsProposal = {};
+  if (draft.offerActions !== undefined || whole) {
+    const ticked = shownActions(draft, prior);
+    const ordered = COLLECTOR_ACTIONS.filter((a) => ticked.includes(a));
+    body.allowed_actions = ordered.length ? ordered : ['viewing'];
+  }
+  if (draft.offerFloor !== undefined) {
+    const digits = String(draft.offerFloor).replace(/[^0-9.]/g, '');
+    body.offer_floor = digits === '' ? null : digits;
+  }
+  return Object.keys(body).length ? body : null;
 }
 
 /* ── new-work card (gallery-update.html:1443) ───────────────────────────── */
@@ -572,9 +682,6 @@ export function historyRows(updates: readonly PortalUpdate[]): PortalUpdate[] {
   return [...updates].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }
 
-const payloadOf = (u: Pick<PortalUpdate, 'payload'>) =>
-  (u.payload && typeof u.payload === 'object' ? u.payload : {}) as Record<string, unknown>;
-
 /** Which work an entry is about — old `histTitle` (gallery-update.html:2130-2135). */
 export function historyTitle(u: PortalUpdate, works: readonly PortalWork[]): string {
   const w = u.artwork ? works.find((x) => x.artwork === u.artwork) : undefined;
@@ -613,9 +720,10 @@ export function historyNote(u: PortalUpdate): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
-/** Kinds whose approval writes to the artwork (`GalleryUpdateService.approve`);
- * approving any other kind records Darz's decision only. */
-const APPLIED_KINDS = ['availability', 'price', 'correction'];
+/** Kinds whose approval writes to the artwork (`GalleryUpdateService.approve`;
+ * `actions` since G-PORT-8); approving any other kind records Darz's decision
+ * only. */
+const APPLIED_KINDS = ['availability', 'price', 'correction', 'actions'];
 
 /**
  * What a state MEANS, in the gallery's words — old `HISTORY_STATE_NOTE`
@@ -763,4 +871,78 @@ export function builderLineErrors(
  * options are loading or lack the value. An empty status reads `submitted`. */
 export function pricelistStatusLabel(options: OptionsMap | null, status: string): string {
   return choiceLabel(options, 'gallery.pricelist_status', status || 'submitted');
+}
+
+/* ── Introduce (G-PORT-5) ───────────────────────────────────────────────── */
+
+/** `PortalReferral.KIND_CHOICES`, typed against the schema enum. Not served by
+ * `/api/options/`, so labels go through `choiceLabel` with the key the
+ * backend would register (`gallery.referral_kind`) — today its raw-value
+ * fallback, which is the model's own label ("Collector", …). */
+export const REFERRAL_KINDS: readonly PortalReferralKind[] = [
+  'collector',
+  'gallery',
+  'artist',
+  'other',
+];
+
+export interface ReferralDraft {
+  kind: PortalReferralKind;
+  name: string;
+  org: string;
+  email: string;
+  phone: string;
+  note: string;
+}
+
+export function blankReferral(): ReferralDraft {
+  return { kind: 'collector', name: '', org: '', email: '', phone: '', note: '' };
+}
+
+/** The wire body — or the refusal. Only the name is required
+ * (`PortalReferralSubmitSerializer`); every other field goes trimmed, and an
+ * empty one as the serializer's own blank default. */
+export function buildReferralBody(
+  d: ReferralDraft,
+): { ok: true; body: PortalReferralInput } | { ok: false; error: string } {
+  const name = d.name.trim();
+  if (!name)
+    return { ok: false, error: 'Please enter the name of the person you are introducing.' };
+  return {
+    ok: true,
+    body: {
+      referred_kind: d.kind,
+      referred_name: name,
+      referred_org: d.org.trim(),
+      referred_email: d.email.trim(),
+      referred_phone: d.phone.trim(),
+      note: d.note.trim(),
+    },
+  };
+}
+
+/** A referral's chip: accepted the green of an accepted pricelist, declined
+ * the old "rejected" red; new and reviewed stay neutral. */
+export function referralTone(status: string): '' | 'accepted' | 'rejected' {
+  if (status === 'accepted') return 'accepted';
+  if (status === 'declined') return 'rejected';
+  return '';
+}
+
+/* ── the drawn signature (G-PORT-7, `SignaturePad`) ─────────────────────── */
+
+/** `ExhibitionPortalSignSerializer.validate_signature_image` — decoded bytes. */
+export const SIGNATURE_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Decoded size of a base64 data URL, without decoding it. */
+export function dataUrlBytes(dataUrl: string): number {
+  const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const pad = b64.endsWith('==') ? 2 : b64.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((b64.length * 3) / 4) - pad);
+}
+
+/** Whether an exported signature may go — old :2037, on the NEW server's
+ * limit (2 MB decoded), not the old RPC's 400,000 characters. */
+export function signatureAcceptable(png: string): boolean {
+  return png.startsWith('data:image/png') && dataUrlBytes(png) <= SIGNATURE_MAX_BYTES;
 }
