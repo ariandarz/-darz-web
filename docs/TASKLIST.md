@@ -28,7 +28,7 @@ structure — trace every decision to the approved package + `app.html`.
 | V1 | **Complete** — `V1_IMPLEMENTATION_PLAN.md` §5 ticked through Phase 10. The final picture is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
 | Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **with every defect fix merged** (C-6…C-26, PRs **#71–#78**, `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"; still notes only: C-16, C-21), plus the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12: 247 paths / 358 operations. |
-| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **868 unit** (79 files) · build · **163 E2E** (collector 40 · desks 105 · portal 6 · smoke 4 · team 8). Runs on **Node 20**. |
+| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **901 unit** (83 files) · build · **169 E2E** (collector 41 · desks 110 · portal 6 · smoke 4 · team 8). Runs on **Node 20**. _(2026-10-13, the three 2026-10-01 seams below.)_ |
 | Live site | https://darz-web.vercel.app — serves the 2026-10-12 release (V1 + G-TEAM-1); Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
 
 **V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
@@ -119,6 +119,23 @@ structure — trace every decision to the approved package + `app.html`.
       deployed with migration `gallery.0012` before it works live.
 - [ ] **Contact links in the UI** — the desk shows a contact's optional collector/artist "jump to" link, but has no
       control to SET one (the old card had none). Owner call whether to add a picker.
+- [x] **Projects Proposal + Invoice builder** — done 2026-10-13. `ProjectProposal.tsx` carries the old composer
+      (`_propForm`, `darz-studio.html:14051`) inline on the record and files `project_proposal` / `project_invoice`
+      documents under `/projects/admin/projects/{id}/documents/`: Save draft (create / PATCH `fields`) · Finalize
+      (render → upload → confirm) · ↓ Download PDF · Preview · Sign for Darz · Continue a draft. `fields` = the old
+      `_propSave` payload (title/client/projectName/intro/notes/pricing) + the PDF snapshot (`projectDocs.ts`). The
+      invoice is NEW (no old project invoice) — owner-only, exhibition-invoice shape. Not ported: Share, Print, the
+      free-form Proposal Builder desk (`builder`, `:14644`).
+- [x] **Source-freshness loop (G-CAT-9)** — done 2026-10-13. Galleries & Sources › **Artwork Sources** tab
+      (`ArtworkSources.tsx`, old `shared` tab): strip, reminder, confirmation filter, per-work Confirm / Update…,
+      per-source "✓ Confirm all available", owner hide-stale card; Market App desk: "Need reconfirmation" tile +
+      alert + "Confirm available"; Source Updates approval stamps the work confirmed (old `:39151`).
+- [x] **Artists `records` / `top-price` sorts (G9)** — done 2026-10-13. Collector list (all four old options,
+      card shows "N records" + "Top price"); admin roster: "Sort: Most records", the old Records column (`N ›` →
+      Auction Records `?artist=`), and — an addition — "Sort: Top price" with a Top price column.
+- [ ] **Backend candidate (G-CAT-9):** stamp `source_confirmed_at` inside `GalleryUpdateService.approve` — the desk
+      does it as a second call today (not atomic). Also: no freshness ordering on the admin list (the old tab sorted
+      most-overdue first).
 
 ### Done in V1 (was open on 2026-09-24)
 - [x] Frontend adoption of every closed V1 and Group-B gap (Batches 1–8 → V1 Phases 0–9a).

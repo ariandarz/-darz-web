@@ -5,6 +5,10 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-13 — Proposal + Invoice builder, source freshness (G-CAT-9), artist sorts (G9) built
+Project record: the old composer inline, filed as `project_proposal`/`project_invoice` (draft → final → signed; invoice new, owner-only).
+Sources › Artwork Sources + Market App desk: freshness pills, Confirm / Update… / Confirm all, strip, owner hide-stale card. Artists: Most records · Top price, Records column. Schema unchanged (`bf2b9dc`).
+
 ## 2026-10-12 — Pricelist Reject wired (G-TEAM-2)
 The approvals box's Reject now sends `rejected` through the gallery status route (toast "Pricelist rejected"); backend #91 (`bf2b9dc`) added the state.
 The partner desk gains "Mark rejected" and a rejected pill; labels read `gallery.pricelist_status` from `/api/options/`. Schema regenerated (backend `bf2b9dc`).

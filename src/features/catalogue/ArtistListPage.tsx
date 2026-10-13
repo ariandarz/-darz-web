@@ -1,9 +1,15 @@
 /**
  * ArtistListPage — faithful port of app.html's Artists tab (`artistsView()`):
  * a search box + sort dropdown (`.dza-atools`) over a card grid
- * (`.dza-agrid2`), with `.dza-aempty` for no matches. "Most records" /
- * "Top price" sorts are not offered — they need auction-record joins the
- * backend doesn't have yet (see docs/API_GAP_ANALYSIS.md, G9).
+ * (`.dza-agrid2`), with `.dza-aempty` for no matches.
+ *
+ * The sort list is the old one, all four (`app.html:5342-5346`): Name A–Z ·
+ * Most works · Most records · Top price. The last two are server orderings
+ * since G9 (backend 2026-10-01): `records` = most auction records first,
+ * `top-price` = the highest SOLD result first, artists with none last (the
+ * old value `top` is `top-price` on the wire). As in the old directory, Top
+ * price ranks raw figures across currencies — nothing is converted; see
+ * `ArtistCard.tsx` for what the card prints.
  */
 import { useEffect, useState } from 'react';
 import { Dropdown } from '../../components';
@@ -54,6 +60,8 @@ export function ArtistListPage() {
             options={[
               { value: 'name', label: 'Name A–Z' },
               { value: 'works', label: 'Most works' },
+              { value: 'records', label: 'Most records' },
+              { value: 'top-price', label: 'Top price' },
             ]}
             value={state.query.ordering ?? 'name'}
             onChange={(v) => setQuery({ ordering: v })}
@@ -70,7 +78,7 @@ export function ArtistListPage() {
             <div className="dza-aempty">
               {term
                 ? `No artists match "${term}".`
-                : 'Artists appear here as works are published.'}
+                : 'Artists appear here as works and records are published.'}
             </div>
           )}
 

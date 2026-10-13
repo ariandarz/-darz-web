@@ -492,7 +492,9 @@ export interface CatalogueQuery {
 /** Artists list params (`GET /api/catalog/artists/`). */
 export interface ArtistQuery {
   search?: string;
-  /** `name` | `-name` | `works` */
+  /** `name` | `-name` | `works` | `records` | `top-price` (backend G9,
+   * 2026-10-01). `records` = most auction records first; `top-price` = the
+   * highest SOLD auction result first, artists with none last. */
   ordering?: string;
   per_page?: number;
   page?: number;
@@ -565,10 +567,12 @@ export type ArtistAdmin = Schemas['ArtistAdmin'];
 
 /** The admin artists roster's query — `ArtistAdminFilterSet` (G-CAT-3):
  * `search` over the display name, `ordering` name|-name|created|-created|works
- * (`works` = most works first). */
+ * (`works` = most works first), and since G9 (2026-10-01) `records` (most
+ * auction records first) and `top-price` (highest sold result first, nulls
+ * last). */
 export interface ArtistAdminQuery {
   search?: string;
-  ordering?: 'name' | '-name' | 'created' | '-created' | 'works';
+  ordering?: 'name' | '-name' | 'created' | '-created' | 'works' | 'records' | 'top-price';
   page?: number;
   per_page?: number;
 }
@@ -616,9 +620,37 @@ export interface ArtworkAdminQuery {
   source_type?: string;
   /** ISO datetime — works created at/after it ("Recently added"). */
   created_after?: string;
+  /* ── G-CAT-9 source freshness (backend 2026-10-01) ───────────────────
+   * Both restrict to SOURCE-LINKED works (a `source_name` or a
+   * `source_type`) — a Darz-inventory work has no source to reconfirm. */
+  /** `fresh | new | due | stale | risky`; repeats OR together. */
+  freshness?: FreshnessState | FreshnessState[];
+  /** due + stale + risky — confirmed (or added) more than 30 days ago. */
+  needs_reconfirmation?: boolean;
   page?: number;
   per_page?: number;
 }
+
+/** G-CAT-9 — a work's derived source-freshness (`ArtworkFreshnessSerializer`),
+ * on every admin artwork row as `freshness`. `days` counts from
+ * `source_confirmed_at`, else from `created_at`; the bands are ≤30 fresh (or
+ * `new`, never confirmed) · 31–60 due · 61–90 stale · >90 risky. `label` is
+ * the server's own words for the pill ("Confirmed 12d ago", "Needs update",
+ * "Not confirmed 75d", "Risky · 120d", "Awaiting first confirm"). */
+export type ArtworkFreshness = Schemas['ArtworkFreshness'];
+export type FreshnessState = ArtworkFreshness['state'];
+
+/** `GET /catalog/admin/sources/freshness-summary/` — the "needs
+ * reconfirmation" counts over source-linked, still-active works (sold /
+ * withdrawn / archived excluded), the per-source rollup (most overdue
+ * first), and the current hide-stale setting. */
+export type FreshnessSummary = Schemas['FreshnessSummary'];
+export type SourceRollup = Schemas['SourceRollup'];
+
+/** `GET/PATCH /catalog/admin/sources/freshness-settings/` — the owner's
+ * hide-stale toggle. Off by default. **Not version-locked**: `version` is
+ * read-only on the serializer and the PATCH takes no `expected_version`. */
+export type SourceFreshnessSettings = Schemas['SourceFreshnessSettings'];
 
 /** `GET /catalog/admin/artworks/facets/` — the Year and Source dropdown
  * vocabularies, computed over the same filtered queryset the list would
@@ -1195,6 +1227,9 @@ export type ProjectStage = Schemas['StageEnum'];
  * enum (`ProjectStatusEnum` → `Status2c3Enum`) once G-PROJ-2 made `status`
  * writable, and it will rename it again on the next collision (C-2). */
 export type ProjectStatus = Schemas['Project']['status'];
+/** The two document kinds a project issues (Proposal Builder, backend
+ * 2026-10-01) — `ProjectDocumentCreateSerializer.doc_type`. */
+export type ProjectDocKind = Schemas['ProjectDocumentCreate']['doc_type'];
 export type ProjectCreateInput = Schemas['ProjectCreate'];
 /** `PATCH …/projects/{id}/` — the optimistic lock is required, not optional.
  * Since G-PROJ-2/3/9 it also carries `status` (reset by the next stage move),

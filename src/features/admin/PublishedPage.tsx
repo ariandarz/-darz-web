@@ -11,14 +11,28 @@
  *    live the moment it is set (per-work `publish/`), so the "Selected on
  *    this device vs live in cloud" pair of stats collapses into ONE number;
  *  - the stats strip (`workspaces-runtime.js:747-750`): Live for collectors
- *    (every published work) · Hidden by a gap (the
+ *    (every published work) · Need reconfirmation (G-CAT-9: published works
+ *    whose source has not confirmed them in 30 days — due + stale + risky,
+ *    three `per_page: 1` reads) · Hidden by a gap (the
  *    published-with-no-image count — Data Health's own `published_but_
  *    hidden` check, the same fact the old `_appMissing` computed);
+ *  - the reconfirmation alert under it (`:751`), verbatim, its "Review
+ *    them →" switching the list to the old filter "Availability needs
+ *    reconfirmation" (`:742`, `?needs_reconfirmation=true`). The filter's
+ *    other two options (Reserved · sold · withdrawn / Missing image, size or
+ *    price) are not ported — the published list has no such server slice;
  *  - the search box ("Search published works…", `:743`) — the admin list's
  *    `search` param;
- *  - the card actions (`:559`): "Remove from Market App" verbatim; "Edit"
- *    opens the Database editor. "Confirm available" is the Phase-10
- *    freshness loop and waits with it (G-CAT-9);
+ *  - the card actions (`:559`, `:752`): "Confirm available" (stamps today,
+ *    the same `spConfirm` and toast as the Sources tile) and "Remove from
+ *    Market App" verbatim; "Edit" opens the Database editor. The freshness
+ *    pill rides above them. Both appear only on a SOURCE-LINKED work that is
+ *    still active — the server's loop counts nothing else, so on a
+ *    Darz-inventory work they would stamp a date no count reads. The pill
+ *    prints the server's label (the Sources desk's words, "Confirmed 12d
+ *    ago" / "Needs update" / …); the old Market card used the workspace's
+ *    shorter set ("Fresh / Review soon / Needs update", `:52-53`) for the
+ *    same bands — one vocabulary here, flagged;
  *  - the toolbar links (`:549-551`): App Design, and "Open the Market App ↗"
  *    — here the collector app is this same site, opened in a new tab;
  *  - the empty copy (`:562`), trimmed of the gallery/artist sources that
@@ -43,7 +57,19 @@ import type {
 } from '../../api/types';
 import { useListController } from '../shared/useListController';
 import { ArtworksController } from './ArtworksController';
-import { ConfirmDialog, DeskBanner, DeskPage, Pager, SearchFilter } from './kit';
+import {
+  ConfirmDialog,
+  DeskBanner,
+  DeskPage,
+  DeskToast,
+  Pager,
+  SearchFilter,
+  SelectFilter,
+  useDeskToast,
+} from './kit';
+import { FreshPill } from './FreshnessControls';
+import { isSourceLinked, marketRemindParts, takesPart } from './freshness';
+import { useConfirmAvailable } from './useConfirmAvailable';
 import './admin.css';
 
 export function PublishedPage() {
@@ -69,8 +95,35 @@ export function PublishedPage() {
   }, [catalogAdmin]);
   useEffect(loadHealth, [loadHealth]);
 
+  // "Need reconfirmation" (:749) — the published works in each overdue band,
+  // one `per_page: 1` read per band; `null` until known
+  const [bands, setBands] = useState<{ due: number; stale: number; risky: number } | null>(
+    null,
+  );
+  const loadBands = useCallback(() => {
+    const count = (freshness: 'due' | 'stale' | 'risky') =>
+      catalogAdmin
+        .artworks({ published: true, freshness, per_page: 1 })
+        .then((p) => p.pagination.total_count);
+    Promise.all([count('due'), count('stale'), count('risky')]).then(
+      ([due, stale, risky]) => setBands({ due, stale, risky }),
+      () => setBands(null),
+    );
+  }, [catalogAdmin]);
+  useEffect(loadBands, [loadBands]);
+  const needs = bands ? bands.due + bands.stale + bands.risky : undefined;
+
   const [removing, setRemoving] = useState<ArtworkAdmin | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { say, message } = useDeskToast();
+  const { busyId, confirm } = useConfirmAvailable({
+    say,
+    setError,
+    onDone: () => {
+      void reload();
+      loadBands();
+    },
+  });
 
   const remove = async (w: ArtworkAdmin) => {
     setError(null);
@@ -100,12 +153,22 @@ export function PublishedPage() {
         </span>
       }
       toolbar={
-        <SearchFilter
-          label="Search"
-          value={state.query.search}
-          onChange={(search) => setQuery({ search })}
-          placeholder="Search published works…"
-        />
+        <>
+          <SearchFilter
+            label="Search"
+            value={state.query.search}
+            onChange={(search) => setQuery({ search })}
+            placeholder="Search published works…"
+          />
+          {/* :742 — the old filter, cut to the slice the server serves */}
+          <SelectFilter
+            label="Show"
+            anyLabel="All published works"
+            value={state.query.needs_reconfirmation ? 'attention' : undefined}
+            onChange={(v) => setQuery({ needs_reconfirmation: v ? true : undefined })}
+            choices={[{ value: 'attention', label: 'Availability needs reconfirmation' }]}
+          />
+        </>
       }
       subtitle={
         <>
@@ -120,6 +183,16 @@ export function PublishedPage() {
           <div className="ad-tiles ad-tiles-sales">
             <Stat label="Live for collectors" value={total} />
             <Stat
+              label="Need reconfirmation"
+              value={needs}
+              tone={needs ? 'attn' : undefined}
+              hint={
+                needs
+                  ? 'availability not confirmed inside the review period'
+                  : 'every published work is current'
+              }
+            />
+            <Stat
               label="Hidden by a gap"
               value={health ? health.published_but_hidden.count : undefined}
               tone={health && health.published_but_hidden.count > 0 ? 'attn' : undefined}
@@ -129,6 +202,22 @@ export function PublishedPage() {
         </>
       }
     >
+      {/* :751 — the reconfirmation alert, verbatim */}
+      {bands && needs ? (
+        <div className="ad-remind">
+          <span>
+            <b>
+              {needs} published work{needs === 1 ? '' : 's'}
+            </b>{' '}
+            need{needs === 1 ? 's' : ''} availability reconfirmation —{' '}
+            {marketRemindParts(bands)}. Nothing is removed automatically; ask the sources, then
+            confirm.
+          </span>
+          <button type="button" onClick={() => setQuery({ needs_reconfirmation: true })}>
+            Review them →
+          </button>
+        </div>
+      ) : null}
       {error && <DeskBanner>{error}</DeskBanner>}
       {state.status === 'loading' && !state.results.length && (
         <p className="dz-state">Loading…</p>
@@ -168,7 +257,18 @@ export function PublishedPage() {
                     {visibilities.find((c) => c.value === w.visibility)?.label ?? w.visibility}
                   </span>
                 )}
+                {isSourceLinked(w) && takesPart(w) && <FreshPill f={w.freshness} />}
                 <span className="ad-rowacts">
+                  {isSourceLinked(w) && takesPart(w) && (
+                    <button
+                      type="button"
+                      className="ad-rowbtn"
+                      disabled={busyId === w.id}
+                      onClick={() => void confirm(w)}
+                    >
+                      Confirm available
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="ad-rowbtn"
@@ -191,7 +291,7 @@ export function PublishedPage() {
       )}
       {state.status === 'idle' && state.results.length === 0 && (
         <p className="dz-state">
-          {state.query.search
+          {state.query.search || state.query.needs_reconfirmation
             ? 'No published works match.'
             : 'Nothing is in the Market App yet — add works from the Artworks Database.'}
         </p>
@@ -212,6 +312,7 @@ export function PublishedPage() {
           }}
         />
       )}
+      <DeskToast message={message} />
     </DeskPage>
   );
 }

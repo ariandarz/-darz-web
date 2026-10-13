@@ -25,9 +25,10 @@
  *  - **All results** — the Status select, already ported; the old filter's
  *    options are this model's `auctions.record_status`.
  *  - **Artist** — the old chip opens one artist's records. Here that is the
- *    `artist` query param, reached by the Artists desk's record-count link,
- *    which is itself deferred with the counts (G-CAT-3). Not a second
- *    control on this desk.
+ *    `artist` query param, reached by the Artists desk's record-count link
+ *    (the old `N ›` cell, `:33558-33561`; built 2026-10-13 once the roster
+ *    carried `records_count`, G9). It shows as a removable "Artist: …" chip,
+ *    not a second control on this desk.
  *  - **All auction houses** — **built in V1 Phase 3** over `?house=`
  *    (G-REC-1, an exact match). The old control was a searchable multi-select
  *    (`recHouseMS`, `:20303-20312`); the API takes one house, so it is a
@@ -47,7 +48,7 @@
  *  - **List / Cards** — table only, the same call as Collectors (**G-4**).
  */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import { MAX_PER_PAGE, walkPages } from '../../api/paging';
 import type { OptionsMap } from '../../api/services';
@@ -64,6 +65,7 @@ import {
   SearchFilter,
   SelectFilter,
   ToggleFilter,
+  FilterChips,
   type Column,
 } from './kit';
 import { houseOptions, REC_KNOWN_HOUSES } from './recordHouses';
@@ -92,10 +94,23 @@ export function RecordsAdminPage() {
   const navigate = useNavigate();
   const statuses = choices(options, 'auctions.record_status');
 
+  // `?artist=<id>` — the Artists desk's record-count link (`:33558-33561`)
+  // arrives with one artist chosen; it seeds the query once, and clearing the
+  // chip drops it from the URL too, so a reload does not bring it back.
+  const [params, setParams] = useSearchParams();
   const { state, setQuery, setPage, reload } = useListController<
     AuctionRecord,
     AuctionRecordQuery
-  >(() => new RecordsController(auctionsAdmin));
+  >(() => new RecordsController(auctionsAdmin, { artist: params.get('artist') ?? undefined }));
+  const clearArtist = () => {
+    setQuery({ artist: undefined });
+    const next = new URLSearchParams(params);
+    next.delete('artist');
+    setParams(next, { replace: true });
+  };
+  const artistName =
+    state.results.find((r) => r.artist === state.query.artist)?.artist_display_name ||
+    'this artist';
 
   // The house list: standard houses at once, the stored ones once the walk
   // lands (no facet endpoint — see the header).
@@ -262,6 +277,12 @@ export function RecordsAdminPage() {
       }
     >
       {actionError && <DeskBanner>{actionError}</DeskBanner>}
+      {state.query.artist && (
+        <FilterChips
+          chips={[{ key: 'artist', label: `Artist: ${artistName}`, onClear: clearArtist }]}
+          onClearAll={clearArtist}
+        />
+      )}
       <DeskList
         label="Auction records"
         status={state.status}

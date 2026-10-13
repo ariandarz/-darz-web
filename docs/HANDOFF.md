@@ -16,8 +16,8 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 | Branches | `main` and `development`; `development` is the working line. **V1 released to `main` on 2026-09-27** (#113); the **Team Workspace desk (G-TEAM-1) released 2026-10-12** (#117). The two are level at `723e0cf`. |
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **plus all eight defect fixes** (#71–#78) and the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9), plus the `rejected` pricelist state (#91, G-TEAM-2). `schema.d.ts` regenerated against it 2026-10-12 (G-TEAM-2 PR): 247 paths / 358 operations, non-breaking — the only change since `f322a30` is `rejected` in `GalleryPricelistStatusEnum`. |
-| API adoption | V1 snapshot (323 ops): 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). **Not re-run for the 35 operations added since:** the 19 `/api/workspace/` ones are 16 integrated + 3 not needed (G-TEAM-1); the other 16 (G-PORT, Projects documents, G-CAT-9) are UI-pending. |
-| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **868 unit** (79 files) · build · **163 E2E** (collector 40 · desks 105 · portal 6 · smoke 4 · team 8). Runs on **Node 20**. |
+| API adoption | V1 snapshot (323 ops): 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). **Not re-run for the 35 operations added since:** the 19 `/api/workspace/` ones are 16 integrated + 3 not needed (G-TEAM-1); the 10 for Projects documents (5) and G-CAT-9 (5) are **integrated 2026-10-13**; the 6 G-PORT ones are UI-pending. |
+| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **901 unit** (83 files) · build · **169 E2E** (collector 41 · desks 110 · portal 6 · smoke 4 · team 8) — as of the 2026-10-13 branch below. Runs on **Node 20**. |
 | Live | https://darz-web.vercel.app — serves the 2026-10-12 release (V1 + G-TEAM-1); auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). The Team desk also needs the backend at `f322a30`+, and its Reject `bf2b9dc`+ (migration `gallery.0012`). |
 
 **The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
@@ -71,6 +71,10 @@ work in this order:
    suite (and Strategy / Automations / Languages / Analytics / "Notify collectors"). The
    owner ruled them **V2-or-later on 2026-10-01**: they have no backend, there is nothing to adopt, and they
    are **not** a backlog to clear. Do not implement, plan or re-raise them. Authority: `TASKLIST.md` § D.
+
+**Built 2026-10-13 (PR from `claude/epic-allen-vpzpcl`, not merged):** the Projects proposal + invoice composer
+on the record, the source-freshness loop (G-CAT-9, Galleries & Sources › Artwork Sources + the Market App desk) and
+the Artists `records` / `top-price` sorts. Owner calls on what is new in them are in `NOTES-FOR-ARIAN.md`.
 
 **Team Workspace (G-TEAM-1) is built** (2026-10-12) — it came off the V2 list when its backend shipped; open
 G-TEAM-2 (pricelist Reject → `rejected`) followed the same day; the one open follow-up is setting a contact's

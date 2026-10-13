@@ -41,6 +41,17 @@ Nothing is merged without your word.
 - **Languages (i18n, off today):** which languages ship, and do we do a real right-to-left pass?
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
+- **Proposal / invoice, freshness, artist sorts (built 2026-10-13, not merged):**
+  - the project **invoice** is new — the old Projects area had no invoice composer, only a status. It
+    is built like the exhibition services invoice and is owner-only. Keep it?
+  - the free-form **Proposal Builder** desk (paste a draft, AI organise, custom sections, design
+    options) is still not ported — only the record's composer is. Wanted?
+  - the admin roster's **"Sort: Top price"** and its Top price column are additions (the old roster
+    never ranked by price). The figure mixes currencies (the backend converts nothing), so it is shown
+    as a bare number.
+  - the **hide-stale switch** is owner-only here (the backend lets any admin change it).
+  - backend follow-ups: approving a source update should stamp the work confirmed server-side (the
+    desk does it as a second call today), and the admin list has no "most overdue first" order.
 - **Team desk (built 2026-10-12):**
   - a contact can be linked to a collector/artist (the card then shows a jump-to link), but the desk has
     no control to set the link — the old card had none. Add a picker?

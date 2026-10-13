@@ -324,11 +324,12 @@ now be retired — the follow-up list is in `V1_CONTRACT_ISSUES.md` § "Backend 
 - **Built 2026-10-12:** the Team Workspace desk (G-TEAM-1) at `/admin/team` — My workspace · Team workflow ·
   Contacts · Logins, against `docs/WORKSPACE_API.md`. G-TEAM-2 (Reject → `rejected`) done the same
   day; open follow-up: setting a contact's collector/artist link.
-- **Ready to build (backend shipped, UI pending)** (all shipped 2026-10-01, see API_GAPS.md /
-  ADMIN_ARCHITECTURE.md): the **Projects Proposal + Invoice
-  Builder** (`/projects/admin/projects/{id}/documents/…`), the **source-freshness loop (G-CAT-9)**
-  (`/catalog/admin/.../confirm-available|sources/confirm|freshness-summary|freshness-settings`), and the
-  **Artists `records`/`top-price` sorts** (`?ordering=records|top-price`).
+- **Built 2026-10-13** (backend shipped 2026-10-01): the **Projects Proposal + Invoice builder** on the project
+  record (`/projects/admin/projects/{id}/documents/…` — the old composer ported, the invoice new), the
+  **source-freshness loop (G-CAT-9)** (Galleries & Sources › Artwork Sources, the Market App desk's
+  reconfirmation tile + Confirm available, the owner's hide-stale card), and the **Artists `records` /
+  `top-price` sorts** (collector list + admin roster, the roster's Records column). Not ported, stated:
+  the free-form Proposal Builder desk, Share / Print, the v1230 review-period selects.
 - **Still open, not ruled V2:** i18n/RTL (G-I18N-1), PDF/image import
   intake (D15), the settlement calculator, theme editors (D17).
 - **Gallery portal — backend shipped 2026-10-01, UI pending:** referral / Introduce (G-PORT-5), drawn

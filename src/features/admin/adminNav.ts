@@ -415,10 +415,12 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
         null,
         'partial',
         '11c',
-        'No separate desk: the client proposal issues from the project record ' +
-          '(Proposal section) as a documents.Document (kind proposal) rendered ' +
-          'client-side like the exhibition documents. The old Proposal Builder ' +
-          '(the free-form document editor, :14647) is not ported.',
+        'No separate desk: the old proposal composer (:14049) — and, new, a ' +
+          'services invoice — sit on the project record (Proposal section), filed ' +
+          'as project documents (…/projects/{id}/documents/, kind project_proposal | ' +
+          'project_invoice; draft → final → signed) and rendered client-side like ' +
+          'the exhibition documents. The old Proposal Builder (the free-form ' +
+          'draft-to-document editor, :14644) is not ported.',
       ),
       tab(
         'projCalc',

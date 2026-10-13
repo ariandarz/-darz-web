@@ -22,6 +22,15 @@
  *    the partner reads in their History; an `image` (G-PORT-1) says a photo
  *    arrived — the desk gets no URL for it yet (C-12).
  *
+ * **Artwork Sources** (`ArtworkSources.tsx`) is the old `shared` tab
+ * (`:27293`, `spSharedBody` `:27426`): every source-linked work with its
+ * freshness pill, Confirm / Update…, "✓ Confirm all available" per source,
+ * the needs-reconfirmation strip and the owner's hide-stale card — the
+ * source-freshness loop (G-CAT-9, backend 2026-10-01). Its reminder banner
+ * (`spRemindBanner`, `:27444`) also stands on the Partners tab, as the old
+ * panel drew it on every Sources tab, and "Review them →" opens Artwork
+ * Sources on "Needs attention".
+ *
  * The partner search is server-side (`?search=` over name / contact /
  * email, G-PORT-15), so it finds a partner past the first page.
  *
@@ -37,7 +46,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type { OptionsMap } from '../../api/services';
-import type { Choice, GalleryLinkAdmin, GalleryUpdateAdmin } from '../../api/types';
+import type {
+  Choice,
+  FreshnessSummary,
+  GalleryLinkAdmin,
+  GalleryUpdateAdmin,
+} from '../../api/types';
 import { Segment } from '../../components';
 import {
   ConfirmDialog,
@@ -50,14 +64,16 @@ import {
   type Column,
 } from './kit';
 import { ExhibitionsQueue } from './ExhibitionsQueue';
+import { ArtworkSources } from './ArtworkSources';
+import { remindParts } from './freshness';
 import { IssuedCredentials } from './SourceCredentials';
 import { describeUpdate } from './exhibitionForm';
 import './admin.css';
 
-type View = 'partners' | 'updates' | 'exhibitions';
+type View = 'partners' | 'sources' | 'updates' | 'exhibitions';
 
 export function SourcesPage() {
-  const { galleryAdmin } = useApi();
+  const { galleryAdmin, catalogAdmin } = useApi();
   const options = useOptions();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -68,12 +84,19 @@ export function SourcesPage() {
   const galleriesTab = typeParam === 'gallery';
   const viewParam = params.get('view');
   const [view, setView] = useState<View>(
-    viewParam === 'updates'
-      ? 'updates'
-      : viewParam === 'exhibitions'
-        ? 'exhibitions'
-        : 'partners',
+    viewParam === 'updates' || viewParam === 'exhibitions' || viewParam === 'sources'
+      ? viewParam
+      : 'partners',
   );
+  const goView = (v: View, extra?: Record<string, string>) => {
+    setView(v);
+    const next = new URLSearchParams(params);
+    if (v === 'partners') next.delete('view');
+    else next.set('view', v);
+    next.delete('fresh');
+    for (const [k, val] of Object.entries(extra ?? {})) next.set(k, val);
+    setParams(next);
+  };
 
   const types = choices(options, 'gallery.source_type');
   const kinds = choices(options, 'gallery.update_kind');
@@ -124,6 +147,21 @@ export function SourcesPage() {
     );
   }, [galleryAdmin]);
   useEffect(loadPending, [loadPending]);
+
+  // :27444-27453 — the freshness reminder, on the Partners tab too. Read
+  // once per visit to the tab; a failed read just leaves the banner off.
+  const [fresh, setFresh] = useState<FreshnessSummary | null>(null);
+  useEffect(() => {
+    if (view !== 'partners') return;
+    let alive = true;
+    catalogAdmin.freshnessSummary().then(
+      (f) => alive && setFresh(f),
+      () => alive && setFresh(null),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [catalogAdmin, view]);
 
   const shown = links;
 
@@ -218,22 +256,19 @@ export function SourcesPage() {
          is only one." Found against `04-galleries`. */
       title={galleriesTab ? 'Galleries' : 'Galleries & Sources'}
       action={
-        <span className="ad-rowacts">
+        <span className="ad-rowacts sp-headacts">
           <Segment<View>
+            className="sp-headseg"
             label="Partners or updates"
             options={[
               { value: 'partners', content: 'Partners' },
+              // :27293 — the old tab order: … Collectors · Artwork Sources · Source Updates
+              { value: 'sources', content: 'Artwork Sources' },
               { value: 'updates', content: 'Source Updates' },
               { value: 'exhibitions', content: 'Exhibitions' },
             ]}
             value={view}
-            onChange={(v) => {
-              setView(v);
-              const next = new URLSearchParams(params);
-              if (v === 'partners') next.delete('view');
-              else next.set('view', v);
-              setParams(next);
-            }}
+            onChange={(v) => goView(v)}
           />
           {view === 'partners' && (
             <DeskAction onClick={() => setIssuing(true)}>＋ New partner</DeskAction>
@@ -297,7 +332,22 @@ export function SourcesPage() {
             </b>{' '}
             awaiting your review.
           </span>
-          <button type="button" onClick={() => setView('updates')}>
+          <button type="button" onClick={() => goView('updates')}>
+            Review them →
+          </button>
+        </div>
+      )}
+      {view === 'partners' && fresh && fresh.needs_reconfirmation > 0 && (
+        <div className="ad-remind">
+          <span>
+            <b>
+              {fresh.needs_reconfirmation} artwork
+              {fresh.needs_reconfirmation === 1 ? '' : 's'}
+            </b>{' '}
+            need source confirmation — {remindParts(fresh)}. Reach out to the galleries, then
+            mark each one confirmed.
+          </span>
+          <button type="button" onClick={() => goView('sources', { fresh: 'attention' })}>
             Review them →
           </button>
         </div>
@@ -326,7 +376,9 @@ export function SourcesPage() {
         />
       )}
 
-      {view === 'exhibitions' ? (
+      {view === 'sources' ? (
+        <ArtworkSources sourceTypes={types} />
+      ) : view === 'exhibitions' ? (
         <ExhibitionsQueue
           options={options}
           linkNames={new Map((links ?? []).map((l) => [l.id, l.name]))}
@@ -391,9 +443,24 @@ function ReviewRows({ update }: { update: GalleryUpdateAdmin }) {
 
 /** The Source Updates queue — the desk's second half (`spUpdatesBody`,
  * old sub-tab `updates`). Approve/reject with the note; the confirm names
- * what approval DOES for the kind. */
+ * what approval DOES for the kind.
+ *
+ * Approving an update about an existing work also stamps the work's source
+ * confirmation (G-CAT-9) — the old approve did exactly that before anything
+ * else (`var patch={srcConfirmed:Date.now()}`, `darz-studio.html:39151`), so
+ * a gallery's "Confirm available" from its portal is what keeps the work
+ * fresh. The backend's approve does not stamp it, so the desk follows the
+ * approve with `confirm-available` — two calls, not one transaction: if the
+ * second fails the approval stands and the banner says the date did not
+ * move (backend candidate: stamp it inside `GalleryUpdateService.approve`).
+ * Not for a `withdraw` (the work is leaving the portal) or an `ask` (a
+ * question, not a report on the work). */
+function stampsConfirmation(u: GalleryUpdateAdmin): boolean {
+  return !!u.artwork && u.kind !== 'withdraw' && u.kind !== 'ask';
+}
+
 function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () => void }) {
-  const { galleryAdmin } = useApi();
+  const { galleryAdmin, catalogAdmin } = useApi();
   const [status, setStatus] = useState('pending');
   const [rows, setRows] = useState<GalleryUpdateAdmin[] | null>(null);
   const [page, setPage] = useState(1);
@@ -447,6 +514,17 @@ function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () =
       setNote('');
       load();
       onReviewed();
+      if (verdict === 'approve' && stampsConfirmation(update) && update.artwork) {
+        try {
+          await catalogAdmin.confirmAvailable(update.artwork);
+        } catch (err: unknown) {
+          setError(
+            `Approved — but the work’s source confirmation could not be stamped${
+              err instanceof Error ? ` (${err.message})` : ''
+            }. Confirm it from Artwork Sources.`,
+          );
+        }
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not record the review.');
     } finally {
@@ -459,7 +537,12 @@ function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () =
 
   /** What approving THIS kind does, said before it is done
    * (`GalleryUpdateService.approve`). */
-  const approveCopy = (kind: string) =>
+  const approveCopy = (u: GalleryUpdateAdmin) =>
+    approveKindCopy(u.kind) +
+    (stampsConfirmation(u)
+      ? ' It also records the source’s confirmation — the work counts as confirmed today.'
+      : '');
+  const approveKindCopy = (kind: string) =>
     kind === 'withdraw'
       ? 'Approve this request? The work is removed from the partner’s portal — its snapshot row is unassigned; the artwork itself is untouched.'
       : kind === 'ask'
@@ -543,7 +626,7 @@ function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () =
           message={
             <>
               {reviewing.verdict === 'approve'
-                ? approveCopy(reviewing.update.kind)
+                ? approveCopy(reviewing.update)
                 : 'Reject this update? The partner sees the decision (and your note) in their portal history.'}
               <label className="ad-field" style={{ marginTop: 10 }}>
                 <span className="ad-filter-l">
