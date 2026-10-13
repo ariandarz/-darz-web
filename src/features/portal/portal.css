@@ -13,8 +13,6 @@
  * Deliberately not ported, with the reason (see docs/ADMIN_ARCHITECTURE.md §2):
  *  - `.dzsel` (v885 custom dropdown): a JS-placed fixed-position panel; the
  *    same file's own `.statussel` native select serves the control.
- *  - `.sigpad` (v1187 canvas pad): the sign endpoint takes a name only
- *    (G-PORT-7).
  *  - `.askbar`/`.chip--ask` (§90 Darz → gallery asks): no backend; the
  *    backend's `ask` kind runs the other way (gallery → Darz, G-PORT-4).
  *  - `.pickbar`/`.awc-pick` (§79 multi-select removal): the single-work
@@ -1348,6 +1346,15 @@
   background-repeat: no-repeat;
   background-position: right 11px center;
 }
+/* G-PORT-8 — fixed to the work's own currency (the floor has none of its own):
+   no chevron, no pointer, so it does not read as a choice. No old source. */
+.off-cur:disabled {
+  background-image: none;
+  padding: 0 12px;
+  cursor: default;
+  opacity: 1;
+  color: var(--ink-2);
+}
 @media (max-width: 400px) {
   .offact-grid {
     grid-template-columns: 1fr;
@@ -1996,6 +2003,108 @@
   border-color: #41381f;
   background: #251f12;
 }
+/* G-PORT-7 — the stored drawn mark under a signed row's state. No old source:
+   the old page printed it on the sheet itself, and the PDF here is rendered
+   before signing. A white ground like the pad's own (.sp-can), so black ink
+   reads on the dark theme too. */
+.doc-sig {
+  display: block;
+  margin-top: 8px;
+  max-width: 180px;
+  max-height: 56px;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  object-fit: contain;
+}
+
+/* v1187 · §80 · the signing pad (gallery-update.html:490-503). A gallery signs
+   with a finger on a phone and a mouse on a desktop, so the surface is one
+   canvas sized to its own box at the device pixel ratio — a canvas scaled by
+   CSS alone draws a blurred line, and a blurred line is what gets stored. */
+.sigpad-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(10, 10, 10, 0.46);
+}
+.sigpad {
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  box-shadow: 0 22px 60px rgba(10, 10, 10, 0.34);
+  padding: 18px;
+}
+.sigpad h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.sigpad .sp-sub {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.55;
+  margin: 6px 0 14px;
+}
+.sigpad .sp-can {
+  position: relative;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.sigpad canvas {
+  display: block;
+  width: 100%;
+  height: 190px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.sigpad .sp-rule {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 38px;
+  border-bottom: 1px solid #ddd9d0;
+  pointer-events: none;
+}
+.sigpad .sp-hint {
+  position: absolute;
+  left: 22px;
+  bottom: 18px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b4afa4;
+  pointer-events: none;
+}
+.sigpad .sp-name {
+  margin-top: 12px;
+}
+.sigpad .sp-acts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.sigpad .sp-acts .btn {
+  width: auto;
+  flex: 1 1 auto;
+  padding: 10px 16px;
+  font-size: 13.5px;
+}
 @media (max-width: 480px) {
   .exh-showcard {
     padding: 13px 14px;
@@ -2226,6 +2335,18 @@
   background: #16241c;
 }
 .gp-root.dark .pl-status.superseded {
+  color: #f0a5b4;
+  border-color: #4d2630;
+  background: #2a1820;
+}
+/* rejected (G-TEAM-2) is the old status itself — `gallery-update.html:349`
+   and `:354`, verbatim */
+.pl-status.rejected {
+  color: #9b1c34;
+  border-color: #eccdd4;
+  background: #fdf2f4;
+}
+.gp-root.dark .pl-status.rejected {
   color: #f0a5b4;
   border-color: #4d2630;
   background: #2a1820;

@@ -1105,6 +1105,101 @@ test('Source detail: pricelists open their file, show built lines, and a status 
   expect(thrown).toEqual([]);
 });
 
+test('Source detail: a built pricelist formats to a Darz PDF, stored via …/rendered/ and opened from its row (P3c)', async () => {
+  thrown = [];
+  const BUILT = '00000000-0000-4000-8000-000000009b02';
+  await page.goto(`/admin/sources/${GL_DESK}`);
+  // an upload is never offered the action — the endpoint replaces object_key
+  const upload = page.locator('.ad-plrow', { hasText: 'golestan-2026.pdf' });
+  await expect(upload.getByRole('link', { name: 'Open file' })).toBeVisible();
+  await expect(upload.getByRole('button', { name: /Format/ })).toHaveCount(0);
+
+  const built = page.locator('.ad-plrow', { hasText: 'Built in portal — 2 works' });
+  await expect(built.getByRole('link')).toHaveCount(0);
+  const [req] = await Promise.all([
+    page.waitForRequest(
+      (r) => r.method() === 'POST' && r.url().endsWith(`/gallery/admin/pricelists/${BUILT}/rendered/`),
+    ),
+    built.getByRole('button', { name: 'Format as Darz pricelist' }).click(),
+  ]);
+  expect(req.headers()['content-type']).toMatch(/^multipart\/form-data/);
+  // the row re-reads: the stored file opens as the Darz pricelist, and can be redone
+  await expect(built.getByRole('link', { name: 'Open Darz pricelist' })).toHaveAttribute(
+    'href',
+    new RegExp(`/files/rendered-${BUILT}\\.pdf$`),
+  );
+  await expect(built.getByRole('button', { name: 'Format again' })).toBeVisible();
+  // a real PDF arrived, under the partner's name
+  const seen = await page.request.get(`${STUB}/__stub/pricelist/${BUILT}/rendered/`);
+  const got = (await seen.json()).data;
+  expect(got.head).toBe('%PDF-');
+  expect(got.filename).toMatch(/^golestan-gallery-pricelist-\d{4}-\d{2}\.pdf$/);
+  expect(got.bytes).toBeGreaterThan(5000);
+  expect(thrown).toEqual([]);
+});
+
+test('Source Updates: an actions proposal reads as collector actions + floor; approval says it applies (G-PORT-8)', async () => {
+  thrown = [];
+  await page.goto('/admin/sources?view=updates');
+  const row = page
+    .locator('.ad-updrow')
+    .filter({ hasText: 'Golestan Gallery' })
+    .filter({ hasText: 'Actions & offer floor' });
+  await expect(row).toContainText('Collectors can');
+  await expect(row).toContainText('Buy, Request a viewing');
+  await expect(row).toContainText('Minimum offer (private)');
+  await expect(row).toContainText('40,000');
+  await row.getByRole('button', { name: 'Approve' }).click();
+  await expect(page.locator('.ad-confirm-m')).toContainText('It is APPLIED to the artwork');
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && /\/approve\/$/.test(r.url())),
+    page.locator('.ad-confirm-ok').click(),
+  ]);
+  expect(new URL(req.url()).pathname).toBe(
+    '/api/gallery/admin/updates/00000000-0000-4000-8000-000000008b04/approve/',
+  );
+  await expect(row).toHaveCount(0);
+  expect(thrown).toEqual([]);
+});
+
+test('Introductions: New by default, the partner filter reaches the query, and a review moves the row (G-PORT-5)', async () => {
+  thrown = [];
+  const q = watchQueries('/api/gallery/admin/referrals/');
+  await q.start();
+  try {
+    await page.goto('/admin/referrals');
+    await expect(page.getByRole('heading', { name: 'Introductions' })).toBeVisible();
+    await expect.poll(() => q.last()?.get('status')).toBe('new');
+    const negar = page.locator('.ad-updrow', { hasText: 'Negar Tavakoli' });
+    await expect(negar).toContainText('Gallery');
+    await expect(negar).toContainText('from Golestan Gallery');
+    await expect(negar).toContainText('Negar Gallery');
+    await expect(negar).toContainText('Shows young painters from Tabriz.');
+    // a reviewed one is not new
+    await expect(page.locator('.ad-updrow', { hasText: 'Maryam Rahimi' })).toHaveCount(0);
+
+    await page.getByLabel('Partner').selectOption({ label: 'Golestan Gallery' });
+    await expect.poll(() => q.last()?.get('link')).toBe(GL_DESK);
+
+    const ali = page.locator('.ad-updrow', { hasText: 'Ali Sadeghi' });
+    const [req] = await Promise.all([
+      page.waitForRequest((r) => r.method() === 'POST' && /\/review\/$/.test(r.url())),
+      ali.getByRole('button', { name: 'Mark accepted' }).click(),
+    ]);
+    expect(req.postDataJSON()).toEqual({ status: 'accepted' });
+    // accepted is no longer new — the re-read drops it from this view
+    await expect(ali).toHaveCount(0);
+
+    await page.getByLabel('Status').selectOption('');
+    await expect(page.locator('.ad-updrow', { hasText: 'Ali Sadeghi' }).locator('.ad-stpill')).toHaveText(
+      'Accepted',
+    );
+  } finally {
+    await q.stop();
+  }
+  expect(thrown).toEqual([]);
+});
+
 test('Service checklist: add, edit with the lock, a stale save is a 409, and the portal menu follows (G-PORT-12b)', async () => {
   thrown = [];
   await page.goto('/admin/exhibition-catalogue');

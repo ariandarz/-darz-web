@@ -271,17 +271,18 @@ describe('the map itself — every registered tab is documented', () => {
 });
 
 describe('the map’s size, stated so a partial port cannot pass quietly', () => {
-  it('registers 14 groups and 57 tabs', () => {
+  it('registers 14 groups and 58 group tabs', () => {
     // 14 groups: ADGROUPS' fifteen entries minus `more`, which is the
     // folded-group menu rather than a group of its own.
     expect(ADMIN_GROUPS.length).toBe(14);
-    // 56 group tabs + Dashboard + Chat, the two that belong to no group.
+    // 58 group tabs + Dashboard + Chat, the two that belong to no group.
     // 53 + the two Exhibition Services tabs the owner asked for on
     // 2026-09-19 (the library, and the one-page issue flow), + the
     // Documents group's Create tab, which is that same issue flow's second
     // entry point (2026-09-22 — see `adminNav.ts` and the test below),
-    // + the portal's Exhibition Services menu (V1 Phase 5, G-PORT-12b).
-    expect(allTabs().length).toBe(59);
+    // + the portal's Exhibition Services menu (V1 Phase 5, G-PORT-12b),
+    // + Introductions, the portal referral desk (G-PORT-5).
+    expect(allTabs().length).toBe(60);
   });
 
   it('counts what is actually built, so progress cannot be overstated', () => {
@@ -296,6 +297,7 @@ describe('the map’s size, stated so a partial port cannot pass quietly', () =>
       'sources',
       'exhservices',
       'exhcatalogue',
+      'referrals',
       'issue',
       'market',
       'design',

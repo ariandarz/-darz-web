@@ -6,8 +6,10 @@
 import { createElement, type ReactElement } from 'react';
 import { pdf, type DocumentProps } from '@react-pdf/renderer';
 import { DarzDocument, type DocumentPdfFields } from './documentPdf';
+import { DarzPricelist } from './pricelistPdf';
+import type { PricelistPdfFields } from './pricelistFields';
 
-export type { DocumentPdfFields };
+export type { DocumentPdfFields, PricelistPdfFields };
 
 export async function renderDocumentPdf(
   kind: 'exhibition_proposal' | 'exhibition_invoice',
@@ -17,5 +19,12 @@ export async function renderDocumentPdf(
   // <Document>, which the cast states
   return pdf(
     createElement(DarzDocument, { kind, fields }) as unknown as ReactElement<DocumentProps>,
+  ).toBlob();
+}
+
+/** P3c — the formatted Darz pricelist (`pricelistPdf.tsx`). */
+export async function renderPricelistPdf(fields: PricelistPdfFields): Promise<Blob> {
+  return pdf(
+    createElement(DarzPricelist, { fields }) as unknown as ReactElement<DocumentProps>,
   ).toBlob();
 }

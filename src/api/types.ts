@@ -718,8 +718,9 @@ export type GalleryLinkArtwork = Schemas['GalleryLinkArtwork'];
 
 /** A pricelist a partner sent from the portal — `GalleryPricelistSerializer`:
  * `file_url` (a presigned read of the uploaded file, G-PORT-14; `null` for a
- * pricelist built in-portal), `status` (submitted/accepted/superseded, P3a —
- * NOT in `/api/options/`, C-14) and the structured builder `lines` (P3b). */
+ * pricelist built in-portal), `status` (submitted/accepted/superseded, P3a;
+ * rejected, G-TEAM-2 — labelled by `gallery.pricelist_status` in
+ * `/api/options/`) and the structured builder `lines` (P3b). */
 export type GalleryPricelistAdmin = Schemas['GalleryPricelist'];
 export type GalleryPricelistLine = Schemas['GalleryPricelistLine'];
 /** `GalleryPricelist.STATUS_CHOICES` — the wire values, from the schema enum. */
@@ -741,8 +742,34 @@ export type ExhibitionCatalogPatch = Locked<Partial<Omit<ExhibitionCatalogInput,
 
 /** A portal submission in the review queue — approving an availability /
  * price / correction update applies it to the artwork through the real
- * catalog services; the other kinds record intent only. */
+ * catalog services, and so does an `actions` proposal (G-PORT-8: the work's
+ * `allowed_actions` / `offer_floor`); the other kinds record intent only. */
 export type GalleryUpdateAdmin = Schemas['GalleryUpdate'];
+
+/** G-PORT-5 — a lead a source introduced from its portal's Introduce tab
+ * (`PortalReferralSerializer`): the same read shape on the portal's own list
+ * and on the admin review desk. A logged lead only — reviewing it sets a
+ * status and triggers nothing downstream (owner call, `PortalReferral`). */
+export type PortalReferral = Schemas['PortalReferral'];
+/** collector · gallery · artist · other — NOT served by `/api/options/` (the
+ * backend registers no `gallery.referral_kind`), so read through
+ * `choiceLabel`, whose raw-value fallback is the model's own label. */
+export type PortalReferralKind = Schemas['PortalReferralKindEnum'];
+/** new · reviewed · accepted · declined — likewise unregistered in options. */
+export type PortalReferralStatus = Schemas['PortalReferralStatusEnum'];
+/** `POST portal/{token}/referrals/` body minus the riding `pin` — only the
+ * name is required (`PortalReferralSubmitSerializer`). */
+export type PortalReferralInput = Pick<
+  Schemas['PortalPortalReferralSubmit'],
+  'referred_name'
+> &
+  Partial<Omit<Schemas['PortalPortalReferralSubmit'], 'pin' | 'referred_name'>>;
+
+/** G-PORT-8 — `POST portal/{token}/artworks/{id}/actions/` body minus the
+ * `pin` (its `allowed_actions` are `CollectorAction`s, above). At least one key (`PortalActionsProposalSerializer.validate`). An
+ * EMPTY `allowed_actions` means "all four" once applied (`Artwork.
+ * resolved_allowed_actions`) — never send `[]` to mean "none". */
+export type PortalActionsProposal = Omit<Schemas['PortalPortalActionsProposal'], 'pin'>;
 
 /** Admin lot — `LotAdminSerializer`: the collector shape PLUS the
  * confidential `reserve_amount` and `leading_bidder`, with the artwork as a
@@ -953,7 +980,8 @@ export interface PortalPricelist {
   notes: string;
   object_key: string;
   file_url: string | null;
-  /** submitted · accepted · superseded — not in `/api/options/` (C-14) */
+  /** submitted · accepted · superseded · rejected — labels from
+   * `gallery.pricelist_status` in `/api/options/` */
   status: string;
   lines: PortalPricelistLine[];
   created_at: string;

@@ -7,13 +7,25 @@
  * file, and move its status. Bound to backend P3a/P3b + G-PORT-14 (V1
  * Phase 5): an upload opens through its presigned `file_url`, a list built
  * in the portal shows its structured `lines`, and the status buttons set
- * `submitted` / `accepted` / `superseded` (`POST admin/pricelists/{id}/status/`).
+ * `submitted` / `accepted` / `superseded` / `rejected` (`POST
+ * admin/pricelists/{id}/status/`; `rejected` since G-TEAM-2).
  * The old buttons were Mark formatting / Mark formatted / Reject over the
- * old states; these are the same "Mark …" over the backend's three — and
+ * old states; these are the same "Mark …" over the backend's four — and
  * because accepting one SUPERSEDES the link's previous accepted list with
- * no guard (C-21), the whole list is re-read after every change. The status
- * has no `/api/options/` entry (C-14), so its label is the raw value. The
+ * no guard (C-21), the whole list is re-read after every change. Labels come
+ * from `/api/options/` `gallery.pricelist_status` (served — the C-14 note
+ * that it was missing is stale), the raw value only as a fallback. The
  * soft cap (`…/pricelists/cap/`) is advisory: a line when over, never a block.
+ *
+ * P3c — a list BUILT in the portal can be formatted: the desk draws the old
+ * Listed Pricelist sheet from its lines (`pdf/pricelistPdf.tsx`, client-side),
+ * stores it (`POST …/pricelists/{id}/rendered/`) and the row opens it through
+ * its `file_url` — the gallery's portal row too ("Open Darz pricelist ↗", the
+ * old portal's own words). The action is offered on a built list ONLY: the
+ * endpoint REPLACES `object_key`, so on an upload it would orphan the
+ * gallery's own file. "Built" is therefore "has lines", never "has no file" —
+ * a formatted list has both. The button's words have no old source (the old
+ * desk formatted in its builder and then pressed "Mark formatted") — flagged.
  *
  * `DocumentsSection` — every proposal and invoice Darz has issued this
  * partner, across all their shows, in the order they were issued. Documents
@@ -26,6 +38,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi, useOptions } from '../../api/hooks';
 import type {
+  Choice,
   DocumentAdmin,
   ExhibitionAdmin,
   GalleryPricelistAdmin,
@@ -33,6 +46,7 @@ import type {
   GalleryPricelistStatus,
 } from '../../api/types';
 import { DeskBanner } from './kit';
+import { pricelistFilename, pricelistPdfFields } from './pdf/pricelistFields';
 import {
   choiceLabel,
   fmtDate,
@@ -47,15 +61,32 @@ const PRICELIST_STATUSES: readonly GalleryPricelistStatus[] = [
   'submitted',
   'accepted',
   'superseded',
+  'rejected',
 ];
 
-export function PricelistsSection({ linkId }: { linkId: string }) {
+/** The pill's tone: accepted green; superseded and rejected the old
+ * "rejected" red (`.ad-stpill.is-gone`) — neither is the list Darz uses. */
+function pricelistTone(st: string): 'ok' | 'gone' | 'neut' {
+  if (st === 'accepted') return 'ok';
+  if (st === 'superseded' || st === 'rejected') return 'gone';
+  return 'neut';
+}
+
+export function PricelistsSection({
+  linkId,
+  linkName,
+}: {
+  linkId: string;
+  /** the partner's name — the formatted sheet's eyebrow and file name */
+  linkName: string;
+}) {
   const { galleryAdmin } = useApi();
   const options = useOptions();
   const [rows, setRows] = useState<GalleryPricelistAdmin[] | null>(null);
   const [cap, setCap] = useState<GalleryPricelistCap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [formattingId, setFormattingId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     galleryAdmin.linkPricelists(linkId, { per_page: 50 }).then(
@@ -77,6 +108,39 @@ export function PricelistsSection({ linkId }: { linkId: string }) {
       setError(err instanceof Error ? err.message : 'Could not set the status.');
     } finally {
       setBusyId(null);
+    }
+  };
+
+  /** P3c — draw, store, re-read: the row then opens the stored file. */
+  const format = async (pl: GalleryPricelistAdmin) => {
+    setFormattingId(pl.id);
+    setError(null);
+    try {
+      // the assigned works resolve each line's artist / year / medium / size
+      const works = await galleryAdmin
+        .linkArtworks(linkId, { per_page: 100 })
+        .then((p) => p.results)
+        .catch(() => []);
+      const today = new Date();
+      const fields = pricelistPdfFields(
+        pl,
+        linkName,
+        works,
+        (options?.['catalog.availability_status'] as Choice[] | undefined) ?? [],
+        today,
+      );
+      const { renderPricelistPdf } = await import('./pdf/renderPdf');
+      const blob = await renderPricelistPdf(fields);
+      await galleryAdmin.uploadRenderedPricelist(
+        pl.id,
+        blob,
+        pricelistFilename(linkName, today),
+      );
+      load();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'The pricelist could not be formatted.');
+    } finally {
+      setFormattingId(null);
     }
   };
 
@@ -108,7 +172,9 @@ export function PricelistsSection({ linkId }: { linkId: string }) {
         <div className="ad-card ad-logins">
           {rows.map((pl) => {
             const lines = Array.isArray(pl.lines) ? pl.lines : [];
-            const built = !pl.object_key && lines.length > 0;
+            // an upload never has lines; a formatted built list has a file too
+            const built = lines.length > 0;
+            const formatted = built && !!pl.file_url;
             const st = pl.status || 'submitted';
             return (
               <div className="ad-plrow" key={pl.id}>
@@ -123,9 +189,7 @@ export function PricelistsSection({ linkId }: { linkId: string }) {
                     </b>
                     {pl.notes && <span className="ad-cellsub"> — {pl.notes}</span>}
                   </span>
-                  <span
-                    className={`ad-stpill is-${st === 'accepted' ? 'ok' : st === 'superseded' ? 'gone' : 'neut'}`}
-                  >
+                  <span className={`ad-stpill is-${pricelistTone(st)}`}>
                     {pricelistStatusLabel(options, st)}
                   </span>
                 </div>
@@ -161,8 +225,22 @@ export function PricelistsSection({ linkId }: { linkId: string }) {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Open file
+                      {formatted ? 'Open Darz pricelist' : 'Open file'}
                     </a>
+                  )}
+                  {built && (
+                    <button
+                      type="button"
+                      className="ad-rowbtn"
+                      disabled={formattingId !== null || busyId === pl.id}
+                      onClick={() => void format(pl)}
+                    >
+                      {formattingId === pl.id
+                        ? 'Formatting…'
+                        : formatted
+                          ? 'Format again'
+                          : 'Format as Darz pricelist'}
+                    </button>
                   )}
                   {PRICELIST_STATUSES.filter((x) => x !== st).map((x) => (
                     <button

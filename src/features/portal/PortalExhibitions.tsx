@@ -12,14 +12,23 @@
  * SUBMITTED show is no longer editable" tightened server-side to lock only
  * once Darz composes): a locked record shows the old refusal copy. Once
  * Darz PUBLISHES, the composed `service_lines` replace the catalogue
- * pricing and the issued documents appear, each accepting the name-only
- * signature the backend takes (`signer_name` — the old §80 canvas pad does
- * not port, G-PORT-7).
+ * pricing and the issued documents appear. Signing is the old §80 pad
+ * again (`SignaturePad`, G-PORT-7): the typed name is still required, the
+ * drawn PNG rides beside it, and a signed row shows the stored mark from
+ * `signature_image_url`. An invoice opens the pad with the old v1187 words;
+ * a proposal — which the old page CONFIRMED by dialog, with no mark — opens
+ * it with that dialog's own words (:1940), because the backend signs both
+ * through one endpoint and stores a mark on either. The signer's name is
+ * remembered into the header's "Your name" when that is empty (old :2054).
+ *
+ * The PDF behind "Open" is the one Darz rendered when it issued the document,
+ * so the drawn mark is NOT on it — the row is where it shows (flagged).
  */
 import { useEffect, useState, useSyncExternalStore, useCallback } from 'react';
 import type { OptionsMap } from '../../api/services';
-import type { PortalExhibition, PortalExhibitionInput } from '../../api/types';
+import type { DocumentAdmin, PortalExhibition, PortalExhibitionInput } from '../../api/types';
 import type { PortalSession } from './PortalSession';
+import { SignaturePad } from './SignaturePad';
 import {
   canEditExhibition,
   choiceLabel,
@@ -32,10 +41,15 @@ export function PortalExhibitions({
   session,
   options,
   notify,
+  staff,
+  onStaff,
 }: {
   session: PortalSession;
   options: OptionsMap | null;
   notify: (m: string) => void;
+  /** the header's "Your name" — the pad's default signer */
+  staff: string;
+  onStaff: (name: string) => void;
 }) {
   const state = useSyncExternalStore(
     useCallback((fn) => session.subscribe(fn), [session]),
@@ -101,6 +115,8 @@ export function PortalExhibitions({
         options={options}
         session={session}
         notify={notify}
+        staff={staff}
+        onStaff={onStaff}
         onBack={() => setOpenId(null)}
       />
     );
@@ -247,6 +263,8 @@ function ShowDetail({
   options,
   session,
   notify,
+  staff,
+  onStaff,
   onBack,
 }: {
   ev: PortalExhibition;
@@ -254,6 +272,8 @@ function ShowDetail({
   options: OptionsMap | null;
   session: PortalSession;
   notify: (m: string) => void;
+  staff: string;
+  onStaff: (name: string) => void;
   onBack: () => void;
 }) {
   // opening a record always starts from what is SAVED (v1182, :1499)
@@ -294,19 +314,27 @@ function ShowDetail({
     }
   };
 
-  const sign = async (documentId: string) => {
-    // §80's canvas pad does not port (G-PORT-7): the backend takes the name
-    const name = window.prompt('Sign with your full name:');
-    if (!name || !name.trim()) return;
-    setBusy(true);
+  // the document the pad is open for, or null
+  const [signing, setSigning] = useState<DocumentAdmin | null>(null);
+  const sign = async (doc: DocumentAdmin, png: string, who: string): Promise<boolean> => {
+    const isProposal = doc.kind === 'exhibition_proposal';
     try {
-      await session.signExhibitionDocument(ev.id, documentId, name.trim());
+      await session.signExhibitionDocument(ev.id, doc.id, who, png);
+      setSigning(null);
+      // old :2050 / :1944 — the server's answer, then the re-read
+      notify(
+        isProposal
+          ? 'Confirmed — Darz will issue the invoice.'
+          : 'Signed — thank you. Darz has been notified.',
+      );
+      if (!staff.trim()) onStaff(who);
       await session.loadExhibitions(true);
-      notify('Signed.');
+      return true;
     } catch (err) {
-      if (!session.noteAuthFailure(err)) notify('Could not sign. Please try again.');
-    } finally {
-      setBusy(false);
+      if (session.noteAuthFailure(err)) return false;
+      // old docFail (:1928-1936), on what this backend can say
+      notify(`Could not ${isProposal ? 'confirm' : 'sign'}. Please try again.`);
+      return false;
     }
   };
 
@@ -485,6 +513,7 @@ function ShowDetail({
                 const f = (d.fields ?? {}) as Record<string, unknown>;
                 const isProposal = d.kind === 'exhibition_proposal';
                 const signed = !!(f.portal_accepted_at || f.portal_signed_at);
+                const mark = signed ? d.signature_image_url : null;
                 return (
                   <div className="doc-row" key={d.id}>
                     <div className="doc-main">
@@ -499,6 +528,8 @@ function ShowDetail({
                             ? 'Awaiting your acceptance.'
                             : 'Awaiting your signature.'}
                       </span>
+                      {/* G-PORT-7 — the stored mark (presigned), under its state */}
+                      {mark && <img className="doc-sig" src={mark} alt="Your signature" />}
                     </div>
                     <div className="doc-acts">
                       {d.pdf_url && (
@@ -511,14 +542,15 @@ function ShowDetail({
                           Open
                         </a>
                       )}
+                      {/* the old row buttons (`docRowHtml`, passport-v1.js:204-206) */}
                       {!signed && (
                         <button
                           className="btn btn--primary"
                           type="button"
                           disabled={busy}
-                          onClick={() => void sign(d.id)}
+                          onClick={() => setSigning(d)}
                         >
-                          Accept &amp; sign
+                          {isProposal ? 'Confirm & request invoice' : 'Sign & confirm'}
                         </button>
                       )}
                     </div>
@@ -533,6 +565,37 @@ function ShowDetail({
           )}
         </div>
       )}
+
+      {signing && (
+        <SignaturePad
+          key={signing.id}
+          {...padWords(signing)}
+          defaultName={staff}
+          onCancel={() => setSigning(null)}
+          onRefuse={notify}
+          onSign={(png, who) => sign(signing, png, who)}
+        />
+      )}
     </div>
   );
+}
+
+/** The pad's words for one document. The human reference is
+ * `fields.reference` (`Document.ref` is the backend's own handle). An invoice
+ * is the old v1187 pad verbatim (:1971-1974); a proposal carries the old
+ * confirm dialog's words (:1940) and its row button's label. */
+function padWords(doc: DocumentAdmin): { title: string; sub: string; okLabel: string } {
+  const f = (doc.fields ?? {}) as Record<string, unknown>;
+  const ref = typeof f.reference === 'string' && f.reference ? f.reference : '—';
+  if (doc.kind === 'exhibition_proposal')
+    return {
+      title: 'Confirm this proposal',
+      sub: `Ref ${ref}. Darz will prepare the invoice and send it here for you to sign. Nothing is charged by confirming.`,
+      okLabel: 'Confirm & request invoice',
+    };
+  return {
+    title: 'Sign the invoice',
+    sub: `Ref ${ref}. Sign below with your finger or your mouse, add the name of the person signing, then confirm. Your signature is stored on the invoice itself.`,
+    okLabel: 'Sign & confirm invoice',
+  };
 }

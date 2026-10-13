@@ -15,10 +15,10 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 | --- | --- |
 | Branches | `main` and `development`; `development` is the working line. **V1 released to `main` on 2026-09-27** (#113); the **Team Workspace desk (G-TEAM-1) released 2026-10-12** (#117). The two are level at `723e0cf`. |
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
-| Backend | `darz-backend-api` `development` @ **`f322a30`** — the V1 API **plus all eight defect fixes** (#71–#78) and the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12 (G-TEAM-1 PR): 247 paths / 358 operations, non-breaking. |
-| API adoption | V1 snapshot (323 ops): 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). **Not re-run for the 35 operations added since:** the 19 `/api/workspace/` ones are 16 integrated + 3 not needed (G-TEAM-1); the other 16 (G-PORT, Projects documents, G-CAT-9) are UI-pending. |
-| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **868 unit** (79 files) · build · **163 E2E** (collector 40 · desks 105 · portal 6 · smoke 4 · team 8). Runs on **Node 20**. |
-| Live | https://darz-web.vercel.app — serves the 2026-10-12 release (V1 + G-TEAM-1); auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). The Team desk also needs the backend at `f322a30`+. |
+| Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **plus all eight defect fixes** (#71–#78) and the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9), plus the `rejected` pricelist state (#91, G-TEAM-2). `schema.d.ts` regenerated against it 2026-10-12 (G-TEAM-2 PR): 247 paths / 358 operations, non-breaking — the only change since `f322a30` is `rejected` in `GalleryPricelistStatusEnum`. |
+| API adoption | V1 snapshot (323 ops): 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). **Not re-run for the 35 operations added since:** the 19 `/api/workspace/` ones are 16 integrated + 3 not needed (G-TEAM-1); of the other 16, the 6 G-PORT ones are integrated (2026-10-13) and the 10 Projects documents + G-CAT-9 ones are UI-pending. |
+| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **892 unit** (80 files) · build · **170 E2E** (collector 40 · desks 108 · portal 10 · smoke 4 · team 8). Runs on **Node 20**. |
+| Live | https://darz-web.vercel.app — serves the 2026-10-12 release (V1 + G-TEAM-1); auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). The Team desk also needs the backend at `f322a30`+, and its Reject `bf2b9dc`+ (migration `gallery.0012`). |
 
 **The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
 owner decisions, backend defects and post-V1 features — see § 3.
@@ -73,9 +73,12 @@ work in this order:
    are **not** a backlog to clear. Do not implement, plan or re-raise them. Authority: `TASKLIST.md` § D.
 
 **Team Workspace (G-TEAM-1) is built** (2026-10-12) — it came off the V2 list when its backend shipped; open
-follow-ups are G-TEAM-2 (no `rejected` pricelist state) and setting a contact's collector/artist link.
+G-TEAM-2 (pricelist Reject → `rejected`) followed the same day; the one open follow-up is setting a contact's
+collector/artist link. **The G-PORT portal set (G-PORT-5/7/8 + P3c) is built** (2026-10-13, owner request) —
+it took the same path off the V2 list; its backend gaps are C-27…C-30 and its owner flags are in
+`NOTES-FOR-ARIAN.md`.
 
-When the backend moves past `f322a30`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
+When the backend moves past `bf2b9dc`: regenerate `src/api/schema.d.ts`, re-run the matrix method (header of
 `API_ADOPTION_MATRIX.md`; Phase 10's script approach is described in its Summary), and update the stub in the
 same PR.
 

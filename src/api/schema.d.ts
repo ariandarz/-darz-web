@@ -3109,7 +3109,7 @@ export interface paths {
         put?: never;
         /**
          * Set a pricelist's status (G-PORT-3)
-         * @description submitted → accepted (the current one; supersedes any prior accepted) → superseded.
+         * @description submitted → accepted (the current one; supersedes any prior accepted) → superseded; or submitted → rejected (declined; leaves the link's accepted pricelist alone, G-TEAM-2).
          */
         post: operations["gallery_admin_pricelists_status_create"];
         delete?: never;
@@ -9386,9 +9386,10 @@ export interface components {
          * @description * `submitted` - Submitted
          *     * `accepted` - Accepted
          *     * `superseded` - Superseded
+         *     * `rejected` - Rejected
          * @enum {string}
          */
-        GalleryPricelistStatusEnum: "submitted" | "accepted" | "superseded";
+        GalleryPricelistStatusEnum: "submitted" | "accepted" | "superseded" | "rejected";
         GalleryUpdate: {
             /** Format: uuid */
             readonly id: string;

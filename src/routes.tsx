@@ -106,6 +106,9 @@ const IssueDocumentPage = lazy(() =>
     default: m.IssueDocumentPage,
   })),
 );
+const ReferralsPage = lazy(() =>
+  import('./features/admin/ReferralsPage').then((m) => ({ default: m.ReferralsPage })),
+);
 const SourcesPage = lazy(() =>
   import('./features/admin/SourcesPage').then((m) => ({ default: m.SourcesPage })),
 );
@@ -509,6 +512,7 @@ export function AppRoutes() {
         <Route path="/admin/exhibition-services" element={<ExhibitionServicesPage />} />
         {/* the portal's Exhibition Services menu (G-PORT-12b) */}
         <Route path="/admin/exhibition-catalogue" element={<ExhibitionCatalogPage />} />
+        <Route path="/admin/referrals" element={<ReferralsPage />} />
         <Route path="/admin/issue" element={<IssueDocumentPage />} />
         <Route path="/admin/issue/:eventId" element={<IssueDocumentPage />} />
         <Route path="/admin/sales" element={<SalesPage />} />

@@ -26,6 +26,13 @@ Nothing is merged without your word.
 
 ## Decisions waiting on you (no rush)
 
+- **Portal "Introduce" now asks a gallery for someone else's contact details** (G-PORT-5, built 2026-10-13).
+  The old tab was a share link and said the gallery "never share[s] anyone's contact details"; the backend
+  built a lead form instead. The new tab asks the gallery to share only details the person is happy for Darz
+  to have. Keep the form, bring back the share link (needs a link slug the backend does not have), or both?
+- **The drawn signature is not on the document PDF** — the PDF is rendered when Darz issues it, before the
+  gallery signs. The mark shows on the signed row in the portal. Re-render on signing, or leave it?
+
 - **Portal lockout:** anyone who holds a portal link can lock it for up to 1 hour by guessing wrong PINs. OK for V1?
 - **Owner-deferred screens (API ready):**
   - selection-ready notice;
@@ -42,8 +49,6 @@ Nothing is merged without your word.
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
 - **Team desk (built 2026-10-12):**
-  - pricelist **Reject** is shown but disabled — the backend has no `rejected` pricelist state (G-TEAM-2).
-    Add one, or should Reject mean "superseded"?
   - a contact can be linked to a collector/artist (the card then shows a jump-to link), but the desk has
     no control to set the link — the old card had none. Add a picker?
 - **Small backend follow-ups:**
@@ -57,7 +62,7 @@ Nothing is merged without your word.
 | | |
 | --- | --- |
 | Web | **Released 2026-10-12** (V1 + the Team Workspace desk, #117): `main` = `development` = `723e0cf` |
-| Backend | `development` @ **`f322a30`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
+| Backend | `development` @ **`bf2b9dc`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **868** unit · 163 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |
 
