@@ -359,8 +359,17 @@ export function SourcesPage() {
 
 /** A submitted update in words — the reviewer reads rows, the raw payload
  * stays behind a fold for the day the words miss something. */
-function ReviewRows({ update }: { update: GalleryUpdateAdmin }) {
-  const rows = describeUpdate(update);
+function ReviewRows({
+  update,
+  options,
+}: {
+  update: GalleryUpdateAdmin;
+  options: OptionsMap | null;
+}) {
+  const rows = describeUpdate(
+    update,
+    (v) => choices(options, 'crm.collector_action').find((c) => c.value === v)?.label ?? v,
+  );
   const payload = (update.payload as Record<string, unknown>) ?? {};
   if (!rows.length && !Object.keys(payload).length) return null;
   return (
@@ -456,6 +465,7 @@ function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () =
 
   const applies = (kind: string) =>
     kind === 'availability' || kind === 'price' || kind === 'correction';
+  const options = useOptions();
 
   /** What approving THIS kind does, said before it is done
    * (`GalleryUpdateService.approve`). */
@@ -466,9 +476,11 @@ function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () =
         ? 'Mark this question answered? Write the answer in the note — the partner reads it in their portal History. For a longer reply, use the Messages thread on their page.'
         : kind === 'image'
           ? 'Approve this image? It records the decision — the new photo is not applied automatically; replace the image on the artwork yourself.'
-          : applies(kind)
-            ? 'Approve this update? It is APPLIED to the artwork through the real catalogue path (a status change transitions it; price/correction fields are written).'
-            : 'Approve this update? It records the decision — this kind changes nothing automatically; follow through on the artwork yourself.';
+          : kind === 'actions'
+            ? 'Approve this proposal? It is APPLIED to the artwork: what collectors can do and the private minimum offer are written as sent, and from then on an offer below that minimum is refused.'
+            : applies(kind)
+              ? 'Approve this update? It is APPLIED to the artwork through the real catalogue path (a status change transitions it; price/correction fields are written).'
+              : 'Approve this update? It records the decision — this kind changes nothing automatically; follow through on the artwork yourself.';
 
   return (
     <>
@@ -511,7 +523,7 @@ function UpdatesQueue({ kinds, onReviewed }: { kinds: Choice[]; onReviewed: () =
                 {u.status !== 'pending' ? ` · ${u.status}` : ''}
                 {u.review_note ? ` · “${u.review_note}”` : ''}
               </span>
-              <ReviewRows update={u} />
+              <ReviewRows update={u} options={options} />
             </div>
             {u.status === 'pending' && (
               <span className="ad-rowacts">

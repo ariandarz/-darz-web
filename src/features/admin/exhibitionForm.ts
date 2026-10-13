@@ -156,13 +156,31 @@ const s = (v: unknown) => (v == null ? '' : String(v));
  * A submitted update, in words — the queue's reviewer reads THIS, with the
  * raw payload kept behind a fold. Field names follow the portal's
  * `buildUpdatePayload` (portalForm.ts) and the old page's own vocabulary.
+ * `actionLabel` names a collector action (`crm.collector_action` in options);
+ * without it the raw value shows.
  */
-export function describeUpdate(u: Pick<GalleryUpdateAdmin, 'kind' | 'payload'>): ReviewRow[] {
+export function describeUpdate(
+  u: Pick<GalleryUpdateAdmin, 'kind' | 'payload'>,
+  actionLabel: (value: string) => string = (v) => v,
+): ReviewRow[] {
   const p = (u.payload ?? {}) as Record<string, unknown>;
   const rows: ReviewRow[] = [];
   const has = (v: unknown) => v !== undefined && v !== null && String(v).trim() !== '';
 
-  if (u.kind === 'ask') {
+  if (u.kind === 'actions') {
+    // G-PORT-8 — only the keys the source sent are applied on approval
+    // (`_ACTIONS_FIELDS`); a key it left out stays as the artwork has it
+    if (Array.isArray(p.allowed_actions))
+      rows.push({
+        label: 'Collectors can',
+        to: (p.allowed_actions as unknown[]).map((a) => actionLabel(s(a))).join(', '),
+      });
+    if ('offer_floor' in p)
+      rows.push({
+        label: 'Minimum offer (private)',
+        to: has(p.offer_floor) ? fmtThousands(s(p.offer_floor)) : 'no minimum',
+      });
+  } else if (u.kind === 'ask') {
     // G-PORT-4 — a question about one work; the answer goes back through the
     // review note (shown in the partner's History) or the thread
     if (has(p.artist) || has(p.title))

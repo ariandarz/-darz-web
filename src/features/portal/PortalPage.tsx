@@ -15,13 +15,14 @@
  *
  * Sections (old portnav, v766, and `passport-v1.js::tabs`): Your works ·
  * Status (only with `feat_funnel`, v923) · Pricelists · Messages (unread dot
- * when Darz spoke last, :935) · Exhibitions (§78) · History (§83 — shown
- * once the portal has sent something, the old non-V1 rule). The header
+ * when Darz spoke last, :935) · Exhibitions (§78) · Introduce (the old
+ * `introduce` section, v800 — labelled "Share" there; G-PORT-5, see
+ * `PortalReferrals` for why it is not the old share link) · History (§83 —
+ * shown once the portal has sent something, the old non-V1 rule). The header
  * carries the cover (`renderCover`, :852-856; `cover` in the state, G-PORT-9)
  * and the dashboard's fourth tile, "Pending review" (:1140), both from the
- * server's own state (G-PORT-2). Tabs the old page grew that still have no
- * backend are ABSENT, not dead: Share/referral (G-PORT-5) and the signed
- * collaboration Agreement (G-PORT-7).
+ * server's own state (G-PORT-2). A tab the old page grew that still has no
+ * backend is ABSENT, not dead: the signed collaboration Agreement (§83).
  *
  * Theme: the portal follows ITS LINK's `theme` (old :707/:824), never the
  * app's ThemeController — a gallery's portal looks the same on every device
@@ -38,6 +39,7 @@ import { PortalExhibitions } from './PortalExhibitions';
 import { PortalHistory } from './PortalHistory';
 import { PortalMessages } from './PortalMessages';
 import { PortalPricelists } from './PortalPricelists';
+import { PortalReferrals } from './PortalReferrals';
 import { PortalStatus } from './PortalStatus';
 import { PortalWorks } from './PortalWorks';
 import { coverOf, pendingCount, portalIsDark, srcLabels } from './portalForm';
@@ -45,7 +47,8 @@ import './portal.css';
 
 const PIN_LENGTH = 6; // apps/gallery/keys.py::PIN_LENGTH (the old page drew 4)
 
-type Section = 'artworks' | 'status' | 'pricelists' | 'messages' | 'exhibition' | 'history';
+type Section =
+  'artworks' | 'status' | 'pricelists' | 'messages' | 'exhibition' | 'introduce' | 'history';
 
 export function PortalPage() {
   const { token = '' } = useParams();
@@ -287,6 +290,7 @@ function Shell({
     ['pricelists', 'Pricelists', false],
     ['messages', 'Messages', unanswered],
     ['exhibition', 'Exhibitions', false],
+    ['introduce', 'Introduce', false],
     ['history', 'History', false],
   ];
   const visible = tabs.filter(
@@ -373,7 +377,16 @@ function Shell({
         )}
         {section === 'messages' && <PortalMessages session={session} notify={notify} />}
         {section === 'exhibition' && (
-          <PortalExhibitions session={session} options={options} notify={notify} />
+          <PortalExhibitions
+            session={session}
+            options={options}
+            notify={notify}
+            staff={staff}
+            onStaff={storeStaff}
+          />
+        )}
+        {section === 'introduce' && (
+          <PortalReferrals session={session} options={options} notify={notify} />
         )}
         {section === 'history' && <PortalHistory data={data} options={options} />}
       </div>
