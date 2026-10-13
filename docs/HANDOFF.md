@@ -13,12 +13,12 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 
 | | |
 | --- | --- |
-| Branches | `main` and `development`; `development` is the working line. **V1 released to `main` on 2026-09-27** (#113); the **Team Workspace desk (G-TEAM-1) released 2026-10-12** (#117). The two are level at `723e0cf`. |
+| Branches | `main` and `development`; `development` is the working line. **V1 released to `main` on 2026-09-27** (#113); the **Team Workspace desk (G-TEAM-1) released 2026-10-12** (#117). Then the **2026-10-13 releases**: G-TEAM-2 Reject + G-PORT-5/7/8 + P3c (#123) and the Proposal + Invoice builder, G-CAT-9, G9 (#124). The two are level at `de3342e`. |
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **plus all eight defect fixes** (#71–#78) and the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9), plus the `rejected` pricelist state (#91, G-TEAM-2). `schema.d.ts` regenerated against it 2026-10-12 (G-TEAM-2 PR): 247 paths / 358 operations, non-breaking — the only change since `f322a30` is `rejected` in `GalleryPricelistStatusEnum`. |
 | API adoption | V1 snapshot (323 ops): 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). **Not re-run for the 35 operations added since:** the 19 `/api/workspace/` ones are 16 integrated + 3 not needed (G-TEAM-1); the other 16 — 6 G-PORT, 5 Projects documents, 5 G-CAT-9 — are **all integrated 2026-10-13** (#121, #122). |
 | Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **925 unit** (84 files) · build · **176 E2E** (collector 41 · desks 113 · portal 10 · smoke 4 · team 8) — measured 2026-10-13 on `development` + #122. Runs on **Node 20**. |
-| Live | https://darz-web.vercel.app — serves the 2026-10-12 release (V1 + G-TEAM-1); auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). The Team desk also needs the backend at `f322a30`+, and its Reject `bf2b9dc`+ (migration `gallery.0012`). |
+| Live | https://darz-web.vercel.app — serves the 2026-10-13 release (`de3342e`: V1 + G-TEAM-1/2 + G-PORT + the Proposal + Invoice builder, G-CAT-9, G9); auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). The Team desk also needs the backend at `f322a30`+, and its Reject `bf2b9dc`+ (migration `gallery.0012`). |
 
 **The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
 owner decisions, backend defects and post-V1 features — see § 3.
@@ -72,7 +72,7 @@ work in this order:
    owner ruled them **V2-or-later on 2026-10-01**: they have no backend, there is nothing to adopt, and they
    are **not** a backlog to clear. Do not implement, plan or re-raise them. Authority: `TASKLIST.md` § D.
 
-**Built 2026-10-13 (#122, merged into `development` on the owner's "merge 122 when green"):** the Projects proposal + invoice composer
+**Built and released 2026-10-13 (#122 → #124, on the owner's "merge 122 when green" then "release development to main"):** the Projects proposal + invoice composer
 on the record, the source-freshness loop (G-CAT-9, Galleries & Sources › Artwork Sources + the Market App desk) and
 the Artists `records` / `top-price` sorts. Owner calls on what is new in them are in `NOTES-FOR-ARIAN.md`.
 

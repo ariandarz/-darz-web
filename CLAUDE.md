@@ -56,8 +56,11 @@ Two sources are required **together** for every feature — neither alone is eno
   instructions: #116 (Team Workspace desk, G-TEAM-1) merged into `development`, then #117 released
   `development` → `main` (`723e0cf`, production deploy READY), and `development` was
   fast-forwarded to `main` again.
-  **2026-10-13 — "merge 122 when green"**: #122 (Proposal + Invoice builder, G-CAT-9, G9) into
-  `development` only, once its CI passed. No release to `main` was asked for.
+  **2026-10-13 — "merge 122 when green" then "release development to main"**, two separate
+  instructions: #122 (Proposal + Invoice builder, G-CAT-9, G9) merged into `development` once its CI
+  passed, then #124 released `development` → `main` (`de3342e`, production deploy READY), and
+  `development` was fast-forwarded to `main`. Then "merge 125 when green": #125, this record,
+  into `development`.
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full
