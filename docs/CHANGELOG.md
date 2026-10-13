@@ -13,6 +13,10 @@ The production deploy is READY and `development` was fast-forwarded to `main`; t
 Project record: the old composer inline, filed as `project_proposal`/`project_invoice` (draft → final → signed; invoice new, owner-only).
 Sources › Artwork Sources + Market App desk: freshness pills, Confirm / Update… / Confirm all, strip, owner hide-stale card. Artists: Most records · Top price, Records column. Schema unchanged (`bf2b9dc`).
 
+## 2026-10-13 — G-TEAM-2 Reject + G-PORT-5/7/8 + P3c released to `main`
+On the owner's instructions, #121 was merged into `development` once its CI passed, then #123 released `development` → `main` (`c53d174`, carrying #120 too).
+The production deploy is READY and `development` was fast-forwarded to `main`. Live use needs the backend at `bf2b9dc`+ (migration `gallery.0012`); the site stays visual-only until the real API URL is set.
+
 ## 2026-10-13 — Gallery portal G-PORT-5/7/8 + P3c built (backend `bf2b9dc`, schema regen identical)
 Portal: Introduce tab (referrals), the old §80 signing pad (typed name + drawn PNG; the mark shows on the row), per-work "What collectors can do" + minimum offer posting to `…/actions/` (Save or Send update; an empty grid sends `viewing`, never `[]`).
 Desk: Introductions review desk (`/admin/referrals`), the old Listed Pricelist sheet rendered client-side for BUILT lists only (`…/rendered/` replaces `object_key`, C-27), `actions` proposals worded + "applied" approve copy. Backend findings C-27…C-30.

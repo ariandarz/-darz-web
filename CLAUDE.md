@@ -56,6 +56,11 @@ Two sources are required **together** for every feature — neither alone is eno
   instructions: #116 (Team Workspace desk, G-TEAM-1) merged into `development`, then #117 released
   `development` → `main` (`723e0cf`, production deploy READY), and `development` was
   fast-forwarded to `main` again.
+  **2026-10-13 — "merge 121" then "release development to main"**, two separate instructions:
+  #121 (G-PORT-5/7/8 + P3c) merged into `development` once its CI passed, then #123 released
+  `development` → `main` (`c53d174`, production deploy READY; it also carried #120, G-TEAM-2), and
+  `development` was fast-forwarded to `main`. Then "open the docs PR recording the release": this
+  record, opened as a PR and not merged.
   **2026-10-13 — "merge 122 when green" then "release development to main"**, two separate
   instructions: #122 (Proposal + Invoice builder, G-CAT-9, G9) merged into `development` once its CI
   passed, then #124 released `development` → `main` (`de3342e`, production deploy READY), and
