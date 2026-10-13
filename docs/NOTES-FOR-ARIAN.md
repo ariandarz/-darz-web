@@ -48,7 +48,7 @@ Nothing is merged without your word.
 - **Languages (i18n, off today):** which languages ship, and do we do a real right-to-left pass?
   My pick is Farsi first, done properly.
 - **`/artists`** has no menu link. Add one, or leave it as a direct link only?
-- **Proposal / invoice, freshness, artist sorts (built 2026-10-13, #122 — in `development`, not released):**
+- **Proposal / invoice, freshness, artist sorts (released 2026-10-13, #124):**
   - the project **invoice** is new — the old Projects area had no invoice composer, only a status. It
     is built like the exhibition services invoice and is owner-only. Keep it?
   - the free-form **Proposal Builder** desk (paste a draft, AI organise, custom sections, design
@@ -72,7 +72,7 @@ Nothing is merged without your word.
 
 | | |
 | --- | --- |
-| Web | **Released 2026-10-12** (V1 + the Team Workspace desk, #117): `main` = `development` = `723e0cf` |
+| Web | **Released 2026-10-13** (#124 — V1, Team Workspace, the G-PORT portal features, the Proposal + Invoice builder, source freshness, artist sorts): `main` = `development` = `de3342e`, production deploy READY |
 | Backend | `development` @ **`bf2b9dc`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **868** unit · 163 E2E · lint · format · build green. **`typecheck` fails on macOS** — a pre-existing filename-casing collision (`Documents.tsx` vs `documents.ts`); CI on Linux is green |
 | Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |

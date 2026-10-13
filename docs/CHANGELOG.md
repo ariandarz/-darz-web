@@ -5,6 +5,10 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-10-13 — Proposal + Invoice builder, G-CAT-9, G9 released to `main`
+On the owner's instructions, #122 was merged into `development`, then #124 released `development` → `main` (`de3342e`).
+The production deploy is READY and `development` was fast-forwarded to `main`; the live site stays visual-only until the real API URL is set.
+
 ## 2026-10-13 — Proposal + Invoice builder, source freshness (G-CAT-9), artist sorts (G9) built
 Project record: the old composer inline, filed as `project_proposal`/`project_invoice` (draft → final → signed; invoice new, owner-only).
 Sources › Artwork Sources + Market App desk: freshness pills, Confirm / Update… / Confirm all, strip, owner hide-stale card. Artists: Most records · Top price, Records column. Schema unchanged (`bf2b9dc`).
