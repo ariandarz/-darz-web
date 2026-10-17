@@ -18,7 +18,7 @@
 import { useCallback, useState } from 'react';
 import type { CollectorDocument, MessageDocumentRef } from '../../api/types';
 import { Toast } from '../../components';
-import { deviceStorage, docLabel, markSeen } from '../profile/documents';
+import { deviceStorage, docLabel, markSeen } from '../profile/documentRows';
 
 export function DocChips({
   refs,
