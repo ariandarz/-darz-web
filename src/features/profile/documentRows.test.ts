@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { CollectorDocument } from '../../api/types';
-import { SEEN_KEY, docLabel, docSub, markSeen, readSeen } from './documents';
+import { SEEN_KEY, docLabel, docSub, markSeen, readSeen } from './documentRows';
 
 class MemoryStorage {
   map = new Map<string, string>();
