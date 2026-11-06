@@ -26,7 +26,7 @@ import { useApi } from '../../api/hooks';
 import { asArray } from '../../api/shapes';
 import type { CollectorDocument } from '../../api/types';
 import { Toast } from '../../components';
-import { deviceStorage, docLabel, docSub, markSeen, readSeen } from './documents';
+import { deviceStorage, docLabel, docSub, markSeen, readSeen } from './documentRows';
 
 // app.html:7911-7912 — the file icon and the caret, verbatim
 const IC_FILE = (
