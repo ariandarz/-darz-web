@@ -13,8 +13,9 @@ Nothing is merged without your word.
    `development`; this was verified three ways).
 2. **`NUM_PROXIES` — dropped, not needed now.** Your call, 2026-10-01: over-engineering at this stage.
    It will be set later if and when production use calls for it, with the deploy work. Not an open task.
-3. [ ] **Give the real API URL** (`VITE_API_BASE_URL`). Until then the live site shows layout only, with no
-   sign-in and no data. This is the biggest blocker.
+3. [x] **Give the real API URL** (`VITE_API_BASE_URL`). **Done for darzmarketstudio.art on 2026-10-17:** the
+   backend's deploy script builds this app with `api.darzmarketstudio.art`. `darz-web.vercel.app` still shows
+   layout only (its `.env.production` keeps the placeholder).
 4. [x] ~~Release #113~~. **Done 2026-09-27:** V1 is on `main` (`960d571`) and deployed.
 5. [x] ~~Review #114~~. Merged 2026-09-27.
 6. [ ] After the backend PRs merge, ask for the **small web follow-up**:

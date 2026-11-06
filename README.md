@@ -1,5 +1,30 @@
 # Darz Market — web frontend
 
+## State on 6 Nov 2026
+
+_Written on 6 Nov 2026 from this repository's git history, its pull requests and the backend repository's
+deploy notes. Nothing was checked on a live site; what could not be checked from the code is marked
+**unverified**._
+
+**What this product is.** The new web app of **Darz Market**, the private, invitation-only art market that
+Darz runs for collectors, galleries and dealers. It is a React port of the old Darz Market Studio app
+(`ariandarz/darzstudio.art`, which still serves darzmarket.art), working against the Django API in
+`ariandarz/darz-backend-api` (older docs call that repository `darzmarket-api`). One build holds the
+collector app, the no-login gallery portal and the admin panel (`/admin`). It is a separate product from
+**darz.art** (the public archive and marketplace, `ariandarz/darz`).
+
+| | |
+|---|---|
+| `main` | `81e7245`, 14 Oct 2026: V1 (released 27 Sep) + Team Workspace (12 Oct) + the 13 Oct releases (gallery portal set, Proposal + Invoice builder, source freshness). |
+| `development` | Two commits ahead: PR #130 (17 Oct) renames `documents.ts` → `documentRows.ts`, which fixes the build on macOS. Not released to `main`. No pull request is open. |
+| Live (Iran) | Since **17 Oct 2026**, `darzmarketstudio.art` serves this app, built and shipped by hand from the backend repository (`deploy/scripts/deploy.sh`, default `WEB_REF=origin/main`, feature set `v0.1`), with the real API at `api.darzmarketstudio.art`. The ArvanCloud CDN sits in front. So the "visual-only until a real API URL" notes below and in `docs/` are out of date for that site. Whether it is up today, and which commit it runs, is unverified. |
+| Live (Vercel) | `darz-web.vercel.app` auto-deploys `main` with `.env.production`, whose API address is still the placeholder `https://api.invalid/api`, so that copy shows the layout only (unverified today). |
+| CI | `.github/workflows/quality.yml`: the gate on pull requests and on pushes to `main`; it deploys nothing. Node 20 in CI. |
+| darzmarket.art | Not served by this app. It is still the old Studio app. |
+| Relation to darz.art | No code is shared. On 29 Oct 2026, 186 works from darzmarket.art were copied into darz.art from the old Studio's data. darz.art plans to port the backend's auction engine for its own auctions (3 Nov 2026); nothing in this repository changes for that. |
+
+---
+
 React + TypeScript + Vite frontend for Darz Market. Separate repo from the backend
 (`../darzmarket-api`) and the old app (`../DarzStudio`).
 

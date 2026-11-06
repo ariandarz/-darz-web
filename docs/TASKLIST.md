@@ -29,7 +29,7 @@ structure — trace every decision to the approved package + `app.html`.
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
 | Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **with every defect fix merged** (C-6…C-26, PRs **#71–#78**, `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"; still notes only: C-16, C-21), plus the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12: 247 paths / 358 operations. |
 | Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **925 unit** (84 files) · build · **176 E2E** (collector 41 · desks 113 · portal 10 · smoke 4 · team 8) — measured 2026-10-13 on `development` + #122. Runs on **Node 20**. |
-| Live site | https://darz-web.vercel.app — serves the 2026-10-13 release (`eb735f2`; code as of `de3342e`: V1 + G-TEAM-1/2 + G-PORT + the Proposal + Invoice builder, G-CAT-9, G9); Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). |
+| Live site | https://darz-web.vercel.app — serves the 2026-10-13 release (`eb735f2`; code as of `de3342e`: V1 + G-TEAM-1/2 + G-PORT + the Proposal + Invoice builder, G-CAT-9, G9); Vercel auto-deploys `main`, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). **6 Nov 2026:** `darzmarketstudio.art` (ArvanCloud, since 17 Oct) serves a build with the real API; see `README.md` § "State on 6 Nov 2026". |
 
 **V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
 `DARZ_WEB_V1_STATUS.md` § Remaining gaps.
@@ -178,7 +178,7 @@ structure — trace every decision to the approved package + `app.html`.
 | 12 · Catalogue core (admin) | ✅ Artworks/Artists/Published/Sales/Documents/Sources/Auctions-admin/Accounting steps. (Step 6 Auction Sales → D.) |
 | Admin panel V1 | ✅ ~111 files, 52 routes; Requests parity, DB filters, polish, Phase 6b deletes (G-DEL-1), collector error boundary. |
 | 13 · Testing | ✅ 620 unit + two E2E tiers (stub in CI, real-backend local); desk/collector walks are gates. CRUD-write/409 E2E needs a seeded CI backend. |
-| 14 · Deploy | `[~]` Vercel live (visual-only); ArvanCloud guide written, not yet run. |
+| 14 · Deploy | `[~]` Vercel live (visual-only). Since 17 Oct 2026 the backend repository's `deploy/scripts/deploy.sh` builds this app with the real API and serves it on `darzmarketstudio.art` (ArvanCloud); this repository's own ArvanCloud guide (`DEPLOY_ARVAN.md`) was not the path used. |
 | — · Node 20 + admin code-split | ✅ 2026-09-24 (replaced the Node-22 floor; split shrank the bundle, cleared the chunk warning). |
 | V1 · Phases 0–10 | ✅ 2026-09-25/26 (PRs #102–#111 + Phase 10): schema regen and live bugs, collector account, Sales + Auction Sales, auctions admin, catalogue/collectors, gallery portal P1/P3/P4, documents + chat, projects, owner Access desk, owner extras, final verification. See `V1_IMPLEMENTATION_PLAN.md` §5 and `DARZ_WEB_V1_STATUS.md`. |
 

@@ -7,6 +7,9 @@
 React + TypeScript + Vite frontend for Darz Market. Separate repo from the backend
 (`darzmarket-api`) and the old app (`DarzStudio`) — see below for how the three relate.
 
+> **6 Nov 2026:** live with a real API on `darzmarketstudio.art` since 17 Oct (deployed from the backend
+> repository); darzmarket.art is still the old app. See `README.md` § "State on 6 Nov 2026".
+
 ## Hard constraint — read this before building any UI
 
 This is a **faithful port** of the old DarzStudio app's already-approved design and behavior, not a

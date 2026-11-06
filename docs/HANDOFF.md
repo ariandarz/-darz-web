@@ -9,6 +9,21 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 
 ---
 
+> **6 Nov 2026 — read this first.** The table below is the 13 Oct picture. Since then:
+>
+> - **17 Oct:** PR #130 (macOS build fix, `documents.ts` → `documentRows.ts`) merged into `development`;
+>   not released to `main`. The macOS typecheck failure noted under "Gate" is fixed on `development`.
+> - **17 Oct:** the backend repository deployed this app with a **real API** on ArvanCloud:
+>   `darzmarketstudio.art` (app + `/admin`) and `api.darzmarketstudio.art`, built by its
+>   `deploy/scripts/deploy.sh` (default `origin/main`, feature set `v0.1`). Q-9 ("give the real API URL") is
+>   answered for that site; `darz-web.vercel.app` is still visual-only. Whether the site is up today is
+>   unverified.
+> - The backend `development` is now `7065255` (18 Oct: the deploy PRs #92–#94 and the second-pass Studio
+>   import #95; no API change for this app since `bf2b9dc`).
+> - darzmarket.art still serves the old Studio app. On 29 Oct, 186 of its works were copied into darz.art.
+>
+> The full summary is `README.md` § "State on 6 Nov 2026".
+
 ## 1 · State
 
 | | |
