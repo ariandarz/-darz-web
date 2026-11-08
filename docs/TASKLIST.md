@@ -116,7 +116,8 @@ structure — trace every decision to the approved package + `app.html`.
 - [~] **Deploy Phase 14** — Vercel retired 2026-11-08 (Git deployments off; dashboard pause pending). Since 2026-10-17 the backend repository's
       `deploy/scripts/deploy.sh` builds this app with the real API and serves it on `darzmarketstudio.art`
       (ArvanCloud + CDN). This repository's own `Dockerfile`/`nginx.conf` path (`DEPLOY_ARVAN.md`) was not used.
-      **Still open:** darzmarket.art is not cut over — it serves the old Studio app.
+      **Still open:** darzmarket.art is not cut over to this app — it serves the old Studio app (itself on ArvanCloud,
+      `darzstudio.art` #881, owner 2026-11-08).
 
 ### Ready to build (backend shipped, UI pending)
 - [x] **Team Workspace desk (G-TEAM-1)** — done 2026-10-12. `src/features/admin/TeamPage.tsx` is the old three-tab

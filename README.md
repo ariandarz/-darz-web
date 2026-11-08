@@ -20,7 +20,7 @@ collector app, the no-login gallery portal and the admin panel (`/admin`). It is
 | Live (Iran) | Since **17 Oct 2026**, `darzmarketstudio.art` serves this app, built and shipped by hand from the backend repository (`deploy/scripts/deploy.sh`, default `WEB_REF=origin/main`, feature set `v0.1`), with the real API at `api.darzmarketstudio.art`. The ArvanCloud CDN sits in front. So the "visual-only until a real API URL" notes below and in `docs/` are out of date for that site. Whether it is up today, and which commit it runs, is unverified. |
 | Vercel | **Vercel retired 2026-11-08 (owner: "all on ArvanCloud, not Vercel and Supabase")** — `vercel.json` turns off Git deployments, so pushes no longer deploy there; the existing `darz-web.vercel.app` project still has to be paused or deleted in the Vercel dashboard (this session's Vercel access was refused). |
 | CI | `.github/workflows/quality.yml`: the gate on pull requests and on pushes to `main`; it deploys nothing. Node 20 in CI. |
-| darzmarket.art | Not served by this app. It is still the old Studio app. |
+| darzmarket.art | Not served by this app. It is still the old Studio app, **hosted on ArvanCloud** since the owner moved it (self-hosted stack from `darzstudio.art` #878; no Vercel, no Supabase cloud; `darzstudio.art` #881, owner 2026-11-08). |
 | Relation to darz.art | No code is shared. On 29 Oct 2026, 186 works from darzmarket.art were copied into darz.art from the old Studio's data. darz.art plans to port the backend's auction engine for its own auctions (3 Nov 2026); nothing in this repository changes for that. |
 
 ---

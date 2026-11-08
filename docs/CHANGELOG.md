@@ -5,6 +5,10 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-11-08 — Docs: darzmarket.art is on ArvanCloud too
+Corrects the notes that implied darzmarket.art was on Vercel + Supabase: the owner moved the old Studio app to its own ArvanCloud
+stack (`darzstudio.art` #878/#881). README, HANDOFF, TASKLIST updated. Docs only.
+
 ## 2026-11-08 — Vercel retired: ArvanCloud only (owner decision)
 `vercel.json` now only sets `git.deploymentEnabled: false`, so pushes stop deploying to Vercel. Live docs say ArvanCloud only (no Vercel, no Supabase).
 The Vercel project itself must still be paused/deleted in its dashboard. Also released `development` → `main` (#133, `7b4aafa`).
