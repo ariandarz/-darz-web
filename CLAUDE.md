@@ -9,6 +9,8 @@ React + TypeScript + Vite frontend for Darz Market. Separate repo from the backe
 
 > **6 Nov 2026:** live with a real API on `darzmarketstudio.art` since 17 Oct (deployed from the backend
 > repository); darzmarket.art is still the old app. See `README.md` § "State on 6 Nov 2026".
+> **8 Nov 2026, owner:** everything runs and is backed up on **ArvanCloud** — not Vercel, not Supabase.
+> `vercel.json` disables Vercel Git deployments; do not add Vercel or Supabase to this app.
 
 ## Hard constraint — read this before building any UI
 
@@ -72,6 +74,10 @@ Two sources are required **together** for every feature — neither alone is eno
   (`eb735f2`, docs only, production deploy READY), with `development` fast-forwarded again. Then
   "keep the invoice, skip the proposal builder" — a scope ruling, not a merge instruction: #127
   recorded it and waited until the owner said, separately, "merge 127 when green".
+  **2026-11-08 — "merge all needed" then "release now"**, two separate instructions: #132 (docs, carrying
+  #131) merged into `development` (backend #97, carrying #96, the same), then #133 released `development` →
+  `main` (`7b4aafa`) once its CI passed, and `development` was fast-forwarded to `main`. The owner then ruled
+  "all on ArvanCloud, not Vercel and Supabase" — a scope ruling, not a merge instruction.
 - **`../darzmarket-api`**: the Django/DRF backend — the only data source. See its own
   `docs/TASKLIST.md` for what's actually implemented (Phases 1-8, V1 core) vs. planned (Phases
   10-17, feature-parity gaps like Auctions/Gallery Portal/Accounting — see that file for the full
