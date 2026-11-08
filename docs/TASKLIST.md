@@ -29,7 +29,7 @@ structure — trace every decision to the approved package + `app.html`.
 | API adoption | 323 V1 operations: **261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only** (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`, re-verified against the code). |
 | Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **with every defect fix merged** (C-6…C-26, PRs **#71–#78**, `V1_CONTRACT_ISSUES.md` § "Backend fix PRs"; still notes only: C-16, C-21), plus the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9). `schema.d.ts` regenerated against it 2026-10-12: 247 paths / 358 operations. |
 | Gate | typecheck · lint 0 · format · **925 unit** (84 files) · build · **176 E2E** (collector 41 · desks 113 · portal 10 · smoke 4 · team 8) — measured 2026-10-13 on `development` + #122. Runs on **Node 20**. The macOS-only typecheck/build failure (`Documents.tsx` vs `documents.ts`) is fixed 2026-10-17: the logic module is now `documentRows.ts`; see `HANDOFF.md` § 1. |
-| Live site | **ArvanCloud only** (`darzmarketstudio.art`); `main` = `7b4aafa`, released 2026-11-08. **Vercel retired 2026-11-08 (owner: "all on ArvanCloud, not Vercel and Supabase")** — `vercel.json` turns off Git deployments, so pushes no longer deploy there; the existing `darz-web.vercel.app` project still has to be paused or deleted in the Vercel dashboard (this session's Vercel access was refused). **6 Nov 2026:** `darzmarketstudio.art` (ArvanCloud, since 17 Oct) serves a build with the real API; see `README.md` § "State on 6 Nov 2026". |
+| Live site | **ArvanCloud only** (`darzmarketstudio.art`); `main` = `7b4aafa`, released 2026-11-08. **Vercel retired 2026-11-08 (owner: "all on ArvanCloud, not Vercel and Supabase")** — `vercel.json` turns off Git deployments, so pushes no longer deploy there; the owner **deleted both Vercel projects** (`darz-web`, and the old Studio's `darzstudio-art`) the same day, so `darz-web.vercel.app` is gone. The leftover domain **darzstudio.art** (it only redirected to darzmarket.art) was retired with them. **6 Nov 2026:** `darzmarketstudio.art` (ArvanCloud, since 17 Oct) serves a build with the real API; see `README.md` § "State on 6 Nov 2026". |
 
 **V1 is built.** What remains is owner decisions, backend defects, and post-V1 features — below, and in
 `DARZ_WEB_V1_STATUS.md` § Remaining gaps.
@@ -113,7 +113,7 @@ structure — trace every decision to the approved package + `app.html`.
 - [skip] **Proposal Builder desk** (`builder`, `darz-studio.html:14644` — the free-form draft-to-document editor
       with AI organise, custom sections and design options). Owner, 2026-10-13: *"keep the invoice, skip the
       proposal builder"*. Not V2 either — skipped; the record's proposal composer is the proposal surface.
-- [~] **Deploy Phase 14** — Vercel retired 2026-11-08 (Git deployments off; dashboard pause pending). Since 2026-10-17 the backend repository's
+- [~] **Deploy Phase 14** — Vercel retired 2026-11-08 (Git deployments off; both Vercel projects deleted by the owner). Since 2026-10-17 the backend repository's
       `deploy/scripts/deploy.sh` builds this app with the real API and serves it on `darzmarketstudio.art`
       (ArvanCloud + CDN). This repository's own `Dockerfile`/`nginx.conf` path (`DEPLOY_ARVAN.md`) was not used.
       **Still open:** darzmarket.art is not cut over to this app — it serves the old Studio app (itself on ArvanCloud,

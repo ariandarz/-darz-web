@@ -11,7 +11,7 @@ stack (`darzstudio.art` #878/#881). README, HANDOFF, TASKLIST updated. Docs only
 
 ## 2026-11-08 — Vercel retired: ArvanCloud only (owner decision)
 `vercel.json` now only sets `git.deploymentEnabled: false`, so pushes stop deploying to Vercel. Live docs say ArvanCloud only (no Vercel, no Supabase).
-The Vercel project itself must still be paused/deleted in its dashboard. Also released `development` → `main` (#133, `7b4aafa`).
+The owner then deleted both Vercel projects (`darz-web`, `darzstudio-art`) and retired the darzstudio.art domain. Also released `development` → `main` (#133, `7b4aafa`).
 
 ## 2026-11-08 — Docs: Q-9 and the C-13 blocker closed in the live docs
 TASKLIST § A checks off Q-9 (real API URL, done for darzmarketstudio.art on 17 Oct) and the backend #74/#76 merge; Phase 14 is `[~]`.
