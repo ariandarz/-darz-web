@@ -20,7 +20,7 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 >   unverified.
 > - The backend `development` is now `7065255` (18 Oct: the deploy PRs #92–#94 and the second-pass Studio
 >   import #95; no API change for this app since `bf2b9dc`).
-> - darzmarket.art still serves the old Studio app. On 29 Oct, 186 of its works were copied into darz.art.
+> - darzmarket.art still serves the old Studio app — on ArvanCloud since the owner moved it (`darzstudio.art` #881, owner 2026-11-08). On 29 Oct, 186 of its works were copied into darz.art.
 >
 > The full summary is `README.md` § "State on 6 Nov 2026".
 
