@@ -76,7 +76,7 @@ Nothing is merged without your word.
 | Web | **Released 2026-10-13** (#124 — V1, Team Workspace, the G-PORT portal features, the Proposal + Invoice builder, source freshness, artist sorts): then #126 (docs only): `main` = `development` = `eb735f2`, production deploy READY |
 | Backend | `development` @ **`bf2b9dc`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **925** unit · 176 E2E · lint · format · build green (2026-10-13). The Mac-only `typecheck`/build failure (`Documents.tsx` vs `documents.ts`) is **fixed 2026-10-17** — the logic module is now `documentRows.ts`, and the build works on a Mac again |
-| Live site | https://darz-web.vercel.app serves `main` and is visual-only (placeholder API URL). Since 2026-10-17 `darzmarketstudio.art` serves a build with the real API (deployed from the backend repository) |
+| Live site | ArvanCloud only, your call 2026-11-08. Vercel Git deployments are off in `vercel.json`; **pause or delete the `darz-web` project in the Vercel dashboard** (the session could not). Since 2026-10-17 `darzmarketstudio.art` serves a build with the real API (deployed from the backend repository) |
 
 Detail: `DARZ_WEB_V1_STATUS.md` (full picture), `V1_CONTRACT_ISSUES.md` § "Backend fix PRs",
 `TASKLIST.md`.

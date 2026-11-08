@@ -5,6 +5,10 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-11-08 — Vercel retired: ArvanCloud only (owner decision)
+`vercel.json` now only sets `git.deploymentEnabled: false`, so pushes stop deploying to Vercel. Live docs say ArvanCloud only (no Vercel, no Supabase).
+The Vercel project itself must still be paused/deleted in its dashboard. Also released `development` → `main` (#133, `7b4aafa`).
+
 ## 2026-11-08 — Docs: Q-9 and the C-13 blocker closed in the live docs
 TASKLIST § A checks off Q-9 (real API URL, done for darzmarketstudio.art on 17 Oct) and the backend #74/#76 merge; Phase 14 is `[~]`.
 HANDOFF, `DARZ_WEB_V1_STATUS.md` and `V1_CONTRACT_ISSUES.md` (Q-9) say the same. Docs only; builds on the 6 Nov refresh (#131).
