@@ -9,6 +9,21 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 
 ---
 
+> **6 Nov 2026 — read this first.** The table below is the 13 Oct picture. Since then:
+>
+> - **17 Oct:** PR #130 (macOS build fix, `documents.ts` → `documentRows.ts`) merged into `development`;
+>   not released to `main` (the "Gate" row below records the fix).
+> - **17 Oct:** the backend repository deployed this app with a **real API** on ArvanCloud:
+>   `darzmarketstudio.art` (app + `/admin`) and `api.darzmarketstudio.art`, built by its
+>   `deploy/scripts/deploy.sh` (default `origin/main`, feature set `v0.1`). Q-9 ("give the real API URL") is
+>   answered for that site; `darz-web.vercel.app` is still visual-only. Whether the site is up today is
+>   unverified.
+> - The backend `development` is now `7065255` (18 Oct: the deploy PRs #92–#94 and the second-pass Studio
+>   import #95; no API change for this app since `bf2b9dc`).
+> - darzmarket.art still serves the old Studio app. On 29 Oct, 186 of its works were copied into darz.art.
+>
+> The full summary is `README.md` § "State on 6 Nov 2026".
+
 ## 1 · State
 
 | | |
@@ -17,8 +32,8 @@ detail (old task log, per-phase plans, superseded gap docs) is in `docs/archive/
 | V1 | **Complete (2026-09-26).** The final picture — sections, routes, APIs, roles, gaps — is **`DARZ_WEB_V1_STATUS.md`** (final edition). |
 | Backend | `darz-backend-api` `development` @ **`bf2b9dc`** — the V1 API **plus all eight defect fixes** (#71–#78) and the 2026-10-01 additions (Team Workspace, G-PORT, Projects documents, G-CAT-9), plus the `rejected` pricelist state (#91, G-TEAM-2). `schema.d.ts` regenerated against it 2026-10-12 (G-TEAM-2 PR): 247 paths / 358 operations, non-breaking — the only change since `f322a30` is `rejected` in `GalleryPricelistStatusEnum`. |
 | API adoption | V1 snapshot (323 ops): 261 Integrated · 1 Bound, no UI · 0 Not bound · 14 Excluded (owner-deferred) · 31 Excluded (not V1) · 15 Not needed · 1 Backend-only (`docs/audit/2026-09-25/API_ADOPTION_MATRIX.md`). **Not re-run for the 35 operations added since:** the 19 `/api/workspace/` ones are 16 integrated + 3 not needed (G-TEAM-1); the other 16 — 6 G-PORT, 5 Projects documents, 5 G-CAT-9 — are **all integrated 2026-10-13** (#121, #122). |
-| Gate | typecheck **(fails on macOS only — pre-existing `Documents.tsx`/`documents.ts` casing collision; green on Linux CI)** · lint 0 · format · **925 unit** (84 files) · build · **176 E2E** (collector 41 · desks 113 · portal 10 · smoke 4 · team 8) — measured 2026-10-13 on `development` + #122. Runs on **Node 20**. |
-| Live | https://darz-web.vercel.app — serves the 2026-10-13 release (`eb735f2`; code as of `de3342e`: V1 + G-TEAM-1/2 + G-PORT + the Proposal + Invoice builder, G-CAT-9, G9); auto-deploys **`main`**, **visual-only** until a real `VITE_API_BASE_URL` is set (Q-9). The Team desk also needs the backend at `f322a30`+, and its Reject `bf2b9dc`+ (migration `gallery.0012`). |
+| Gate | typecheck · lint 0 · format · **925 unit** (84 files) · build · **176 E2E** (collector 41 · desks 113 · portal 10 · smoke 4 · team 8) — measured 2026-10-13 on `development` + #122. Runs on **Node 20**. **macOS fixed 2026-10-17:** typecheck, build and `e2e:build` used to fail on a Mac only — on a case-insensitive disk `./Documents` resolved to the logic module `documents.ts` before the view `Documents.tsx` — so the logic module is now `documentRows.ts` (as `acquisitions.ts` became `acquisitionRows.ts`). typecheck · build · `e2e:build` · 925 unit · lint · format re-run green on macOS (Node 22) that day; E2E not re-run. |
+| Live | https://darz-web.vercel.app — serves the 2026-10-13 release (`eb735f2`; code as of `de3342e`: V1 + G-TEAM-1/2 + G-PORT + the Proposal + Invoice builder, G-CAT-9, G9); auto-deploys **`main`**, **visual-only** (placeholder API URL). **Since 2026-10-17** `darzmarketstudio.art` serves a build with the real API (`api.darzmarketstudio.art`), built and shipped from the backend repository (see the 6 Nov note above). The Team desk also needs the backend at `f322a30`+, and its Reject `bf2b9dc`+ (migration `gallery.0012`). |
 
 **The collector app, the gallery portal and the admin panel are built and bound for V1.** What remains is
 owner decisions, backend defects and post-V1 features — see § 3.
@@ -46,8 +61,9 @@ V1 is done; there is no frontend V1 queue left. Start from **`DARZ_WEB_V1_STATUS
 work in this order:
 
 1. **Owner decisions** (`V1_CONTRACT_ISSUES.md` § C, `NOTES-FOR-ARIAN.md`) — nothing below starts without one:
-   - **Q-9 · real `VITE_API_BASE_URL`** — the live site is visual-only until it is set. The single biggest
-     thing between the owner and a working site.
+   - ~~**Q-9 · real `VITE_API_BASE_URL`**~~ — answered 2026-10-17 for `darzmarketstudio.art` (the backend's
+     deploy script passes `api.darzmarketstudio.art` into the build). The remaining go-live question is whether
+     and when darzmarket.art is cut over from the old Studio app.
    - **Q-5 remainder, API ready — now fully planned:** G-P24-2 · G-P25-2(b) · G-P5-4 · G-P5-5 · G-P5-12 ·
      G-P13-1 · G-CLUB-3 · G-P5-9. **Read `DEFERRED_FEATURES_PLAN.md`** — it costs each one, cites the
      old-app source to port (five of the eight already have copy and markup), and lists the seven
