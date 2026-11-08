@@ -1,5 +1,11 @@
 # Deploying to ArvanCloud
 
+> **6 Nov 2026: this is the 22 Sep plan.** The real ArvanCloud deploy (17 Oct 2026) was done from the backend
+> repository instead: its `deploy/scripts/deploy.sh` builds this app inside a Linux container with the real
+> API address and its Caddy serves the files on `darzmarketstudio.art`, next to the API on
+> `api.darzmarketstudio.art`. This repository's `Dockerfile` and `nginx.conf` were not used for it, and the
+> statement below that the backend "is not deployed anywhere" is no longer true.
+
 Written 2026-09-22, for the migration off Vercel.
 
 **Why the move:** the collectors this app is built for are in Iran, and a

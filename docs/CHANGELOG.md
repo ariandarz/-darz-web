@@ -5,6 +5,18 @@ Newest first. Add an entry whenever a task in `docs/TASKLIST.md` moves to done (
 
 ---
 
+## 2026-11-08 — Docs: Q-9 and the C-13 blocker closed in the live docs
+TASKLIST § A checks off Q-9 (real API URL, done for darzmarketstudio.art on 17 Oct) and the backend #74/#76 merge; Phase 14 is `[~]`.
+HANDOFF, `DARZ_WEB_V1_STATUS.md` and `V1_CONTRACT_ISSUES.md` (Q-9) say the same. Docs only; builds on the 6 Nov refresh (#131).
+
+## 2026-11-06 — Docs: state on 6 Nov 2026
+README § "State on 6 Nov 2026" (what this app is, `main`/`development`, darzmarketstudio.art since 17 Oct, darz.art relation).
+Dated notes on CLAUDE.md, HANDOFF, DEPLOY_ARVAN, NOTES-FOR-ARIAN, TASKLIST. Docs only (#131).
+
+## 2026-10-17 — macOS build fix: `documents.ts` → `documentRows.ts` (#130, `development` only)
+On a case-insensitive disk `./Documents` resolved to the logic module before the view; the logic module is now `documentRows.ts`.
+typecheck · build · `e2e:build` · 925 unit · lint · format green on macOS. Not released to `main`.
+
 ## 2026-10-13 — Release record (#125) released to `main`
 On the owner's second "release development to main", #126 released `development` → `main` (`eb735f2`, docs only).
 The production deploy is READY and `development` was fast-forwarded to `main` again.

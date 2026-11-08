@@ -53,7 +53,7 @@ works around it as the row's "FE stance" says · **owner-open** = waits on Arian
 | Q-2 | owner-open | Project money / internal notes hidden in the UI only. |
 | Q-4 | owner-open | Counter-offer display wording. |
 | Q-8 | owner-open (kept deferred) | Intelligence · Marketing Hub · Document Builder stay not V1. |
-| Q-9 | owner-open (go-live) | A real `VITE_API_BASE_URL`. |
+| Q-9 | resolved 2026-10-17 (darzmarketstudio.art) | The backend's `deploy/scripts/deploy.sh` builds with `api.darzmarketstudio.art`; `.env.production` (Vercel) keeps the placeholder. |
 
 ### Backend fix PRs (2026-09-26)
 
@@ -157,4 +157,4 @@ These block **only** the phase items named; everything else can proceed.
 | **Q-6** ✅ resolved in code (Phase 1, recommendation) | An offer on a work with no currency 400s with the backend's raw message. Hide the button, default a currency, or keep it? | Phase 1 | Hide "Make an Offer" when the work has no currency. Built in `ActionButtons.tsx`. |
 | **Q-7** | Pricelist-line `availability`: offer `catalog.availability_status` values as the options, or keep it free text? | Phase 5 | Offer the catalogue values (C-14). **Resolved (Phase 5): the recommendation — the builder offers `catalog.availability_status` values.** |
 | **Q-8** | Intelligence, Marketing Hub and Document Builder (G-6): still deferred? The API is ready for the first two. | V1 scope | Keep deferred (not V1). |
-| **Q-9** | A real `VITE_API_BASE_URL` for production. | Go-live, not code | — |
+| **Q-9** ✅ resolved 2026-10-17 | A real `VITE_API_BASE_URL` for production. | Go-live, not code | Done for `darzmarketstudio.art`: the backend repository's `deploy/scripts/deploy.sh` passes `api.darzmarketstudio.art` into the build. darzmarket.art is not cut over. |

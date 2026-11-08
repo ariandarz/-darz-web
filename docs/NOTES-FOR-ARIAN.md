@@ -13,8 +13,9 @@ Nothing is merged without your word.
    `development`; this was verified three ways).
 2. **`NUM_PROXIES` — dropped, not needed now.** Your call, 2026-10-01: over-engineering at this stage.
    It will be set later if and when production use calls for it, with the deploy work. Not an open task.
-3. [ ] **Give the real API URL** (`VITE_API_BASE_URL`). Until then the live site shows layout only, with no
-   sign-in and no data. This is the biggest blocker.
+3. [x] **Give the real API URL** (`VITE_API_BASE_URL`). **Done for darzmarketstudio.art on 2026-10-17:** the
+   backend's deploy script builds this app with `api.darzmarketstudio.art`. `darz-web.vercel.app` still shows
+   layout only (its `.env.production` keeps the placeholder).
 4. [x] ~~Release #113~~. **Done 2026-09-27:** V1 is on `main` (`960d571`) and deployed.
 5. [x] ~~Review #114~~. Merged 2026-09-27.
 6. [ ] After the backend PRs merge, ask for the **small web follow-up**:
@@ -75,7 +76,7 @@ Nothing is merged without your word.
 | Web | **Released 2026-10-13** (#124 — V1, Team Workspace, the G-PORT portal features, the Proposal + Invoice builder, source freshness, artist sorts): then #126 (docs only): `main` = `development` = `eb735f2`, production deploy READY |
 | Backend | `development` @ **`bf2b9dc`** — fix PRs **#71–#78 all merged** 2026-10-01, plus Team Workspace / G-PORT / Projects documents / G-CAT-9 |
 | Gate | **925** unit · 176 E2E · lint · format · build green (2026-10-13). The Mac-only `typecheck`/build failure (`Documents.tsx` vs `documents.ts`) is **fixed 2026-10-17** — the logic module is now `documentRows.ts`, and the build works on a Mac again |
-| Live site | https://darz-web.vercel.app serves `main` and is visual-only until the API URL is set |
+| Live site | https://darz-web.vercel.app serves `main` and is visual-only (placeholder API URL). Since 2026-10-17 `darzmarketstudio.art` serves a build with the real API (deployed from the backend repository) |
 
 Detail: `DARZ_WEB_V1_STATUS.md` (full picture), `V1_CONTRACT_ISSUES.md` § "Backend fix PRs",
 `TASKLIST.md`.
