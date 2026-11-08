@@ -42,9 +42,11 @@ structure — trace every decision to the approved package + `app.html`.
 > old sections B–E; they are done or have a recorded final disposition. What is left:
 
 ### A · Owner decisions (nothing below starts without one) — see `NOTES-FOR-ARIAN.md` and `V1_CONTRACT_ISSUES.md` § C
-- [ ] **Real `VITE_API_BASE_URL`** (Q-9) — `.env.production` is the deliberate `api.invalid` placeholder, so
-      the live site has no sign-in/data. **The single biggest blocker to a working site.**
-- [ ] **Merge backend #74 and #76 (C-13 security) before any real portal link is issued.**
+- [x] **Real `VITE_API_BASE_URL`** (Q-9) — done for `darzmarketstudio.art` on 2026-10-17: the backend repository's
+      `deploy/scripts/deploy.sh` builds this app with `api.darzmarketstudio.art`. `.env.production` still holds the
+      `api.invalid` placeholder, so `darz-web.vercel.app` stays layout-only.
+- [x] **Merge backend #74 and #76 (C-13 security) before any real portal link is issued.** — both merged
+      2026-10-01 (backend `990ee92`, `b19e5f4`); see the note below.
 - [ ] **Q-5 remainder — owner-deferred, API ready:** G-P24-2 selection-ready notice · G-P25-2(b) question-set
       editor · G-P5-4 archive · G-P5-5 withdraw/cancel · G-P5-12 activity read-back · G-P13-1 push opt-in ·
       G-CLUB-3 Club "Auction access" section · G-P5-9 counter-offer display (**Q-4**: wording).
@@ -111,8 +113,10 @@ structure — trace every decision to the approved package + `app.html`.
 - [skip] **Proposal Builder desk** (`builder`, `darz-studio.html:14644` — the free-form draft-to-document editor
       with AI organise, custom sections and design options). Owner, 2026-10-13: *"keep the invoice, skip the
       proposal builder"*. Not V2 either — skipped; the record's proposal composer is the proposal surface.
-- [ ] **Deploy Phase 14** — Vercel auto-deploys `main`; the ArvanCloud `docker build` + deep-route `curl`
-      have **not been run**. DNS/hosting cutover pends the real API URL and `darzmarket-api` Phase 18.
+- [~] **Deploy Phase 14** — Vercel auto-deploys `main` (layout only). Since 2026-10-17 the backend repository's
+      `deploy/scripts/deploy.sh` builds this app with the real API and serves it on `darzmarketstudio.art`
+      (ArvanCloud + CDN). This repository's own `Dockerfile`/`nginx.conf` path (`DEPLOY_ARVAN.md`) was not used.
+      **Still open:** darzmarket.art is not cut over — it serves the old Studio app.
 
 ### Ready to build (backend shipped, UI pending)
 - [x] **Team Workspace desk (G-TEAM-1)** — done 2026-10-12. `src/features/admin/TeamPage.tsx` is the old three-tab

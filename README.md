@@ -16,7 +16,7 @@ collector app, the no-login gallery portal and the admin panel (`/admin`). It is
 | | |
 |---|---|
 | `main` | `81e7245`, 14 Oct 2026: V1 (released 27 Sep) + Team Workspace (12 Oct) + the 13 Oct releases (gallery portal set, Proposal + Invoice builder, source freshness). |
-| `development` | Two commits ahead: PR #130 (17 Oct) renames `documents.ts` → `documentRows.ts`, which fixes the build on macOS. Not released to `main`. No pull request is open. |
+| `development` | Two commits ahead: PR #130 (17 Oct) renames `documents.ts` → `documentRows.ts`, which fixes the build on macOS. Not released to `main`. The only open pull requests are documentation (this refresh). |
 | Live (Iran) | Since **17 Oct 2026**, `darzmarketstudio.art` serves this app, built and shipped by hand from the backend repository (`deploy/scripts/deploy.sh`, default `WEB_REF=origin/main`, feature set `v0.1`), with the real API at `api.darzmarketstudio.art`. The ArvanCloud CDN sits in front. So the "visual-only until a real API URL" notes below and in `docs/` are out of date for that site. Whether it is up today, and which commit it runs, is unverified. |
 | Live (Vercel) | `darz-web.vercel.app` auto-deploys `main` with `.env.production`, whose API address is still the placeholder `https://api.invalid/api`, so that copy shows the layout only (unverified today). |
 | CI | `.github/workflows/quality.yml`: the gate on pull requests and on pushes to `main`; it deploys nothing. Node 20 in CI. |

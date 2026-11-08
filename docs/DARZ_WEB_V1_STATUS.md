@@ -13,6 +13,11 @@ bound to the V1 API and merged into `development` (every `v1/phase-*` branch, #1
 is this branch). The site is still **visual-only in production** until the owner sets a real
 `VITE_API_BASE_URL` (Q-9).
 
+> **Update 2026-11-08:** Q-9 is answered for `darzmarketstudio.art`. Since 2026-10-17 that domain serves this
+> app with the real API (`api.darzmarketstudio.art`), built by the backend repository's `deploy/scripts/deploy.sh`.
+> `darz-web.vercel.app` stays visual-only. This report is otherwise the 2026-09-26 V1 picture; the current
+> state is `HANDOFF.md` § 1.
+
 **API adoption, re-verified against the code (not the docs)** — of the backend's 323 V1 operations:
 
 | Integrated | Bound, no UI | Not bound | Excluded (owner-deferred, API ready) | Excluded (not V1) | Not needed | Backend-only |
